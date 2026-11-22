@@ -3,6 +3,44 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
+## 2026-11-22
+
+Detailed the working port from the service-road entrance to the quay. The fixed
+net bench, wash hose, refrigeration fittings and fender pads stay beside the
+working lanes. A local weather-aware mask locates the wheel wear on the actual
+truck sweep and moisture at drains and the quay edge. Re-aimed the existing
+work lamps toward the apron, threshold and canopy. Blender port art contract
+and deterministic mesh rebuild passed. `CityPortConstructionDetails` passed
+import, wear binding and clearance checks. Day/night route and open loading
+views reviewed. In dense night fog the fittings read mainly at close range.
+
+Filled the entrance apron itself with a return rack and pallet stack beside
+the rails. The existing worklight now faces inward over the turn. Added a
+flush storm grate and renewed the local moisture and pavement wear there.
+The Blender port art contract measures the new assemblies and verifies the
+deterministic rebuild. `CityPortConstructionDetails` passed the truck sweep and
+central approach. Reviewed day and night yard frames from near the player's
+reference position and from the return rack.
+
+Set the west bench, tool chest, vise and wash drums outside the truck sweep.
+Raised the east lamp and added two west-side fixtures. Three projected masks
+follow the joined yard paving and fall off at its edges. The lamps share the
+area lifecycle and retain the daytime floor. Blender port art contract passed.
+`CityPortConstructionDetails` passed. Reviewed the full yard and workbench by
+day and night, including the open bay with the truck in place.
+
+Reproduced the apron lighting grid in `CityPortPavementLightingProbe`.
+The grid persisted with shadows disabled and cleared with a neutral response
+map. Asphalt and concrete ground maps in City now use grain without a dominant
+direction. `build-city-surface-textures --ground-grain --validate-only` passed.
+Reviewed the corrected night lighting at the open bay and across the yard.
+
+Mounted quay floods to the store and canopy, and fitted crane work lights to
+the booms, winches and control columns. The projected cutoff softens the near
+hot spot and keeps the berth side dark beyond the lit paving. The Blender
+port art contract and `CityPortCraneLighting` passed. Reviewed the empty quay
+and both crane transfers at night. The truck sweep clears the new housings.
+
 ## 2026-11-18
 
 Restored the olive M-65 and oxblood 1460-style boots. Formed pocket bellows,

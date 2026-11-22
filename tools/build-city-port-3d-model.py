@@ -12,11 +12,14 @@ import json
 import math
 from pathlib import Path
 import random
+import struct
 import sys
+import zlib
 
 sys.dont_write_bytecode = True
 
 import bpy
+import numpy as np
 from mathutils import Vector
 from mathutils.bvhtree import BVHTree
 
@@ -60,6 +63,8 @@ SURFACE_TILES = {"Concrete":2.0,"ConcreteWall":2.0,"Steel":1.5,"SteelDark":1.5,"
 ASPHALT_WORLD_ORIGIN=(-67.0,202.0)
 WAREHOUSE_LIGHTS = {"A":(0,4.58,-13.7),"B":(.8,4.58,-17.45),"C":(-6.6,4.58,-15.25)}
 WAREHOUSE_REFRIGERATION = (3.12,4.02,-17.1)
+YARD_WEAR_BOUNDS = (-24.0, -36.0, 30.0, 2.0)
+YARD_DRAIN_Z = -26.9
 
 
 def surface_role(name,color,face=None,geom=None,index=0):
@@ -192,6 +197,68 @@ def canopy_structure(root,mat,collision):
     obj(steel,"DockCanopyStructure",root,mat)
 
 
+def port_floodlight(parent, mat, name, mount, normal, centre, direction, size):
+    """A sealed floodlight, its steel mounting yoke, and the optical axis."""
+    fixture = empty(name, parent)
+    width, height, depth = size
+    centre, mount = Vector(centre), Vector(mount)
+    forward, normal = Vector(direction).normalized(), Vector(normal).normalized()
+
+    def basis(axis):
+        reference = Vector((0, 1, 0)) if abs(axis.y) < .94 else Vector((0, 0, 1))
+        right = reference.cross(axis).normalized()
+        return right, axis.cross(right)
+
+    right, up = basis(forward)
+    plate_right, plate_up = basis(normal)
+
+    def insert(geometry, origin, across, vertical, axis, position, dimensions, colour, bevel):
+        first = len(geometry.vertices)
+        chamfer(geometry, position, dimensions, colour, bevel)
+        for index in range(first, len(geometry.vertices)):
+            x, y, z = source(geometry.vertices[index])
+            geometry.vertices[index] = source(origin + across*x + vertical*y + axis*z)
+
+    body = Geometry()
+    insert(body, mount, plate_right, plate_up, normal, (0, 0, .008),
+           (width*.6, height*.73, .036), METAL, .009)
+    for side in (-1, 1):
+        for end in (-1, 1):
+            bolt = mount + plate_right*(side*width*.20) + plate_up*(end*height*.23)
+            body.rod(bolt + normal*.017, bolt + normal*.035, width*.041, DARK, 6)
+        pin = centre + right*(side*width*.54) - forward*(depth*.1)
+        arm = pin - up*(height*.50)
+        body.rod(mount + plate_right*(side*width*.21) + normal*.025, arm, width*.045, METAL, 8)
+        body.rod(arm, pin, width*.047, METAL, 8)
+        body.rod(pin - right*(side*width*.085), pin + right*(side*width*.045), width*.049, DARK, 8)
+
+    def housing(position, dimensions, colour, bevel):
+        insert(body, centre, right, up, forward, position, dimensions, colour, bevel)
+
+    housing((0, 0, -depth*.16), (width, height, depth*.68), PAINT, width*.045)
+    for side in (-1, 1):
+        housing((side*width*.47, 0, depth*.15), (width*.08, height*.93, depth*.30), METAL, width*.018)
+        housing((0, side*height*.45, depth*.14), (width*.9, height*.09, depth*.27), METAL, width*.016)
+    housing((0, height*.52, depth*.31), (width*1.05, height*.12, depth*.53), PAINT, width*.024)
+    for offset in (-.29, -.10, .10, .29):
+        housing((offset*width, 0, -depth*.51), (width*.045, height*.70, depth*.12), METAL, width*.013)
+
+    gland = centre - forward*(depth*.49) - up*(height*.31)
+    bend = gland - up*(height*.32) - forward*(depth*.15)
+    entry = mount - plate_up*(height*.29) + normal*.045
+    body.rod(gland, bend, width*.024, DARK, 8)
+    body.rod(bend, entry, width*.021, DARK, 8)
+    obj(body, name + "Housing", fixture, mat)
+
+    lens = Geometry()
+    insert(lens, centre, right, up, forward, (0, 0, depth*.15),
+           (width*.85, height*.79, depth*.08), LAMP, width*.022)
+    obj(lens, name + "Glass", fixture, mat)
+    emitter = centre + forward*(depth*.204)
+    empty("ANCHOR_" + name, fixture, emitter)
+    empty("ANCHOR_" + name + "Aim", fixture, emitter + forward)
+
+
 def service_rack(root,mat,collision):
     """One finite rigging bay beside the east posts, outside the crew routes.
 
@@ -244,6 +311,21 @@ def warehouse_service_details(root,mat,collision,exterior):
                 steel.rod((4.18,y,z+dz),(4.20,y,z+dz),.022,DARK,6)
         for y in (2.50,2.64,2.78,2.92,3.06):
             steel.box((4.575,y,z),(.025,.022,.70),METAL)
+        # Recessed fan blades under a proud shroud and grille.
+        steel.rod((4.549,2.8,z),(4.558,2.8,z),.278,DARK,16)
+        ring(steel,(4.595,2.8,z),.323,.017,METAL,(1,0,0),16)
+        for i in range(5):
+            a = i * math.tau / 5
+            points = [(4.568, 2.8 + r * math.cos(a + pitch), z + r * math.sin(a + pitch))
+                      for r,pitch in ((.052,0),(.245,.26),(.241,.70),(.08,.55))]
+            steel.add(points,[(0,1,2,3),(3,2,1,0)],DARK,solid=False)
+        steel.rod((4.554,2.8,z),(4.585,2.8,z),.064,METAL,10)
+        steel.rod((4.10,4.04,z),(4.38,4.04,z),.052,DARK,8)
+        steel.rod((4.38,4.04,z),(4.38,3.33,z),.052,DARK,8)
+        for y in (3.53,3.87):
+            chamfer(steel,(4.24,y,z),(.31,.055,.10),METAL,.009)
+        steel.rod((4.29,2.27,z+.29),(4.29,1.58,z+.29),.018,METAL,8)
+        steel.rod((4.29,1.58,z+.29),(4.51,1.56,z+.29),.018,METAL,8)
         chamfer(collision,(4.37,2.64,z),(.46,.84,.96),METAL,.010)
     # Folded flashings terminate at the existing gutter runs, with small
     # wall plates beneath; they do not grow the building or seal an opening.
@@ -252,6 +334,258 @@ def warehouse_service_details(root,mat,collision,exterior):
     for x in (-7.6,-4.8,-2,.8,3.6):
         chamfer(exterior,(x,4.87,-11.84),(.16,.25,.08),METAL,.012)
     obj(steel,"DockWarehouseServiceDetails",root,mat)
+    wash = Geometry()
+    wash.role = "SteelDark"
+    chamfer(wash,(4.16,2.53,-18.51),(.10,.43,.31),METAL,.016)
+    wash.rod((4.11,2.56,-18.68),(4.37,2.56,-18.68),.045,METAL,8)
+    wash.rod((4.37,2.56,-18.68),(4.37,2.56,-18.41),.045,METAL,8)
+    wash.role = "Rubber"
+    for i in range(3):
+        ring(wash,(4.21+i*.044,2.28,-18.51),.27-i*.012,.020,DARK,(1,0,0),18)
+    wash.rod((4.306,2.28,-18.28),(4.31,1.96,-18.32),.020,DARK,8)
+    wash.role = "SteelDark"
+    wash.rod((4.31,1.96,-18.32),(4.31,1.85,-18.36),.029,METAL,8)
+    obj(wash,"DockWashHose",root,mat)
+    chamfer(collision,(4.23,2.29,-18.51),(.20,.91,.57),METAL,.020)
+    # The drain mouth stays below the asphalt wearing course.
+    for i in range(5):
+        chamfer(exterior,(4.58+i*.065,1.518,-18.51),(.025,.006,.29),DARK,.002)
+
+
+def rigging_bench(root, mat):
+    """One net laid out to dry at the west edge of the working apron."""
+    bench = Geometry()
+    bench.role = "Timber"
+    x = -15.1
+    for z in (-9.4,-7.2):
+        chamfer(bench,(x,2.43,z),(1.22,.14,.16),WOOD,.025)
+        for side in (-1,1):
+            bench.rod((x+side*.48,1.53,z),(x+side*.28,2.42,z),.071,WOOD,4)
+        chamfer(bench,(x,1.8,z),(.84,.075,.10),WOOD,.014)
+    for side in (-.31,.31):
+        chamfer(bench,(x+side,2.34,-8.3),(.11,.13,2.38),WOOD,.018)
+    bench.role = None
+    columns, rows = 19, 12
+
+    def net_point(col, row):
+        u, v = col / columns, row / rows
+        sag = math.sin(u * math.pi)
+        return (x + .34 - .87*v - .045*math.sin(u*15.0)*v,
+                2.500 - (.07 + .40*v)*sag - .45*v**3,
+                -9.42 + 2.24*u + .13*math.sin(v*math.pi)*math.cos(u*math.pi))
+
+    for col in range(columns+1):
+        for row in range(rows+1):
+            p = net_point(col,row)
+            if col < columns:
+                bench.rod(p,net_point(col+1,row),.023 if row in (0,rows) else .010,ROPE,5)
+            if row < rows:
+                bench.rod(p,net_point(col,row+1),.020 if col in (0,columns) else .010,ROPE,5)
+    for col in (1,4,7,10,13,17):
+        px,py,pz = net_point(col,rows)
+        bench.rod((px,py,pz-.052),(px,py,pz+.052),.044,WOOD,8,.037)
+    ring(bench,(x+.31,2.428,-7.37),.16,.024,ROPE,(0,1,0),12)
+    obj(bench,"DockNetBench",root,mat)
+    solid = Geometry()
+    chamfer(solid,(x,1.995,-8.3),(1.28,.99,2.40),WOOD,.025)
+    obj(solid,"COL_NetBench",root,mat).hide_render = True
+
+
+def yard_fittings(root, mat, dock_glass):
+    """Returnable gear beside the delivery apron and a flush storm drain."""
+    deck = 1.516
+    rack = Geometry()
+    rack.role = "SteelDark"
+    for x in (23.67,25.53,27.38):
+        for z in (-21.55,-20.41):
+            chamfer(rack,(x,deck+.035,z),(.23,.07,.21),METAL,.012)
+            chamfer(rack,(x,2.53,z),(.085,1.93,.085),METAL,.013)
+    for y in (1.77,2.53,3.48):
+        for z in (-21.55,-20.41):
+            chamfer(rack,(25.525,y,z),(3.78,.13,.095),METAL,.014)
+        for x in (23.67,25.53,27.38):
+            chamfer(rack,(x,y,-20.98),(.10,.13,1.12),METAL,.014)
+    for lo,hi in ((23.72,25.48),(25.58,27.34)):
+        rack.rod((lo,1.84,-20.42),(hi,3.39,-20.42),.030,METAL)
+    # A tall back post carries the existing yard light, clear of the crates.
+    chamfer(rack,(26.7,3.84,-20.42),(.14,4.647,.14),METAL,.017)
+    rack.rod((26.7,6.08,-20.42),(26.5,6.08,-21.98),.058,METAL,8)
+    rack.rod((26.7,5.48,-20.42),(26.53,6.06,-21.78),.035,METAL,8)
+    chamfer(rack,(26.5,6.05,-21.98),(.47,.18,.31),METAL,.028)
+    dock_glass.box((26.5,5.95,-21.98),(.34,.022,.21),LAMP)
+    empty("ANCHOR_WorkLightB",root,(26.5,5.91,-21.98))
+    rack.role = "Timber"
+    for y in (1.862,2.622):
+        for z in (-21.40,-21.12,-20.84,-20.56):
+            chamfer(rack,(25.525,y,z),(3.7,.052,.256),WOOD,.012)
+    for x,count in ((24.06,2),(24.66,1),(25.22,2),(26.50,1)):
+        for tier in range(count):
+            crate(rack,x,1.888+tier*.35,-21.12)
+    for x in (24.12,24.76,26.68):
+        crate(rack,x,2.648,-21.07)
+    obj(rack,"DockYardReturnRack",root,mat)
+
+    pallet = Geometry()
+    pallet.role = "Timber"
+    # A lower stack at the north end gives the doorway a second visible edge.
+    for z in (-13.13,-12.27,-11.41):
+        chamfer(pallet,(21.76,deck+.067,z),(1.38,.134,.11),WOOD,.012)
+    for i in range(7):
+        chamfer(pallet,(21.15+i*.203,deck+.16,-12.27),(.178,.052,1.9),WOOD,.012)
+    for x,z,count in ((21.45,-12.85,2),(22.06,-12.85,3),(21.45,-12.11,2),
+                      (22.06,-12.11,1),(21.96,-11.40,2)):
+        for tier in range(count):
+            crate(pallet,x,deck+.186+tier*.35,z)
+    obj(pallet,"DockYardPallet",root,mat)
+
+    solid = Geometry()
+    chamfer(solid,(25.53,2.53,-20.98),(3.92,2.028,1.39),METAL,.030)
+    chamfer(solid,(26.70,4.81,-20.42),(.15,2.71,.15),METAL,.015)
+    chamfer(solid,(21.76,2.13,-12.27),(1.42,1.24,1.93),WOOD,.030)
+    yard_west_fittings(root, mat, dock_glass, solid, deck)
+    obj(solid,"COL_YardFittings",root,mat).hide_render = True
+
+    drain = Geometry()
+    drain.role = "SteelDark"
+    for z in (YARD_DRAIN_Z-.104,YARD_DRAIN_Z+.104):
+        chamfer(drain,(14.65,deck+.002,z),(6.5,.006,.044),METAL,.002)
+    for i in range(53):
+        chamfer(drain,(11.46+i*.122,deck+.003,YARD_DRAIN_Z),(.064,.008,.17),METAL,.002)
+    obj(drain,"DockYardDrain",root,mat)
+
+
+def yard_west_fittings(root, mat, dock_glass, solid, deck):
+    """An outdoor repair bench and closed wash drums on the west edge."""
+    bench = Geometry()
+    bench.role = "SteelDark"
+    for x in (4.98,6.08):
+        for z in (-29.18,-27.00):
+            chamfer(bench, (x,deck+.035,z), (.18,.07,.20), METAL, .012)
+            chamfer(bench, (x,1.98,z), (.095,.89,.095), METAL, .012)
+    for z in (-29.18,-27.00):
+        chamfer(bench, (5.53,1.86,z), (1.16,.11,.10), METAL, .014)
+    bench.rod((5.00,1.84,-29.18),(5.00,2.36,-27.00),.030,METAL,6)
+    bench.role = "Timber"
+    for x in (5.06,5.37,5.68,5.99):
+        chamfer(bench, (x,2.467,-28.09), (.30,.112,2.48), WOOD, .023)
+        chamfer(bench, (x,1.92,-28.09), (.30,.063,2.18), WOOD, .018)
+    bench.role = "Steel"
+    # Lidded steel tool chest with a bent lip, two catches and a carry handle.
+    chamfer(bench,(5.38,2.71,-28.66),(.55,.37,.81),PAINT,.035)
+    chamfer(bench,(5.385,2.918,-28.66),(.58,.085,.84),PAINT,.028)
+    bench.role = "SteelDark"
+    for z in (-28.92,-28.40):
+        chamfer(bench,(5.666,2.863,z),(.045,.11,.074),METAL,.006)
+    for z in (-28.77,-28.55):
+        bench.rod((5.38,2.95,z),(5.38,3.012,z),.020,METAL,8)
+    bench.rod((5.38,3.012,-28.77),(5.38,3.012,-28.55),.020,METAL,8)
+    # Bench vise bolted to the edge, with visible open jaws and spindle.
+    chamfer(bench,(5.89,2.555,-27.31),(.34,.071,.40),METAL,.015)
+    chamfer(bench,(5.94,2.68,-27.31),(.32,.19,.25),METAL,.025)
+    for x in (5.83,6.10):
+        chamfer(bench,(x,2.81,-27.31),(.126,.12,.29),METAL,.013)
+    bench.rod((5.93,2.65,-27.31),(6.18,2.65,-27.31),.035,METAL,8)
+    bench.rod((6.18,2.57,-27.31),(6.18,2.73,-27.31),.016,METAL,6)
+    obj(bench,"DockYardWestBench",root,mat)
+    chamfer(solid,(5.56,2.27,-28.09),(1.32,1.51,2.51),METAL,.035)
+
+    drums = Geometry()
+    drums.role = "Timber"
+    for x in (4.95,5.97,7.0):
+        chamfer(drums,(x,deck+.055,-31.09),(.11,.11,1.36),WOOD,.012)
+    for i in range(7):
+        chamfer(drums,(5.975,deck+.135,-31.70+i*.20),(2.16,.05,.176),WOOD,.012)
+    for x,z in ((5.33,-31.2),(6.43,-30.97)):
+        y = deck + .16
+        drums.role = "Steel"
+        drums.rod((x,y,z),(x,y+.89,z),.375,PAINT,16)
+        drums.role = "SteelDark"
+        for seam in (.045,.305,.625,.855):
+            drums.rod((x,y+seam,z),(x,y+seam+.045,z),.388,METAL,16)
+        drums.rod((x+.114,y+.89,z+.144),(x+.114,y+.924,z+.144),.059,METAL,8)
+    obj(drums,"DockYardWestDrums",root,mat)
+    chamfer(solid,(5.975,2.06,-31.09),(2.17,1.09,1.38),METAL,.032)
+
+    fixtures = Geometry()
+    fixtures.role = "SteelDark"
+    chamfer(fixtures,(4.59,deck+.08,-30.13),(.40,.16,.40),METAL,.028)
+    chamfer(fixtures,(4.59,4.15,-30.13),(.15,5.15,.15),METAL,.018)
+    fixtures.rod((4.59,6.67,-30.13),(6.28,6.57,-30.13),.060,METAL,8)
+    fixtures.rod((4.59,5.81,-30.13),(6.10,6.54,-30.13),.038,METAL,8)
+    chamfer(fixtures,(6.28,6.55,-30.13),(.49,.19,.32),METAL,.029)
+    dock_glass.box((6.28,6.444,-30.13),(.35,.024,.22),LAMP)
+    empty("ANCHOR_WorkLightC",root,(6.28,6.40,-30.13))
+    chamfer(solid,(4.59,4.13,-30.13),(.20,5.23,.20),METAL,.020)
+    # The upper bay is lit from the cold-store wall over its service lines.
+    chamfer(fixtures,(4.155,4.89,-15.1),(.044,.25,.29),METAL,.015)
+    fixtures.rod((4.17,4.94,-15.1),(4.76,4.94,-15.1),.054,METAL,8)
+    fixtures.rod((4.17,4.80,-15.1),(4.68,4.92,-15.1),.031,METAL,8)
+    chamfer(fixtures,(4.765,4.87,-15.1),(.36,.16,.35),METAL,.027)
+    dock_glass.box((4.765,4.778,-15.1),(.25,.022,.24),LAMP)
+    empty("ANCHOR_WorkLightD",root,(4.765,4.735,-15.1))
+    obj(fixtures,"DockYardWestFixtures",root,mat)
+
+
+def yard_wear_png():
+    """Linear masks for dirt, scuffed aggregate and moisture, with no overlay mesh."""
+    width, height = 1024, 768
+    left, back, right, front = YARD_WEAR_BOUNDS
+    x = left + (np.arange(width)[None,:] + .5) * ((right-left)/width)
+    z = front - (np.arange(height)[:,None] + .5) * ((front-back)/height)
+    rng = np.random.default_rng(791)
+    grain = rng.random((height,width)) * .25 + .75
+
+    def fade(value, low, high):
+        t = np.clip((value-low)/(high-low),0,1)
+        return t*t*(3-2*t)
+
+    def stain(cx, cz, width, length):
+        radius = np.hypot((x-cx)/width,(z-cz)/length)
+        return (1-fade(radius + .08*np.sin(x*12+z*3),.22,1)) * grain
+
+    layout = json.loads(ACCESS_LAYOUT_PATH.read_text(encoding="utf-8"))
+    turn = layout["turnCenter"]
+    park = layout["loadingRearAxle"]
+    radius = layout["turnRadius"]
+    # Tire pairs follow the plan's rear-axle turn and the straight reverse.
+    radial = np.hypot(x-turn["x"],z-turn["z"])
+    dirt = np.zeros_like(grain)
+    for offset in (-.98,.98):
+        track = abs(radial-radius-offset)
+        dirt += (1-fade(track,.04,.31)) * fade(turn["x"]-x,.02,1.3) * .48
+        track = abs(z-park["z"]-offset)
+        dirt += (1-fade(track,.045,.22)) * fade(x-5.4,0,2) * (1-fade(x-turn["x"],4,7)) * .56
+    dirt *= grain * (.75 + .25*np.sin(x*1.8+z*.8)**2)
+    patch_x = abs(x-16.7 + .32*(z+19.8))
+    patch_z = abs(z+19.8 - .17*(x-16.7))
+    edge = np.maximum(patch_x-2.56,patch_z-.82) + .044*np.sin(x*18+z*11)
+    dirt += .32*(1-fade(edge,-.15,.095)) + .18*(1-fade(abs(edge),.01,.12))
+    # City asphalt continues beneath; all stains thin out before the map edge.
+    light = .53*stain(4.76,-14.0,.86,1.35) + .35*stain(8.0,-7.65,2.04,1.23)
+    damp = .69*stain(4.8,-18.5,1.13,.66)
+    damp += .83*stain(14.65,YARD_DRAIN_Z,4.1,.73)
+    damp += .56*stain(25.5,-21.05,2.85,1.24) + .48*stain(21.82,-12.15,1.27,1.75)
+    damp += .55*stain(5.85,-31.1,1.85,2.05)
+    light += .44*stain(6.04,-28.25,1.72,2.32)
+    light += .51*stain(20.0,-24.85,2.96,1.83)
+    # The iron sits flush in a cut channel. Dark slots between the slats
+    # share the road surface's depth and never create a wheel obstruction.
+    dirt += .79*(1-fade(abs(z-YARD_DRAIN_Z),.080,.14))*(1-fade(abs(x-14.65),3.15,3.30))
+    for drain_x in (-11,-3,5,13):
+        damp += .56*stain(drain_x,-8.75,1.1,.57)
+    for bollard_x in (-11,11):
+        light += .60*stain(bollard_x,-.63,.90,.49)
+    dirt += .48*stain(-15.15,-8.35,1.27,1.58)
+    moisture_edge = fade(z,-.95,-.18) * (1-fade(z,-.12,.24))
+    damp += .29*moisture_edge*fade(15.8-abs(x),0,.8)*grain
+    pixels = np.rint(np.clip(np.stack((dirt,light,damp),axis=-1),0,1)*255).astype(np.uint8)
+    rows = b"".join(b"\0"+row.tobytes() for row in pixels)
+
+    def chunk(kind, data):
+        return struct.pack(">I",len(data))+kind+data+struct.pack(">I",zlib.crc32(kind+data))
+
+    return (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR",struct.pack(">IIBBBBB",width,height,8,2,0,0,0))
+            + chunk(b"IDAT",zlib.compress(rows)) + chunk(b"IEND",b""))
 
 
 def warehouse_interior(root,mat):
@@ -503,6 +837,9 @@ def dock(mat):
         empty("ANCHOR_Bollard"+("West" if x<0 else "East"),root,(x,2,-.3))
         empty("ANCHOR_Moor"+("Bow" if x<0 else "Stern"),root,(x,2,-.3))
     for x in (-12,-8,-4,0,4,8,12):
+        # The existing rubber bears on an inset sacrificial timber pad.
+        g.role="Timber"
+        chamfer(g,(x,.64,.052),(.92,1.13,.13),WOOD,.045)
         g.role="Rubber"
         ring(g,(x,.65,.28),.39,.12,DARK,(0,0,1),12)
         g.role=None
@@ -547,6 +884,10 @@ def dock(mat):
     leaf=Geometry();leaf.role="SteelLight"
     chamfer(leaf,(4.06,2.98,-14),(.08,2.95,2.9),CABIN,.025)
     for y in (1.9,2.4,2.9,3.4,3.9):leaf.box((4.112,y,-14),(.025,.025,2.83),METAL)
+    leaf.role="Rubber"
+    chamfer(leaf,(4.102,1.537,-14),(.075,.065,2.86),DARK,.014)
+    leaf.role="SteelDark"
+    chamfer(leaf,(4.113,1.66,-14),(.038,.13,2.82),METAL,.012)
     # Project metre UVs at their previous absolute coordinates, then offset
     # only vertices under the new moving pivot. Closed geometry and albedo
     # phase stay exactly where the static leaf was originally authored.
@@ -588,11 +929,10 @@ def dock(mat):
     for i in range(4):
         ring(g,(-11+i*.65,1.56,-7),.24,.028,ROPE)
     # Modest warm work fixtures on the building, no street poles on the beach.
-    for i,x in enumerate((-4,2)):
-        g.rod((x,4.25,-11.9),(x,4.25,-11.35),.045,METAL)
-        chamfer(g,(x,4.18,-11.3),(.56,.16,.4),DARK)
-        glow.box((x,4.085,-11.3),(.4,.03,.26),LAMP)
-        empty("ANCHOR_WorkLight"+"AB"[i],root,(x,4,-11.3))
+    g.rod((-4,4.25,-11.9),(-4,4.25,-11.35),.045,METAL)
+    chamfer(g,(-4,4.18,-11.3),(.56,.16,.4),DARK)
+    glow.box((-4,4.085,-11.3),(.4,.03,.26),LAMP)
+    empty("ANCHOR_WorkLightA",root,(-4,4,-11.3))
     # Public path passes behind the cold store and up the west breakwater;
     # the rail never cuts across the quay-to-warehouse trolley journey.
     for a,b in (((-18,-19.6),(3.5,-19.6)),((-18,-19.6),(-18,0)),
@@ -606,8 +946,14 @@ def dock(mat):
                 target.rod((x,1.5,z),(x,2.55,z),.045,METAL)
             for y in (1.94,2.50):target.rod((a[0],y,a[1]),(b[0],y,b[1]),.045,METAL)
     canopy_structure(root,mat,awning)
+    port_floodlight(root, mat, "QuayFloodWest", (-7.0,4.64,-11.96), (0,0,1),
+                    (-7.0,4.73,-11.42), (.23,-.34,.91), (.60,.36,.26))
+    port_floodlight(root, mat, "QuayFloodEast", (9.55,4.20,-4.525), (0,0,1),
+                    (9.55,4.17,-4.16), (-.84,-.50,.18), (.60,.36,.26))
     service_rack(root,mat,awning)
     warehouse_service_details(root,mat,cw,g)
+    rigging_bench(root,mat)
+    yard_fittings(root,mat,glow)
     obj(g,"DockVisible",root,mat)
     obj(glow,"WorkLampGlass",root,mat)
     for name,geom in (("COL_Quay",cq),("COL_Breakwater",cb),("COL_WarehouseWalls",cw),("COL_Ramps",cr),("COL_Rail",rail),("COL_Awning",awning)):
@@ -884,6 +1230,10 @@ def crane_base(mat):
     chamfer(h,(.86,.1,-1.08),(.43,.42,.70),PAINT,.045)
     for z in (-1.3,-1.15,-1,-.85):h.box((1.08,.1,z),(.022,.25,.04),DARK)
     obj(h,"CraneHeadVisible",head,mat)
+    port_floodlight(head, mat, "CraneMechanismLamp", (-.594,.22,-.13), (-1,0,0),
+                    (-1.06,.52,-.38), (.57,-.15,.81), (.32,.23,.18))
+    port_floodlight(root, mat, "CraneControlLamp", (.376,2.75,-.02), (1,0,0),
+                    (.74,2.74,-.21), (.61,-.78,.06), (.26,.18,.15))
     empty("ANCHOR_HoistFeed",head,(0,.48,-.9))
     empty("ANCHOR_BoomPivot",root,(0,4,0));empty("ANCHOR_Operator",root,(1.9,0,-.7))
     return root
@@ -905,6 +1255,8 @@ def crane_boom(mat):
     g.rod((-.2,0,7.92),(.2,0,7.92),.21,DARK,12)
     g.rod((0,.49,.1),(0,.29,7.88),.026,ROPE)
     obj(g,"CraneBoomVisible",root,mat)
+    port_floodlight(root, mat, "CraneLoadLamp", (.302,-.20,6.1), (1,0,0),
+                    (.66,-.32,6.1), (-.065,-.72,-.69), (.48,.31,.24))
     empty("ANCHOR_Tip",root,(0,0,8))
     empty("ANCHOR_Heel",root,(0,.49,.1))
     return root
@@ -1015,6 +1367,32 @@ def validate_surfaces(roots):
 
 def validate_controls_and_light(roots):
     bpy.context.view_layer.update()
+    indexed = {root.name.split('.')[0]: root for root in roots}
+    fixtures = ((indexed["Dock"], "QuayFloodWest"), (indexed["Dock"], "QuayFloodEast"),
+                (indexed["CraneBoom"], "CraneLoadLamp"), (indexed["CraneBase"], "CraneControlLamp"),
+                (indexed["CraneBase"], "CraneMechanismLamp"))
+    for host, name in fixtures:
+        parts = {part.name.split('.')[0]: part for part in host.children_recursive}
+        fixture, lens = parts[name], parts[name + "Glass"]
+        lamp, aim = parts["ANCHOR_" + name], parts["ANCHOR_" + name + "Aim"]
+        parent = parts["CraneHead"] if name == "CraneMechanismLamp" else host
+        if fixture.parent != parent or any(part.parent != fixture for part in (lens, lamp, aim)):
+            raise RuntimeError("Port floodlight lost its physical support: " + name)
+        origin = lamp.matrix_world.translation
+        direction = (aim.matrix_world.translation - origin).normalized()
+        vertices, faces = [], []
+        for part in parts[name + "Housing"].children_recursive:
+            if part.type != "MESH":
+                continue
+            start = len(vertices)
+            vertices.extend(part.matrix_world @ vertex.co for vertex in part.data.vertices)
+            faces.extend([start + i for i in face.vertices] for face in part.data.polygons)
+        lens_depths = [(lens.matrix_world @ vertex.co - origin).dot(direction) for vertex in lens.data.vertices]
+        if max(lens_depths) >= 0 or max(lens_depths) < -.01 or not faces:
+            raise RuntimeError("Port emitter must sit just in front of its lens: " + name)
+        hit, _, _, _ = BVHTree.FromPolygons(vertices, faces).ray_cast(origin, direction, 1)
+        if hit is not None:
+            raise RuntimeError("Port floodlight axis crosses its own housing: " + name)
     crane=next(r for r in roots if r.name.split('.')[0]=="CraneBase")
     parts={p.name.split('.')[0]:p for p in crane.children_recursive}
     for side,x in (("Left",1.7),("Right",2.1)):
@@ -1075,15 +1453,23 @@ def validate_warehouse_interior(roots):
     detail_envelopes=(
         ("DockCanopyStructure",(5.5,1.5,-9.2),(13.5,4.485,-4.4)),
         ("DockServiceRack",(12.27,1.5,-8.7),(13.3,2.95,-6.4)),
-        ("DockWarehouseServiceDetails",(4.1,2.2,-17.9),(4.65,3.1,-15.5)))
+        ("DockWarehouseServiceDetails",(4.08,1.53,-17.9),(4.65,4.11,-15.5)),
+        ("DockWashHose",(4.10,1.81,-18.83),(4.43,2.76,-18.19)),
+        ("DockNetBench",(-15.75,1.5,-9.55),(-14.46,2.53,-7.05)),
+        ("DockYardReturnRack",(23.5,1.515,-22.15),(27.52,6.2,-20.27)),
+        ("DockYardPallet",(21.02,1.515,-13.23),(22.51,2.8,-11.05)),
+        ("DockYardDrain",(11.39,1.515,-27.04),(17.92,1.525,-26.76)),
+        ("DockYardWestBench",(4.88,1.515,-29.34),(6.22,3.05,-26.84)),
+        ("DockYardWestDrums",(4.89,1.515,-31.8),(7.06,2.62,-30.4)),
+        ("DockYardWestFixtures",(4.12,1.515,-30.34),(6.54,6.74,-14.92)))
     detail_meshes=[]
     for name,low,high in detail_envelopes:
         for point in measured(name):
             if any(value<lo-.001 or value>hi+.001 for value,lo,hi in zip(point,low,high)):
-                raise RuntimeError("Dock service detail leaves its safe working bay: "+name)
+                raise RuntimeError(f"Dock service detail leaves its safe working bay: {name} at {point}")
         detail_meshes.extend(p for p in parts[name].children_recursive if p.type=="MESH")
-    if len(detail_meshes)>5:
-        raise RuntimeError("Dock detailing exceeded its five shared-surface renderer budget")
+    if len(detail_meshes)>22:
+        raise RuntimeError("Dock detailing exceeded its shared-surface renderer budget")
     canopy=measured("COL_Awning")
     for axis,(low,high) in enumerate(zip((5.5,1.5,-9.2),(13.5,4.485,-4.4))):
         if abs(min(p[axis] for p in canopy)-low)>.0001 or abs(max(p[axis] for p in canopy)-high)>.0001:
@@ -1218,14 +1604,18 @@ def main():
               "asphalt_uv_world_origin_xz":list(ASPHALT_WORLD_ORIGIN),"asphalt_texture":"Textures/CityRoadAsphaltAlbedo",
               "access_layout_sha256":hashlib.sha256(ACCESS_LAYOUT_PATH.read_bytes()).hexdigest(),
               "hatch_centres":[[0,1.6,-4],[0,1.6,4]],"hatch_clear_aperture":[4.4,1.8]}
+    wear_path = args.model_dir / "PortYardWear.png"
+    wear_png = yard_wear_png()
     if args.validate_only:
         saved=json.loads((args.model_dir/"CityPort3D.json").read_text(encoding="utf-8"))
         if saved!=manifest:raise RuntimeError("Port authored contract differs from committed manifest")
+        if wear_path.read_bytes()!=wear_png:raise RuntimeError("Port yard wear differs from committed mask")
     else:
         args.model_dir.mkdir(parents=True,exist_ok=True);args.source_dir.mkdir(parents=True,exist_ok=True)
         for r in roots:
             if args.only_part is None or r.name in args.only_part:base.export(r,args.model_dir/(r.name+".fbx"))
         (args.model_dir/"CityPort3D.json").write_text(json.dumps(manifest,indent=2)+"\n",encoding="utf-8")
+        wear_path.write_bytes(wear_png)
         # Generated byte images save their pixel channels verbatim; use visual
         # swatches here, while mesh color_srgb converts the vertex paint once.
         if args.only_part is None:
@@ -1238,7 +1628,7 @@ def main():
         if not args.no_preview:preview(roots,args.source_dir/"CityPort3D.png")
     base.reset();rebuilt=build(mat);validate_holds(rebuilt);validate_landing(rebuilt);validate_surfaces(rebuilt);validate_controls_and_light(rebuilt);validate_warehouse_interior(rebuilt);repeated=[describe(r) for r in rebuilt]
     if entries!=repeated:raise RuntimeError("Port deterministic rebuild mismatch")
-    print("CITY PORT ART CONTRACT OK: fixed metre parts, real holds, semantic UVs, moving controls, warehouse fittings/clearances/lamps, forward searchlight and deterministic geometry")
+    print("CITY PORT ART CONTRACT OK: fixed metre parts, real holds, semantic UVs, yard wear, moving controls, warehouse fittings/clearances/lamps, forward searchlight and deterministic geometry")
     print(json.dumps([{k:v for k,v in e.items() if k in ("name","triangles","bounds_min","bounds_max")} for e in entries]))
 
 

@@ -32,6 +32,8 @@ def outputs():
         _GroundTalusResponse("Mountain talus response", 2D) = "white" {}
         _GroundTalusColor("Mountain talus tint", Color) = (1,1,1,1)
         _GroundResponse("Linear material response", 2D) = "white" {}
+        _PortGroundWear("Port yard wear and moisture", 2D) = "black" {}
+        _PortGroundWearBounds("Port ground origin and inverse extent", Vector) = (0,0,0,0)
         _GroundSubstrateMap("Snow substrate", 2D) = "white" {}
         _GroundSubstrateResponse("Snow substrate response", 2D) = "white" {}
         _GroundAsphaltMap("Snow asphalt substrate", 2D) = "white" {}

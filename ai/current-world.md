@@ -1186,12 +1186,13 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   `3.4 m` basin. City asphalt/`12 m` phase/wetness.
   Panels/guards/joists/wired lamps keep baffle/east stock; solid west rack/bench/
   lids/inserts/tare/tools/gloves/squeegee, flush drains/wheel rubs clear lanes.
-  Braced canopy/east rope-shackle-chock rack/cooler supports: three passive
-  groups/≤5 renderers/shared surfaces; anchors/rest docks/bounds stay.
-  Roof flashing/fender/ladder/bollard/crane bolts refine old meshes.
-  Rack/cooler solids join canopy/wall collision, clear of loading opening.
+  Braced canopy/rigging rack; west net bench, east hose, fan guards and bolted
+  fittings. Fixed solid bays clear routes and door. Shared yard mask follows
+  tracks, drains, moorings. Timber-backed fenders. Yard rack/pallet east,
+  bench/drums west. Flush storm drain. Three yard spots cut off at paving.
   Two-fan evaporator→outside condensers/drain.
-  Three warm shadowed spots join quay/store/canopy lights: day≥2/3,distance gate.
+  Store/awning floods cover the quay; crane lamps light load, winch and controls.
+  Three lamps inside. All share day≥2/3 and distance gating.
   Searchlight shadows deck/water; wake `CityPortWater`; `CityPortSound`:
   Motor `.6/.24`, `48 m`; horns `20/4 s` pre-Moor/Depart. Arrival ×2,
   echo `780 ms`/reverb `6.2 s`. Pause/teardown: people/audio/wake.

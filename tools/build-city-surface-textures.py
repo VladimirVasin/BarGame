@@ -26,6 +26,7 @@ PREFIX = "City/Surfaces/"
 MANIFEST = OUTPUT / "CitySurfaceTextures.json"
 BAR = ROOT / "ArtSource/City/Surfaces/city-bar-facade-surfaces.json"
 LUMA = np.asarray((.2126, .7152, .0722), np.float32)
+GROUND_GRAIN_HEIGHT = {"Asphalt": .00014, "Concrete": .00011}
 _spec = importlib.util.spec_from_file_location("city_private_texture_publisher", ROOT / "tools/build-village-surface-textures.py")
 _publisher = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(_publisher)
@@ -88,7 +89,26 @@ def coordinates(row, u, v):
     return u * actual, v * actual, actual, actual
 
 
+def granular_ground_response(row, size):
+    """Metric aggregate with many directions and a seamless texture repeat."""
+    metres = row["meters_per_tile"]
+    frequency = np.fft.fftfreq(size, d=metres / size)
+    radial = np.hypot(frequency[:, None], frequency[None, :])
+    # A radial band leaves no privileged orientation for grazing lights.
+    band = np.exp(-.5 * ((radial - 5.0) / 3.0) ** 2) * np.minimum(1., radial / 2.)
+    rng = np.random.default_rng(669)
+    grain = np.fft.ifft2(np.fft.fft2(rng.standard_normal((size, size))) * band).real
+    family = row["material_family"]
+    height = GROUND_GRAIN_HEIGHT[family] * np.tanh(grain / grain.std())
+    roughness = art.spec(family)[3] - .025 * np.tanh(height / .00035)
+    cavity = 1. - np.clip(.965 + .025 * np.tanh(height / .00025), .9, 1.)
+    return np.stack((np.clip((1. - roughness) / .1, .2, 1.),
+                     .5 + height / .0015, cavity, np.ones_like(height)), axis=-1)
+
+
 def sample_sheet(row, size, ground=False):
+    if ground and row["material_family"] in GROUND_GRAIN_HEIGHT:
+        return granular_ground_response(row, size)
     result = np.empty((size, size, 4), np.float32)
     for start in range(0, size, 96):
         stop = min(size, start + 96)
@@ -201,6 +221,41 @@ def check_physics():
         raise ValueError("Unique Bar mortar metric derivatives drifted")
 
 
+def authoring_recipe_hash():
+    return sha(Path(art.__file__).read_bytes() + Path(__file__).read_bytes())
+
+
+def publish_ground_grain(check):
+    """Rebuild or check just the packed granular maps used by City ground."""
+    manifest = json.loads(MANIFEST.read_text(encoding="utf8"))
+    sheets = {row["family"]: row for row in manifest["sheets"]}
+    families = [recipe for recipe in art.catalogue()
+                if recipe["ground"] and recipe["material_family"] in GROUND_GRAIN_HEIGHT]
+    outputs = []
+    for recipe in families:
+        row = sheets[recipe["family"]]
+        resource = PREFIX + row["family"] + "GroundResponse"
+        if row["ground_response"] != resource or row["ground_response_size"] != 512 or any(
+                row[k] != recipe[k] for k in ("material_family", "meters_per_tile", "layout")):
+            raise ValueError("City granular ground recipe drifted: " + row["family"])
+        path = ROOT / ("Assets/Resources/" + resource + ".png")
+        data = png(sample_sheet(recipe, 512, ground=True))
+        if check and (path.read_bytes() != data or row["ground_response_sha256"] != sha(data)):
+            raise ValueError("City granular ground map is stale: " + resource)
+        outputs.append((row, path, data))
+    if check:
+        if manifest["authoring_recipe_sha256"] != authoring_recipe_hash():
+            raise ValueError("City authoring recipe changed; rebuild affected sheets")
+    else:
+        for row, path, data in outputs:
+            path.write_bytes(data)
+            row["ground_response_sha256"] = sha(data)
+        manifest["authoring_recipe_sha256"] = authoring_recipe_hash()
+        MANIFEST.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf8", newline="\n")
+    print(f"CITY GRANULAR GROUND {'OK' if check else 'PUBLISHED'}: {len(outputs)} packed metric response maps.",
+          flush=True)
+
+
 def validate():
     art.sources(); check_physics()
     manifest = json.loads(MANIFEST.read_text(encoding="utf8"))
@@ -238,8 +293,9 @@ def validate():
                     raise ValueError("City measured mean drifted: " + resource)
                 if row.get("source_mean_linear_luminance") is not None and abs(measured - row["source_mean_linear_luminance"]) > .001:
                     raise ValueError("City authored palette compensation drifted: " + resource)
-            elif kind == "response" and row["family"] in recipes:
-                expected = sample_sheet(recipes[row["family"]], size)
+            elif row["family"] in recipes and (kind == "response" or
+                    row["material_family"] in GROUND_GRAIN_HEIGHT):
+                expected = sample_sheet(recipes[row["family"]], size, kind == "ground_response")
                 if np.max(abs(data[::-1] - expected)) > 1 / 255 + .0001:
                     raise ValueError("City packed physical field/orientation drifted: " + resource)
             if Path(str(path) + ".meta").read_text(encoding="utf8") != meta(path, size, linear, clamp=row["wrap_mode"] == "Clamp"):
@@ -249,7 +305,7 @@ def validate():
         raise ValueError("City BC7 mip budget mismatch")
     if manifest["source_provenance"] != art.provenance() or manifest["sheets"][-1]["chart_manifest_sha256"] != sha(BAR.read_bytes()):
         raise ValueError("City generation provenance drifted")
-    if manifest.get("authoring_recipe_sha256") != sha(Path(art.__file__).read_bytes() + Path(__file__).read_bytes()):
+    if manifest.get("authoring_recipe_sha256") != authoring_recipe_hash():
         raise ValueError("City authoring recipe changed; rebuild affected sheets")
     print(f"CITY SURFACES OK: {len(recipes)} source-aligned sheets + guarded Bar atlas; {len(resources)} BC7 maps {estimated}/{art.BUDGET} bytes; independent metric response and source means.", flush=True)
 
@@ -301,7 +357,7 @@ def build(only=None):
                   estimated_gpu_bytes=estimated, channels=["signed_physical_slope_u", "signed_physical_slope_v", "roughness", "cavity"],
                   ground_channels=["smoothness_multiplier", "centred_height", "cavity_tendency", "opaque"],
                   source_provenance=art.provenance(), sheets=rows, additional_maps=[],
-                  authoring_recipe_sha256=sha(Path(art.__file__).read_bytes() + Path(__file__).read_bytes()))
+                  authoring_recipe_sha256=authoring_recipe_hash())
     MANIFEST.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf8", newline="\n")
     sidecar = Path(str(MANIFEST) + ".meta")
     if not sidecar.exists():
@@ -315,9 +371,14 @@ def build(only=None):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--validate-only", action="store_true")
+    parser.add_argument("--ground-grain", action="store_true", help="Publish or validate the packed asphalt and concrete ground maps.")
     parser.add_argument("--only", nargs="+", help="Rebuild named sheets from a complete existing manifest; validate every retained output.")
     args = parser.parse_args()
-    if args.validate_only:
+    if args.ground_grain:
+        if args.only:
+            parser.error("--ground-grain selects the complete granular ground set")
+        publish_ground_grain(args.validate_only)
+    elif args.validate_only:
         validate()
     else:
         build(args.only)

@@ -47,9 +47,9 @@ source:`ArtSource/City/Cannery`;port maps/scale/`CartonStack`/contacts/truck/
 source/reviews `ArtSource/City/Cannery{Woman,Receiver}`. Five clips/shared rig,
 mesh/atlas hashes/layered clothes/hair-glasses contacts;launcher/`--validate-only`.
 
-`build-city-port-3d-model.py`:launcher/`--validate-only`;9 FBXs/`CityPort3D.json`→
-`{Assets/Resources,ArtSource}/City/Port`;grips/store/beam/rigging/
-`PortAccessLayout.json`/metre UVs. 12×512px ImageGen maps (sRGB/mipmap/repeat):
+`build-city-port-3d-model.py`:launcher/`--validate-only`;FBXs/manifest/wear PNG→
+`{Assets/Resources,ArtSource}/City/Port`;metre UVs/`PortAccessLayout.json`.
+12×512px ImageGen maps (sRGB/mipmap/repeat):
 `ArtSource/City/Port/Textures/generation.json`;mesh hashes separate;
 asphalt12m. `build-city-port-foreman-3d-model.py`:`Foreman/PortForeman`
 model/manifest/actions/atlas/lower-face/chin-jowl/mouth/export check.
@@ -76,9 +76,9 @@ source:`ArtSource/VillageNarrative`. `VillageNarrativeLibrary`:IDs1–32 except2
 `Regenerate Junction Masks And Bake` resets them; both bake albedo/response atlases.
 R:asphalt incl.under snow;G:reference only,no geometry/depth effects.
 
-`build-ground-surface-{maps,shader}.py --check`:read-only response/URP parity,
-albedos kept. Generate→`VillageJunctionTextureSetup.BuildOrThrow`: both
-junction atlases; recheck upstream changes.
+`build-ground-surface-{maps,shader}.py --check`:response/URP parity.
+`build-city-surface-textures.py --ground-grain`:City asphalt/concrete response.
+`VillageJunctionTextureSetup.BuildOrThrow`:rebake both junction atlases.
 
 House:`build-mothers-house-interior-3d-model.py` via launcher;
 `build-mothers-house-textures.py`:4K+2K/aux1K;both `--validate-only`.

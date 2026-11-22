@@ -242,7 +242,7 @@
       "mean_linear_luminance": 0.49991891,
       "response": "City/Surfaces/CityFringeConcreteResponse",
       "response_sha256": "e61b8992c20d98cbfefac8a9844e0fe6bb12f27e160a48cc398779d5b2a30496",
-      "ground_response_sha256": "106e84e0ca9cffa7c90d06344124cafba0a241959981465a9f7f36ab6784e0c7"
+      "ground_response_sha256": "53d04feb0168042cc6d7e8ad9968e8fcf82d117869442089dd99e80a0651f8f2"
     },
     {
       "family": "CityFringeForefield",
@@ -644,7 +644,7 @@
       "mean_linear_luminance": 0.49963021,
       "response": "City/Surfaces/CityPoiPavingResponse",
       "response_sha256": "e61b8992c20d98cbfefac8a9844e0fe6bb12f27e160a48cc398779d5b2a30496",
-      "ground_response_sha256": "106e84e0ca9cffa7c90d06344124cafba0a241959981465a9f7f36ab6784e0c7"
+      "ground_response_sha256": "53d04feb0168042cc6d7e8ad9968e8fcf82d117869442089dd99e80a0651f8f2"
     },
     {
       "family": "CityPoiTimber",
@@ -786,7 +786,7 @@
       "mean_linear_luminance": 0.07296901,
       "response": "City/Surfaces/CityRoadAsphaltResponse",
       "response_sha256": "49d8400df7f161ab8984049f609a6d65041fe0c3ecda65970ae37df34d2b25f9",
-      "ground_response_sha256": "b769aa413b8a4d9a341341aa6f940f6a826442c92e10da9caa46999d8db719a4"
+      "ground_response_sha256": "c37d9fff21b2266d90ff0aba3797fd8dda338f27549305752c02a25f42caaa61"
     },
     {
       "family": "CityRoadMarking",
@@ -857,7 +857,7 @@
       "mean_linear_luminance": 0.4998399,
       "response": "City/Surfaces/CitySeacoastConcreteResponse",
       "response_sha256": "14d682bae6e8cec40d9260890e1eaa3787e676463c405e78d9ad61f0df4e6f03",
-      "ground_response_sha256": "106e84e0ca9cffa7c90d06344124cafba0a241959981465a9f7f36ab6784e0c7"
+      "ground_response_sha256": "96f851cc7ff72311c611647f1f835f24a9e00eac5ae08c70ab4dc10d41820a13"
     },
     {
       "family": "CitySeacoastHull",
@@ -952,7 +952,7 @@
       "mean_linear_luminance": 0.2348333,
       "response": "City/Surfaces/CitySidewalkResponse",
       "response_sha256": "c1ad24aa3d084824cbd150514cd72a2a57bc8c33fcb40639e61bf1d238b7e3ac",
-      "ground_response_sha256": "3316d5eccdf6445457063f62f597130b47616c0b7d4529760100f77f6acafaab"
+      "ground_response_sha256": "cd2e3dd3ab63862c7caaf96ed4441256e22e253fa0e2a00801142b983d65f31c"
     },
     {
       "family": "CityEastGroundTransition",
@@ -2120,7 +2120,7 @@
       "mean_linear_luminance": 0.41022903,
       "response": "City/Surfaces/PortConcreteResponse",
       "response_sha256": "d95290949de224caff0057c06f9ec69a52df7b581055cd4ac75e9d24075f476c",
-      "ground_response_sha256": "106e84e0ca9cffa7c90d06344124cafba0a241959981465a9f7f36ab6784e0c7"
+      "ground_response_sha256": "6d154ca7b2ca61cb71dd134a069bf996ad54386c35d3875b29fd4b38191e4f86"
     },
     {
       "family": "PortConcreteWall",
@@ -2144,7 +2144,7 @@
       "mean_linear_luminance": 0.35718071,
       "response": "City/Surfaces/PortConcreteWallResponse",
       "response_sha256": "d95290949de224caff0057c06f9ec69a52df7b581055cd4ac75e9d24075f476c",
-      "ground_response_sha256": "106e84e0ca9cffa7c90d06344124cafba0a241959981465a9f7f36ab6784e0c7"
+      "ground_response_sha256": "6d154ca7b2ca61cb71dd134a069bf996ad54386c35d3875b29fd4b38191e4f86"
     },
     {
       "family": "PortDeck",
@@ -2168,7 +2168,7 @@
       "mean_linear_luminance": 0.33801448,
       "response": "City/Surfaces/PortDeckResponse",
       "response_sha256": "8dc5cdd24e762d7f76cbeadec39d417a38a57642bc397ddf6938ee4f0e887bee",
-      "ground_response_sha256": "106e84e0ca9cffa7c90d06344124cafba0a241959981465a9f7f36ab6784e0c7"
+      "ground_response_sha256": "a4d1559fb8403965ddd8fbbeeadd3ca74dea6364f27afb02c8a2afa01c368fa9"
     },
     {
       "family": "PortFabric",
@@ -2376,7 +2376,7 @@
       "mean_linear_luminance": 0.37944686,
       "response": "City/Surfaces/CanneryFloorResponse",
       "response_sha256": "d95290949de224caff0057c06f9ec69a52df7b581055cd4ac75e9d24075f476c",
-      "ground_response_sha256": "106e84e0ca9cffa7c90d06344124cafba0a241959981465a9f7f36ab6784e0c7"
+      "ground_response_sha256": "6d154ca7b2ca61cb71dd134a069bf996ad54386c35d3875b29fd4b38191e4f86"
     },
     {
       "family": "CanneryInsulation",
@@ -2930,5 +2930,5 @@
     }
   ],
   "additional_maps": [],
-  "authoring_recipe_sha256": "96b08ea4c52e994237ee35a936d1392b1b35a7289279b03469b54af88c4f5f27"
+  "authoring_recipe_sha256": "52ddcde8ecf7adc6d8e8428fbca4bf07849a1d7107e3a56b4099557337b9203b"
 }

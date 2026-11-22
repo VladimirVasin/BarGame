@@ -16,6 +16,8 @@ namespace BarPromenade
         private static Material opaqueMaterial;
         private static Material glassMaterial;
         private static readonly Dictionary<string, Material> SurfaceMaterials = new Dictionary<string, Material>();
+        private static readonly int YardWearId = Shader.PropertyToID("_PortGroundWear");
+        private static readonly int YardWearBoundsId = Shader.PropertyToID("_PortGroundWearBounds");
         private static readonly Dictionary<string, SurfaceDefinition> Surfaces = new Dictionary<string, SurfaceDefinition>
         {
             { "Concrete", new SurfaceDefinition("PortConcreteAlbedo", new Color(.42f,.43f,.405f)) },
@@ -128,6 +130,25 @@ namespace BarPromenade
             }
             foreach (Collider collider in model.GetComponentsInChildren<Collider>(true))
                 CityGroundSurfaceSystem.ReplaceCollider(collider);
+        }
+
+        internal static void ApplyYardWear(Transform dock)
+        {
+            Texture2D mask = Resources.Load<Texture2D>(ResourceFolder + "PortYardWear");
+            if (mask == null) throw new InvalidOperationException("Missing authored port yard wear mask.");
+            // Port-local footprint in metres, measured from the same fixed-metre
+            // frame as the wheel sweep in build-city-port-3d-model.py.
+            Vector3 origin = dock.position;
+            var bounds = new Vector4(origin.x - 24f, origin.z - 36f, 1f / 54f, 1f / 38f);
+            var properties = new MaterialPropertyBlock();
+            foreach (string part in new[] { "DockVisible__Asphalt", "DockVisible__Concrete" })
+            {
+                Renderer renderer = FindPart(dock.gameObject, part).GetComponent<Renderer>();
+                renderer.GetPropertyBlock(properties);
+                properties.SetTexture(YardWearId, mask);
+                properties.SetVector(YardWearBoundsId, bounds);
+                renderer.SetPropertyBlock(properties);
+            }
         }
 
         /// <summary>One shared material for each authored metre-UV surface.

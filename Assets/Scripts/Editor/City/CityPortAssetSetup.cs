@@ -46,6 +46,16 @@ namespace BarPromenade.Editor
 
         private void OnPreprocessTexture()
         {
+            if (assetPath == ModelFolder + "PortYardWear.png" && assetImporter is TextureImporter wear)
+            {
+                wear.sRGBTexture = false;
+                wear.mipmapEnabled = true;
+                wear.wrapMode = TextureWrapMode.Clamp;
+                wear.filterMode = FilterMode.Trilinear;
+                wear.npotScale = TextureImporterNPOTScale.None;
+                wear.maxTextureSize = 1024;
+                return;
+            }
             bool palette = assetPath == ModelFolder + "PortPalette.png";
             bool surface = assetPath.StartsWith(ModelFolder + "Textures/", StringComparison.Ordinal) &&
                 assetPath.EndsWith(".png", StringComparison.OrdinalIgnoreCase);

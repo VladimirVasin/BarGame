@@ -5,6 +5,8 @@
 // B cavity tendency; junction atlas A holds the authored footprint.
 // These are measured from each existing albedo family.
 TEXTURE2D(_GroundResponse); SAMPLER(sampler_GroundResponse);
+TEXTURE2D(_PortGroundWear);
+float4 _PortGroundWearBounds;
 TEXTURE2D(_GroundSubstrateMap); SAMPLER(sampler_GroundSubstrateMap);
 TEXTURE2D(_GroundSubstrateResponse); SAMPLER(sampler_GroundSubstrateResponse);
 TEXTURE2D(_GroundAsphaltMap); SAMPLER(sampler_GroundAsphaltMap);
@@ -158,6 +160,13 @@ void ApplyGroundLayers(float2 uv, float3 world, half3 normal,
     surface.albedo *= lerp(0.95h, 1.04h, broad);
     surface.smoothness *= response.r;
     surface.smoothness *= lerp(0.65h, 1.0h, damp);
+    [branch] if (_PortGroundWearBounds.z > 0.0 && normal.y > 0.5)
+    {
+        float2 wearUv = (world.xz - _PortGroundWearBounds.xy) * _PortGroundWearBounds.zw;
+        half3 wear = SAMPLE_TEXTURE2D(_PortGroundWear, sampler_LinearClamp, wearUv).rgb;
+        surface.albedo *= 1.0h - .36h*wear.r + .31h*wear.g - (.21h + .14h*wetness)*wear.b;
+        surface.smoothness = lerp(surface.smoothness, lerp(.14h,.34h,wetness), wear.b);
+    }
     relief = (response.g - 0.5h) * 0.0015h;
 
     if (_GroundKind < 0.5) // Asphalt: patches and edges belong to the road frame.

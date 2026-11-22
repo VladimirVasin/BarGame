@@ -12,7 +12,7 @@
       ],
       "bounds_max": [
         28.045,
-        5.3,
+        6.7299,
         32.0
       ],
       "anchors": [
@@ -147,13 +147,37 @@
         {
           "name": "ANCHOR_WorkLightB",
           "position": [
-            2.0,
-            4.0,
-            -11.3
+            26.5,
+            5.91,
+            -21.98
+          ]
+        },
+        {
+          "name": "ANCHOR_WorkLightC",
+          "position": [
+            6.28,
+            6.4,
+            -30.13
+          ]
+        },
+        {
+          "name": "ANCHOR_WorkLightD",
+          "position": [
+            4.765,
+            4.735,
+            -15.1
           ]
         },
         {
           "name": "DockCanopyStructure",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "DockNetBench",
           "position": [
             0.0,
             0.0,
@@ -241,6 +265,62 @@
           ]
         },
         {
+          "name": "DockWashHose",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "DockYardDrain",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "DockYardPallet",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "DockYardReturnRack",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "DockYardWestBench",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "DockYardWestDrums",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "DockYardWestFixtures",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
           "name": "MOVE_EastLoadingDoor",
           "position": [
             4.06,
@@ -254,6 +334,70 @@
             4.06,
             1.5,
             -14.0
+          ]
+        },
+        {
+          "name": "QuayFloodEast",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_QuayFloodEast",
+          "position": [
+            9.50518,
+            4.14332,
+            -4.15039
+          ]
+        },
+        {
+          "name": "ANCHOR_QuayFloodEastAim",
+          "position": [
+            8.66009,
+            3.64029,
+            -3.96931
+          ]
+        },
+        {
+          "name": "QuayFloodEastHousing",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "QuayFloodWest",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_QuayFloodWest",
+          "position": [
+            -6.98778,
+            4.71194,
+            -11.37165
+          ]
+        },
+        {
+          "name": "ANCHOR_QuayFloodWestAim",
+          "position": [
+            -6.75739,
+            4.37136,
+            -10.4601
+          ]
+        },
+        {
+          "name": "QuayFloodWestHousing",
+          "position": [
+            0.0,
+            0.0,
+            0.0
           ]
         },
         {
@@ -281,8 +425,8 @@
           ]
         }
       ],
-      "triangles": 31724,
-      "geometry_signature": "e9f286b14697efd86cd88bd659fa86516114a4b8a6f99b66696397325fdf3562"
+      "triangles": 51816,
+      "geometry_signature": "0eaa61951890053a4337c14ebbcb46f117fd53b81146ac1b903244b607873cc4"
     },
     {
       "name": "Trawler",
@@ -507,6 +651,38 @@
           ]
         },
         {
+          "name": "CraneControlLamp",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_CraneControlLamp",
+          "position": [
+            0.75882,
+            2.71594,
+            -0.20815
+          ]
+        },
+        {
+          "name": "ANCHOR_CraneControlLampAim",
+          "position": [
+            1.37372,
+            1.92966,
+            -0.14767
+          ]
+        },
+        {
+          "name": "CraneControlLampHousing",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
           "name": "CraneHead",
           "position": [
             0.0,
@@ -524,6 +700,38 @@
         },
         {
           "name": "CraneHeadVisible",
+          "position": [
+            0.0,
+            4.0,
+            0.0
+          ]
+        },
+        {
+          "name": "CraneMechanismLamp",
+          "position": [
+            0.0,
+            4.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_CraneMechanismLamp",
+          "position": [
+            -1.03911,
+            4.5145,
+            -0.35031
+          ]
+        },
+        {
+          "name": "ANCHOR_CraneMechanismLampAim",
+          "position": [
+            -0.4701,
+            4.36476,
+            0.45828
+          ]
+        },
+        {
+          "name": "CraneMechanismLampHousing",
           "position": [
             0.0,
             4.0,
@@ -563,18 +771,18 @@
           ]
         }
       ],
-      "triangles": 4592,
-      "geometry_signature": "00e400a03ad76d4082854cea7a48883d1b8faf20df9f02c1e576610974570b90"
+      "triangles": 5872,
+      "geometry_signature": "8439d1df50dfc1bb0d59d42de038515d4c135cebd53563fada4f0b56695d2a55"
     },
     {
       "name": "CraneBoom",
       "bounds_min": [
         -0.50496,
-        -0.295,
+        -0.46913,
         -0.19
       ],
       "bounds_max": [
-        0.50496,
+        0.95255,
         0.51251,
         8.13
       ],
@@ -602,10 +810,42 @@
             0.0,
             0.0
           ]
+        },
+        {
+          "name": "CraneLoadLamp",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_CraneLoadLamp",
+          "position": [
+            0.65682,
+            -0.35527,
+            6.0662
+          ]
+        },
+        {
+          "name": "ANCHOR_CraneLoadLampAim",
+          "position": [
+            0.59177,
+            -1.07573,
+            5.37576
+          ]
+        },
+        {
+          "name": "CraneLoadLampHousing",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
         }
       ],
-      "triangles": 1040,
-      "geometry_signature": "a1a856d8e0b8bff5ba42478d6b5b31c51d693da9c6d2d37072c33502b823c12e"
+      "triangles": 1680,
+      "geometry_signature": "bacffee1ee65cc6e15418d8cdc22005be80662e24e118111a2631d4196aa19fb"
     },
     {
       "name": "Hook",

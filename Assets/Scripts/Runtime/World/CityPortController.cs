@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace BarPromenade
@@ -32,6 +33,7 @@ namespace BarPromenade
         private readonly Vector3[][] trolleyRoutes = new Vector3[2][];
         private readonly float[][] trolleyTurnCosts = new float[2][];
         private readonly float[] trolleyRouteLengths = new float[2];
+        internal List<Texture2D> PavingLightCookies { get; } = new(5);
         private CityWaterWaveProfile waves;
         private float lastWaveTime;
 
@@ -73,6 +75,7 @@ namespace BarPromenade
             Plan = plan;
             Dock = Create("Dock");
             Dock.position = plan.Origin;
+            CityPortAssetProvider.ApplyYardWear(Dock);
             Vessel = Create("Trawler");
             Trolley = Create("Trolley");
             trolleyCollider = Trolley.GetComponent<Collider>();

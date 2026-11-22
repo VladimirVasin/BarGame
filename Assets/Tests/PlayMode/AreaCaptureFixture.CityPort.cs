@@ -14,6 +14,79 @@ namespace BarPromenade.Tests.PlayMode
         [Explicit("Passive port construction: imported metres, crew/cart clearance and actual day/night detail frames.")]
         public IEnumerator CityPortConstructionDetails() => CaptureFocusedPort(CapturePortConstructionDetails);
 
+        [UnityTest]
+        [Explicit("Crane fixtures, empty night quay, moving cargo lights and clear truck sweep.")]
+        public IEnumerator CityPortCraneLighting() => CaptureFocusedPort(CapturePortCraneLighting);
+
+        private static IEnumerator CapturePortCraneLighting(Camera camera, CityGameRoot city,
+            CityPortController port, CityPortCrew crew)
+        {
+            Type setup = Type.GetType("BarPromenade.Editor.CityPortAssetSetup, BarPromenade.Editor");
+            Assert.That(setup, Is.Not.Null);
+            setup.GetMethod("ValidateOrThrow").Invoke(null, null);
+            double emptyQuay = CityPortCycle.CycleDurationSeconds - 2d;
+            port.ApplyAt(emptyQuay, 15f);
+            Assert.That(port.Snapshot.VesselPresent, Is.False);
+            GameSessionState.AdvanceGameTime((float)((21d * 60d - GameSessionState.GameTimeOfDayMinutes) /
+                GameTimeState.GameMinutesPerRealSecond));
+            city.DayNight.ApplyCurrentTime(true);
+            yield return null;
+
+            Light west = AssertFloodlight(port.Dock, "QuayFloodWest");
+            Light east = AssertFloodlight(port.Dock, "QuayFloodEast");
+            Assert.That(west.cookie, Is.Not.Null);
+            Assert.That(east.cookie, Is.Not.Null);
+            Light westBoom = AssertFloodlight(port.Booms[0], "CraneLoadLamp");
+            Light eastBoom = AssertFloodlight(port.Booms[1], "CraneLoadLamp");
+            foreach (Transform crane in port.CraneBases)
+            {
+                Transform head = CityPortAssetProvider.FindPart(crane.gameObject, "CraneHead");
+                Assert.That(AssertFloodlight(crane, "CraneMechanismLamp").transform.IsChildOf(head), Is.True);
+                Assert.That(AssertFloodlight(crane, "CraneControlLamp").transform.IsChildOf(head), Is.False);
+            }
+            Vector3 westDirection = west.transform.forward;
+            Vector3 eastDirection = east.transform.forward;
+            Quaternion westBoomRotation = westBoom.transform.rotation;
+            Quaternion eastBoomRotation = eastBoom.transform.rotation;
+            Physics.SyncTransforms();
+            ValidatePortTruckSweep(port, city);
+
+            yield return CapturePort(camera, city, port, crew, emptyQuay, "port-crane-night-empty-west",
+                new Vector3(-15.6f, 3.22f, -8.75f), new Vector3(-.5f, 4.2f, -2.6f), 73f);
+            yield return CapturePort(camera, city, port, crew, emptyQuay, "port-crane-night-empty-east",
+                new Vector3(14.5f, 3.22f, -2.8f), new Vector3(-1f, 4.35f, -3.55f), 73f);
+            yield return CapturePort(camera, city, port, crew, emptyQuay, "port-crane-night-empty-centre",
+                new Vector3(-1f, 3.22f, -10.5f), new Vector3(.2f, 4.25f, -2.5f), 76f);
+
+            double slew = CityPortCycle.UnloadStartSeconds + 16d;
+            yield return CapturePort(camera, city, port, crew, slew, "port-crane-night-west-transfer",
+                new Vector3(-12.8f, 3.5f, -7.8f), new Vector3(-5f, 5.7f, .3f));
+            Assert.That(Quaternion.Angle(westBoomRotation, westBoom.transform.rotation), Is.GreaterThan(25f));
+            yield return CapturePort(camera, city, port, crew, slew + CityPortCycle.CargoDurationSeconds,
+                "port-crane-night-east-transfer", new Vector3(12.4f, 3.55f, -2.75f), new Vector3(5f, 5.45f, .2f));
+            Assert.That(Quaternion.Angle(eastBoomRotation, eastBoom.transform.rotation), Is.GreaterThan(25f));
+            Assert.That(west.transform.forward, Is.EqualTo(westDirection));
+            Assert.That(east.transform.forward, Is.EqualTo(eastDirection));
+
+            CityFishSupplySession.TryStart(true);
+            city.Cannery.ApplyAt(city.Cannery.Cycle.TransferUnitStart(CityFishSupplyStage.LoadFish, 1) + 4d);
+            yield return CapturePort(camera, city, port, crew, emptyQuay, "port-crane-night-truck-yard",
+                new Vector3(15.2f, 3.9f, -31.6f), new Vector3(13.4f, 2.25f, -18.55f), 73f);
+        }
+
+        private static Light AssertFloodlight(Transform model, string name)
+        {
+            Transform origin = CityPortAssetProvider.FindPart(model.gameObject, "ANCHOR_" + name);
+            Transform aim = CityPortAssetProvider.FindPart(model.gameObject, "ANCHOR_" + name + "Aim");
+            Renderer lens = CityPortAssetProvider.FindPart(model.gameObject, name + "Glass").GetComponent<Renderer>();
+            Light light = origin.GetComponentInChildren<Light>();
+            Assert.That(light != null && light.isActiveAndEnabled && light.type == LightType.Spot, Is.True, name);
+            Assert.That(Vector3.Distance(origin.position, light.transform.position), Is.LessThan(.01f), name);
+            Assert.That(Vector3.Distance(lens.bounds.center, light.transform.position), Is.LessThan(.05f), name);
+            Assert.That(Vector3.Angle(aim.position - origin.position, light.transform.forward), Is.LessThan(.1f), name);
+            return light;
+        }
+
         private static IEnumerator CapturePortConstructionDetails(Camera camera, CityGameRoot city,
             CityPortController port, CityPortCrew crew)
         {
@@ -26,6 +99,11 @@ namespace BarPromenade.Tests.PlayMode
             crew.ApplyAt(elapsed);
             Physics.SyncTransforms();
             ValidatePortPassiveDetails(port, crew, city);
+            var cannery = city.Cannery;
+            var door = CityPortAssetProvider.FindPart(port.Dock.gameObject, "MOVE_EastLoadingDoor");
+            float closedDoorY = door.position.y;
+            double loading = cannery.Cycle.TransferUnitStart(CityFishSupplyStage.LoadFish, 1) + 4d;
+            CityFishSupplySession.TryStart(true);
             foreach (int hour in new[] { 12, 21 })
             {
                 GameSessionState.AdvanceGameTime((float)((hour * 60d - GameSessionState.GameTimeOfDayMinutes) /
@@ -33,16 +111,34 @@ namespace BarPromenade.Tests.PlayMode
                 city.DayNight.ApplyCurrentTime(true);
                 yield return null;
                 string phase = hour == 12 ? "day" : "night";
-                yield return CapturePort(camera, city, port, crew, elapsed, "port-construction-" + phase + "-quay",
-                    new Vector3(18.5f, 3.22f, -5f), new Vector3(0f, 3f, 3.2f));
-                yield return CapturePort(camera, city, port, crew, elapsed, "port-construction-" + phase + "-rack",
-                    new Vector3(10.5f, 3.22f, -11.1f), new Vector3(11.3f, 2.9f, -6.9f), 58f);
-                yield return CapturePort(camera, city, port, crew, elapsed, "port-construction-" + phase + "-cooling",
-                    new Vector3(8f, 3.22f, -18f), new Vector3(3.9f, 3.0f, -17f), 58f);
-                yield return CapturePort(camera, city, port, crew, elapsed, "port-construction-" + phase + "-mooring",
-                    new Vector3(-13.5f, 3.22f, -3.7f), new Vector3(-11f, 1.85f, -.25f), 56f);
+                string prefix = "port-construction-" + phase;
+                cannery.ApplyAt(0d);
+                Assert.That(door.position.y, Is.EqualTo(closedDoorY).Within(.01f));
+                Assert.That(Vector3.Distance(cannery.Truck.position, door.position), Is.GreaterThan(15f));
+                yield return CapturePort(camera, city, port, crew, elapsed, prefix + "-entrance",
+                    new Vector3(25.5f, 3.22f, -24.6f), new Vector3(8f, 2.28f, -12f), 62f);
+                yield return CapturePort(camera, city, port, crew, elapsed, prefix + "-apron",
+                    new Vector3(14.9f, 3.22f, -32.3f), new Vector3(15.5f, 2.6f, -15.5f), 66f);
+                yield return CapturePort(camera, city, port, crew, elapsed, prefix + "-whole-yard",
+                    new Vector3(12.2f, 3.44f, -34.4f), new Vector3(12.3f, 2.6f, -17f), 72f);
+                yield return CapturePort(camera, city, port, crew, elapsed, prefix + "-west-apron",
+                    new Vector3(11.4f, 3.22f, -32.7f), new Vector3(5.7f, 2.8f, -28.6f), 56f);
+                yield return CapturePort(camera, city, port, crew, elapsed, prefix + "-returns",
+                    new Vector3(20.15f, 3.22f, -24.9f), new Vector3(24.9f, 2.75f, -20.8f), 56f);
+                yield return CapturePort(camera, city, port, crew, elapsed, prefix + "-yard",
+                    new Vector3(13.5f, 3.22f, -20.6f), new Vector3(4.6f, 2.55f, -15.4f), 58f);
+                yield return CapturePort(camera, city, port, crew, elapsed, prefix + "-canopy",
+                    new Vector3(15.5f, 3.22f, -9.7f), new Vector3(8.5f, 2.3f, -6.8f), 58f);
+                yield return CapturePort(camera, city, port, crew, elapsed, prefix + "-quay",
+                    new Vector3(-17.25f, 3.22f, -11.7f), new Vector3(-10.8f, 2.4f, -3.4f), 58f);
+                cannery.ApplyAt(loading);
+                Assert.That(cannery.Snapshot.Stage, Is.EqualTo(CityFishSupplyStage.LoadFish));
+                Assert.That(door.position.y, Is.GreaterThan(closedDoorY + 2.9f));
+                Assert.That(cannery.Truck.gameObject.activeInHierarchy, Is.True);
+                yield return CapturePort(camera, city, port, crew, port.ElapsedSeconds, prefix + "-loading",
+                    new Vector3(13.5f, 3.22f, -20.6f), new Vector3(4.6f, 2.55f, -15.4f), 58f);
             }
-            Debug.Log("CITY PORT CONSTRUCTION DETAILS OK: imported dimensions, shared surfaces, crew docks, public path, solid rack, parked cart and day/night construction views.");
+            Debug.Log("CITY PORT CONSTRUCTION DETAILS OK: wear binding, passive fittings, clear crew and truck paths, and day/night route frames.");
         }
 
         [UnityTest]
@@ -311,8 +407,63 @@ namespace BarPromenade.Tests.PlayMode
                 new Vector3(13.5f, 4.485f, -4.4f), new Vector3(6f, 2f, 3f));
             AssertPortDetailEnvelope(port, "DockServiceRack", new Vector3(12.27f, 1.5f, -8.7f),
                 new Vector3(13.3f, 2.95f, -6.4f), new Vector3(.65f, 1.3f, 1.8f));
-            AssertPortDetailEnvelope(port, "DockWarehouseServiceDetails", new Vector3(4.1f, 2.2f, -17.9f),
-                new Vector3(4.65f, 3.1f, -15.5f), new Vector3(.25f, .75f, 1.8f));
+            AssertPortDetailEnvelope(port, "DockWarehouseServiceDetails", new Vector3(4.1f, 1.53f, -17.9f),
+                new Vector3(4.65f, 4.11f, -15.5f), new Vector3(.25f, 2f, 1.8f));
+            AssertPortDetailEnvelope(port, "DockWashHose", new Vector3(4.1f, 1.81f, -18.83f),
+                new Vector3(4.43f, 2.76f, -18.19f), new Vector3(.2f, .7f, .48f));
+            AssertPortDetailEnvelope(port, "DockNetBench", new Vector3(-15.75f, 1.5f, -9.55f),
+                new Vector3(-14.46f, 2.53f, -7.05f), new Vector3(1.1f, .9f, 2.1f));
+            AssertPortDetailEnvelope(port, "DockYardReturnRack", new Vector3(23.5f, 1.515f, -22.15f),
+                new Vector3(27.52f, 6.2f, -20.27f), new Vector3(3.65f, 4.6f, 1.2f));
+            AssertPortDetailEnvelope(port, "DockYardPallet", new Vector3(21.02f, 1.515f, -13.23f),
+                new Vector3(22.51f, 2.8f, -11.05f), new Vector3(1.3f, 1.1f, 1.8f));
+            AssertPortDetailEnvelope(port, "DockYardDrain", new Vector3(11.39f, 1.515f, -27.04f),
+                new Vector3(17.92f, 1.525f, -26.76f), new Vector3(6.4f, .004f, .23f));
+            AssertPortDetailEnvelope(port, "DockYardWestBench", new Vector3(4.88f, 1.515f, -29.34f),
+                new Vector3(6.22f, 3.05f, -26.84f), new Vector3(1.15f, 1.4f, 2.42f));
+            AssertPortDetailEnvelope(port, "DockYardWestDrums", new Vector3(4.89f, 1.515f, -31.8f),
+                new Vector3(7.06f, 2.62f, -30.4f), new Vector3(2.08f, 1.05f, 1.32f));
+            var yardLights = new List<Light>(3);
+            foreach (string name in new[] { "Port Yard Work Light", "Port Yard West Light", "Port Yard Loading Light" })
+            {
+                Transform fixture = port.transform.Find(name);
+                Assert.That(fixture, Is.Not.Null, name);
+                var light = fixture.GetComponent<Light>();
+                Assert.That(light.shadows, Is.EqualTo(LightShadows.Soft));
+                Assert.That(light.cookie, Is.Not.Null, "The worklight is cut off at the paved apron.");
+                yardLights.Add(light);
+            }
+            foreach (Vector3 local in new[] { new Vector3(7.3f, 1.52f, -29f), new Vector3(14f, 1.52f, -27f),
+                new Vector3(24f, 1.52f, -25f), new Vector3(13f, 1.52f, -15.8f), new Vector3(8f, 1.52f, -14.2f) })
+                Assert.That(yardLights.Exists(light =>
+                {
+                    Vector3 ray = port.Plan.World(local) - light.transform.position;
+                    return ray.magnitude < light.range && Vector3.Angle(light.transform.forward, ray) < light.spotAngle * .5f;
+                }), Is.True, "The worklights reach the paved yard at " + local);
+            var wear = new MaterialPropertyBlock();
+            foreach (string part in new[] { "DockVisible__Asphalt", "DockVisible__Concrete" })
+            {
+                var ground = CityPortAssetProvider.FindPart(port.Dock.gameObject, part).GetComponent<Renderer>();
+                ground.GetPropertyBlock(wear);
+                Assert.That(wear.GetTexture("_PortGroundWear"), Is.SameAs(Resources.Load<Texture2D>("City/Port/PortYardWear")));
+                Vector4 footprint = wear.GetVector("_PortGroundWearBounds");
+                Assert.That(footprint.x, Is.EqualTo(port.Plan.Origin.x - 24f));
+                Assert.That(footprint.y, Is.EqualTo(port.Plan.Origin.z - 36f));
+            }
+            var bench = CityPortAssetProvider.FindPart(port.Dock.gameObject, "COL_NetBench").GetComponent<MeshCollider>();
+            Assert.That(bench.Raycast(new Ray(port.Plan.World(new Vector3(-15.1f, 2f, -10f)), Vector3.forward),
+                out _, 2f), Is.True, "The rigging bench has solid support.");
+            Assert.That(bench.Raycast(new Ray(port.Plan.World(new Vector3(-17.4f, 2f, -11f)), Vector3.forward),
+                out _, 5f), Is.False, "The west walk remains open beside the net bench.");
+            var yard = CityPortAssetProvider.FindPart(port.Dock.gameObject, "COL_YardFittings")
+                .GetComponent<MeshCollider>();
+            Assert.That(yard.Raycast(new Ray(port.Plan.World(new Vector3(25.2f, 2.2f, -23f)), Vector3.forward),
+                out _, 3f), Is.True, "The yard's staging rack is solid.");
+            Assert.That(yard.Raycast(new Ray(port.Plan.World(new Vector3(7f, 2.15f, -28.1f)), Vector3.left),
+                out _, 2f), Is.True, "The west workbench has solid support.");
+            Assert.That(yard.Raycast(new Ray(port.Plan.World(new Vector3(14.9f, 2.2f, -31f)), Vector3.forward),
+                out _, 20f), Is.False, "The central approach from the apron is clear.");
+            ValidatePortTruckSweep(port, city);
             var canopy = CityPortAssetProvider.FindPart(port.Dock.gameObject, "COL_Awning").GetComponent<MeshCollider>();
             Assert.That(canopy, Is.Not.Null);
             Vector3 expectedMin = port.Plan.World(new Vector3(5.5f, 1.5f, -9.2f));
@@ -362,6 +513,56 @@ namespace BarPromenade.Tests.PlayMode
                     "Canopy feet leave the measured parked trolley envelope clear.");
             }
             finally { Object.DestroyImmediate(probeObject); }
+        }
+
+        private static void ValidatePortTruckSweep(CityPortController port, CityGameRoot city)
+        {
+            var wall = CityPortAssetProvider.FindPart(port.Dock.gameObject, "COL_WarehouseWalls")
+                .GetComponent<MeshCollider>();
+            var yard = CityPortAssetProvider.FindPart(port.Dock.gameObject, "COL_YardFittings")
+                .GetComponent<MeshCollider>();
+            var truckProbeHost = new GameObject("Port loading clearance probe") { hideFlags = HideFlags.HideAndDontSave };
+            try
+            {
+                var body = truckProbeHost.AddComponent<BoxCollider>();
+                body.isTrigger = true;
+                body.center = new Vector3(0f, CityCanneryTruckDimensions.Height / 2f,
+                    (CityCanneryTruckDimensions.Rear + CityCanneryTruckDimensions.Front) / 2f);
+                body.size = new Vector3(CityCanneryTruckDimensions.Width,
+                    CityCanneryTruckDimensions.Height - .08f, CityCanneryTruckDimensions.Length);
+                var obstacles = new List<Collider> { wall, yard };
+                foreach (string name in new[] { "QuayFloodWestHousing", "QuayFloodEastHousing" })
+                {
+                    Transform housing = CityPortAssetProvider.FindPart(port.Dock.gameObject, name);
+                    Renderer[] parts = housing.GetComponentsInChildren<Renderer>();
+                    Bounds bounds = parts[0].bounds;
+                    foreach (Renderer part in parts) bounds.Encapsulate(part.bounds);
+                    var envelope = truckProbeHost.AddComponent<BoxCollider>();
+                    envelope.isTrigger = true;
+                    envelope.center = bounds.center;
+                    envelope.size = bounds.size;
+                    obstacles.Add(envelope);
+                }
+                foreach (var leg in new[] { CityCanneryTruckLeg.PortArrive, CityCanneryTruckLeg.PortReverse, CityCanneryTruckLeg.PortToFactory })
+                {
+                    int samples = Mathf.CeilToInt(city.Cannery.Route.Length(leg) / .25f);
+                    for (int step = 0; step <= samples; step++)
+                    {
+                        CityPortTruckPose pose = city.Cannery.Route.Sample(leg, step / (float)samples);
+                        foreach (Collider obstacle in obstacles)
+                        {
+                            bool blocked = Physics.ComputePenetration(body, pose.RearAxle, pose.Rotation,
+                                obstacle, obstacle.transform.position, obstacle.transform.rotation, out _, out float depth);
+                            Assert.That(blocked && depth > .01f, Is.False,
+                                $"The truck clears {obstacle.name} during {leg} at {pose.RearAxle}.");
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                Object.DestroyImmediate(truckProbeHost);
+            }
         }
 
         private static void AssertPortDetailEnvelope(CityPortController port, string name, Vector3 minimum,

@@ -85,6 +85,7 @@ namespace BarPromenade
         {
             shorePresentation?.Dispose();
             vesselPresentation?.Dispose();
+            foreach (Texture2D cookie in PavingLightCookies) Destroy(cookie);
         }
     }
 }
