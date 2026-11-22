@@ -54,7 +54,8 @@ namespace BarPromenade
             return Build(parent, new[] { plan });
         }
 
-        public static GameObject Build(Transform parent, IReadOnlyList<CityBusPlan> plans)
+        public static GameObject Build(Transform parent, IReadOnlyList<CityBusPlan> plans,
+            Predicate<CityBusStopDescriptor> include = null)
         {
             if (parent == null) throw new ArgumentNullException(nameof(parent));
             if (plans == null) throw new ArgumentNullException(nameof(plans));
@@ -63,8 +64,9 @@ namespace BarPromenade
             root.SetParent(parent, false);
             var assets = new StopAssets();
             foreach (var platform in CityBusNetworkFurniture.Platforms(plans))
-                BuildStop(root, platform.stop, assets, new CityBusStopLabel(platform.line.Number,
-                    platform.ordinal, platform.stop.TransferNumber, platform.transferOrdinal, platform.shared));
+                if (include == null || include(platform.stop))
+                    BuildStop(root, platform.stop, assets, new CityBusStopLabel(platform.line.Number,
+                        platform.ordinal, platform.stop.TransferNumber, platform.transferOrdinal, platform.shared));
 
             CityBusPlanner.ReportPhase(
                 "stop_world",

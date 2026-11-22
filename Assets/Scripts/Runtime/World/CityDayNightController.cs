@@ -14,7 +14,7 @@ namespace BarPromenade
         private const float NightSkyFill = .18f;
         private static readonly int SkyFillLossId = Shader.PropertyToID("_CitySkyFillLoss");
         private static CityDayNightController skyOwner;
-        private CityNightWorldResult night;
+        private CityNightWorldResult night, lowerNight, ridgeNight;
         private Camera sceneCamera;
         private ExteriorCloudField clouds;
         private ColorAdjustments colorAdjustments;
@@ -48,6 +48,13 @@ namespace BarPromenade
                 }
             }
             ApplyCurrentTime(true);
+        }
+
+        internal void SetDistrictNight(bool ridge, CityNightWorldResult fixtures)
+        {
+            if (ridge) ridgeNight = fixtures;
+            else lowerNight = fixtures;
+            fixtures?.SetNightFactor(CurrentSample.NightFactor, true);
         }
 
         internal void BindClouds(ExteriorCloudField field)

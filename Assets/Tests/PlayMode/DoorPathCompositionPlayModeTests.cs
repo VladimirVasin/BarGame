@@ -1,7 +1,9 @@
 using System.Collections;
+using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Profiling;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 using Object = UnityEngine.Object;
@@ -35,7 +37,7 @@ namespace BarPromenade.Tests.PlayMode
                 if (scene != blank && (AreaSceneCatalog.TryGetArea(scene.name, out _) ||
                     scene.name == SceneIds.AreaLoading || scene.name == SceneIds.BarInterior ||
                     scene.name == SceneIds.DoorTransition || scene.name == SceneIds.MainMenu ||
-                    scene.name == SceneIds.StairwellInterior))
+                    scene.name == SceneIds.StairwellInterior || scene.name == SceneIds.CityRidge))
                     yield return SceneManager.UnloadSceneAsync(scene);
             }
             // Voices that outlive the city (pooled effects, a detached music
@@ -97,7 +99,182 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(city, Is.Not.Null);
             Assert.That(city.IsInitialized, Is.True);
             Assert.That(city.Layout, Is.SameAs(prepared));
+            Scene ridge = SceneManager.GetSceneByName(SceneIds.CityRidge);
+            Assert.That(ridge.isLoaded, Is.True);
+            Assert.That(ridge.path, Does.EndWith("/CityRidge.unity"));
+            Assert.That(city.World.RidgeRoot.scene, Is.EqualTo(ridge));
+            Assert.That(city.World.PlayerHome.gameObject.scene, Is.EqualTo(ridge));
+            Assert.That(city.Player.GameObject.scene, Is.EqualTo(city.Scene));
+            Assert.That(city.RidgeDistrictReady, Is.True);
+            Assert.That(city.LowerDistrictReady, Is.False, "The first street door must only generate the Ridge.");
+            Assert.That(Object.FindAnyObjectByType<CityPortController>(), Is.Null);
             TestContext.WriteLine($"First street door to City ready in {Time.realtimeSinceStartup - departed:F2}s.");
+            ReportMemory("First street");
+
+            Vector3 homeDock = city.World.PlayerHome.ReturnPosition;
+            CityBusDirector hillsideBus = city.BusVehicles.First(bus => bus.LineIndex == 2);
+            GameSessionState.EnterHome();
+            GameSessionState.PrepareStairwellArrival(StairwellArrivalKind.StreetDoor);
+            Assert.That(SceneTransitionService.RequestDoorLoad(
+                SceneIds.StairwellInterior, DoorTransitionDirection.EnterBuilding), Is.True);
+            yield return WaitForDoorDestination(SceneIds.StairwellInterior);
+            Assert.That(city.IsDormant, Is.True);
+            Assert.That(ridge.isLoaded, Is.True);
+            Assert.That(city.World.RidgeRoot.activeInHierarchy, Is.False);
+
+            GameSessionState.PrepareHomeReturn();
+            Assert.That(SceneTransitionService.RequestDoorLoad(
+                SceneIds.City, DoorTransitionDirection.ExitBuilding), Is.True);
+            yield return WaitForDoorDestination(SceneIds.City);
+            Assert.That(city.IsDormant, Is.False);
+            Assert.That(city.World.RidgeRoot.scene, Is.EqualTo(ridge));
+            Assert.That(city.World.RidgeRoot.activeInHierarchy, Is.True);
+            CollectionAssert.Contains(city.BusVehicles, hillsideBus);
+            Assert.That(Vector3.Distance(city.Player.GameObject.transform.position, homeDock), Is.LessThan(.5f));
+            yield return RideFromRidgeIntoCity(city, hillsideBus, ridge, homeDock);
+        }
+
+        private static IEnumerator RideFromRidgeIntoCity(CityGameRoot city, CityBusDirector bus,
+            Scene firstRidgeScene, Vector3 homeDock)
+        {
+            CityBusStopDescriptor stop = bus.Plan.Stops.Last();
+            PlayerRuntime hero = city.Player;
+            var districtPlan = new CityDistrictStreamingPlan(city.Layout);
+            Assert.That(districtPlan.IsRidge(stop.ShelterPosition), Is.True);
+            Vector3 pavement = CityBusStopWaitPlanner.StandingPosition(bus.Plan, stop, city.Layout);
+            Assert.That(districtPlan.SignedDistance(pavement), Is.InRange(-CityDistrictStreamingPlan.PreloadDistance, -5f));
+            hero.Motor.Teleport(pavement + Vector3.up * PlayerFactory.GroundedRootOffset);
+            Physics.SyncTransforms();
+            yield return WaitForStreaming(() => city.LowerDistrictReady, "approach from the Ridge");
+            ReportStreamStage(city);
+            Assert.That(firstRidgeScene.isLoaded, Is.True);
+            Assert.That(Object.FindAnyObjectByType<CityPortController>(), Is.Not.Null);
+
+            foreach (var service in city.BusVehicles)
+            {
+                service.enabled = false;
+                service.Actor.ReleasePresentation(service.transform);
+            }
+
+            var actor = bus.Actor;
+            var ride = city.BusRides[city.BusVehicles.ToList().IndexOf(bus)];
+            float along = Mathf.Max(0, stop.DistanceAlongLink - 8f);
+            CityBusActor.EvaluateLink(bus.Plan.Links[stop.LinkIndex], along, out var spawn, out var heading);
+            actor.PrepareSpawn(bus.Plan, new CityBusSpawnAnchor("ridge-crossing", stop.LinkIndex,
+                along, spawn, heading, stop.RoadEdge), 7u);
+            for (int frame = 0; frame < 260 && !(actor.CurrentStop == stop && actor.DoorsFullyOpen); frame++)
+            {
+                bus.Advance(.08f);
+                yield return null;
+            }
+            Assert.That(actor.CurrentStop, Is.EqualTo(stop));
+            Assert.That(actor.DoorsFullyOpen, Is.True);
+
+            var capsule = hero.GameObject.GetComponent<CharacterController>();
+            var rig = (Player3DCharacterPresentation)hero.Visual;
+            Vector3 pelvis = hero.GameObject.transform.InverseTransformPoint(rig.Registry.Anchors.Pelvis.position);
+            Assert.That(CityBusRidePlan.TryCreate(actor, city.World.WalkableArea, pelvis, capsule.radius,
+                CityBusPassengerDoor.Front, CityStreetSurfacePlanner.Create(city.Layout), out var dock), Is.True);
+            hero.Motor.Teleport(dock.EntryPose.RootPosition);
+            hero.GameObject.transform.rotation = dock.EntryPose.RootRotation;
+            Physics.SyncTransforms();
+            Assert.That(ride.BeginBoarding(), Is.True);
+            yield return WaitForStreaming(() => ride.State == CityBusRideState.Riding, "boarding line 03");
+
+            Transform seat = ride.ActivePlan.SeatAnchor;
+            float before = bus.DistanceAlongLoop;
+            for (int frame = 0; frame < 1600 && districtPlan.IsRidge(actor.Position); frame++)
+            {
+                bus.Advance(.12f);
+                yield return null;
+                Assert.That(ride.ActivePlan.SeatAnchor, Is.SameAs(seat));
+                Assert.That(ride.IsPassengerAboard, Is.True);
+            }
+            Assert.That(districtPlan.IsRidge(actor.Position), Is.False, "Line 03 crossed into the lower city.");
+            Assert.That(bus.DistanceAlongLoop, Is.Not.EqualTo(before));
+            Assert.That(city.Player.GameObject, Is.SameAs(hero.GameObject));
+            Assert.That(city.BusVehicles, Does.Contain(bus));
+            Assert.That(SceneManager.GetActiveScene().name, Is.EqualTo(SceneIds.City));
+            AssertPhysicalStreet(actor.Position);
+
+            // Stay aboard the same vehicle through the Works Bridge leg
+            // and back onto the western ascent.
+            for (int frame = 0; frame < 2200 && !districtPlan.IsRidge(actor.Position); frame++)
+            {
+                bus.Advance(.12f);
+                yield return null;
+                Assert.That(ride.ActivePlan.SeatAnchor, Is.SameAs(seat));
+                Assert.That(ride.IsPassengerAboard, Is.True);
+            }
+            Assert.That(districtPlan.IsRidge(actor.Position), Is.True, "Line 03 crossed back onto the Ridge.");
+            AssertPhysicalStreet(actor.Position);
+            CaptureStreamingFrame(city, "line-03-west");
+
+            ride.ForceReleaseForBusLifecycle();
+            Vector3 north = city.BusPlans[0].Stops.OrderByDescending(point => point.ShelterPosition.z).First().ShelterPosition;
+            hero.Motor.Teleport(north + Vector3.up * PlayerFactory.GroundedRootOffset);
+            yield return WaitForStreaming(() => !city.RidgeDistrictReady && !firstRidgeScene.isLoaded,
+                "Ridge eviction after travelling away");
+            yield return Resources.UnloadUnusedAssets();
+            ReportMemory("Lower city alone");
+
+            Vector3 lowerApproach = city.BusPlans.SelectMany(line => line.Stops.Select(
+                    platform => CityBusStopWaitPlanner.StandingPosition(line, platform, city.Layout)))
+                .First(point => {
+                    float distance = districtPlan.SignedDistance(point);
+                    return distance > 5f && distance < CityDistrictStreamingPlan.PreloadDistance;
+                });
+            hero.Motor.Teleport(lowerApproach + Vector3.up * PlayerFactory.GroundedRootOffset);
+            yield return WaitForStreaming(() => city.RidgeDistrictReady, "approach from the lower city");
+            ReportStreamStage(city);
+            hero.Motor.Teleport(homeDock);
+            yield return WaitForStreaming(() => !city.LowerDistrictReady, "lower city eviction");
+            yield return Resources.UnloadUnusedAssets();
+            ReportMemory("Ridge after round trip");
+            CaptureStreamingFrame(city, "ridge-alone");
+        }
+
+        private static void AssertPhysicalStreet(Vector3 position)
+        {
+            Physics.SyncTransforms();
+            Assert.That(Physics.RaycastAll(position + Vector3.up * .45f, Vector3.down, 1.4f)
+                .Any(hit => hit.collider.GetComponent<FootstepGround>() != null),
+                Is.True, "The bus must cross over a composed, physical street.");
+        }
+
+        private static void CaptureStreamingFrame(CityGameRoot city, string frame)
+        {
+            if (System.Environment.GetEnvironmentVariable("BAR_PROMENADE_CAPTURE_CITY_STREAM") == "1" &&
+                SystemInfo.graphicsDeviceType != GraphicsDeviceType.Null)
+            {
+                city.Camera.GetComponent<PlayerCameraFollow>()?.Snap();
+                AreaCaptureFixture.CaptureCurrentCamera(city.Camera, "CityDistrictStreaming", frame);
+            }
+        }
+
+        private static IEnumerator WaitForStreaming(System.Func<bool> ready, string description)
+        {
+            float deadline = Time.realtimeSinceStartup + DeadlineSeconds;
+            float previous = Time.realtimeSinceStartup, peak = 0f;
+            while (!ready() && Time.realtimeSinceStartup < deadline)
+            {
+                yield return null;
+                float now = Time.realtimeSinceStartup;
+                peak = Mathf.Max(peak, now - previous);
+                previous = now;
+            }
+            TestContext.WriteLine($"{description}: peak frame gap {peak * 1000f:F1} ms.");
+            Assert.That(ready(), Is.True, description);
+        }
+
+        private static void ReportStreamStage(CityGameRoot city) =>
+            TestContext.WriteLine($"Longest district composition frame: {city.SlowestDistrictBuildPhase}, " +
+                $"{city.SlowestDistrictBuildMilliseconds:F1} ms.");
+
+        private static void ReportMemory(string point)
+        {
+            TestContext.WriteLine($"{point} Unity memory: allocated {Profiler.GetTotalAllocatedMemoryLong()} B, " +
+                $"reserved {Profiler.GetTotalReservedMemoryLong()} B, managed {Profiler.GetMonoUsedSizeLong()} B.");
         }
 
         private static IEnumerator WaitForDoorDestination(string destination)

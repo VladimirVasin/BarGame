@@ -806,6 +806,10 @@ namespace BarPromenade
             return true;
         }
 
+        private Action<Vector3> cityArrivalPreparation;
+
+        internal void SetCityArrivalPreparation(Action<Vector3> prepare) => cityArrivalPreparation = prepare;
+
         public bool ConfirmDebugTeleport()
         {
             if (!DebugTeleportEnabled ||
@@ -856,6 +860,7 @@ namespace BarPromenade
             SelectedMapObjectIndex = -1;
 
             Close(false, "debug_teleport");
+            cityArrivalPreparation?.Invoke(destination);
             player.Motor.Teleport(destination);
             if (facing.sqrMagnitude > 0.0001f)
             {

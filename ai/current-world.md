@@ -425,7 +425,8 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   Two raised houses/two OpenGround,144 IDs. House11,8 sits3.84m below street,
   roof12.883 below upper eye15.073. Sheltered3m alley under4.8×2.4m bridge,
   guarded3×2.4m east exit atX126.4. Hero/NPC/map use distinct floors.
-  Coast→Lower Court/upper homes;2seven-tier climbs/ravine.
+  Two seven-tier climbs link coast, Lower Court and upper homes. Streamed
+  Ridge/lowland districts share the hero, bus fleet and map.
   Stairs→tiers/court/crest. Bevelled soil closes stair cuts. Soil blends at curbs.
   Grass outside paths/loft.
   Benches/bins/booths on pockets;fixed entry light. Home bench→truss/ravine/roofs.

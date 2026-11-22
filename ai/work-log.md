@@ -3,20 +3,29 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
+## 2026-11-23
+
+Build the arrival district first. Near either approach, prepare adjacent
+terrain and joints off-thread and publish scene objects in steps. Release
+distant district objects, keep shared clocks, hero and Line 03 seats.
+`MenuWarmup_ReusesSharedPlansAtTheStreetDoor` compares door and allocator
+samples and drives the seated hero across both seams. `CityTerracePilotPlayModeTests`
+covers boarding and transfers.
+
 ## 2026-11-22
 
-H pinches both left cuff meshes on the world rig. The LCD colon follows
-calendar seconds. Proof: Blender watch FBX, `PlayerWatchPlayModeTests`
-and City/Home frames.
+City binds shared ground and lighting, then moves the Ridge to its additive
+scene. Both sleep together. `MenuWarmup_ReusesSharedPlansAtTheStreetDoor`,
+`CityTerracePilotPlayModeTests` boarding and transfers.
 
-Detailed the working port from the service-road entrance to the quay. The fixed
-net bench, wash hose, refrigeration fittings and fender pads stay beside the
-working lanes. A local weather-aware mask locates the wheel wear on the actual
-truck sweep and moisture at drains and the quay edge. Re-aimed the existing
-work lamps toward the apron, threshold and canopy. Blender port art contract
-and deterministic mesh rebuild passed. `CityPortConstructionDetails` passed
-import, wear binding and clearance checks. Day/night route and open loading
-views reviewed. In dense night fog the fittings read mainly at close range.
+H pinches both world-rig left cuffs. The LCD colon follows calendar seconds.
+Blender watch FBX, `PlayerWatchPlayModeTests` and City/Home frames.
+
+Detailed the working port from the service-road entrance to the quay. The net bench, wash hose, cold-store fittings and fenders clear the lanes.
+Weather-aware masks put wheel wear on the truck sweep and moisture at drains
+and the quay edge. Re-aimed lamps at the apron, threshold and canopy. Blender port contract, deterministic rebuild and
+`CityPortConstructionDetails` passed import, wear and clearance checks. Reviewed
+day/night routes and open loading. Night fog mostly leaves nearby fittings.
 
 Filled the entrance apron itself with a return rack and pallet stack beside
 the rails. The existing worklight now faces inward over the turn. Added a
@@ -29,9 +38,9 @@ reference position and from the return rack.
 Set the west bench, tool chest, vise and wash drums outside the truck sweep.
 Raised the east lamp and added two west-side fixtures. Three projected masks
 follow the joined yard paving and fall off at its edges. The lamps share the
-area lifecycle and retain the daytime floor. Blender port art contract passed.
-`CityPortConstructionDetails` passed. Reviewed the full yard and workbench by
-day and night, including the open bay with the truck in place.
+area lifecycle and retain the daytime floor. Blender port contract and
+`CityPortConstructionDetails` passed. Reviewed day/night yard, workbench and
+open bay with truck.
 
 Reproduced the apron lighting grid in `CityPortPavementLightingProbe`.
 The grid persisted with shadows disabled and cleared with a neutral response

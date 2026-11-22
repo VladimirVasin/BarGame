@@ -6,7 +6,7 @@ using Stopwatch = System.Diagnostics.Stopwatch;
 
 namespace BarPromenade
 {
-    public sealed class CityGameRoot : MonoBehaviour, IResidentExteriorRoot
+    public sealed partial class CityGameRoot : MonoBehaviour, IResidentExteriorRoot
     {
         private const float DebugMapOpenTimeoutSeconds = 2f;
 
@@ -15,6 +15,10 @@ namespace BarPromenade
         private readonly List<Behaviour> dormantBehaviours =
             new List<Behaviour>();
         private AudioListener dormantListener;
+        private Scene ridgeScene;
+        private AsyncOperation ridgeLoad;
+        private bool stagedComposition;
+        private bool ridgeWasActiveOnDisable;
         private IntoxicationHudView intoxicationHud;
 
         public bool IsInitialized { get; private set; }
@@ -344,12 +348,12 @@ namespace BarPromenade
             // Under the loading bar or behind the door's black the build is
             // pumped a frame at a time; a direct load has neither and builds
             // here, in this frame.
-            if (!AreaTravelService.TryScheduleComposition(this, steps) &&
-                !SceneTransitionService.TryScheduleComposition(this, steps))
-            {
-                GameTimeRuntime.ExcludeSynchronousLoadFromCalendar();
-                RuntimeComposition.RunSynchronously(steps);
-            }
+            stagedComposition = AreaTravelService.TryScheduleComposition(this, steps) ||
+                SceneTransitionService.TryScheduleComposition(this, steps);
+            if (stagedComposition) return;
+
+            GameTimeRuntime.ExcludeSynchronousLoadFromCalendar();
+            RuntimeComposition.RunSynchronously(steps);
         }
 
         private IEnumerator InitializeSteps()
@@ -394,53 +398,45 @@ namespace BarPromenade
             CityGenerationSettings settings = CityGenerationSettings.Default;
             CityBlueprint blueprint = CityBlueprintCatalog.Resolve(
                 GameSessionState.CityBlueprintId);
-            var ready = CityLayoutCache.WaitForPrimedPlans(blueprint, settings, GameSessionState.CitySeed);
-            if (ready != null) yield return ready;
-            Layout = CityLayoutCache.GetOrGenerate(
-                blueprint,
-                settings,
-                GameSessionState.CitySeed);
+            bool homeReturn = stagedComposition && blueprint.Id == CityBlueprintCatalog.DefaultBlueprintId &&
+                (GameSessionState.ReturnKind == CityReturnKind.PlayerHome ||
+                 GameSessionState.ReturnKind == CityReturnKind.Pawnshop);
+            if (homeReturn)
+                Layout = CityLayoutCache.GetLayoutForBarSelection(blueprint, settings, GameSessionState.CitySeed);
+            else
+            {
+                var ready = CityLayoutCache.WaitForPrimedPlans(blueprint, settings, GameSessionState.CitySeed);
+                if (ready != null) yield return ready;
+                Layout = CityLayoutCache.GetOrGenerate(blueprint, settings, GameSessionState.CitySeed);
+            }
             GameLogPhases.Report("city", "layout_generation", phaseTimer);
             ReportLayout(Layout);
             yield return new CompositionStep("layout", 0.10f);
 
             phaseTimer.Restart();
-            CityNightFixturePlan nightPlan =
-                CityLayoutCache.GetOrCreateNightPlan(Layout);
-            yield return RuntimeComposition.Range(CityWorldBuilder.BuildSteps(
-                transform,
-                Layout,
-                settings,
-                nightPlan, value => World = value), 0.10f, 0.65f);
-            GameLogPhases.Report("city", "world_build", phaseTimer);
-            ReportWorldInventory();
+            if (stagedComposition && Layout.HasSummitHome)
+            {
+                districtPlan = new CityDistrictStreamingPlan(Layout);
+                districtWalkableArea = new DistrictWalkableArea(this);
+                districtBackdrop = CityMountainBackdropWorldBuilder.Build(transform, camera);
+            }
+
+            bool firstRidge = districtPlan != null && WantsRidgeArrival();
+            var firstDistrict = new CityDistrict(firstRidge, districtPlan == null ? transform : null);
+            if (firstRidge)
+            {
+                ridgeDistrict = firstDistrict;
+                yield return AttachRidgeScene(firstDistrict, true);
+            }
+            yield return RuntimeComposition.Range(BuildDistrictSteps(firstDistrict), .10f, .65f);
+            if (firstRidge) ridgeDistrict = firstDistrict;
+            else lowerDistrict = firstDistrict;
+            World = firstDistrict.World;
             ReportWorld(World, Layout);
-            yield return new CompositionStep("world", 0.65f);
+            ReportWorldInventory();
 
-            phaseTimer.Restart();
-            Night = CityNightWorldBuilder.Build(
-                transform,
-                nightPlan,
-                World.Bars,
-                eastExit: World.EastExitPlan, cityLayout: Layout);
-            GameLogPhases.Report("city", "night_build", phaseTimer);
-            yield return new CompositionStep("night", 0.68f);
-            GameLog.Info(
-                "city",
-                "night_built",
-                GameLog.Field(
-                    "planned_lamps",
-                    nightPlan.StreetLamps.Count),
-                GameLog.Field(
-                    "planned_signals",
-                    nightPlan.TrafficSignals.Count),
-                GameLog.Field(
-                    "lamp_anchors",
-                    Night.LampAnchors.Count),
-                GameLog.Field(
-                    "traffic_signals",
-                    Night.TrafficSignals.Count));
-
+            if (districtPlan == null) Night = firstDistrict.Night;
+            else Night = CityNightWorldBuilder.Build(transform, EmptyNightPlan, System.Array.Empty<BarEntrance>());
             phaseTimer.Restart();
             Stopwatch stepTimer = Stopwatch.StartNew();
             GameObject musicObject = new GameObject("City Music");
@@ -455,7 +451,8 @@ namespace BarPromenade
 
             GameObject ui = new GameObject("Runtime UI");
             ui.transform.SetParent(transform, false);
-            InteractionPromptView prompt = ui.AddComponent<InteractionPromptView>();
+            cityPrompt = ui.AddComponent<InteractionPromptView>();
+            InteractionPromptView prompt = cityPrompt;
 
             Vector3 spawnPosition = Layout.StandingSpawnPosition;
             string spawnSource = "default";
@@ -467,7 +464,7 @@ namespace BarPromenade
                 out AreaArrivalToken areaArrivalToken,
                 out Vector3 areaArrivalPoint,
                 out bool hasAreaArrivalPoint);
-            var arrivalGround = new CityMapCityTeleportGround(Layout);
+            arrivalGround = new CityMapCityTeleportGround(Layout);
             if (hasAreaArrival)
             {
                 ResolveAreaSpawn(arrivalGround, areaArrivalToken, areaArrivalPoint, hasAreaArrivalPoint,
@@ -503,24 +500,9 @@ namespace BarPromenade
                 transform,
                 spawnPosition,
                 camera,
-                World.WalkableArea,
+                PlayerWalkableArea,
                 prompt);
             GameLogPhases.Report("city", "hero", stepTimer);
-            CityLaundryController laundry = World.Root.GetComponentInChildren<CityLaundryController>();
-            if (laundry != null) laundry.PresentationObserver = Player.GameObject.transform;
-            CityDogParkController dogPark = World.Root.GetComponentInChildren<CityDogParkController>();
-            if (dogPark != null) dogPark.PresentationObserver = Player.GameObject.transform;
-            CityResidentialCourtyardLife courtyardLife = World.ResidentialCourtyardRoot != null
-                ? World.ResidentialCourtyardRoot.GetComponent<CityResidentialCourtyardLife>() : null;
-            if (courtyardLife != null) courtyardLife.PresentationObserver = Player.GameObject.transform;
-            World.Root.GetComponentInChildren<CityOffshoreBoatController>()
-                ?.AttachHero(Player.GameObject.transform);
-            CitySandTreading sand = World.Root.GetComponentInChildren<CitySandTreading>();
-            if (sand != null)
-            {
-                sand.AttachWalker(Player.GameObject.transform);
-                Player.Motor.SetFootstepSurface(sand);
-            }
             if (exteriorDoorArrival.HasValue)
             {
                 // This must happen before the follow camera initializes:
@@ -537,31 +519,17 @@ namespace BarPromenade
                         arrivalForward.normalized,
                         Vector3.up);
             }
-            // Hoisted out of the `if` below because the Ferryman's departure
-            // needs the tunnel's floor height to drive the last fifteen
-            // metres at, and it is raised much further down this method.
-            bool hasTunnelTravel = CityTunnelTravelPlanner.TryCreate(
-                World.MountainBoundaryPlan,
-                out CityTunnelTravelPlan tunnelTravelPlan);
-            if (hasTunnelTravel)
-            {
-                TunnelTravel = CityTunnelTravelController.Create(
-                    transform,
-                    tunnelTravelPlan,
-                    Player,
-                    prompt);
-            }
             LocationMusic = CityLocationMusicDirector.Create(
                 transform,
                 Player.GameObject.transform,
                 Music,
-                World.CemeteryPlan);
+                World.CemeteryPlan ?? (districtPlan == null ? null : CityCemeteryPlanner.Create(Layout)));
             stepTimer.Restart();
             // Both memoised per layout (the plan per seed too): a primed
             // start, or a second entry, reads them; the walkable area
             // stays per build.
-            CityStreetSurfacePlan pedestrianStreetSurfacePlan =
-                CityStreetSurfacePlanner.Create(Layout);
+            streetSurface = CityStreetSurfacePlanner.Create(Layout);
+            CityStreetSurfacePlan pedestrianStreetSurfacePlan = streetSurface;
             PedestrianPlan = CityLayoutCache.GetOrCreatePedestrianPlan(
                 Layout,
                 GameSessionState.CitySeed);
@@ -584,39 +552,12 @@ namespace BarPromenade
             LineWaitPlans = waits;
             ResidentJourneys = new CityResidentJourneyDirector(Pedestrians.Residents, BusPlans, waits);
             Pedestrians.ConfigureResidentJourneys(ResidentJourneys);
-            var kioskCourt = World.Root.GetComponentInChildren<RidgeKioskCourtWorld>();
-            if (kioskCourt != null && Pedestrians.Residents.KioskWindowNode >= 0)
-            {
-                var kioskLife = kioskCourt.gameObject.AddComponent<RidgeKioskCourtLife>();
-                kioskLife.Initialize(kioskCourt, kioskCourt.GetComponentInParent<RidgeKioskStation>(),
-                    Pedestrians.Residents, ResidentJourneys, Player, camera);
-                Pedestrians.ConfigureKioskCourt(kioskLife);
-            }
-            foreach (var districtCourt in World.Root.GetComponentsInChildren<DistrictKioskCourtWorld>())
-            {
-                var life = districtCourt.gameObject.AddComponent<DistrictKioskCourtLife>();
-                life.Initialize(districtCourt, Pedestrians.Residents, ResidentJourneys, Player);
-                Pedestrians.ConfigureDistrictCourt(life, districtCourt.Plan.Residential);
-            }
             GameLogPhases.Report("city", "pedestrian_pool", stepTimer);
             stepTimer.Restart();
-            var lowLampAnchors = new List<Transform>(World.RiverQuayLampAnchors);
-            if (World.Fair != null) lowLampAnchors.AddRange(World.Fair.LampAnchors);
-            BusStops = CityBusStopWorldBuilder.Build(transform, BusPlans);
-            Night.BusStopPoles = BusStops.transform;
-            Night.InitializeLighting(
-                Player.GameObject.transform,
-                Layout.Seed,
-                World.FringePracticalAnchors,
-                lowLampAnchors);
-            if (World.MountainBoundaryPlan.HasTunnel)
-            {
-                TunnelLighting = CityTunnelLightingController.Create(
-                    World.MountainBoundaryRoot.transform,
-                    World.MountainBoundaryPlan.Tunnel,
-                    Night.Atmosphere,
-                    World.FringePracticalAnchors);
-            }
+            if (districtPlan == null) BusStops = CityBusStopWorldBuilder.Build(transform, BusPlans);
+            Night.InitializeLighting(Player.GameObject.transform, Layout.Seed, taskRoot: transform,
+                initializeFixtures: false);
+            cityFog = Night.FogField;
             DayNight = gameObject.AddComponent<CityDayNightController>();
             DayNight.Initialize(Night, camera);
             Visibility = Night.Root.AddComponent<CityAltitudeVisibility>();
@@ -632,198 +573,6 @@ namespace BarPromenade
             yield return new CompositionStep("player_and_pedestrians", 0.76f);
             GameLogPhases.Report("city", "bus", stepTimer);
             stepTimer.Restart();
-            // The yard rider is authored, not ambient: one staged NPC on
-            // the invisible circuit immediately left of the selected bar,
-            // outside the pedestrian pool and its spawn bands.
-            YardWheelchair = YardWheelchairFactory.Create(
-                transform,
-                YardWheelchairPlan.Create(
-                    World.OpenAreaDecorationPlan,
-                    Layout));
-            // The drying yard's three authored grandmothers: two beat
-            // the hung carpets at the rack, one smokes apart watching.
-            // Staged NPCs outside the pedestrian pool, like the rider.
-            DryingYardBabushkas = DryingYardBabushkaFactory.Create(
-                transform,
-                DryingYardBabushkaPlan.Create(Layout));
-            // Small silent tableaux at selected residential pockets. Their
-            // bodies reuse only unlimited generic pedestrian archetypes and
-            // remain outside both the roaming pool and the unique staged-NPC
-            // providers; the fringe yards carry no resident layer.
-            CourtyardResidents = CityCourtyardResidentFactory.Create(
-                transform,
-                CityCourtyardResidentPlan.Create(
-                    Layout,
-                    World.DecorationPlan));
-            // Passive residents make authored Residential balconies read as
-            // real apartments. Every ordinary building contributes one
-            // deterministic candidate dock; a small per-session population
-            // appears and disappears around the moving hero, outside the
-            // roaming pedestrian pool and never on the hero's own building.
-            BalconySmokers = CityBalconySmokerDirector.Create(
-                transform,
-                Layout.Seed,
-                CityBalconySmokerPlan.CreateCandidates(Layout),
-                Player.GameObject.transform, Visibility);
-            GameLogPhases.Report("city", "staged_npcs", stepTimer);
-            stepTimer.Restart();
-            if (World.ArchShelterPlan.IsEnabled)
-            {
-                ArchShelterPresentation = World.ArchShelter.Root
-                    .AddComponent<CityArchShelterPresentation>();
-                ArchShelterPresentation.Initialize(Layout.Seed);
-            }
-
-            GameLogPhases.Report("city", "arch_shelter", stepTimer);
-            // The public industrial lot now carries a working cannery. Its
-            // production controller owns the crew; the retired human-weighing
-            // tableau and its player-sensitive scale are never instantiated.
-            WeighbridgeAttendants = System.Array.Empty<WeighbridgeAttendantPresentation>();
-            WeighbridgeNeedle = null;
-            stepTimer.Restart();
-            Cannery = CityCanneryController.Build(transform, Layout,
-                World.Root.GetComponentInChildren<CityPortController>(), Player.GameObject.transform);
-            GameLogPhases.Report("city", "cannery", stepTimer);
-            stepTimer.Restart();
-            // The cemetery's one scripted visitor: while the hero is
-            // near the grounds a mourner spawns out of sight, walks
-            // through the gate to a deterministic random grave, lays
-            // her bouquet, cries for thirty seconds, wipes her eyes
-            // and leaves. Spawned per visit, not staged forever.
-            CemeteryMourner = CityCemeteryMournerController.Create(
-                transform,
-                Layout,
-                World.CemeteryPlan,
-                Player.GameObject.transform,
-                camera,
-                GameSessionState.CitySeed);
-            // The gate lodge is attended: one snide old watchman at
-            // his window post, eyes on the arch, answering every
-            // "поговорить" with the next line of his repertoire.
-            CemeteryWatchmanPlan watchmanPlan =
-                CemeteryWatchmanPlan.Create(World.CemeteryPlan);
-            CemeteryWatchman = CemeteryWatchmanFactory.Create(
-                transform,
-                watchmanPlan,
-                GameSessionState.CitySeed,
-                Player.GameObject.transform);
-            // The hero works this yard for a living, and the old man
-            // at the gate has the only work going: vacant plots near
-            // his own post, handed over one at a time and marked out
-            // on the ground the moment they are taken. The register
-            // stands every grave he has already sent the hero to back
-            // up as well — a hole left half dug and a stone standing
-            // over a finished one both survive a trip indoors.
-            Gravedigging = CemeteryGravediggingRegister.Create(
-                transform,
-                World.CemeteryPlan,
-                watchmanPlan,
-                World.CemeteryGroundExcavation);
-            if (CemeteryWatchman != null &&
-                CemeteryWatchman.Talk != null)
-            {
-                CemeteryWatchman.Talk.AttachGravedigging(Gravedigging);
-            }
-            // The boat station is not abandoned by everybody: one man
-            // sits on the end of the мостки with his back to the shore
-            // and answers about the water whether or not he was asked.
-            SeacoastFisherman = SeacoastFishermanFactory.Create(
-                transform,
-                SeacoastFishermanPlan.Create(World.SeacoastPlan),
-                GameSessionState.CitySeed);
-            GameLogPhases.Report("city", "cemetery_staff", stepTimer);
-            bool arrivingByCar = IsReturningByCar(hasAreaArrival, areaArrivalToken);
-            stepTimer.Restart();
-            BuildLastRouteCar(camera, arrivingByCar, hasTunnelTravel, tunnelTravelPlan);
-            GameLogPhases.Report("city", "last_route_car", stepTimer);
-            stepTimer.Restart();
-            // The park kept a place for company and two men still keep
-            // it: an old player at each of the two chess tables, on
-            // seats that are each other's rotated 180 degrees about the
-            // middle of the set, so the pair is turned toward one
-            // another with the whole set between them. One plays chess
-            // and one plays draughts, both have their heads in their
-            // hands, and neither has anybody across his own board — the
-            // two remaining planks stay unclaimed and sittable, which
-            // is the point of the place rather than an oversight.
-            //
-            // Both are raised before the bench interaction and the rest
-            // controller below, because both of those offer seats and
-            // these two are claimed the moment they sit down.
-            ParkChessLamp = CityParkChessLampWorldBuilder.Build(
-                transform,
-                CityParkChessLampPlan.Create(Layout, World.DecorationPlan));
-            // Both boards are set up and neither game has been started.
-            // Fifty-six men, four combined meshes, nothing that moves.
-            ParkChessSetMen = CityChessSetWorldBuilder.Build(
-                transform,
-                Layout,
-                World.DecorationPlan,
-                GameSessionState.CitySeed);
-            ParkChessPlayer = ParkChessPlayerFactory.Create(
-                transform,
-                ParkChessPlayerPlan.Create(Layout, World.DecorationPlan));
-            ParkCheckersPlayer = ParkCheckersPlayerFactory.Create(
-                transform,
-                ParkCheckersPlayerPlan.Create(
-                    Layout,
-                    World.DecorationPlan));
-            // Every authored seat is sittable in the bus ride's seated
-            // pose: the bar-side yard bench faces the dead tree, ordinary
-            // park benches face their own paths, point-of-interest and
-            // street-decoration seats face their centres and every bus
-            // stop shelter bench faces its road.
-            List<CityBenchSitPlan> benchPlans =
-                CityBenchSitPlan.CreateAll(
-                    Layout,
-                    World.OpenAreaDecorationPlan,
-                    World.CemeteryPlan,
-                    BusPlans,
-                    World.DecorationPlan,
-                    pedestrianStreetSurfacePlan,
-                    World.SeacoastPlan,
-                    World.ChurchCourtyardPlan);
-            if (World.Fair != null)
-            {
-                foreach (CityBenchSeat seat in World.Fair.Plan.Benches)
-                    benchPlans.Add(new CityBenchSitPlan(seat));
-                World.Fair.InstallInteractions(Player, camera);
-            }
-            if (World.CafeSite != null)
-                benchPlans.Add(new CityBenchSitPlan(World.CafeSite.CounterSeat.ToBenchSeat()));
-            var cobblerSite = CityCobblerSitePlan.ForLayout(Layout);
-            if (cobblerSite.IsEnabled) benchPlans.Add(new CityBenchSitPlan(cobblerSite.Yard.Seat));
-            benchPlans.AddRange(CityBenchRestPlanner.CreateCourtyardSeats(World.ResidentialCourtyards));
-            BenchSits = CityBenchSitWorldBuilder.Build(
-                transform,
-                benchPlans,
-                Player,
-                camera);
-            InstallChurchGardenPot();
-            // Life simulation: every now and then a walker near a free
-            // bench sits down for a while and moves on.
-            // Fair seats stay available to the hero; background walkers
-            // have no authored approach through the fair's props.
-            var restBenchPlans = new List<CityBenchSitPlan>(benchPlans);
-            restBenchPlans.RemoveAll(bench => bench.Id == CityCobblerYardPlan.SeatId);
-            if (World.CafeSite != null)
-                restBenchPlans.RemoveAll(bench => bench.Id == World.CafeSite.CounterSeat.StableId);
-            if (World.Fair != null)
-                foreach (CityBenchSeat fairSeat in World.Fair.Plan.Benches)
-                    restBenchPlans.RemoveAll(bench => bench.Id == fairSeat.Id);
-            BenchRests = CityBenchNpcRestController.Create(
-                transform,
-                CityBenchRestPlanner.Create(restBenchPlans, PedestrianPlan, World.ResidentialCourtyards),
-                Pedestrians,
-                GameSessionState.CitySeed);
-            // Placeholder interactions on every booth door and dumpster
-            // lid: the real prompt on the real dock, answered with a
-            // feedback line until the actual call and search ship.
-            StreetUtilities = CityStreetUtilityWorldBuilder.Build(
-                transform,
-                CityStreetUtilityDock.CreateAll(
-                    Layout,
-                    World.DecorationPlan));
             intoxicationHud = ui.AddComponent<IntoxicationHudView>();
 
             PlayerCameraFollow follow = camera.GetComponent<PlayerCameraFollow>();
@@ -833,87 +582,32 @@ namespace BarPromenade
             }
 
             follow.Initialize(camera, Player.GameObject.transform, false);
-            foreach (var keeper in World.Root.GetComponentsInChildren<CityPigeonKeeper>(true))
-                keeper.PresentationObserver = Player.GameObject.transform;
-            foreach (var sorter in World.Root.GetComponentsInChildren<CityGlassReturnWorker>(true))
-                sorter.PresentationObserver = Player.GameObject.transform;
-            foreach (var cobbler in World.Root.GetComponentsInChildren<CityCobblerWorker>(true))
-                cobbler.PresentationObserver = Player.GameObject.transform;
-            foreach (var door in World.Root.GetComponentsInChildren<CityCobblerWorld>(true))
-                door.BindPlayer(Player.GameObject.transform);
-            foreach (var gate in World.Root.GetComponentsInChildren<CityPigeonCourtyardGate>(true))
-                gate.BindPlayer(Player);
-            BindCafe(ui.transform, camera, follow);
-            GameLogPhases.Report("city", "park_and_benches", stepTimer);
-            yield return new CompositionStep("residents_and_interactions", 0.87f);
-            stepTimer.Restart();
+            cityFollow = follow;
             TargetInteraction =
                 ui.AddComponent<InventoryTargetInteractionController>();
             TargetInteraction.Initialize(
                 Player,
                 follow,
                 intoxicationHud);
-            // And the man who has been waiting beside that car since before
-            // the route was cancelled: perched on its bonnet with his boots
-            // on the bumper, throwing a coin, facing whoever walks up. He
-            // comes after the car because his whole stance is read off it,
-            // and after the menu above because saying yes to him opens it.
-            //
-            // A car that has just been driven home is handed NO menu: the
-            // offer is a journey, and this one ends with the car turned round
-            // in its own bay, which is a pose it cannot pull out of. He talks,
-            // and the offer comes back with the next city build, which raises
-            // him from the layout in his own stance again.
-            BuildLastRouteRide(arrivingByCar, hasTunnelTravel, tunnelTravelPlan);
-            var ferrymanDriver = LastRouteCar != null ? LastRouteCar.GetComponentInParent<LastRouteCarDriver>() : null;
-            AmbientTraffic = CityAmbientTraffic.Create(this, ferrymanDriver);
+            AmbientTraffic = CityAmbientTraffic.Create(this, null);
+            Pedestrians.ConfigureVehicleTraffic(Bus, null, null, AmbientTraffic);
             while (AmbientTraffic.BuildNext())
-                yield return new CompositionStep("ambient_traffic", .88f);
-            Pedestrians.ConfigureVehicleTraffic(Bus, Cannery, ferrymanDriver, AmbientTraffic);
+                yield return new CompositionStep("ambient_traffic", .79f);
             var rides = new CityBusRideController[vehicles.Length];
             var passengers = new CityBusNpcPassengerController[vehicles.Length];
             for (int i = 0; i < vehicles.Length; i++)
             {
-                rides[i] = CityBusRideController.Create(vehicles[i], Player, World.WalkableArea, camera,
+                rides[i] = CityBusRideController.Create(vehicles[i], Player, PlayerWalkableArea, camera,
                     follow, pedestrianStreetSurfacePlan);
                 passengers[i] = CityBusNpcPassengerController.Create(vehicles[i], Pedestrians, waits[vehicles[i].LineIndex],
-                    World.WalkableArea, pedestrianStreetSurfacePlan, Player.GameObject.transform,
+                    PlayerWalkableArea, pedestrianStreetSurfacePlan, Player.GameObject.transform,
                     unchecked(GameSessionState.CitySeed + 104729 * i));
                 passengers[i].ConfigureResidentJourneys(ResidentJourneys, i);
             }
             BusRides = rides;
             VehiclePassengers = passengers;
             foreach (var controller in passengers) controller.ShareWaitingPlaces(passengers);
-            while (Pedestrians.WarmKioskPopulation())
-                yield return new CompositionStep("resident_population", 0.76f);
-            foreach (var controller in passengers) controller.WarmResidentWaiters();
-            while (Pedestrians.WarmResidentPopulation())
-                yield return new CompositionStep("resident_population", 0.76f);
             GameLogPhases.Report("city", "interactions_and_rides", stepTimer);
-            // The city sound layer is composed only after every moving
-            // physical owner exists. Its plan contains no anonymous fallback
-            // emitters: missing fixtures stay silent.
-            stepTimer.Restart();
-            SoundscapePlan = CitySoundscapeAnchorPlanner.Create(
-                Layout,
-                World.DecorationPlan);
-            // The swings are found rather than handed over: they are built
-            // inside the world's decoration pass and are the only moving
-            // physical owner the root does not create itself.
-            CityPlaygroundSwing[] playgroundSwings =
-                World.Root != null
-                    ? World.Root
-                        .GetComponentsInChildren<CityPlaygroundSwing>(true)
-                    : null;
-            Soundscape = CitySoundscapeDirector.Create(
-                transform,
-                SoundscapePlan,
-                camera.transform,
-                Layout,
-                DryingYardBabushkas,
-                WeighbridgeNeedle,
-                playgroundSwings,
-                () => Night.NightFactor);
             GameObject rainObject = new GameObject("City Rain Field");
             rainObject.transform.SetParent(transform, false);
             Rain = rainObject.AddComponent<CityRainField>();
@@ -923,52 +617,13 @@ namespace BarPromenade
                 Layout.Seed,
                 CityEternalRainShaper.FloorIntensity(
                     GameWeatherRules.EvaluateCurrent().RainIntensity));
-            var rainShelters = new List<Collider>(World.ArchShelter.RainShelterColliders);
-            if (World.Fair != null) rainShelters.AddRange(World.Fair.RainShelters);
-            if (World.Gazebo != null) rainShelters.AddRange(World.Gazebo.RainShelters);
-            if (laundry != null) rainShelters.AddRange(laundry.RainShelters);
-            if (World.CafeRainShelter != null) rainShelters.Add(World.CafeRainShelter);
-            rainShelters.AddRange(World.KioskRainShelters);
-            foreach (var terraceAnchors in World.Root.GetComponentsInChildren<CityTerraceWorldAnchors>())
-                if (terraceAnchors.RainShelter != null) rainShelters.Add(terraceAnchors.RainShelter);
-            Rain.SetLocalShelters(rainShelters);
-            Rain.EnableSurfaceContacts(camera, transform, Player.GameObject.transform,
-                vehicles, Cannery?.Truck, LastRouteCar != null ? LastRouteCar.transform : null);
+            Rain.EnableSurfaceContacts(camera, transform, Player.GameObject.transform, vehicles);
             Rain.Contacts?.BindAmbient(AmbientTraffic);
-            if (World.MountainBoundaryPlan.HasTunnel)
-            {
-                var tunnelShelterObject =
-                    new GameObject("City Tunnel Shelter");
-                tunnelShelterObject.transform.SetParent(transform, false);
-                TunnelShelter = tunnelShelterObject.AddComponent<
-                    CityTunnelShelterController>();
-                TunnelShelter.Initialize(
-                    Player.GameObject.transform,
-                    World.MountainBoundaryPlan.Tunnel,
-                    Night.FogField,
-                    World.MountainBackdrop);
-            }
             GameObject rainSoundObject =
                 new GameObject("City Rain Sound");
             rainSoundObject.transform.SetParent(transform, false);
             RainSound =
                 rainSoundObject.AddComponent<CityRainSoundPlayer>();
-            // The surf bed sits under everything near the north
-            // shore: driven by the hero's distance to the waterline
-            // and the deterministic wind, silent when the layout has
-            // no coast.
-            GameObject surfSoundObject =
-                new GameObject("City Surf Sound");
-            surfSoundObject.transform.SetParent(transform, false);
-            SurfSound =
-                surfSoundObject.AddComponent<CitySurfSoundPlayer>();
-            surfSoundObject
-                .AddComponent<CitySurfSoundController>()
-                .Initialize(
-                    SurfSound,
-                    camera.transform,
-                    World.SeacoastPlan,
-                    Layout.BuildingMasses);
             GameObject lightningObject =
                 new GameObject("City Lightning Flash");
             lightningObject.transform.SetParent(transform, false);
@@ -997,9 +652,6 @@ namespace BarPromenade
                     (World.Cafe != null && World.Cafe.ContainsInterior(camera.transform.position)),
                 new CityEternalRainShaper(),
                 Night.FogField);
-            World.Root.GetComponentInChildren<CityCoastalGrassWind>(true)?.Initialize(Weather, Player.GameObject.transform);
-            World.Root.GetComponent<CityWindField>()?.BindWeather(Weather);
-            World.Root.GetComponentInChildren<CityGrassField>(true)?.Initialize(Player.GameObject.transform, Pedestrians, camera);
             GameLogPhases.Report("city", "soundscape_and_weather", stepTimer);
             stepTimer.Restart();
             Clouds = ExteriorCloudField.Create(
@@ -1015,85 +667,6 @@ namespace BarPromenade
             SpeechBubbles.Initialize(
                 camera,
                 Player.GameObject.transform);
-            var pigeonKeeper = World.Root.GetComponentInChildren<CityPigeonKeeper>(true);
-            if (pigeonKeeper != null)
-                pigeonKeeper.gameObject.AddComponent<CityPigeonKeeperSpeech>().Initialize(pigeonKeeper, SpeechBubbles);
-            EastGuards = CityEastGuardWorldBuilder.Build(transform, World.EastExitPlan,
-                Player.GameObject.transform, camera, Layout.Seed);
-            // The two men at the barrel and the sleeper under the arch talk
-            // among themselves over the same shared bubbles; raised here for
-            // the same reason as the guards.
-            if (World.ArchShelterPlan.IsEnabled)
-            {
-                ArchShelterConversations = CityArchShelterConversationController.Create(
-                    World.ArchShelter, Player.GameObject.transform, camera, Layout.Seed);
-            }
-            // Every act of the gravedigger's job is now a piece of
-            // work rather than a press. Raised here rather than beside
-            // the jobs themselves because it takes the camera down onto
-            // the hole and leases the hero out of sight while he digs,
-            // and neither of those exists until this far down. One
-            // session serves the whole yard: it binds to whichever
-            // grave the hero is standing over, and to the board of
-            // whichever finished stone he stops to read — reading is a
-            // camera move rather than a panel, because the words are
-            // real letters on the brass.
-            GraveWork = CemeteryGraveWorkController.Create(
-                transform,
-                Gravedigging,
-                Player,
-                follow,
-                camera,
-                intoxicationHud,
-                ui.transform);
-            // Two ordinary wintering ravens that hold to the first
-            // grave the hero ever closes with a stone: one on its
-            // mound, one on clear ground a few steps off. Raised
-            // right after the work session because their director
-            // must know when a session owns the camera — nothing
-            // about the birds may be observable inside somebody
-            // else's shot.
-            CemeteryRavens = CityCemeteryRavenController.Create(
-                transform,
-                World.CemeteryPlan,
-                Gravedigging,
-                GraveWork,
-                Player.GameObject.transform,
-                camera,
-                GameSessionState.CitySeed);
-            // And the rest of the species: up to eight triggerless
-            // pairs on the open city's planned roosts, always already
-            // perched — nothing about them is an event. Raised right
-            // after the grave pair because they share its session
-            // gate: while a grave-work act owns the camera, no bird
-            // may do anything observable inside that shot. The
-            // closure reads GraveWork lazily per poll, the same
-            // null-guarded idiom the cemetery pair applies to a yard
-            // with no work controller at all. The ground is the one the
-            // arrival already built: it is a function of the layout, and
-            // the map takes the same instance below.
-            GameLogPhases.Report("city", "ambient_ai", stepTimer);
-            stepTimer.Restart();
-            CityRavenRoosts = RavenRoostController.Create(
-                transform,
-                CityRavenRoostPlanner.Create(
-                    Layout,
-                    World,
-                    arrivalGround,
-                    GameSessionState.CitySeed),
-                RavenRoostSettings.City,
-                Player.GameObject.transform,
-                () => GraveWork != null && GraveWork.IsActive,
-                GameSessionState.CitySeed);
-            // The argument at the chess set. Null when the layout grew
-            // no park: there is then nobody to have it with.
-            ParkQuarrel = CityParkQuarrelController.Create(
-                transform,
-                ParkChessPlayer,
-                ParkCheckersPlayer,
-                Player.GameObject.transform,
-                SpeechBubbles,
-                GameSessionState.CitySeed);
             // The one thing a walker ever says to him: a short insult on
             // the last stage, over the walker's own head. City only — the
             // Home balcony street has walkers but no bubble view.
@@ -1102,27 +675,6 @@ namespace BarPromenade
                 Pedestrians,
                 Player.GameObject.transform,
                 SpeechBubbles,
-                GameSessionState.CitySeed);
-            // And the games themselves. Nothing on either board moves
-            // until the hero takes one of the two free planks; from
-            // that moment that table is a real match against a real,
-            // deliberately mediocre engine, and it keeps its position
-            // for as long as this City lives. Raised last because it
-            // needs the seats, the camera and the bubbles all at once.
-            BoardGames = CityBoardGameController.Create(
-                transform,
-                CityBoardGamePlan.Create(Layout, World.DecorationPlan),
-                BenchSits,
-                Player,
-                camera,
-                follow,
-                ParkChessSetMen != null
-                    ? ParkChessSetMen.GetComponent<CityChessSetMen>()
-                    : null,
-                SpeechBubbles,
-                ParkChessPlayer,
-                ParkCheckersPlayer,
-                ParkQuarrel,
                 GameSessionState.CitySeed);
             GameLogPhases.Report("city", "raven_and_board", stepTimer);
             IntoxicationStatus =
@@ -1140,7 +692,7 @@ namespace BarPromenade
                 intoxicationHud,
                 BusPlans,
                 World.MountainBoundaryPlan,
-                World.SeacoastPlan, PedestrianPlan);
+                World.SeacoastPlan ?? (districtPlan == null ? null : CityWorldPlans.GetOrCreate(Layout).Seacoast), PedestrianPlan);
             GameLogPhases.Report("city", "map_initialize", stepTimer);
             // The two foreign tabs chart pure plans that take over a second
             // to build and are looked at only with the map open on them, so
@@ -1152,6 +704,7 @@ namespace BarPromenade
             // tab drew an empty rectangle and named nothing up there - the
             // chart offered a place it could not describe.
             int citySeed = GameSessionState.CitySeed;
+            if (districtPlan != null) Map.SetCityArrivalPreparation(EnsureDistrictAt);
             Map.ConfigureAreasOnFirstUse(() =>
             {
                 Stopwatch areaTimer = Stopwatch.StartNew();
@@ -1195,19 +748,24 @@ namespace BarPromenade
                 intoxicationHud);
             GameLogPhases.Report("city", "ui_controllers", stepTimer);
             stepTimer.Restart();
-            // All real fixtures and transport actors now exist. Keep the
-            // presentation under the root so interior dormancy releases its
-            // captures, material leases and camera registration with the city.
-            var lightingObject = new GameObject("City Lighting");
-            lightingObject.transform.SetParent(transform, false);
-            Lighting = lightingObject.AddComponent<CityLightingPresentation>();
-            Lighting.Initialize(this);
-            GameLogPhases.Report("city", "local_lighting", stepTimer);
-            yield return new CompositionStep("local_lighting", 0.98f);
+            yield return BindDistrictSteps(firstDistrict, hasAreaArrival, areaArrivalToken);
+            while (Pedestrians.WarmKioskPopulation())
+                yield return new CompositionStep("resident_population", .96f);
+            foreach (var controller in passengers) controller.WarmResidentWaiters();
+            while (Pedestrians.WarmResidentPopulation())
+                yield return new CompositionStep("resident_population", .96f);
+
+            RefreshDistrictRain();
+            SelectDistrict(firstDistrict);
             AmbientPedestrians = CityAmbientPedestrians.Create(this, pedestrianWalkableArea);
             Physics.SyncTransforms();
             while (AmbientPedestrians.WarmNext())
                 yield return new CompositionStep("ambient_pedestrians", 0.99f);
+            if (districtPlan == null && firstDistrict.World.RidgeRoot != null)
+            {
+                yield return AttachRidgeScene(firstDistrict, stagedComposition);
+                RefreshDistrictRain();
+            }
             GameSessionState.CompleteCityReturn();
             IsInitialized = true;
             GameLogPhases.Report("city", "player_and_ui", phaseTimer);
@@ -1401,6 +959,7 @@ namespace BarPromenade
                 dormantListener = null;
             }
 
+            Sleep(RidgeScope);
             Scene scene = gameObject.scene;
             GameObject[] roots = scene.GetRootGameObjects();
             for (int index = 0; index < roots.Length; index++)
@@ -1499,6 +1058,13 @@ namespace BarPromenade
                 Weather.ApplyCurrentWeather(true);
             }
 
+            if (districtPlan != null)
+            {
+                bool ridgeArrival = WantsRidgeArrival();
+                EnsureDistrict(ridgeArrival);
+                SelectDistrict(ridgeArrival ? ridgeDistrict : lowerDistrict);
+            }
+
             Vector3 spawnPosition = Player.GameObject.transform.position;
             string spawnSource = "resumed_in_place";
             string returnBarId = string.Empty;
@@ -1524,6 +1090,7 @@ namespace BarPromenade
                 spawnSource = doorSource;
             }
 
+            if (districtPlan != null) SelectDistrict(districtPlan.IsRidge(spawnPosition) ? ridgeDistrict : lowerDistrict);
             Visibility.Refresh(true);
             Player.Motor.SetInputEnabled(true);
             PlayerCameraFollow follow =
@@ -1534,22 +1101,14 @@ namespace BarPromenade
             }
 
             follow.Initialize(camera, Player.GameObject.transform, false);
-            foreach (var keeper in World.Root.GetComponentsInChildren<CityPigeonKeeper>(true))
-                keeper.PresentationObserver = Player.GameObject.transform;
-            foreach (var sorter in World.Root.GetComponentsInChildren<CityGlassReturnWorker>(true))
-                sorter.PresentationObserver = Player.GameObject.transform;
-            foreach (var cobbler in World.Root.GetComponentsInChildren<CityCobblerWorker>(true))
-                cobbler.PresentationObserver = Player.GameObject.transform;
-            foreach (var door in World.Root.GetComponentsInChildren<CityCobblerWorld>(true))
-                door.BindPlayer(Player.GameObject.transform);
-            foreach (var gate in World.Root.GetComponentsInChildren<CityPigeonCourtyardGate>(true))
-                gate.BindPlayer(Player);
+            if (ridgeDistrict != null || districtPlan == null)
+                BindRidgeInteractions(ridgeDistrict?.World.Root ?? World.RidgeRoot ?? World.Root);
             if (IntoxicationStatus != null)
             {
                 IntoxicationStatus.Initialize(Player, follow, intoxicationHud);
             }
 
-            RestoreLastRoute(camera, IsReturningByCar(hasAreaArrival, token));
+            if (lowerDistrict != null) RestoreLastRoute(camera, IsReturningByCar(hasAreaArrival, token));
             foreach (var controller in VehiclePassengers) controller.WarmResidentWaiters();
             RestoreMusicAfterDormancy();
             if (Map != null)
@@ -1646,14 +1205,14 @@ namespace BarPromenade
             GameSessionState.FerrymanRide == LastRouteFerrymanRideStage.Returning;
 
         private void BuildLastRouteCar(Camera camera, bool arrivingByCar,
-            bool hasTunnelTravel, CityTunnelTravelPlan tunnelTravelPlan)
+            bool hasTunnelTravel, CityTunnelTravelPlan tunnelTravelPlan, Transform owner)
         {
             carWasBuiltForReturn = arrivingByCar;
             if (GameSessionState.FerrymanRide ==
                 LastRouteFerrymanRideStage.NotTaken)
             {
                 LastRouteCar = LastRouteCarFactory.Create(
-                    transform,
+                    owner,
                     LastRouteCarPlan.Create(Layout),
                     Player,
                     camera);
@@ -1668,7 +1227,7 @@ namespace BarPromenade
                     out Vector3 entryPosition,
                     out Vector3 entryFacing);
                 LastRouteCar = LastRouteCarFactory.Create(
-                    transform,
+                    owner,
                     LastRouteCarPlan.At(entryPosition, entryFacing),
                     Player,
                     camera,
@@ -1677,12 +1236,12 @@ namespace BarPromenade
         }
 
         private void BuildLastRouteRide(bool arrivingByCar,
-            bool hasTunnelTravel, CityTunnelTravelPlan tunnelTravelPlan)
+            bool hasTunnelTravel, CityTunnelTravelPlan tunnelTravelPlan, Transform owner)
         {
             if (LastRouteCar != null)
             {
                 LastRouteFerryman = LastRouteFerrymanFactory.Create(
-                    transform,
+                    owner,
                     LastRouteFerrymanPlan.Create(LastRouteCar),
                     LastRouteCar,
                     arrivingByCar ? null : TargetInteraction,
@@ -1732,7 +1291,7 @@ namespace BarPromenade
                             carRoot.forward);
                     Ride = arrivingByCar
                         ? LastRouteRideController.CreateForCityArrival(
-                            transform,
+                            owner,
                             carSeat,
                             carRoot.GetComponent<LastRouteCarDriver>(),
                             LastRouteFerryman,
@@ -1744,7 +1303,7 @@ namespace BarPromenade
                             Bus,
                             Pedestrians)
                         : LastRouteRideController.CreateForCityDeparture(
-                            transform,
+                            owner,
                             carSeat,
                             carRoot.GetComponent<LastRouteCarDriver>(),
                             LastRouteFerryman,
@@ -1788,8 +1347,8 @@ namespace BarPromenade
             LastRouteCar = null;
 
             bool hasTunnelTravel = CityTunnelTravelPlanner.TryCreate(World.MountainBoundaryPlan, out var tunnelPlan);
-            BuildLastRouteCar(camera, arrivingByCar, hasTunnelTravel, tunnelPlan);
-            BuildLastRouteRide(arrivingByCar, hasTunnelTravel, tunnelPlan);
+            BuildLastRouteCar(camera, arrivingByCar, hasTunnelTravel, tunnelPlan, lowerDistrict?.Root ?? transform);
+            BuildLastRouteRide(arrivingByCar, hasTunnelTravel, tunnelPlan, lowerDistrict?.Root ?? transform);
 
             LastRouteCarDriver driver = LastRouteCar != null ? LastRouteCar.GetComponentInParent<LastRouteCarDriver>() : null;
             AmbientTraffic.BindFerryman(driver);
@@ -1830,6 +1389,20 @@ namespace BarPromenade
             {
                 LocationMusic.ReplaceDefaultTheme(Music);
             }
+        }
+
+        private void BindRidgeInteractions(GameObject region)
+        {
+            foreach (var keeper in region.GetComponentsInChildren<CityPigeonKeeper>(true))
+                keeper.PresentationObserver = Player.GameObject.transform;
+            foreach (var sorter in region.GetComponentsInChildren<CityGlassReturnWorker>(true))
+                sorter.PresentationObserver = Player.GameObject.transform;
+            foreach (var cobbler in region.GetComponentsInChildren<CityCobblerWorker>(true))
+                cobbler.PresentationObserver = Player.GameObject.transform;
+            foreach (var door in region.GetComponentsInChildren<CityCobblerWorld>(true))
+                door.BindPlayer(Player.GameObject.transform);
+            foreach (var gate in region.GetComponentsInChildren<CityPigeonCourtyardGate>(true))
+                gate.BindPlayer(Player);
         }
 
         private void Sleep(GameObject target)
@@ -2110,7 +1683,7 @@ namespace BarPromenade
                     inventoryTimer.Elapsed.TotalMilliseconds));
         }
 
-        private void BindCafe(Transform ui, Camera camera, PlayerCameraFollow follow)
+        private void BindCafe(Transform ui, Camera camera, PlayerCameraFollow follow, Transform owner)
         {
             MountainRoadCafeWorldResult cafe = World.Cafe;
             if (cafe == null) return;
@@ -2124,10 +1697,10 @@ namespace BarPromenade
             foreach (CityBenchSitInteraction seat in BenchSits)
             {
                 if (seat.Plan.Id != World.CafeSite.CounterSeat.StableId) continue;
-                CafeSeatView = gameObject.AddComponent<MountainRoadCafeSeatView>();
+                CafeSeatView = owner.gameObject.AddComponent<MountainRoadCafeSeatView>();
                 CafeSeatView.Initialize(seat, Player, follow);
                 MountainRoadCafeMenuPresentation menu = MountainRoadCafeMenuPresentation.CreateAndBind(cafe.Model, cafe.Cast);
-                CafeMenu = gameObject.AddComponent<MountainRoadCafeMenuController>();
+                CafeMenu = owner.gameObject.AddComponent<MountainRoadCafeMenuController>();
                 CafeMenu.Initialize(seat, CafeSeatView, cafe.Cast, menu);
                 return;
             }
@@ -2136,15 +1709,45 @@ namespace BarPromenade
 
         private void Update()
         {
-            if (IsInitialized && !IsDormant) transitSession?.Tick();
+            if (!IsInitialized || IsDormant) return;
+            transitSession?.Tick();
+            if (districtPlan != null) UpdateDistrictStreaming();
+
         }
 
-        private void OnDisable() => transitSession?.Detach();
+        private void OnDisable()
+        {
+            transitSession?.Detach();
+            GameObject ridge = RidgeScope;
+            ridgeWasActiveOnDisable = ridgeScene.isLoaded && ridge != null && ridge.activeSelf;
+            if (ridgeWasActiveOnDisable) ridge.SetActive(false);
+        }
 
-        private void OnEnable() => transitSession?.Attach();
+        private void OnEnable()
+        {
+            transitSession?.Attach();
+            GameObject ridge = RidgeScope;
+            if (ridgeWasActiveOnDisable && !IsDormant && ridge != null)
+                ridge.SetActive(true);
+            ridgeWasActiveOnDisable = false;
+        }
+
+        private static void UnloadRidge(Scene scene)
+        {
+            // Single scene transitions may already be unloading this scene.
+            if (scene.IsValid() && scene.isLoaded && scene != SceneManager.GetActiveScene())
+                SceneManager.UnloadSceneAsync(scene);
+        }
 
         private void OnDestroy()
         {
+            if (ridgeLoad != null)
+                ridgeLoad.completed += _ => UnloadRidge(SceneManager.GetSceneByName(SceneIds.CityRidge));
+            districtBuild?.Dispose();
+            GameObject ridge = RidgeScope;
+            if (ridge != null) ridge.SetActive(false);
+            UnloadRidge(ridgeScene);
+
             if (PedestrianInsults != null)
             {
                 // Withdraws its speaker from the shared view before the

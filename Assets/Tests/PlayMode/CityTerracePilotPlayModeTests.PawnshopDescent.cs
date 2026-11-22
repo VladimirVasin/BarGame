@@ -58,7 +58,7 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(plan.UpperDock.z, Is.EqualTo(summit.NorthSidewalk[0].z + .5f).Within(.001f));
                 Assert.That(plan.UpperDock.y - plan.BenchLandingDock.y, Is.GreaterThan(4f),
                     "The old bench landing must not stand in for the upper-road entrance.");
-                Transform world = city.World.Root.GetComponentsInChildren<Transform>()
+                Transform world = city.World.RidgeRoot.GetComponentsInChildren<Transform>()
                     .SingleOrDefault(part => part.name == "Pawnshop hillside descent");
                 Assert.That(world, Is.Not.Null);
                 var bench = city.GetComponentsInChildren<CityBenchSitInteraction>()

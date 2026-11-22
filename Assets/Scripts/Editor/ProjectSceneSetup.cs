@@ -15,6 +15,7 @@ namespace BarPromenade.Editor
         private const string MainMenuScenePath =
             "Assets/Scenes/MainMenu.unity";
         private const string CityScenePath = "Assets/Scenes/City.unity";
+        private const string CityRidgeScenePath = "Assets/Scenes/CityRidge.unity";
         private const string DoorTransitionScenePath =
             "Assets/Scenes/DoorTransition.unity";
         private const string BarInteriorScenePath = "Assets/Scenes/BarInterior.unity";
@@ -54,7 +55,8 @@ namespace BarPromenade.Editor
             AlpineVillageScenePath,
             MothersHouseInteriorScenePath,
             CombatTestScenePath,
-            PawnshopInteriorScenePath
+            PawnshopInteriorScenePath,
+            CityRidgeScenePath
         };
 
         private static SceneAsset mainMenuStartScene;
@@ -93,6 +95,7 @@ namespace BarPromenade.Editor
             EnsureAlpineVillageScene();
             EnsureMothersHouseInteriorScene();
             EnsureCombatTestScene();
+            EnsureEmptyAdditiveScene(CityRidgeScenePath);
             ConfigureBuildScenes();
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
@@ -143,6 +146,7 @@ namespace BarPromenade.Editor
             EnsureAlpineVillageScene();
             EnsureMothersHouseInteriorScene();
             EnsureCombatTestScene();
+            EnsureEmptyAdditiveScene(CityRidgeScenePath);
             ConfigureBuildScenes();
             // Packaging normalizes the internal macOS executable name. Unity
             // otherwise leaves that signed executable beside the next build's

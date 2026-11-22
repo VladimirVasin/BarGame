@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using BarPromenade.Rendering;
 using UnityEngine;
@@ -137,29 +138,39 @@ namespace BarPromenade
         public CityWindowLighting WindowLights { get; private set; }
         public override Light VolumeLight => null;
         private int halationSourceCount;
+        private Func<bool> districtActive;
         public override int HalationSourceCount => halationSourceCount;
         public int EmitterCandidateCount => emitters.Count;
         public int PracticalCount => practicals.Count;
         public int VolumeSourceCount { get; private set; }
         public int BounceRegionCount { get; private set; }
 
-        public void Initialize(CityGameRoot root)
+        public void Initialize(CityGameRoot root) => RuntimeComposition.RunSynchronously(
+            InitializeSteps(root, root.World, root.Night, root.transform, null, false));
+
+        internal IEnumerator InitializeSteps(CityGameRoot root, CityWorldResult world,
+            CityNightWorldResult night, Transform region, Func<bool> regionIsActive, bool incremental)
         {
             if (initialized) throw new InvalidOperationException("City lighting is already initialized.");
-            Root = root != null && root.World != null && root.Night?.Atmosphere != null ? root :
+            Root = root != null && world != null && night?.Atmosphere != null ? root :
                 throw new ArgumentNullException(nameof(root));
-            sourceRoot = root.transform; Atmosphere = root.Night.Atmosphere; layout = root.Layout;
-            Atmosphere.ConfigureStopShadowCamera(root.Camera,
-                () => Root != null && Root.IsInitialized && !Root.IsDormant && Root.isActiveAndEnabled);
-            cafe = root.World.Cafe;
+            sourceRoot = region;
+            Atmosphere = night.Atmosphere;
+            layout = root.Layout;
+            districtActive = regionIsActive;
+            Atmosphere.ConfigureStopShadowCamera(root.Camera, () => IsForCamera(root.Camera));
+            cafe = world.Cafe;
             CacheCafeSupport();
-            CitySurfaceLibrary.ApplyHierarchy(sourceRoot);
-            CacheWorld(root.World.Root.transform);
-            metal = new CityMetalAppearance(); metal.Initialize(root);
+            yield return CitySurfaceLibrary.ApplyHierarchySteps(sourceRoot, incremental);
+            yield return CacheWorldSteps(world.Root.transform, world.RiverQuayLampAnchors, incremental);
+            metal = new CityMetalAppearance();
+            metal.InitializeExterior(region);
+            if (incremental) yield return new CompositionStep("district_metal", .99f);
             Reflection = gameObject.AddComponent<CityReflectionController>();
-            Reflection.Initialize(root, this);
+            yield return Reflection.InitializeSteps(root, this, world, region, Atmosphere, incremental);
+            if (incremental) yield return new CompositionStep("district_reflection", .99f);
+            yield return InitializeWindowLights(root.Camera, incremental);
             initialized = true;
-            InitializeWindowLights(root.Camera);
         }
 
         public void InitializeExterior(Transform exteriorRoot, Camera camera, CityNightAtmosphere atmosphere,
@@ -175,33 +186,39 @@ namespace BarPromenade
             // City district coordinates must never classify those transformed fixtures.
             layout = null;
             CitySurfaceLibrary.ApplyHierarchy(exteriorRoot);
-            CacheWorld(exteriorRoot);
+            RuntimeComposition.RunSynchronously(CacheWorldSteps(exteriorRoot, null, false));
             CacheExteriorSupport();
             metal = new CityMetalAppearance(); metal.InitializeExterior(exteriorRoot);
             Reflection = gameObject.AddComponent<CityReflectionController>();
             Reflection.InitializeExterior(exteriorRoot, this, atmosphere, active);
             initialized = true;
-            InitializeWindowLights(camera);
+            RuntimeComposition.RunSynchronously(InitializeWindowLights(camera, false));
         }
 
-        private void InitializeWindowLights(Camera camera)
+        private IEnumerator InitializeWindowLights(Camera camera, bool incremental)
         {
             WindowLights = gameObject.AddComponent<CityWindowLighting>();
-            WindowLights.Initialize(sourceRoot, camera, () => IsForCamera(camera));
+            yield return WindowLights.InitializeSteps(sourceRoot, camera, () => IsForCamera(camera), incremental);
             WindowLights.enabled = isActiveAndEnabled;
         }
 
-        private void CacheWorld(Transform staticRoot)
+        private IEnumerator CacheWorldSteps(Transform staticRoot, IReadOnlyList<Transform> quayAnchors,
+            bool incremental)
         {
+            int processed = 0;
             properties = new MaterialPropertyBlock();
             foreach (Collider collider in staticRoot.GetComponentsInChildren<Collider>(true))
             {
+                if (incremental && ++processed % 128 == 0)
+                    yield return new CompositionStep("district_light_collision", .98f);
                 if (structure.Count >= 65536) throw new InvalidOperationException("City static collision budget exceeds 65536.");
                 if (!collider.isTrigger && collider.attachedRigidbody == null) structure.Add(collider);
             }
             Renderer[] renderers = sourceRoot.GetComponentsInChildren<Renderer>(true);
             foreach (Renderer renderer in renderers)
             {
+                if (incremental && ++processed % 128 == 0)
+                    yield return new CompositionStep("district_light_emitters", .98f);
                 // The long cafe soffit has three authored luminous runs, not
                 // a light at the empty centre of its combined mesh.
                 if (cafe != null && renderer.transform.IsChildOf(cafe.Root.transform)) continue;
@@ -244,11 +261,13 @@ namespace BarPromenade
                     if (!HasEmitterNear(anchor.position)) AddEmitter(new Emitter { Anchor = anchor,
                         Light = stop.Lights[source], Radius = .07f, Strength = .16f }, false);
                 }
-            if (Root != null)
-                foreach (Transform anchor in Root.World.RiverQuayLampAnchors)
+            if (quayAnchors != null)
+                foreach (Transform anchor in quayAnchors)
                     if (anchor != null) fixtureZones[anchor.position] = Zone.River;
             foreach (Light light in sourceRoot.GetComponentsInChildren<Light>(true))
             {
+                if (incremental && ++processed % 128 == 0)
+                    yield return new CompositionStep("district_practical_lights", .98f);
                 if (light.type != LightType.Point && light.type != LightType.Spot) continue;
                 string name = light.name;
                 int cafeLight = CafeLightIndex(light);
@@ -400,7 +419,7 @@ namespace BarPromenade
         public override bool IsForCamera(Camera camera) => initialized && isActiveAndEnabled && camera != null &&
             camera.cameraType == CameraType.Game && !camera.TryGetComponent(out ScenePresentationExclusion _) &&
             (Root != null ? Root.IsInitialized && Root.isActiveAndEnabled && !Root.IsDormant && camera == Root.Camera &&
-                camera.gameObject.scene == Root.gameObject.scene :
+                camera.gameObject.scene == Root.gameObject.scene && (districtActive == null || districtActive()) :
                 camera == exteriorCamera && exteriorActive != null && exteriorActive());
 
         public override void PrepareForCamera(Camera camera)

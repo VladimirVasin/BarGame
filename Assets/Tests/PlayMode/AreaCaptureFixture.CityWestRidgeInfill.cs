@@ -186,7 +186,7 @@ namespace BarPromenade.Tests.PlayMode
             CityBuildingPrototypePose pose = CityBuildingPrototypePlacement.ResolveExpectedCityPose(house.Lot);
             Vector3 threshold = pose.TransformPoint(CityBuildingAssetProvider.GetExpectedEntranceThreshold(house.Lot.BuildingVariant));
             Assert.That(Vector3.Distance(threshold, house.ThresholdWorld), Is.LessThan(.01f));
-            model = FindEntranceLampBuilding(city.World.Root.transform, threshold);
+            model = FindEntranceLampBuilding(city.World.RidgeRoot.transform, threshold);
             Assert.That(model.SourceTriangleCount, Is.LessThanOrEqualTo(3500));
             Assert.That(Vector3.Distance(model.transform.position, pose.Position), Is.LessThan(.01f));
             measured = default;
@@ -221,7 +221,7 @@ namespace BarPromenade.Tests.PlayMode
                 if (site.Part == CityHillsideSiteDetails.Kind.YardTree)
                     Assert.That(Vector2.Distance(new Vector2(site.Origin.x, site.Origin.z), formerTree), Is.GreaterThan(.1f),
                         "The requested tree must be absent from the final site plan.");
-            foreach (Transform frame in city.World.Root.GetComponentsInChildren<Transform>(true))
+            foreach (Transform frame in city.World.RidgeRoot.GetComponentsInChildren<Transform>(true))
                 if (frame.name == "RidgeYardTree")
                     Assert.That(Vector2.Distance(new Vector2(frame.position.x, frame.position.z), formerTree), Is.GreaterThan(.1f),
                         "No rendered tree or trunk collider may survive at the removed tree's position.");

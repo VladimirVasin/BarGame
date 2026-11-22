@@ -57,12 +57,12 @@ required parity/coverage need explicit requests.
 
 - Unity `6000.6.8f1`, URP `17.6.0`, Input System `1.20.1`, AI Navigation `2.0.16`.
 - Runtime composition builds near-empty scenes from validated pure plans.
-- Fourteen `.unity` build scenes under `Assets/Scenes/`, in order:
+- Fifteen `.unity` build scenes under `Assets/Scenes/`, in order:
   `MainMenu` (index `0`), `City`, `DoorTransition`, `BarInterior`,
   `SupermarketInterior`, `StairwellInterior`, `HomeInterior`, `MountainRoad`,
   `AreaLoading`, `ChurchInterior`, `AlpineVillage`, `MothersHouseInterior`,
-  `CombatTest`, `PawnshopInterior`.
-  Eleven gameplay roots exclude MainMenu, DoorTransition and AreaLoading; all use
+  `CombatTest`, `PawnshopInterior`, `CityRidge`.
+  Eleven gameplay roots exclude MainMenu, DoorTransition, AreaLoading and additive CityRidge; all use
   `Resources/Player/Player3DV2.prefab` through `PlayerFactory`.
 - `Assets/Scripts/Rules/` owns engine-independent rules and contracts;
   `Assets/Scripts/Runtime/` owns gameplay, `Assets/Scripts/Editor/` owns

@@ -1,5 +1,7 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -46,6 +48,8 @@ namespace BarPromenade
         private HomeExteriorContextPlan grassHome;
         private CityGrassSurface grassSupport;
         private bool recordingGrass;
+        private readonly Dictionary<int, FootstepGroundKind> plantingKinds = new();
+        private static readonly int PlantingGroundKindId = Shader.PropertyToID("_GroundKind");
         private readonly List<Source> grassScenery = new List<Source>();
         private readonly List<Source> jointScenery = new List<Source>();
         internal void RegisterGrassScenery(Transform root)
@@ -135,25 +139,38 @@ namespace BarPromenade
             if (system != null && !system.replacedColliders.Contains(collider)) system.replacedColliders.Add(collider);
         }
 
-        internal void FinalizeSurface()
+        internal void FinalizeSurface() => RuntimeComposition.RunSynchronously(FinalizeSurfaceSteps(false));
+
+        internal IEnumerator FinalizeSurfaceSteps(bool background)
         {
-            if (sealedSurface) return;
+            if (sealedSurface) yield break;
             using var partitionAllocations = CreatePartitionAllocationRecorder(out string partitionAllocationStatus);
             bool recordPartitionAllocations = partitionAllocationStatus == "available";
             long partitionAllocationCount = -1;
             var timer = System.Diagnostics.Stopwatch.StartNew();
             foreach (Source source in sources) Capture(source);
+            if (background) yield return new CompositionStep("ground_capture", .98f);
             double captureMilliseconds = timer.Elapsed.TotalMilliseconds;
             sources.Sort((a, b) => a.Priority != b.Priority ? b.Priority.CompareTo(a.Priority) : a.Order.CompareTo(b.Order));
             supports.Clear();
             supportFaces.Clear(); supportBounds.Clear(); supportPlanes.Clear(); supportContours.Clear();
+            int indexed = 0;
             foreach (Source source in sources)
-                if (!source.Paint) foreach (Triangle triangle in source.Support) IndexSupport(triangle);
+            {
+                if (source.Paint) continue;
+                foreach (Triangle triangle in source.Support)
+                {
+                    IndexSupport(triangle);
+                    if (background && ++indexed % 1024 == 0)
+                        yield return new CompositionStep("ground_support_index", .98f);
+                }
+            }
             // Painting is projected onto the actual support triangles, including
             // their grade breaks. Merely moving a paint quad's corners would
             // introduce a second plane across a road bend.
             foreach (Source source in sources)
-                if (source.Paint) source.Top = ProjectPaint(source.Top);
+                if (source.Paint)
+                    yield return ProjectPaint(source, background);
             double paintMilliseconds = timer.Elapsed.TotalMilliseconds;
 
             foreach (Source source in sources)
@@ -162,11 +179,14 @@ namespace BarPromenade
 
             var input = new List<Triangle>();
             var sides = new List<Triangle>();
+            int routed = 0;
             foreach (Source source in sources)
             {
                 if (source.Dynamic) continue;
                 foreach (Triangle triangle in source.Top)
                 {
+                    if (background && ++routed % 1024 == 0)
+                        yield return new CompositionStep("ground_route_faces", .98f);
                     Rect bounds = Bounds(triangle);
                     bool meetsDynamic = false;
                     foreach (DynamicRegion region in dynamicRegions)
@@ -185,17 +205,33 @@ namespace BarPromenade
                 if (!source.Paint) sides.AddRange(source.Sides);
             }
             double routingMilliseconds = timer.Elapsed.TotalMilliseconds;
+            if (background) yield return new CompositionStep("ground_project_paint", .98f);
             OrderByPriority(input);
             List<Triangle> surface;
             GroundSurfacePartitioner.Statistics statistics;
-            if (recordPartitionAllocations) { partitionAllocations.Reset(); partitionAllocations.Start(); }
-            try
+            if (background && !recordPartitionAllocations)
             {
-                surface = GroundSurfacePartitioner.Partition(input, out statistics, SurfaceBucketSize);
+                // Triangles carry plain positions, attributes and style indices.
+                // Meshes, materials and contacts are still captured and published on the main thread.
+                var partition = Task.Run(() =>
+                {
+                    var result = GroundSurfacePartitioner.Partition(input, out var stats, SurfaceBucketSize);
+                    return (result, stats);
+                });
+                yield return partition;
+                (surface, statistics) = partition.GetAwaiter().GetResult();
             }
-            finally
+            else
             {
-                if (recordPartitionAllocations) partitionAllocations.Stop();
+                if (recordPartitionAllocations) { partitionAllocations.Reset(); partitionAllocations.Start(); }
+                try
+                {
+                    surface = GroundSurfacePartitioner.Partition(input, out statistics, SurfaceBucketSize);
+                }
+                finally
+                {
+                    if (recordPartitionAllocations) partitionAllocations.Stop();
+                }
             }
             if (recordPartitionAllocations)
             {
@@ -206,18 +242,32 @@ namespace BarPromenade
                 else partitionAllocationStatus = "unavailable";
             }
             double partitionMilliseconds = timer.Elapsed.TotalMilliseconds;
+            if (background) yield return new CompositionStep("ground_partition", .98f);
             surface = ApplyBuildingPerimeters(surface);
             surface = ApplyResidentialCourtyards(surface);
             double perimeterMilliseconds = timer.Elapsed.TotalMilliseconds;
-            surface = GroundSurfacePartitioner.Conform(surface, bucketSize: EdgeBucketSize);
+            if (background)
+            {
+                List<Triangle> prepared = surface;
+                var conform = Task.Run(() => GroundSurfacePartitioner.Conform(prepared, bucketSize: EdgeBucketSize));
+                yield return conform;
+                surface = conform.GetAwaiter().GetResult();
+            }
+            else surface = GroundSurfacePartitioner.Conform(surface, bucketSize: EdgeBucketSize);
+            if (background) yield return new CompositionStep("ground_conform", .98f);
             double conformMilliseconds = timer.Elapsed.TotalMilliseconds;
             CityGrassSurface grass = null;
             if (grassLayout != null)
             {
                 grass = new CityGrassSurface(grassLayout, grassHome, grassCoast);
                 grassSupport=grass;
+                int plantedFaces = 0;
                 foreach (Triangle triangle in surface)
+                {
                     AddGrassFace(triangle);
+                    if (background && ++plantedFaces % 4096 == 0)
+                        yield return new CompositionStep("ground_planting_faces", .98f);
+                }
                 // Home assembles retained hillside terrain in a detached City
                 // frame before rotating it. Read it after placement, without
                 // changing its existing passive geometry or collision contract.
@@ -233,17 +283,23 @@ namespace BarPromenade
             var localSurfaces = new List<Triangle>[dynamicRegions.Count];
             recordingGrass = grass != null;
             for (int i = 0; i < localSurfaces.Length; i++)
-                localSurfaces[i] = ComposeDynamic(dynamicRegions[i]);
+            {
+                int index = i;
+                yield return ComposeDynamicSteps(dynamicRegions[i], background, value => localSurfaces[index] = value);
+                if (background) yield return new CompositionStep("ground_dynamic_surface", .98f);
+            }
             recordingGrass = false;
+            if (background) yield return new CompositionStep("ground_grass", .98f);
             double beforeJoints = timer.Elapsed.TotalMilliseconds;
-            PrepareStaticJoints(surface, localSurfaces);
+            yield return PrepareStaticJointSteps(surface, localSurfaces, background);
+            if (background) yield return new CompositionStep("ground_joints", .98f);
             CoatingJointBuildMilliseconds = timer.Elapsed.TotalMilliseconds - beforeJoints;
             grassScenery.Clear();
             jointScenery.Clear();
             surface.AddRange(sides);
             Transform sectors = new GameObject("City Ground").transform;
             sectors.SetParent(transform, false);
-            SectorCount = BuildSectors(sectors, surface, buildCollision);
+            yield return BuildSectorSteps(sectors, surface, buildCollision, background);
             for (int i = 0; i < localSurfaces.Length; i++)
                 PublishDynamic(dynamicRegions[i], localSurfaces[i], staticJointField);
             foreach (Source source in sources)
@@ -350,15 +406,23 @@ namespace BarPromenade
 
         private void AddGrassFace(Triangle triangle)
         {
-            Style style=styles[triangle.Surface];
-            // A footstep fallback is not permission to plant an imported deck.
-            float kind=style.Properties.GetFloat(Shader.PropertyToID("_GroundKind"));
-            bool planting=style.Material.HasProperty("_GroundKind") &&
-                (kind==(float)GroundSurfaceKind.Soil||kind==(float)GroundSurfaceKind.Lawn||kind==(float)GroundSurfaceKind.Sand);
-            FootstepGroundKind plantKind=kind==(float)GroundSurfaceKind.Lawn?FootstepGroundKind.Grass:
-                kind==(float)GroundSurfaceKind.Sand?FootstepGroundKind.Sand:FootstepGroundKind.Soil;
-            grassSupport.Add(grassSupport.ToCity(triangle.A.Position),grassSupport.ToCity(triangle.B.Position),
-                grassSupport.ToCity(triangle.C.Position),planting?plantKind:FootstepGroundKind.None);
+            if (!plantingKinds.TryGetValue(triangle.Surface, out FootstepGroundKind plants))
+            {
+                Style style = styles[triangle.Surface];
+                // The fallback footsteps alone do not grant permission to plant a deck.
+                plants = style.Material.HasProperty(PlantingGroundKindId)
+                    ? (GroundSurfaceKind)style.Properties.GetFloat(PlantingGroundKindId) switch
+                    {
+                        GroundSurfaceKind.Soil => FootstepGroundKind.Soil,
+                        GroundSurfaceKind.Lawn => FootstepGroundKind.Grass,
+                        GroundSurfaceKind.Sand => FootstepGroundKind.Sand,
+                        _ => FootstepGroundKind.None
+                    }
+                    : FootstepGroundKind.None;
+                plantingKinds.Add(triangle.Surface, plants);
+            }
+            grassSupport.Add(grassSupport.ToCity(triangle.A.Position), grassSupport.ToCity(triangle.B.Position),
+                grassSupport.ToCity(triangle.C.Position), plants);
         }
 
         private void AddSceneryGrassFaces(Source source)
@@ -506,13 +570,16 @@ namespace BarPromenade
             }
         }
 
-        private List<Triangle> ProjectPaint(List<Triangle> paint)
+        private IEnumerator ProjectPaint(Source source, bool incremental)
         {
             var result = new List<Triangle>();
             var candidates = new HashSet<int>();
             var projected = new List<Triangle>();
-            foreach (Triangle triangle in paint)
+            int processed = 0;
+            foreach (Triangle triangle in source.Top)
             {
+                if (incremental && ++processed % 64 == 0)
+                    yield return new CompositionStep("ground_project_paint", .98f);
                 Rect bounds = Bounds(triangle);
                 candidates.Clear(); projected.Clear();
                 for (int x = Mathf.FloorToInt(bounds.xMin / SupportBucketSize); x <= Mathf.FloorToInt(bounds.xMax / SupportBucketSize); x++)
@@ -542,7 +609,7 @@ namespace BarPromenade
                 projected.Sort(CompareHeight);
                 result.AddRange(GroundSurfacePartitioner.Partition(projected, SurfaceBucketSize));
             }
-            return result;
+            source.Top = result;
         }
 
         private static int CompareHeight(Triangle a, Triangle b) =>
@@ -621,7 +688,8 @@ namespace BarPromenade
             }
         }
 
-        private int BuildSectors(Transform parent, IReadOnlyList<Triangle> triangles, bool collision)
+        private IEnumerator BuildSectorSteps(Transform parent, IReadOnlyList<Triangle> triangles, bool collision,
+            bool incremental)
         {
             var groups = new Dictionary<Vector2Int, List<Triangle>>();
             foreach (Triangle triangle in triangles)
@@ -631,9 +699,12 @@ namespace BarPromenade
                 if (!groups.TryGetValue(key, out List<Triangle> group)) groups.Add(key, group = new List<Triangle>());
                 group.Add(triangle);
             }
+            SectorCount = groups.Count;
             foreach (KeyValuePair<Vector2Int, List<Triangle>> entry in groups)
+            {
                 BuildMesh("Ground sector " + entry.Key, parent, entry.Value, collision, staticJointField);
-            return groups.Count;
+                if (incremental) yield return new CompositionStep("ground_sector", .99f);
+            }
         }
 
         private GameObject BuildMesh(string name, Transform parent, IReadOnlyList<Triangle> triangles, bool collision,
@@ -716,6 +787,13 @@ namespace BarPromenade
 
         private List<Triangle> ComposeDynamic(DynamicRegion region)
         {
+            List<Triangle> surface = null;
+            RuntimeComposition.RunSynchronously(ComposeDynamicSteps(region, false, value => surface = value));
+            return surface;
+        }
+
+        private IEnumerator ComposeDynamicSteps(DynamicRegion region, bool background, Action<List<Triangle>> completed)
+        {
             var input = new List<Triangle>(region.Coatings);
             // A grave cuts through every coating, including a path that happens
             // to cross its mouth. Only this sector is rebuilt after a dig.
@@ -729,9 +807,24 @@ namespace BarPromenade
                 }
             input.AddRange(region.Source.Top);
             OrderByPriority(input);
-            List<Triangle> surface = GroundSurfacePartitioner.Partition(input, SurfaceBucketSize);
-            surface = ApplyBuildingPerimeters(surface);
-            surface = GroundSurfacePartitioner.Conform(surface, bucketSize: EdgeBucketSize);
+            List<Triangle> surface;
+            if (background)
+            {
+                var preparedInput = input;
+                var partition = Task.Run(() => GroundSurfacePartitioner.Partition(preparedInput, SurfaceBucketSize));
+                yield return partition;
+                surface = ApplyBuildingPerimeters(partition.GetAwaiter().GetResult());
+                var preparedSurface = surface;
+                var conform = Task.Run(() => GroundSurfacePartitioner.Conform(preparedSurface, bucketSize: EdgeBucketSize));
+                yield return conform;
+                surface = conform.GetAwaiter().GetResult();
+            }
+            else
+            {
+                surface = GroundSurfacePartitioner.Partition(input, SurfaceBucketSize);
+                surface = ApplyBuildingPerimeters(surface);
+                surface = GroundSurfacePartitioner.Conform(surface, bucketSize: EdgeBucketSize);
+            }
             if(recordingGrass)
             {
                 if(excavation!=null)grassSupport.SetExcavation(excavation,region.Bounds);
@@ -739,7 +832,7 @@ namespace BarPromenade
             }
             else if(grassSupport!=null)
                 GetComponentInChildren<CityGrassField>(true)?.Invalidate(region.Bounds);
-            return surface;
+            completed(surface);
         }
 
         private void PublishDynamic(DynamicRegion region, List<Triangle> surface, CityGroundJointField field)

@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using BarPromenade.Rendering;
 using UnityEngine;
@@ -75,11 +76,12 @@ namespace BarPromenade
         public int CaptureFailureCount => SumCounters(2);
         public int FailureCount => CaptureFailureCount;
 
-        public void Initialize(CityGameRoot root, CityLightingPresentation presentation)
+        internal IEnumerator InitializeSteps(CityGameRoot root, CityLightingPresentation presentation, CityWorldResult world,
+            Transform region, CityNightAtmosphere night, bool incremental)
         {
-            if (root == null || root.World == null || root.Night == null) throw new ArgumentNullException(nameof(root));
-            cafe = root.World.Cafe;
-            CacheDynamicRoots(root.transform);
+            if (root == null || world == null || night == null) throw new ArgumentNullException(nameof(root));
+            cafe = world.Cafe;
+            CacheDynamicRoots(region);
             if (cafe != null)
             {
                 AddDynamic(cafe.NpcRoot.transform);
@@ -91,10 +93,10 @@ namespace BarPromenade
                 foreach (var line in root.BusVehicles) AddDynamic(line.transform);
             if (root.Pedestrians != null) AddDynamic(root.Pedestrians.transform);
             if (root.LastRouteCar != null) AddDynamic(root.LastRouteCar.transform);
-            if (root.World.ArchShelter != null)
-                foreach (Transform resident in root.World.ArchShelter.ResidentRoots) AddDynamic(resident);
-            InitializeCore(root.transform, presentation, root.Night.Atmosphere,
-                () => root != null && root.IsInitialized && !root.IsDormant && root.isActiveAndEnabled);
+            if (world.ArchShelter != null)
+                foreach (Transform resident in world.ArchShelter.ResidentRoots) AddDynamic(resident);
+            yield return InitializeCoreSteps(region, presentation, night,
+                () => root != null && presentation.IsForCamera(root.Camera), incremental);
         }
 
         public void InitializeExterior(Transform exteriorRoot, CityLightingPresentation presentation,
@@ -102,11 +104,11 @@ namespace BarPromenade
         {
             if (exteriorRoot == null) throw new ArgumentNullException(nameof(exteriorRoot));
             CacheDynamicRoots(exteriorRoot);
-            InitializeCore(exteriorRoot, presentation, nightAtmosphere, eligible);
+            RuntimeComposition.RunSynchronously(InitializeCoreSteps(exteriorRoot, presentation, nightAtmosphere, eligible, false));
         }
 
-        private void InitializeCore(Transform root, CityLightingPresentation presentation,
-            CityNightAtmosphere nightAtmosphere, Func<bool> eligible)
+        private IEnumerator InitializeCoreSteps(Transform root, CityLightingPresentation presentation,
+            CityNightAtmosphere nightAtmosphere, Func<bool> eligible, bool incremental)
         {
             if (initialized) throw new InvalidOperationException("City reflections are already initialized.");
             sourceRoot = root;
@@ -119,7 +121,7 @@ namespace BarPromenade
             var moving = new List<Light>();
             foreach (Light light in allLights) if (IsDynamic(light.transform)) moving.Add(light);
             movingLights = moving.ToArray(); movingMasks = new int[movingLights.Length];
-            CacheGeometry();
+            yield return CacheGeometrySteps(incremental);
             AddCafeRegion();
             // Fixed mast/quay anchors survive reassignment of the twelve live light slots.
             if (atmosphere != null)
@@ -220,10 +222,13 @@ namespace BarPromenade
             return false;
         }
 
-        private void CacheGeometry()
+        private IEnumerator CacheGeometrySteps(bool incremental)
         {
+            int processed = 0;
             foreach (MeshRenderer renderer in sourceRoot.GetComponentsInChildren<MeshRenderer>(true))
             {
+                if (incremental && ++processed % 128 == 0)
+                    yield return new CompositionStep("district_reflection_geometry", .99f);
                 if (IsDynamic(renderer.transform)) continue;
                 Material material = renderer.sharedMaterial;
                 if (material == null || material.shader == null || material.renderQueue >= 3000 ||

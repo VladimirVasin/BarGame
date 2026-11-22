@@ -71,7 +71,7 @@ namespace BarPromenade.Tests.PlayMode
                 }, "City did not finish preparing the pawnshop approach.");
 
                 Assert.That(CityPawnshopPlan.TryCreate(city.Layout, out var site), Is.True);
-                Transform exterior = city.World.Root.transform.Find("Pawnshop Exterior");
+                Transform exterior = city.World.RidgeRoot.transform.Find("Pawnshop Exterior");
                 Assert.That(exterior, Is.Not.Null);
                 Assert.That(Vector3.Distance(exterior.position, site.Origin), Is.LessThan(.005f));
                 Assert.That(Quaternion.Angle(exterior.rotation, site.Rotation), Is.LessThan(.01f));

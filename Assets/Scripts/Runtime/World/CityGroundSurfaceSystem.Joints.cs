@@ -1,5 +1,7 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using UnityEngine;
 using Triangle = BarPromenade.GroundSurfacePartitioner.Triangle;
 using Recipe = BarPromenade.CityGroundJointField.Recipe;
@@ -29,12 +31,12 @@ namespace BarPromenade
         internal static bool BypassJointBuildForMeasurement { get; set; }
 #endif
 
-        private void PrepareStaticJoints(List<Triangle> surface, List<Triangle>[] localSurfaces)
+        private IEnumerator PrepareStaticJointSteps(List<Triangle> surface, List<Triangle>[] localSurfaces, bool background)
         {
 #if UNITY_EDITOR
-            if (BypassJointBuildForMeasurement) return;
+            if (BypassJointBuildForMeasurement) yield break;
 #endif
-            if ((grassLayout == null && talusLayout == null) || !CityGroundJointPalette.Supported) return;
+            if ((grassLayout == null && talusLayout == null) || !CityGroundJointPalette.Supported) yield break;
             jointPalette = new CityGroundJointPalette();
             var all = new List<Triangle>(surface);
             var neighbourhoods = new List<Rect>();
@@ -56,15 +58,32 @@ namespace BarPromenade
             foreach (Source source in sources)
                 if (source.Dynamic && source.Renderer.GetComponent<CitySandTreading>() != null)
                     all.AddRange(source.Top);
-            if (neighbourhoods.Count > 0)
-                all = GroundSurfacePartitioner.Conform(all, bucketSize: EdgeBucketSize,
-                    regions: neighbourhoods);
-            staticJointField = CreateJointField(all, true);
+            List<GroundJointTopology.Joint> joints = null;
+            if (background)
+            {
+                var eligible = new bool[styles.Count];
+                for (int i = 0; i < eligible.Length; i++) eligible[i] = GetJointProfile(i).Layer >= 0;
+                var prepared = Task.Run(() =>
+                {
+                    var triangles = neighbourhoods.Count > 0
+                        ? GroundSurfacePartitioner.Conform(all, bucketSize: EdgeBucketSize, regions: neighbourhoods)
+                        : all;
+                    return (triangles, GroundJointTopology.Find(triangles, id => eligible[id]));
+                });
+                yield return prepared;
+                (all, joints) = prepared.GetAwaiter().GetResult();
+            }
+            else if (neighbourhoods.Count > 0)
+            {
+                all = GroundSurfacePartitioner.Conform(all, bucketSize: EdgeBucketSize, regions: neighbourhoods);
+            }
+
+            staticJointField = CreateJointField(all, true, joints);
             if (staticJointField == null)
             {
                 jointPalette.Dispose();
                 jointPalette = null;
-                return;
+                yield break;
             }
             foreach (Source source in grassScenery) BindLiveGround(source.Renderer);
             foreach (Source source in jointScenery) BindLiveGround(source.Renderer);
@@ -95,9 +114,10 @@ namespace BarPromenade
         private static Rect Grow(Rect rect, float metres) => Rect.MinMaxRect(
             rect.xMin - metres, rect.yMin - metres, rect.xMax + metres, rect.yMax + metres);
 
-        private CityGroundJointField CreateJointField(IReadOnlyList<Triangle> surface, bool initial)
+        private CityGroundJointField CreateJointField(IReadOnlyList<Triangle> surface, bool initial,
+            List<GroundJointTopology.Joint> joints = null)
         {
-            var joints = GroundJointTopology.Find(surface, id => GetJointProfile(id).Layer >= 0);
+            joints ??= GroundJointTopology.Find(surface, id => GetJointProfile(id).Layer >= 0);
             var edges = new List<CityGroundJointField.Edge>(joints.Count);
             foreach (GroundJointTopology.Joint joint in joints)
             {

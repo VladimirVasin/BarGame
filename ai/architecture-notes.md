@@ -4857,17 +4857,15 @@
   `GameTimeState.Advance` also returns the actually elapsed
   game minutes so `GameSessionState` advances clock and needs from one delta;
   any owner that sets `timeScale` to zero naturally freezes both.
-- **Accepted — Separate classic door transition:** Source `DoorUseEnter/Loop/Exit`
-  starts from a grounded dock;terminal neutral reserves the guard for
-  `source -> DoorTransition -> destination`. Deterministic1.6s/unscaled
-  handle/door/camera in black void overlaps preload;activation waits fully black.
-  Missing presentation falls back to the destination. Door direction sets the
-  warm/cold light. `LocationResidency` keeps composed direct destinations asleep
-  with their cameras, colliders and inputs off. The user decision of 2026-11-16
-  keeps City across every gameplay transition. A wake restores the authored
-  arrival and rebinds camera, atmosphere, audio and ride ownership. Dormant
-  scenes outside the scope unload. Main menu and checkpoint restores clear the
-  composed scenes at a Single boundary.
+- **Accepted — Separate classic door transition:** Grounded
+  `DoorUseEnter/Loop/Exit` reserves source→door→destination at neutral.
+  The 1.6s unscaled warm/cold void overlaps preload; activate at black.
+  Missing presentation falls through. Direct exits sleep with camera,
+  collision and input off. Wake rebinds the authored dock, atmosphere, sound
+  and rides. Trim outside scope. Menu/checkpoint clear at a Single boundary.
+- **Accepted 2026-11-23 — City district streaming:** The City session root
+  survives travel. Build Ridge first at the home door. Stream district world
+  and fixtures by approach. Hero, map and all bus phases live in the root.
 - **Accepted by explicit user decision, 2026-09-04 — every exterior building
   exit leaves the door behind the hero:** Arrival orientation belongs to the
   destination door, not to `DoorTransitionDirection` and not to the source

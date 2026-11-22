@@ -26,7 +26,7 @@ namespace BarPromenade.Tests.PlayMode
                 view.Focus();
             }
 #endif
-            var court = city.World.Root.GetComponentInChildren<RidgeKioskCourtLife>();
+            var court = city.World.RidgeRoot.GetComponentInChildren<RidgeKioskCourtLife>();
             Assert.That(court, Is.Not.Null);
             var session = court.TableDialogue;
             var targets = court.GetComponentsInChildren<RidgeKioskTableInteraction>().OrderBy(target => target.Table).ToArray();

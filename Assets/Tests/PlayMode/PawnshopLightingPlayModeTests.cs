@@ -43,7 +43,7 @@ namespace BarPromenade.Tests.PlayMode
                     return city != null && city.IsInitialized && !SceneTransitionService.IsTransitioning;
                 }, "City did not initialize for the lighting reproduction.");
                 Assert.That(CityPawnshopPlan.TryCreate(city.Layout, out var site), Is.True);
-                Transform exterior = city.World.Root.transform.Find(CityPawnshopWorld.RootName);
+                Transform exterior = city.World.RidgeRoot.transform.Find(CityPawnshopWorld.RootName);
                 follow = city.Camera.GetComponent<PlayerCameraFollow>();
                 city.Player.Motor.Teleport(site.ReturnWorld);
                 Physics.SyncTransforms();
@@ -86,7 +86,7 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(pockets.UnconnectedBenchIds, Is.Empty,
                     "Every maintained hillside bench needs an approach from a public footway: " +
                     string.Join(", ", pockets.UnconnectedBenchIds));
-                Transform pocketWorld = city.World.Root.GetComponentsInChildren<Transform>().Single(part => part.name == "Ridge bench pockets");
+                Transform pocketWorld = city.World.RidgeRoot.GetComponentsInChildren<Transform>().Single(part => part.name == "Ridge bench pockets");
                 foreach (var pocket in pockets.Pockets)
                 {
                     Assert.That(pocket.ApproachPath.Count, Is.GreaterThan(1), pocket.Placement.Id);
@@ -107,11 +107,11 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(leftLamp.LampFoot.z, Is.EqualTo(rightLamp.LampFoot.z).Within(.002f));
                 Assert.That(leftLamp.LampForward.x, Is.EqualTo(-rightLamp.LampForward.x).Within(.002f));
                 Assert.That(leftLamp.LampForward.z, Is.EqualTo(rightLamp.LampForward.z).Within(.002f));
-                Transform stair = city.World.Root.GetComponentsInChildren<Transform>().Single(part =>
+                Transform stair = city.World.RidgeRoot.GetComponentsInChildren<Transform>().Single(part =>
                     part.name == "Broad bench access stair");
                 Assert.That(BoundsOf(stair).size.x, Is.EqualTo(terrace.Width).Within(.035f),
                     "The broad imported flight retains authored world metres.");
-                Transform statue = city.World.Root.GetComponentsInChildren<Transform>().Single(part =>
+                Transform statue = city.World.RidgeRoot.GetComponentsInChildren<Transform>().Single(part =>
                     part.name == "Concrete pigeon between benches");
                 Bounds statueBounds = BoundsOf(statue);
                 Assert.That(statueBounds.size.y, Is.InRange(1.9f, 2.1f));
@@ -126,7 +126,7 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(terrace.UpperLanding.Bounds.yMin, Is.LessThanOrEqualTo(-309f));
                 for (int index = 0; index < terrace.FlowerbedPositions.Count; index++)
                 {
-                    Transform flowers = city.World.Root.GetComponentsInChildren<Transform>().Single(part =>
+                    Transform flowers = city.World.RidgeRoot.GetComponentsInChildren<Transform>().Single(part =>
                         part.name == "Bench flowerbed " + index);
                     Bounds bounds = BoundsOf(flowers);
                     Assert.That(bounds.min.y, Is.EqualTo(terrace.UpperLanding.Center.y).Within(.02f));

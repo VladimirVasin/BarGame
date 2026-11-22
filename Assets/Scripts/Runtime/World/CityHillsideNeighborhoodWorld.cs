@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -7,10 +8,10 @@ namespace BarPromenade
     {
         // One terrain skin per bank. Breaks follow each porch and stair opening,
         // so physics, paving and bare earth use the same triangles at their seams.
-        internal static void Build(Transform root, CityLayout layout)
+        internal static IEnumerator BuildSteps(Transform root, CityLayout layout, bool incremental)
         {
             var streets = CityHillsideStreetPlan.ForLayout(layout);
-            if (streets.Routes.Count == 0) return;
+            if (streets.Routes.Count == 0) yield break;
             var district = CityHillsideNeighborhoodPlan.ForLayout(layout);
             var access = CityHillsideAccessPlan.ForLayout(layout);
             foreach (var grid in CityHillsideGroundGrid.ForSurface(layout))
@@ -23,8 +24,10 @@ namespace BarPromenade
                 {
                     if (house.Bank != road.Bank) continue;
                     BuildHouse(bank, layout, house);
+                    if (incremental) yield return new CompositionStep("ridge_bank_house", .43f);
                 }
                 BuildGround(bank, grid);
+                if (incremental) yield return new CompositionStep("ridge_bank_ground", .45f);
             }
             var court = new GameObject("Shared passage court").transform;
             court.SetParent(root, false);
@@ -33,6 +36,7 @@ namespace BarPromenade
             {
                 if (!house.Lot.IsPlayerHome) BuildHouse(court, layout, house);
                 CityHillsideHousePresentation.BuildApron(court, paving, house);
+                if (incremental) yield return new CompositionStep("ridge_shared_court", .47f);
             }
             CityTerracePilotWorld.BuildHillsideShortcuts(root, access);
         }

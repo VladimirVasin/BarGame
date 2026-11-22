@@ -47,5 +47,8 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/PawnshopInterior.unity
     guid: 96da650ff06204a24bb7b9f0eada1cec
+  - enabled: 1
+    path: Assets/Scenes/CityRidge.unity
+    guid: f6a1eaf6ef3049648ebd17ff87750135
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}

@@ -195,6 +195,10 @@ namespace BarPromenade
             return true;
         }
 
+        internal static bool HasLowerCityLaunch => (pendingLocation == NewGameLocation.Docks ||
+            pendingLocation == NewGameLocation.Cannery) && !string.IsNullOrEmpty(pendingOperationId) &&
+            string.Equals(pendingOperationId, SceneTransitionService.CurrentOperationId, StringComparison.Ordinal);
+
         internal static bool TryConsumeArrival(NewGameLocation location)
         {
             if (pendingLocation != location || string.IsNullOrEmpty(pendingOperationId) ||

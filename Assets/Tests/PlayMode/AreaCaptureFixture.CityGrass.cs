@@ -209,7 +209,7 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(wind.Wind.z, Is.EqualTo(city.Weather.CurrentWind.Strength01).Within(.001f));
                 AssertKioskApproachesClear(grass, city.Layout);
                 var vegetation = CityRidgeVegetationPlan.ForLayout(city.Layout);
-                var added = root.Find(CityRidgeVegetationPlan.RootName);
+                var added = city.World.RidgeRoot.transform.Find(CityRidgeVegetationPlan.RootName);
                 Assert.That(added, Is.Not.Null);
                 Assert.That(added.childCount, Is.EqualTo(vegetation.Plants.Count));
                 var map = new CityMapCityTeleportGround(city.Layout);
@@ -280,7 +280,7 @@ namespace BarPromenade.Tests.PlayMode
                             grass.DebugContact = westRoot + Vector3.right * (contact ? .10f : 3f);
                             return WarmGrassShot(grass, city.Camera, westEye, westAim);
                         }));
-                Transform tree = root.Find("Residential terrace edges").Cast<Transform>()
+                Transform tree = city.World.RidgeRoot.transform.Find("Residential terrace edges").Cast<Transform>()
                     .Where(site => site.name == "RidgeYardTree").OrderByDescending(site => site.position.y).First();
                 var crown = tree.GetComponentsInChildren<MeshRenderer>().OrderByDescending(part => part.bounds.center.y).First();
                 Assert.That(crown.sharedMaterial.GetFloat("_CityWindGeometry"), Is.EqualTo(1f));

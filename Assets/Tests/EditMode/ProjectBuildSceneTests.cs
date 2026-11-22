@@ -33,7 +33,8 @@ namespace BarPromenade.Tests.EditMode
                 "Assets/Scenes/AlpineVillage.unity",
                 "Assets/Scenes/MothersHouseInterior.unity",
                 "Assets/Scenes/CombatTest.unity",
-                "Assets/Scenes/PawnshopInterior.unity"
+                "Assets/Scenes/PawnshopInterior.unity",
+                "Assets/Scenes/CityRidge.unity"
             };
 
             CollectionAssert.AreEqual(expected, actual);

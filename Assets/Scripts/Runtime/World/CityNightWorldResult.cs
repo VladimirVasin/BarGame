@@ -54,6 +54,7 @@ namespace BarPromenade
         internal Transform BusStopPoles { private get; set; }
         public CityFogField FogField { get; private set; }
         public float NightFactor => nightFactor;
+        internal void ShareFog(CityFogField fog) => FogField = fog;
 
         public void SetNightFactor(
             float factor,
@@ -123,14 +124,15 @@ namespace BarPromenade
             int citySeed,
             IReadOnlyList<CityFringePracticalAnchor>
                 fringePracticalAnchors = null,
-            IReadOnlyList<Transform> quayLampAnchors = null)
+            IReadOnlyList<Transform> quayLampAnchors = null, Transform taskRoot = null,
+            bool initializeFixtures = true, bool initializeFog = true)
         {
-            InitializeAtmosphere(
+            if (initializeFixtures) InitializeAtmosphere(
                 player,
                 barLightPositions,
                 fringePracticalAnchors,
-                quayLampAnchors);
-            if (FogField != null)
+                quayLampAnchors, taskRoot);
+            if (!initializeFog || FogField != null)
             {
                 return;
             }
@@ -148,7 +150,7 @@ namespace BarPromenade
             IReadOnlyList<Vector3> lightPositions,
             IReadOnlyList<CityFringePracticalAnchor>
                 fringePracticalAnchors = null,
-            IReadOnlyList<Transform> quayLampAnchors = null)
+            IReadOnlyList<Transform> quayLampAnchors = null, Transform taskRoot = null)
         {
             if (Atmosphere != null)
             {
@@ -167,7 +169,7 @@ namespace BarPromenade
                 lightPositions,
                 fringePracticalAnchors,
                 quayLampAnchors,
-                BusStopPoles);
+                BusStopPoles, taskRoot);
             Atmosphere.SetNightFactor(nightFactor);
         }
     }

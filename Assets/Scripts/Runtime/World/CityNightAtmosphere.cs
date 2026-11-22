@@ -155,7 +155,7 @@ namespace BarPromenade
             IReadOnlyList<Vector3> barLightPositions,
             IReadOnlyList<CityFringePracticalAnchor>
                 fringePracticalAnchors = null,
-            IReadOnlyList<Transform> quayLampAnchors = null, Transform busStops = null)
+            IReadOnlyList<Transform> quayLampAnchors = null, Transform busStops = null, Transform taskRoot = null)
         {
             if (fixedBindingsReady)
                 throw new InvalidOperationException("City fixed lighting is already initialized.");
@@ -174,7 +174,8 @@ namespace BarPromenade
 
             // Stable index ranges preserve every fixture's physical source,
             // authored aim and special shadow profile at any observer distance.
-            Transform[] taskAnchors = FindIndustrialTaskLights(transform.parent);
+            Transform owner = taskRoot != null ? taskRoot : transform.parent;
+            Transform[] taskAnchors = FindIndustrialTaskLights(owner);
             industrialAnchorStartIndex = streetLampAnchors.Count + (quayLampAnchors?.Count ?? 0);
             lampAnchors = CopyAnchors(streetLampAnchors, quayLampAnchors, taskAnchors);
             quayAnchorStartIndex = streetLampAnchors.Count;
@@ -215,7 +216,7 @@ namespace BarPromenade
                         industrialInnerSpotAngles[index] = 50f;
                         industrialStreetOnly[index] = true;
                         taskAnchors[index].GetComponentInParent<RidgeKioskStreetLightReceivers>()
-                            .Initialize(transform.parent, taskAnchors[index].position, industrialRangeLimits[index]);
+                            .Initialize(owner, taskAnchors[index].position, industrialRangeLimits[index]);
                         break;
                     case RidgeKioskCourtWorld.LampPurpose:
                         industrialPurposes[index] = CityIndustrialPurpose.RepairWorkshop;

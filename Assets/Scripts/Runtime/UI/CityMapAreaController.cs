@@ -764,6 +764,7 @@ namespace BarPromenade
             }
 
             Close(false, "map_point_teleport");
+            cityArrivalPreparation?.Invoke(destination);
             player.Motor.Teleport(destination);
             RetroAudio.Play(RetroSfxId.UiConfirm);
             GameLog.Info(

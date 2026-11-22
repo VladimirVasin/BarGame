@@ -1,5 +1,7 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Rendering;
 using Stopwatch = System.Diagnostics.Stopwatch;
@@ -162,6 +164,29 @@ namespace BarPromenade
         /// <paramref name="primedVisual"/> / <paramref name="primedCollision"/>
         /// and only the mesh and its cook stay on this thread.
         /// </summary>
+        internal static IEnumerator BuildTerrainSteps(string name, Transform parent, CityLayout layout,
+            CitySurfaceKind kind, Color color, bool applyGroundAppearance, float? worldUvTileSize,
+            IReadOnlyList<Rect> excavations, CityTerrainSurfaceAreaFilter areaFilter, bool background,
+            Action<GameObject> built)
+        {
+            CityTerrainMeshSource source = default;
+            if (background)
+            {
+                var sample = Task.Run(() => CreateMeshSource(layout, kind, worldUvTileSize,
+                    excavations, areaFilter, false, CityBeachSandPlan.MeshPitch));
+                yield return sample;
+                source = sample.GetAwaiter().GetResult();
+                if (source.IsEmpty)
+                {
+                    built(null);
+                    yield break;
+                }
+            }
+
+            built(BuildWithSource(name, parent, layout, kind, color, applyGroundAppearance, worldUvTileSize,
+                excavations, areaFilter, false, out _, source));
+        }
+
         internal static GameObject BuildWithSource(
             string name,
             Transform parent,

@@ -21,7 +21,8 @@ namespace BarPromenade
         private static int[] cableTriangles;
         private static Vector2[] cableUv;
 
-        public static GameObject Build(Transform parent, CityCoastalInfrastructurePlan plan)
+        public static GameObject Build(Transform parent, CityCoastalInfrastructurePlan plan,
+            Predicate<Vector3> include = null)
         {
             if (parent == null) throw new ArgumentNullException(nameof(parent));
             if (plan == null) throw new ArgumentNullException(nameof(plan));
@@ -32,6 +33,7 @@ namespace BarPromenade
             for (int i = 0; i < plan.Facilities.Count; i++)
             {
                 CityCoastalFacility site = plan.Facilities[i];
+                if (include != null && !include(site.Position)) continue;
                 Transform instance = Place(root, site.Assembly, site.StableId, site.Position, site.Rotation);
                 BoxCollider collider = instance.gameObject.AddComponent<BoxCollider>();
                 collider.center = Vector3.up * (site.Size.y * .5f);
@@ -39,18 +41,20 @@ namespace BarPromenade
             }
             for (int i = 0; i < plan.Poles.Count; i++)
             {
+                if (include != null && !include(plan.Poles[i])) continue;
                 Transform pole = Place(root, "PowerPole", "Coastal Power Pole " + i, plan.Poles[i], Quaternion.LookRotation(plan.PoleForwards[i],Vector3.up));
                 BoxCollider collider = pole.gameObject.AddComponent<BoxCollider>();
                 collider.center = Vector3.up * 4.15f;
                 collider.size = new Vector3(.38f,8.3f,.38f);
             }
             for (int i = 0; i < plan.FacadeInlets.Count; i++)
-                Place(root,"FacadeInlet","Coastal Facade Inlet "+i,plan.FacadeInlets[i] - Vector3.up * .28f,plan.ServiceConnections[i].Rotation);
+                if (include == null || include(plan.FacadeInlets[i]))
+                    Place(root,"FacadeInlet","Coastal Facade Inlet "+i,plan.FacadeInlets[i] - Vector3.up * .28f,plan.ServiceConnections[i].Rotation);
             foreach(var service in plan.ServiceConnections)
-                if(service.SuppliedById != null && !service.IsExisting)
+                if(service.SuppliedById != null && !service.IsExisting && (include == null || include(service.Start)))
                     Place(root,"FacadeInlet","Coastal Supply Outlet " + service.StableId,
                         service.Start - Vector3.up * .28f,service.SourceRotation);
-            BuildCables(root, plan.CableSpans);
+            BuildCables(root, plan.CableSpans, include: include);
             return root.gameObject;
         }
 
@@ -181,7 +185,7 @@ namespace BarPromenade
         }
 
         private static void BuildCables(Transform parent, IReadOnlyList<CityCoastalCableSpan> spans,
-            HomeExteriorContextPlan home = null)
+            HomeExteriorContextPlan home = null, Predicate<Vector3> include = null)
         {
             if(spans.Count==0)return;
             if(spans.Count>CityCoastalInfrastructurePlan.MaximumCableSpanCount)
@@ -194,6 +198,7 @@ namespace BarPromenade
             for(int s=0;s<spans.Count;s++)
             {
                 CityCoastalCableSpan sourceSpan=spans[s];
+                if (include != null && !include((sourceSpan.Start + sourceSpan.End) * .5f)) continue;
                 CityCoastalCableSpan span=sourceSpan;
                 float start=0f,end=1f;
                 if (home != null)

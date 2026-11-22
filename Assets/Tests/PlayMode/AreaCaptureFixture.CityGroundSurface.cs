@@ -196,20 +196,20 @@ namespace BarPromenade.Tests.PlayMode
                     Is.EqualTo(descent.SummitPavementNorthEdge).Within(.002f));
                 Assert.That(descent.SummitApronPaving.Max(point => point.y),
                     Is.GreaterThan(descent.SummitPavementNorthEdge + 1f));
-                var apron = city.World.Root.GetComponentsInChildren<MeshCollider>()
+                var apron = city.World.RidgeRoot.GetComponentsInChildren<MeshCollider>()
                     .Single(collider => collider.name == "Summit stair apron paving");
                 float apronSouthEdge = apron.sharedMesh.vertices.Min(vertex => apron.transform.TransformPoint(vertex).z);
                 Assert.That(apronSouthEdge, Is.EqualTo(descent.SummitPavementNorthEdge).Within(.002f));
 
-                var home = city.World.Root.GetComponentInChildren<PlayerHomeExteriorAssetRegistry>();
+                var home = city.World.RidgeRoot.GetComponentInChildren<PlayerHomeExteriorAssetRegistry>();
                 Assert.That(home.TryGetAnchor("entrance_lamp_ceiling", out Transform ceiling), Is.True);
-                var lamp = city.World.Root.GetComponentsInChildren<Renderer>()
+                var lamp = city.World.RidgeRoot.GetComponentsInChildren<Renderer>()
                     .Single(part => part.name == "Home Entrance Lamp");
                 Assert.That(Vector3.Distance(lamp.bounds.center, ceiling.position), Is.LessThan(.16f));
                 var gallery = home.Parts.Single(part => part.SourceName == "Two Storey Gallery Timber").Renderer;
                 Assert.That(gallery.bounds.min.y, Is.GreaterThan(city.Layout.PlayerHome.DoorPosition.y + 4.6f));
 
-                var sign = city.World.Root.GetComponentsInChildren<Transform>()
+                var sign = city.World.RidgeRoot.GetComponentsInChildren<Transform>()
                     .Single(part => part.name == "Ridge fish cannery advertisement");
                 var print = sign.GetComponentsInChildren<Renderer>().Single(part => part.name == "PrintedFace");
                 Assert.That(print.bounds.size.y, Is.EqualTo(10.375f).Within(.01f));
@@ -240,7 +240,7 @@ namespace BarPromenade.Tests.PlayMode
 
                 var guardedHouse = housing.AllBuildings.Single(house => house.Lot.Cell == CityHillsideBuilding.GuardedEastHouseCell);
                 AssertRidgeEntrySupports(city);
-                Assert.That(city.World.Root.GetComponentsInChildren<MeshCollider>().Count(collider =>
+                Assert.That(city.World.RidgeRoot.GetComponentsInChildren<MeshCollider>().Count(collider =>
                     collider.name == CityHillsideStairCut.ObjectName && collider.transform.parent.name == "Balcony Courts"),
                     Is.EqualTo(1));
                 float approachX = guardedHouse.ApproachBounds.center.x;
@@ -274,7 +274,7 @@ namespace BarPromenade.Tests.PlayMode
 
         private static void AssertRidgeEntrySupports(CityGameRoot city)
         {
-            var guards = city.World.Root.GetComponentsInChildren<Transform>()
+            var guards = city.World.RidgeRoot.GetComponentsInChildren<Transform>()
                 .Where(part => part.name == "Ridge entry rail").ToDictionary(part => part.parent.name);
             var houses = CityHillsideNeighborhoodPlan.ForLayout(city.Layout).AllBuildings;
             var terrain = CityHillsideGroundPlan.ForLayout(city.Layout);
@@ -366,7 +366,7 @@ namespace BarPromenade.Tests.PlayMode
 
                 Physics.SyncTransforms();
                 var ground = CityHillsideGroundPlan.ForLayout(city.Layout);
-                var bankMeshes = city.World.Root.GetComponentsInChildren<MeshCollider>()
+                var bankMeshes = city.World.RidgeRoot.GetComponentsInChildren<MeshCollider>()
                     .Where(mesh => mesh.name == "Terraced ground and courts").ToArray();
                 var map = new CityMapCityTeleportGround(city.Layout);
                 Vector2 landing = reportedEdge + Vector2.up * 1.5f;

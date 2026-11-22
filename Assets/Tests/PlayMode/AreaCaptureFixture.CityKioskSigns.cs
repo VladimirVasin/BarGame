@@ -63,7 +63,8 @@ namespace BarPromenade.Tests.PlayMode
             {
                 foreach (var site in sites)
                 {
-                    Transform kiosk = city.World.Root.transform.Find(site.IsRidge ? "Ridge Kiosk" : "Kiosk " + site.StableId);
+                    Transform kiosk = (site.IsRidge ? city.World.RidgeRoot : city.World.Root).transform.Find(
+                        site.IsRidge ? "Ridge Kiosk" : "Kiosk " + site.StableId);
                     Assert.That(kiosk, Is.Not.Null, site.StableId);
                     Assert.That(Vector3.Distance(kiosk.position, site.Origin), Is.LessThan(.001f));
                     Assert.That(Quaternion.Angle(kiosk.rotation, site.Rotation), Is.LessThan(.01f));

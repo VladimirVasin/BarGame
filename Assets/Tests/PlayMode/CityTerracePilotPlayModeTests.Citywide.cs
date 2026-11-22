@@ -1030,7 +1030,7 @@ namespace BarPromenade.Tests.PlayMode
                     $"home {summitHome.ThresholdWorld:F2}, pole to threshold {Vector3.Distance(stop.ShelterPosition, summitHome.ThresholdWorld):F2}m.");
                 yield return Stand(wait, door);
                 yield return CapturePlayerView("upper-quarter-stop-to-home", door);
-                var homeWall = city.World.Root.transform.Find("Residential terrace edges").Cast<Transform>()
+                var homeWall = city.World.RidgeRoot.transform.Find("Residential terrace edges").Cast<Transform>()
                     .Where(t => t.name == "RidgeRetainingEnd")
                     .OrderBy(t => Vector3.Distance(t.position, summitHome.DoorWorld)).First();
                 float along = Mathf.Clamp(homeWall.position.x - 4f, summit.Bounds.xMin + 2f, summit.Bounds.xMax - 2f);
@@ -1046,7 +1046,7 @@ namespace BarPromenade.Tests.PlayMode
                 yield return CaptureSurfaceWeather("upper-quarter-home-entry-dry", door, 0f);
                 yield return CaptureSurfaceWeather("upper-quarter-home-entry-rain", door, 1f);
                 var dryingCourt = housing.SharedCourtBuildings.Single(h => h.Lot.Cell == new Vector2Int(41, -21));
-                Vector3 eastEdge = city.World.Root.transform.Find("Residential terrace edges").Cast<Transform>()
+                Vector3 eastEdge = city.World.RidgeRoot.transform.Find("Residential terrace edges").Cast<Transform>()
                     .Where(t => t.name == "RidgeCourtEdge").OrderBy(t =>
                         Vector3.Distance(t.position, dryingCourt.Lot.Center)).First().position;
                 float courtX = eastEdge.x - 4f;
@@ -1102,7 +1102,7 @@ namespace BarPromenade.Tests.PlayMode
             // The west side of Home crosses the seam from the saddle onto the bank grid.
             Rect foundation = layout.SummitHome.FoundationBounds;
             Vector3 plinth = new Vector3(foundation.xMin - .7f, layout.SummitHome.ThresholdWorld.y + 8f, foundation.center.y);
-            var bankGround = city.World.Root.transform.Find("Stepped Residences/Terraced ground and courts")
+            var bankGround = city.World.RidgeRoot.transform.Find("Stepped Residences/Terraced ground and courts")
                 .GetComponent<MeshCollider>();
             Assert.That(bankGround.Raycast(new Ray(plinth, Vector3.down), out var band, 25f), Is.True, plinth.ToString());
             AssertGroundCoating(band, GroundSurfaceKind.Asphalt, FootstepGroundKind.Concrete);
@@ -1120,7 +1120,7 @@ namespace BarPromenade.Tests.PlayMode
 
             void CheckTreeView(Camera camera, string view)
             {
-                var trees = city.World.Root.transform.Find("Residential terrace edges").Cast<Transform>()
+                var trees = city.World.RidgeRoot.transform.Find("Residential terrace edges").Cast<Transform>()
                     .Where(t => t.name == "RidgeYardTree");
                 bool framed = trees.Any(tree =>
                 {
@@ -1170,7 +1170,7 @@ namespace BarPromenade.Tests.PlayMode
         private void AssertPlacedRidgeDetails(CityLayout layout, CityHillsideQuarterPlan quarter,
             CityHillsideNeighborhoodPlan housing)
         {
-            Transform root = city.World.Root.transform.Find("Residential terrace edges");
+            Transform root = city.World.RidgeRoot.transform.Find("Residential terrace edges");
             var placed = root.Cast<Transform>().ToList();
             var kioskCourt = RidgeKioskSitePlan.TryCreate(layout, out var kiosk) ? kiosk.Court : null;
             RidgeParkingPlan parking = RidgeParkingPlan.ForLayout(layout);
@@ -1222,7 +1222,7 @@ namespace BarPromenade.Tests.PlayMode
             var stairs = CityHillsideAccessPlan.ForLayout(layout).SharedCourt;
             var flight = stairs.Flights[0];
             Nearest("RidgeRetainingEnd", flight.Start, 5f);
-            var passage = city.World.Root.transform.Find("Hillside stairs " + stairs.Id + "/" + stairs.Floors[0].Id);
+            var passage = city.World.RidgeRoot.transform.Find("Hillside stairs " + stairs.Id + "/" + stairs.Floors[0].Id);
             foreach (var strip in new[] { "Street threshold", "Covered passage paving", "Courtyard threshold" })
             {
                 var tile = passage.Find(strip + " 0");
@@ -1241,7 +1241,7 @@ namespace BarPromenade.Tests.PlayMode
                 }
                 Assert.That(foundConcrete, Is.True, strip + " requires a textured ground receiver.");
             }
-            var terrain = city.World.Root.transform.Find("Shared residential hillside").GetComponent<MeshCollider>();
+            var terrain = city.World.RidgeRoot.transform.Find("Shared residential hillside").GetComponent<MeshCollider>();
             foreach (var bridge in quarter.Bridges)
             {
                 Transform ledge = Nearest("RidgeBearingTalus", bridge.Id == "summit" ?

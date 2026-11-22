@@ -292,7 +292,7 @@ namespace BarPromenade.Tests.PlayMode
             cityRoot.Player.Motor.Teleport(returnPosition);
 
             Transform homeRoot =
-                cityRoot.World.Root.transform.Find("Player Home");
+                (cityRoot.World.RidgeRoot ?? cityRoot.World.Root).transform.Find("Player Home");
             Assert.That(homeRoot, Is.Not.Null);
             Transform mailboxCollider =
                 homeRoot.Find("Home Mailbox Collider");
@@ -790,7 +790,7 @@ namespace BarPromenade.Tests.PlayMode
 
             Assert.That(ordinaryBuildingCount, Is.GreaterThan(0));
             Transform playerHome =
-                cityRoot.World.Root.transform.Find("Player Home");
+                (cityRoot.World.RidgeRoot ?? cityRoot.World.Root).transform.Find("Player Home");
             Assert.That(playerHome, Is.Not.Null);
             // The door has been a part of the authored exterior model since
             // the home stopped being primitives (3713d2d0); the mailbox is
@@ -1750,7 +1750,7 @@ namespace BarPromenade.Tests.PlayMode
             HomeEntrance entrance = firstCity.World.PlayerHome;
             Assert.That(entrance, Is.Not.Null);
             Assert.That(firstCity.Layout.HasSummitHome, Is.True);
-            var homeShell = firstCity.World.Root.GetComponentsInChildren<PlayerHomeExteriorAssetRegistry>(true).Single();
+            var homeShell = (firstCity.World.RidgeRoot ?? firstCity.World.Root).GetComponentsInChildren<PlayerHomeExteriorAssetRegistry>(true).Single();
             Assert.That(HasPlayerHomeExteriorPart(homeShell, "Player Home Entrance Door"), Is.True);
             Assert.That(Vector3.Distance(firstCity.Layout.PlayerHome.DoorPosition, entrance.InteractionPosition),
                 Is.LessThan(1.5f), "The entry interaction belongs to the summit facade.");

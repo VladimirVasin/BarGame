@@ -114,15 +114,15 @@ City shared light/material/post. Будки→вход/земля,soft/pool12/da
 
 ## Стоимость и минимальная проверка
 
-Конечные массивы/индексы,общие планы/meshes/materials/buffers;инкрементальная
-сборка,без поиска/загрузки/новых материалов в update. Дальность сохраняет
-коллизию/ввод/время/NPC ID;pause/disable/dormancy/return/unload — контакты/cleanup.
-CPU/GPU/memory/loading измерять;ускорение не заявлено.
+Из подъезда загружается `CityRidge`. Покрытия делят исходные участки улиц.
+Соседний район готовится на подходе и освобождается вне дальности вида.
+Герой, карта и расписание автобусов живут в City. № 03 везёт пассажира
+через оба стыка. Дверь в интерьер приостанавливает резидентные районы.
 
-FAST:один primary check;общему контракту ещё один focused check.
-Переиспользовать `CityScene_GroundTraversalUsesPhysicalBoundaries`;вид — кадры
-`AreaCaptureFixture`/City,просмотр/удаление. Docs:`tools/check-docs.py`/diff-check.
-Полные suites/билд не входят;доказательства только по факту.
+FAST:основной чек и один focused для общего контракта. Сравнивать
+дверь→управление, пиковый кадр и память при одинаковых настройках.
+Вид проверяет `AreaCaptureFixture`; кадры удалить после просмотра.
+Docs:`tools/check-docs.py`/diff-check.
 
 Путь/контакты/прибытия проверены LiveCity_StreetEntryAndBothTerraceRoutesKeepContactsArrivalsAndMap,
 LiveCity_CoastalAscentAndStairShortcutShareSupportedRoutes,

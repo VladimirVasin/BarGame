@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -13,8 +14,13 @@ namespace BarPromenade
         private const float CurbRadius = .012f;
         private static Topology patchTopology, stripTopology, curbTopology;
 
-        internal static GameObject Build(string name, Transform parent, CityLayout layout,
-            CityStreetSurfacePlan street, HomeExteriorContextPlan home = null)
+        internal static void Build(string name, Transform parent, CityLayout layout,
+            CityStreetSurfacePlan street, HomeExteriorContextPlan home) =>
+            RuntimeComposition.RunSynchronously(BuildSteps(name, parent, layout, street, home));
+
+        internal static IEnumerator BuildSteps(string name, Transform parent, CityLayout layout,
+            CityStreetSurfacePlan street, HomeExteriorContextPlan home = null,
+            Predicate<CityStreetSupportPatch> include = null, bool incremental = false)
         {
             EnsureTopology();
             CityStreetSupportPlan plan = CityStreetSupportPlan.FromStreetPlan(layout, street);
@@ -28,9 +34,13 @@ namespace BarPromenade
             var frames = new List<(RoadEdge edge, CityRoadPath path)>();
             foreach (RoadEdge edge in layout.RoadEdges)
                 if (layout.GetPathKind(edge) == CityPathKind.Street) frames.Add((edge, layout.RoadGeometry.Get(edge)));
+            int processed = 0;
             foreach (CityStreetSupportPatch patch in plan.Patches)
             {
+                if (include != null && !include(patch)) continue;
                 if (home != null && !InHomeRange(patch.Bounds, home)) continue;
+                if (incremental && ++processed % 32 == 0)
+                    yield return new CompositionStep("street_support_patches", .36f);
                 int slot = (int)patch.Kind;
                 float tile = patch.Kind == CityStreetSupportKind.Asphalt ? CityExteriorAppearance.RoadTextureTileSize :
                     patch.Kind == CityStreetSupportKind.Sidewalk ? CityExteriorAppearance.SidewalkTextureTileSize :
@@ -191,7 +201,7 @@ namespace BarPromenade
                     colors.Add(Color.white);
                 }
             }
-            if (vertices.Count == 0) return null;
+            if (vertices.Count == 0) yield break;
             var mesh = new Mesh { name = name + " Mesh", indexFormat = vertices.Count > ushort.MaxValue ? IndexFormat.UInt32 : IndexFormat.UInt16 };
             mesh.SetVertices(vertices); mesh.SetNormals(normals); mesh.SetUVs(0, uvs);
             mesh.SetUVs(GroundSurfaceCoordinates.Channel, road); mesh.SetColors(colors);
@@ -213,7 +223,6 @@ namespace BarPromenade
                 new CityGroundSurfaceRegion(FootstepGroundKind.Soil, 20) });
             // The compositor creates the sole physical surface. Avoid cooking
             // temporary colliders which it would immediately replace.
-            return result;
         }
 
         /// <summary>Deforms the existing Blender patch topology into paint. The

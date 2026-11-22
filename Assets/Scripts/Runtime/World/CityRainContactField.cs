@@ -61,6 +61,12 @@ namespace BarPromenade
         private CityAmbientTraffic ambientTraffic;
         internal void BindAmbient(CityAmbientTraffic traffic) => ambientTraffic = traffic;
         internal void BindFerryman(Transform movingCar) => car = movingCar;
+        internal void BindDistrict(Transform additional, Transform movingTruck)
+        {
+            additionalGeometry = additional;
+            truck = movingTruck;
+            hasFocus = false;
+        }
         private CityRainDripEdge[] edges;
         private Material material;
         private Mesh mesh;

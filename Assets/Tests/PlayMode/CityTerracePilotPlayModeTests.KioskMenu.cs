@@ -102,7 +102,7 @@ namespace BarPromenade.Tests.PlayMode
         {
             yield return LoadProductionCity();
             if (!GameSessionState.IsGameTimeRunning) GameSessionState.TryStartGameTimeAt(720);
-            var station = city.World.Root.transform.Find("Ridge Kiosk").GetComponent<RidgeKioskStation>();
+            var station = city.World.RidgeRoot.transform.Find("Ridge Kiosk").GetComponent<RidgeKioskStation>();
             var hero = city.Player.Interactor;
             var animation = hero.GetComponent<PlayerAnimatedInteractionController>();
             var motor = city.Player.Motor;
@@ -182,7 +182,8 @@ namespace BarPromenade.Tests.PlayMode
                 int siteIndex = 0;
                 foreach (var site in sites)
                 {
-                    Transform kiosk = city.World.Root.transform.Find(site.IsRidge ? "Ridge Kiosk" : "Kiosk " + site.StableId);
+                    Transform kiosk = (site.IsRidge ? city.World.RidgeRoot : city.World.Root).transform.Find(
+                        site.IsRidge ? "Ridge Kiosk" : "Kiosk " + site.StableId);
                     var station = kiosk.GetComponentInChildren<RidgeKioskStation>();
                     Assert.That(station, Is.Not.Null);
                     activeMenu = station.Menu;
@@ -329,7 +330,7 @@ namespace BarPromenade.Tests.PlayMode
                     follow.ClearFixedFocus(); follow.ClearFixedPose();
                 }
 
-                var ridge = city.World.Root.transform.Find("Ridge Kiosk").GetComponentInChildren<RidgeKioskStation>();
+                var ridge = city.World.RidgeRoot.transform.Find("Ridge Kiosk").GetComponentInChildren<RidgeKioskStation>();
                 motor.Teleport(CityKioskSites.ForLayout(city.Layout).Sites.Single(site => site.IsRidge).Approach +
                     Vector3.up * PlayerFactory.GroundedRootOffset);
                 Physics.SyncTransforms(); yield return null;
@@ -353,7 +354,8 @@ namespace BarPromenade.Tests.PlayMode
                 if (activeMenu) activeMenu.Close();
                 if (city)
                 {
-                    foreach (var vendor in city.World.Root.GetComponentsInChildren<RidgeKioskVendor>())
+                    foreach (var vendor in city.World.Root.GetComponentsInChildren<RidgeKioskVendor>().Concat(
+                                 city.World.RidgeRoot.GetComponentsInChildren<RidgeKioskVendor>()))
                         vendor.Session?.RestoreImmediate();
                     city.Camera.GetComponent<PlayerCameraFollow>().ClearFixedPose();
                 }

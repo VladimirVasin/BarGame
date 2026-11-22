@@ -10,7 +10,7 @@
 - 16:9/native/SMAA/savedFX/no4:3;City/balcony Soft,bar/church Neutral.
   4096px local shadow atlas cap; City/Home/bar UV0+1;house air/bar WC mirror.
   City:8grass types/wind/contact/Home;crowns static. RoadRGB/pistol/fountain pilots.
-- Fourteen scenes are enabled in `ProjectSettings/EditorBuildSettings.asset`:
+- Fifteen scenes are enabled in `ProjectSettings/EditorBuildSettings.asset`:
 
 | Index | Scene | Role |
 | --- | --- | --- |
@@ -28,6 +28,7 @@
 | 11 | `MothersHouseInterior` | Gameplay |
 | 12 | `CombatTest` | Warehouse / weapon test |
 | 13 | `PawnshopInterior` | Pawnshop prototype |
+| 14 | `CityRidge` | Additive City district |
 
 All eleven gameplay roots use `PlayerFactory`/`Resources/Player/Player3DV2.prefab`:
 one rig, sculpted face and civilian workwear; seven drink-dose appearances
@@ -56,11 +57,10 @@ Mouse orbit: no button; RMB aims; Alt frees cursor/pauses mouse look/combat.
 `GameCursor`: leases; UI frees cursor; focus return drops delta.
 Impulses kept; local look/debug; no rebind UI.
 
-Menu warms Home/City. Gameplay keeps City and loaded direct exits asleep.
-Direct exits also get background preparation. Overlay: 20% load/80% build.
-Shared synchronous/staged builders yield between stages at 8 ms during travel.
-Time/input/audio pause until ready. Village terrain and surfaces share lazy
-heights keyed by plan/brook. Snow retains vertices and paths reuse edges.
+Menu warms Home/City and gameplay warms direct exits. City shares hero,
+traffic and map across streamed districts. Travel overlay: 20% load/80% build.
+Staged travel uses 8 ms yields and holds time/input/audio. Village terrain
+and surfaces share lazy heights keyed by plan/brook.
 
 Litter palette, forest chunks, hair detail, greetings and port BC7:
 accepted `2026-10-13` decision in [architecture-notes.md](architecture-notes.md).

@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using BarPromenade.Rendering;
 using UnityEngine;
@@ -67,7 +68,10 @@ namespace BarPromenade
             }
         }
 
-        public void Initialize(Transform sourceRoot, Camera camera, Func<bool> active)
+        public void Initialize(Transform sourceRoot, Camera camera, Func<bool> active) =>
+            RuntimeComposition.RunSynchronously(InitializeSteps(sourceRoot, camera, active, false));
+
+        internal IEnumerator InitializeSteps(Transform sourceRoot, Camera camera, Func<bool> active, bool incremental)
         {
             if (initialized) throw new InvalidOperationException("Window lighting is already initialized.");
             if (sourceRoot == null) throw new ArgumentNullException(nameof(sourceRoot));
@@ -141,6 +145,8 @@ namespace BarPromenade
                 facadeData.usePipelineSettings = false;
                 facadeData.renderingLayers = 1u;
                 facadeLights[i] = facade;
+                if (incremental && (i + 1) % 16 == 0)
+                    yield return new CompositionStep("district_window_lights", .99f);
             }
             initialized = true;
             RefreshImmediate();

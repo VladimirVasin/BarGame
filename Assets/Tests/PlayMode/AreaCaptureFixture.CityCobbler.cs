@@ -32,7 +32,7 @@ namespace BarPromenade.Tests.PlayMode
                 {
                     site = CityCobblerSitePlan.ForLayout(city.Layout);
                     Assert.That(site.IsEnabled, Is.True);
-                    cobbler = city.World.Root.GetComponentsInChildren<CityCobblerWorker>(true).Single();
+                    cobbler = city.World.RidgeRoot.GetComponentsInChildren<CityCobblerWorker>(true).Single();
                     cobbler.AutoAdvance = false;
                     follow = city.Camera.GetComponent<PlayerCameraFollow>();
                     followEnabled = follow.enabled; follow.enabled = false;

@@ -1,13 +1,14 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 using Stopwatch = System.Diagnostics.Stopwatch;
 
 namespace BarPromenade
 {
-    public static class CityWorldBuilder
+    public static partial class CityWorldBuilder
     {
         private const float WorldChunkSize = 48f;
         private const float MinimumBuildingFoundationDepth = 0.32f;
@@ -49,7 +50,8 @@ namespace BarPromenade
 
         internal static IEnumerator BuildSteps(
             Transform parent, CityLayout layout, CityGenerationSettings settings,
-            CityNightFixturePlan nightPlan, Action<CityWorldResult> completed)
+            CityNightFixturePlan nightPlan, Action<CityWorldResult> completed, bool separateRidge = false,
+            CityDistrictStreamingPlan partition = null, bool ridgeOnly = false)
         {
             if (parent == null)
             {
@@ -64,6 +66,12 @@ namespace BarPromenade
             if (settings == null)
             {
                 throw new ArgumentNullException(nameof(settings));
+            }
+
+            if (ridgeOnly)
+            {
+                yield return BuildRidgeSteps(parent, layout, partition, completed);
+                yield break;
             }
 
             layout.ValidateOrThrow();
@@ -120,15 +128,17 @@ namespace BarPromenade
                 GameLog.Field("reused", plansReused));
             yield return new CompositionStep("world_plans", 0.10f);
             blockTimer.Restart();
-            Bounds bounds = BuildGround(
-                world,
-                layout,
-                fringeYardPlan,
-                settings,
-                seacoastPlan != null,
-                DescribeBoundaryStreetFurniture(layout),
-                out GameObject parkLawn,
-                out CityCemeteryGroundExcavation cemeteryExcavation);
+            Bounds bounds = default;
+            GameObject parkLawn = null;
+            CityCemeteryGroundExcavation cemeteryExcavation = null;
+            yield return BuildGroundSteps(world, layout, fringeYardPlan, settings,
+                seacoastPlan != null, DescribeBoundaryStreetFurniture(layout), partition != null,
+                (areaBounds, lawn, excavation) =>
+                {
+                    bounds = areaBounds;
+                    parkLawn = lawn;
+                    cemeteryExcavation = excavation;
+                });
             ReportBlock("ground", blockTimer);
             yield return new CompositionStep("ground", 0.18f);
             blockTimer.Restart();
@@ -151,14 +161,14 @@ namespace BarPromenade
             yield return new CompositionStep("mountain_and_fringe", 0.30f);
             blockTimer.Restart();
             CityMountainBackdropWorldResult mountainBackdrop =
-                mountainBoundaryPlan.IsEnabled
+                partition == null && mountainBoundaryPlan.IsEnabled
                     ? CityMountainBackdropWorldBuilder.Build(world)
                     : null;
             // The block's sub-stages report under their own rows so the
             // split between planning, batching, the river's primitives,
             // the stairs and the fences is measurable; the block row
             // itself keeps its old meaning and its old timer.
-            BuildRoads(world, layout, fringeYardPlan);
+            yield return BuildRoadsSteps(world, layout, fringeYardPlan, partition);
             Stopwatch subTimer = Stopwatch.StartNew();
             GameObject riverRoot = CityRiverWorldBuilder.Build(
                 world,
@@ -166,6 +176,7 @@ namespace BarPromenade
                 mountainBoundaryPlan,
                 out IReadOnlyList<Transform> riverQuayLampAnchors);
             ReportBlock("roads_and_river/river", subTimer);
+            if (partition != null) yield return new CompositionStep("river", .38f);
             subTimer.Restart();
             BuildElevationStructures(world, layout);
             ReportBlock(
@@ -174,6 +185,7 @@ namespace BarPromenade
                 GameLog.Field(
                     "stairs",
                     layout.ElevationPlan.SignatureStairs.Count));
+            if (partition != null) yield return new CompositionStep("elevation_stairs", .39f);
             subTimer.Restart();
             RoadFenceWorldBuilder.Build(world, fencePlan);
             ReportBlock(
@@ -376,7 +388,8 @@ namespace BarPromenade
             CityFairWorldBuilder.Build(world, fairPlan);
             if (fairPlan.IsEnabled) walkableArea.Add(fairPlan.Bounds);
 
-            CityCoastalInfrastructureWorldBuilder.Build(world, infrastructurePlan);
+            CityCoastalInfrastructureWorldBuilder.Build(world, infrastructurePlan,
+                partition == null ? null : partition.IsLower);
             CityLaundryWorldBuilder.Build(world, laundryPlan);
             CityDogParkWorldBuilder.Build(world, layout);
             CityStaticCollisionBuilder.AddDogParkColliders(world, plans.DogPark);
@@ -384,47 +397,30 @@ namespace BarPromenade
             CityResidentialCourtyardLife courtyardLife = residentialCourtyardRoot.AddComponent<CityResidentialCourtyardLife>();
             courtyardLife.Initialize(residentialCourtyards, residentialCourtyardRoot.transform);
             CityTerracePilotWorld.Build(world, terraces);
-            CityHillsideNeighborhoodWorld.Build(world, layout);
-            if (layout.HasSummitHome)
-                BuildBuilding(world, layout, layout.PlayerHome, layout.Seed, emissiveMaterial,
-                    walkableArea, bars, ref playerHome, ref supermarket);
-            CityHillsideQuarterGround.Build(world, layout);
-            CityHillsideSiteDetails.Build(world, layout);
-            CityHillsideFurnitureWorld.Build(world, layout);
-            Transform pigeonLoft = CityPigeonLoftWorld.Build(world, layout);
-            CityResidentialEntranceLighting.Build(world);
+            // Compose under the common surface owner until the joint meshes,
+            // grass and lighting have read both sides of the approaches.
+            Transform ridge = world;
+            if (partition == null && separateRidge && CityHillsideStreetPlan.ForLayout(layout).Routes.Count != 0)
+            {
+                ridge = new GameObject("Generated Ridge").transform;
+                ridge.SetParent(world, false);
+            }
+
             var kioskShelters = new List<Collider>(8);
-            var cobbler = CityCobblerSitePlan.ForLayout(layout);
-            if (cobbler.IsEnabled)
+            if (partition == null)
             {
-                CityCobblerWorld.Build(world, cobbler, true, out var cobblerShelter);
-                if (cobblerShelter != null) kioskShelters.Add(cobblerShelter);
+                yield return BuildRidgeGroundAndHomes(ridge, layout, walkableArea,
+                    home => playerHome = home ?? playerHome, false);
+                yield return new CompositionStep("ridge_terrain_and_homes", 0.90f);
+                BuildRidgeDressing(ridge, layout, kioskShelters);
             }
-            var glassReturn = CityGlassReturnSitePlan.ForLayout(layout);
-            if (glassReturn.IsEnabled)
-            {
-                Transform glassPavilion = CityGlassReturnWorld.Build(world, glassReturn, true, out var glassShelter);
-                glassPavilion.GetComponent<CityGlassReturnWorker>().ConfigureCommute(
-                    CityGlassReturnWorkerPlan.ForLayout(layout));
-                if (glassShelter != null) kioskShelters.Add(glassShelter);
-            }
-            if (pigeonLoft != null)
-                foreach (var collider in pigeonLoft.GetComponentsInChildren<BoxCollider>())
-                    if (collider.isTrigger && collider.name == "Pigeon loft rain shelter") kioskShelters.Add(collider);
+
+            CityResidentialEntranceLighting.Build(world);
             foreach (CityKioskSitePlan kiosk in CityKioskSites.ForLayout(layout).Sites)
             {
-                RidgeKioskWorld.Build(world, kiosk, true, out var shelters);
+                if (partition != null && kiosk.IsRidge) continue;
+                RidgeKioskWorld.Build(kiosk.IsRidge ? ridge : world, kiosk, true, out var shelters);
                 kioskShelters.AddRange(shelters);
-            }
-            RidgeParkingWorld.Build(world, layout, true);
-            Collider[] kioskRainShelters = kioskShelters.ToArray();
-            if (CityPawnshopPlan.TryCreate(layout, out var pawnshop))
-            {
-                CityPawnshopWorld.Build(world, pawnshop, true, out var pawnshopRainShelter);
-                var shelters = new Collider[kioskRainShelters.Length + 1];
-                Array.Copy(kioskRainShelters, shelters, kioskRainShelters.Length);
-                shelters[shelters.Length - 1] = pawnshopRainShelter;
-                kioskRainShelters = shelters;
             }
 
             GameObject decorationRoot =
@@ -485,10 +481,10 @@ namespace BarPromenade
                     windDressingPlan);
 
             var ridgeVegetation = CityRidgeVegetationPlan.ForLayout(layout);
-            ridgeVegetation.Build(world);
+            if (partition == null) ridgeVegetation.Build(ridge);
             walkableArea.ExcludePolygons(ridgeVegetation.Trunks);
             groundSurface.SetGrassContext(layout, seacoastPlan);
-            groundSurface.FinalizeSurface();
+            yield return groundSurface.FinalizeSurfaceSteps(partition != null);
             completed(new CityWorldResult(
                 world.gameObject,
                 walkableArea,
@@ -528,7 +524,7 @@ namespace BarPromenade
                 cafeSite,
                 cafeRainShelter,
                 residentialCourtyards,
-                residentialCourtyardRoot, kioskRainShelters));
+                residentialCourtyardRoot, kioskShelters, ridge == world ? null : ridge.gameObject));
             ReportBlock(
                 "world_complete",
                 blockTimer,
@@ -536,6 +532,39 @@ namespace BarPromenade
                     "blocks_total_ms",
                     blocksTotal.Elapsed.TotalMilliseconds));
             yield return new CompositionStep("world_complete", 1f);
+        }
+
+        private static void BuildRidgeDressing(Transform parent, CityLayout layout, List<Collider> rainShelters)
+        {
+            CityHillsideSiteDetails.Build(parent, layout);
+            CityHillsideFurnitureWorld.Build(parent, layout);
+            Transform loft = CityPigeonLoftWorld.Build(parent, layout);
+            var cobbler = CityCobblerSitePlan.ForLayout(layout);
+            if (cobbler.IsEnabled)
+            {
+                CityCobblerWorld.Build(parent, cobbler, true, out var shelter);
+                if (shelter != null) rainShelters.Add(shelter);
+            }
+
+            var glassReturn = CityGlassReturnSitePlan.ForLayout(layout);
+            if (glassReturn.IsEnabled)
+            {
+                Transform pavilion = CityGlassReturnWorld.Build(parent, glassReturn, true, out var shelter);
+                pavilion.GetComponent<CityGlassReturnWorker>().ConfigureCommute(
+                    CityGlassReturnWorkerPlan.ForLayout(layout));
+                if (shelter != null) rainShelters.Add(shelter);
+            }
+
+            if (loft != null)
+                foreach (var collider in loft.GetComponentsInChildren<BoxCollider>())
+                    if (collider.isTrigger && collider.name == "Pigeon loft rain shelter") rainShelters.Add(collider);
+
+            RidgeParkingWorld.Build(parent, layout, true);
+            if (CityPawnshopPlan.TryCreate(layout, out var pawnshop))
+            {
+                CityPawnshopWorld.Build(parent, pawnshop, true, out var shelter);
+                if (shelter != null) rainShelters.Add(shelter);
+            }
         }
 
         private static void ReportBlock(
@@ -570,15 +599,15 @@ namespace BarPromenade
             return new List<Rect>(CityBusNetworkFurniture.Reservations(CityDistrictBusPlanner.Create(layout), layout));
         }
 
-        private static Bounds BuildGround(
+        private static IEnumerator BuildGroundSteps(
             Transform parent,
             CityLayout layout,
             CityFringeYardPlan fringeYardPlan,
             CityGenerationSettings settings,
             bool seacoastBuildsTheSea,
             IReadOnlyList<Rect> precinctBoundaryApertures,
-            out GameObject parkLawn,
-            out CityCemeteryGroundExcavation cemeteryExcavation)
+            bool background,
+            Action<Bounds, GameObject, CityCemeteryGroundExcavation> completed)
         {
             Transform surfaces = new GameObject("City Surfaces").transform;
             surfaces.SetParent(parent, false);
@@ -641,12 +670,16 @@ namespace BarPromenade
                 }
             }
 
-            BuildDistrictGround(surfaces, layout);
-            parkLawn = BuildParkLawn(surfaces, layout);
-            CityFringeYardGroundWorldResult fringeGround = CityFringeYardGroundWorldBuilder.Build(
-                surfaces,
-                layout,
-                fringeYardPlan);
+            yield return BuildDistrictGroundSteps(surfaces, layout, background);
+            GameObject parkLawn = null;
+            yield return CityTerrainSurfaceWorldBuilder.BuildTerrainSteps("Park Lawn", surfaces, layout,
+                CitySurfaceKind.ParkGround, ParkGrass, false,
+                CityParkSurfaceAppearance.GetRecipe(CityParkSurfaceKind.Lawn).MetersPerTile,
+                null, null, background, lawn => parkLawn = FinishParkLawn(lawn));
+            yield return new CompositionStep("park_ground", .13f);
+            CityFringeYardGroundWorldResult fringeGround = default;
+            yield return CityFringeYardGroundWorldBuilder.BuildSteps(surfaces, layout, fringeYardPlan,
+                background, value => fringeGround = value);
             GameObject churchGround = CityChurchGroundWorldBuilder.Build(
                 surfaces,
                 layout,
@@ -655,6 +688,7 @@ namespace BarPromenade
             CityGroundSurfaceSystem.Register(fringeGround.GenericGround, 0);
             CityGroundSurfaceSystem.Register(fringeGround.MountainGround, 0);
             CityGroundSurfaceSystem.Register(churchGround, 0);
+            yield return new CompositionStep("fringe_ground", .15f);
             // The sand carries the seacoast's tide-banded sheet over
             // UVs baked at its metre pitch; the tint stays the flat
             // colour the map and the compensation were solved against.
@@ -668,6 +702,20 @@ namespace BarPromenade
                 layout,
                 PrimedTerrainSourceKind.BeachCollision,
                 out CityTerrainMeshSource primedBeachCollision);
+            if (background && (primedBeach.IsEmpty || primedBeachCollision.IsEmpty))
+            {
+                float tile = CitySeacoastSurfaceAppearance.GetRecipe(CitySeacoastSurfaceKind.Sand).MetersPerTile;
+                var sampled = Task.Run(() =>
+                {
+                    CityTerrainMeshSource visual = primedBeach.IsEmpty ? CityTerrainSurfaceWorldBuilder.CreateMeshSource(
+                        layout, CitySurfaceKind.Beach, tile, null, null, false, CityBeachSandPlan.MeshPitch) : primedBeach;
+                    CityTerrainMeshSource collision = primedBeachCollision.IsEmpty ? CityTerrainSurfaceWorldBuilder.CreateMeshSource(
+                        layout, CitySurfaceKind.Beach, tile, null, null, false, CityBeachSandPlan.CollisionPitch) : primedBeachCollision;
+                    return (visual, collision);
+                });
+                yield return sampled;
+                (primedBeach, primedBeachCollision) = sampled.GetAwaiter().GetResult();
+            }
             GameObject beach = CityTerrainSurfaceWorldBuilder.BuildWithSource(
                 "Beach",
                 surfaces,
@@ -695,6 +743,7 @@ namespace BarPromenade
                 FootstepGround.Stamp(beach, FootstepGroundKind.Sand);
                 CityGroundSurfaceSystem.Register(beach, 0, dynamic: true);
             }
+            yield return new CompositionStep("beach_ground", .17f);
             // The cemetery slab is built apart from the other
             // surfaces because it is the one ground in the city that
             // changes after the world is built: a dug grave is a
@@ -706,7 +755,7 @@ namespace BarPromenade
                     surfaces,
                     layout,
                     null);
-            cemeteryExcavation = cemeteryGround == null
+            CityCemeteryGroundExcavation cemeteryExcavation = cemeteryGround == null
                 ? null
                 : CityCemeteryGroundExcavation.Attach(
                     surfaces.gameObject,
@@ -725,7 +774,7 @@ namespace BarPromenade
                                  settings.MaximumBuildingHeight,
                                  settings.MaximumOrdinaryBuildingHeight) +
                              2f;
-            return new Bounds(
+            completed(new Bounds(
                 new Vector3(
                     footprint.center.x,
                     (minimumY + maximumY) * 0.5f,
@@ -733,7 +782,7 @@ namespace BarPromenade
                 new Vector3(
                     footprint.width,
                     maximumY - minimumY,
-                    footprint.height));
+                    footprint.height)), parkLawn, cemeteryExcavation);
         }
 
         /// <summary>
@@ -828,9 +877,9 @@ namespace BarPromenade
             beach.AddComponent<CitySandTreading>().Initialize(layout, visual, grounds, depths);
         }
 
-        private static void BuildDistrictGround(
+        private static IEnumerator BuildDistrictGroundSteps(
             Transform surfaces,
-            CityLayout layout)
+            CityLayout layout, bool background)
         {
             var districtAreaIds = new List<string>();
             for (int index = 0; index < layout.Districts.Count; index++)
@@ -844,18 +893,10 @@ namespace BarPromenade
                 }
 
                 districtAreaIds.Add(district.AreaId);
-                GameObject ground =
-                    CityTerrainSurfaceWorldBuilder.Build(
-                        $"Active Land ({district.AreaId})",
-                        surfaces,
-                        layout,
-                        CitySurfaceKind.BuildableGround,
-                        Color.white,
-                        true,
-                        null,
-                        null,
-                        CityTerrainSurfaceAreaFilter.IncludeOnly(
-                            new[] { district.AreaId }));
+                GameObject ground = null;
+                yield return CityTerrainSurfaceWorldBuilder.BuildTerrainSteps($"Active Land ({district.AreaId})", surfaces,
+                    layout, CitySurfaceKind.BuildableGround, Color.white, true, null, null,
+                    CityTerrainSurfaceAreaFilter.IncludeOnly(new[] { district.AreaId }), background, value => ground = value);
                 if (ground == null)
                 {
                     continue;
@@ -872,9 +913,10 @@ namespace BarPromenade
                             .GetProfile(district.Kind)
                             .Wear));
                 CityGroundSurfaceSystem.Register(ground, 0);
+                yield return new CompositionStep("district_soil", .12f);
             }
 
-            GameObject openLand = CityTerrainSurfaceWorldBuilder.Build(
+            yield return CityTerrainSurfaceWorldBuilder.BuildTerrainSteps(
                 "Active Land",
                 surfaces,
                 layout,
@@ -883,9 +925,11 @@ namespace BarPromenade
                 true,
                 null,
                 null,
-                CityTerrainSurfaceAreaFilter.Excluding(districtAreaIds));
-            FootstepGround.Stamp(openLand, FootstepGroundKind.Soil);
-            CityGroundSurfaceSystem.Register(openLand, 0);
+                CityTerrainSurfaceAreaFilter.Excluding(districtAreaIds), background, openLand =>
+                {
+                    FootstepGround.Stamp(openLand, FootstepGroundKind.Soil);
+                    CityGroundSurfaceSystem.Register(openLand, 0);
+                });
         }
 
         internal static GameObject BuildParkLawn(
@@ -902,6 +946,11 @@ namespace BarPromenade
                 CityParkSurfaceAppearance
                     .GetRecipe(CityParkSurfaceKind.Lawn)
                     .MetersPerTile);
+            return FinishParkLawn(lawn);
+        }
+
+        private static GameObject FinishParkLawn(GameObject lawn)
+        {
             if (lawn != null)
             {
                 FootstepGround.Stamp(lawn, FootstepGroundKind.Grass);
@@ -924,10 +973,10 @@ namespace BarPromenade
                 surface);
         }
 
-        private static void BuildRoads(
+        private static IEnumerator BuildRoadsSteps(
             Transform parent,
             CityLayout layout,
-            CityFringeYardPlan fringeYardPlan)
+            CityFringeYardPlan fringeYardPlan, CityDistrictStreamingPlan partition)
         {
             Transform roads = new GameObject("Road Network").transform;
             roads.SetParent(parent, false);
@@ -944,10 +993,13 @@ namespace BarPromenade
                     plan.CenterMarkingGeometry.Count +
                     plan.CrosswalkMarkingGeometry.Count));
             subTimer.Restart();
-            CityStreetSurfaceWorldBuilder.Build("Unified Street Surface", roads, layout, plan);
+            yield return CityStreetSurfaceWorldBuilder.BuildSteps("Unified Street Surface", roads, layout, plan,
+                include: partition == null ? null : partition.IncludeLowerStreet,
+                incremental: partition != null);
             CityBuildingEntranceWorldBuilder.Build(roads, layout);
             ReportBlock("roads_and_river/street_support", subTimer,
                 GameLog.Field("patches", plan.SupportPlan.Patches.Count));
+            if (partition != null) yield return new CompositionStep("street_entrances", .37f);
             subTimer.Restart();
             BuildOrientedSurfaceBoxesIfAny(
                 "Road Center Markings",
@@ -974,7 +1026,8 @@ namespace BarPromenade
                 false,
                 CityExteriorAppearance.RoadMarkingTextureTileSize,
                 CityExteriorAppearance.ApplyRoadMarkingSurface);
-            CityStreetSurfaceWorldBuilder.BuildPaint("Pawnshop Pedestrian Crossings", roads, pawnshopPaint);
+            if (partition == null)
+                CityStreetSurfaceWorldBuilder.BuildPaint("Pawnshop Pedestrian Crossings", roads, pawnshopPaint);
             ReportBlock(
                 "roads_and_river/markings",
                 subTimer,
@@ -982,6 +1035,7 @@ namespace BarPromenade
                     "boxes",
                     plan.CenterMarkingGeometry.Count +
                     plan.CrosswalkMarkingGeometry.Count));
+            if (partition != null) yield return new CompositionStep("street_markings", .38f);
             subTimer.Restart();
             // Gutters and the flat open precincts pool separately but
             // draw as one sheet: the cemetery terrace and the church

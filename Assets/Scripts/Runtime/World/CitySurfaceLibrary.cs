@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -93,18 +94,27 @@ namespace BarPromenade
 
         internal static int ApplyHierarchy(Transform root)
         {
+            int bound = 0;
+            RuntimeComposition.RunSynchronously(ApplyHierarchySteps(root, false, value => bound = value));
+            return bound;
+        }
+
+        internal static IEnumerator ApplyHierarchySteps(Transform root, bool incremental, Action<int> completed = null)
+        {
             if (root == null) throw new ArgumentNullException(nameof(root));
             _ = Manifest;
-            int bound = 0;
+            int bound = 0, processed = 0;
             foreach (Renderer renderer in root.GetComponentsInChildren<Renderer>(true))
             {
+                if (incremental && ++processed % 128 == 0)
+                    yield return new CompositionStep("district_surface_bindings", .98f);
                 if (renderer is not MeshRenderer || renderer.GetComponentInParent<Animator>(true) != null ||
                     renderer.GetComponentInParent<VillageResidentPresentation>(true) != null ||
                     renderer.GetComponentInParent<PlayerMotor>(true) != null) continue;
                 bound += ApplyRenderer(renderer);
                 if (bound > MaximumSceneBindings) throw new InvalidOperationException("City surface binding budget exceeded.");
             }
-            return bound;
+            completed?.Invoke(bound);
         }
 
         internal static int ApplyRenderer(Renderer renderer)

@@ -9,9 +9,9 @@ Read this file first, then use [ai/README.md](ai/README.md) as the documentation
 - Target16:9;native resolution,saved SMAA/lens/local-light effects,crisp UI;legacy4:3 unsupported.
 - Every scene change/visual task reviews all three groups, including
   post-processing: [effects standard](ai/visual-effects-standard.md).
-- 14 scenes/11 gameplay roots: `PawnshopInterior`, `CombatTest` included.
+- 15 scenes/11 gameplay roots; `CityRidge` is a City-owned additive scene.
   Roots compose validated plans and use `Resources/Player/Player3DV2.prefab`.
-- City, Mountain Road and Alpine Village occupy separate Single-loaded scenes.
+- City, Mountain Road and Alpine Village are separate travel destinations.
   Area travel keeps its loading overlay until incremental world construction
   finishes; isolated synchronous builder entry points remain available.
 - `BarPromenade.Rules` owns engine-independent calendar, activity ownership and

@@ -49,9 +49,11 @@ namespace BarPromenade
             Collider cafeRainShelter = null,
             CityResidentialCourtyardPlan residentialCourtyards = null,
             GameObject residentialCourtyardRoot = null,
-            IReadOnlyList<Collider> kioskRainShelters = null)
+            IReadOnlyList<Collider> kioskRainShelters = null,
+            GameObject ridgeRoot = null)
         {
             Root = root;
+            RidgeRoot = ridgeRoot;
             Cafe = cafe;
             CafeSite = cafeSite;
             CafeRainShelter = cafeRainShelter;
@@ -135,7 +137,27 @@ namespace BarPromenade
             }
         }
 
+        internal CityWorldResult(GameObject root, HomeEntrance home, RoadWalkableArea walkableArea,
+            IReadOnlyList<Collider> shelters, CityLayout layout, CityMountainBoundaryPlan mountain)
+        {
+            Root = RidgeRoot = root;
+            PlayerHome = home;
+            WalkableArea = walkableArea;
+            KioskRainShelters = shelters;
+            Bars = Array.Empty<BarEntrance>();
+            RiverQuayLampAnchors = Array.Empty<Transform>();
+            FringePracticalAnchors = Array.Empty<CityFringePracticalAnchor>();
+            DecorationPlan = new CityDecorationPlan(layout.Seed, Array.Empty<CityDecorationDescriptor>());
+            OpenAreaDecorationPlan = new CityOpenAreaDecorationPlan(Array.Empty<CityOpenAreaDecorationDescriptor>(), null, null);
+            FencePlan = new RoadFencePlan(Array.Empty<RoadFenceSegmentDescriptor>(), Array.Empty<RoadFenceOpeningDescriptor>());
+            ArchShelterPlan = CityArchShelterPlan.Absent;
+            MountainBoundaryPlan = mountain;
+            FringeYardPlan = CityFringeYardPlanner.Create(layout, mountain);
+            barsById = new Dictionary<string, BarEntrance>(StringComparer.Ordinal);
+        }
+
         public GameObject Root { get; }
+        public GameObject RidgeRoot { get; }
         public MountainRoadCafeWorldResult Cafe { get; }
         public MountainRoadTerminalSitePlan CafeSite { get; }
         public Collider CafeRainShelter { get; }

@@ -50,7 +50,7 @@ namespace BarPromenade.Tests.PlayMode
                 Time.captureDeltaTime = .1f;
                 OnDemandRendering.renderFrameInterval = 12;
                 Physics.SyncTransforms();
-                var homeMass = city.World.Root.transform
+                var homeMass = city.World.RidgeRoot.transform
                     .Find("Player Home/" + CityBuildingPrototypeWorldBuilder.LogicalCollisionObjectName)?.GetComponent<BoxCollider>();
                 Assert.That(homeMass, Is.Not.Null, "Home must own its surveyed building-mass collider.");
                 Assert.That(homeMass.bounds.size.x, Is.EqualTo(home.FoundationBounds.width).Within(.01f),
@@ -119,7 +119,7 @@ namespace BarPromenade.Tests.PlayMode
                         "A map arrival cannot borrow the rock floor beneath a bridge.");
                 }
 
-                var tree = city.World.Root.transform.Find("Residential terrace edges").Cast<Transform>()
+                var tree = city.World.RidgeRoot.transform.Find("Residential terrace edges").Cast<Transform>()
                     .Where(site => site.name == "RidgeYardTree")
                     .OrderBy(site => Vector3.Distance(site.position, home.ThresholdWorld)).First();
                 var trunkBody = tree.GetComponent<BoxCollider>();

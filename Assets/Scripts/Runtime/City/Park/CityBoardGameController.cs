@@ -167,7 +167,7 @@ namespace BarPromenade
             ParkChessPlayerPresentation parkChessPlayer,
             ParkCheckersPlayerPresentation parkCheckersPlayer,
             CityParkQuarrelController parkQuarrel,
-            int citySeed)
+            int citySeed, Func<CityBoardGameKind, IBoardGameMatch> restoreMatch = null)
         {
             if (parent == null ||
                 tables == null ||
@@ -227,9 +227,9 @@ namespace BarPromenade
                     Table = table,
                     Seat = seat,
                     Provider = provider,
-                    Match = table.Game == CityBoardGameKind.Chess
+                    Match = restoreMatch?.Invoke(table.Game) ?? (table.Game == CityBoardGameKind.Chess
                         ? (IBoardGameMatch)new ChessMatch()
-                        : new DraughtsMatch()
+                        : new DraughtsMatch())
                 };
                 controller.boards.Add(board);
                 Component opponent = table.Game == CityBoardGameKind.Chess

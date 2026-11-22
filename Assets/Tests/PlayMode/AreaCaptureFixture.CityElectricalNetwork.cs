@@ -172,7 +172,7 @@ namespace BarPromenade.Tests.PlayMode
                     Assert.That(services.ContainsKey(consumer.SuppliedById), Is.True, consumer.SuppliedById);
                     Assert.That(service.Start, Is.EqualTo(cobbler.Yard.CableStart));
                     Assert.That(service.End, Is.EqualTo(cobbler.Yard.CableEnd));
-                    var existing = city.World.Root.GetComponentInChildren<CityCobblerYardWorld>(true).transform.Find("FeedCable");
+                    var existing = city.World.RidgeRoot.GetComponentInChildren<CityCobblerYardWorld>(true).transform.Find("FeedCable");
                     Assert.That(existing.GetComponentsInChildren<MeshRenderer>().Any(r => r.bounds.SqrDistance(service.Start) < .04f &&
                         r.bounds.SqrDistance(service.End) < .04f), Is.True, "The workshop needs its original fitted wall feed.");
                     continue;
@@ -309,7 +309,7 @@ namespace BarPromenade.Tests.PlayMode
             }
             // The existing cobbler lead belongs to the fitted yard, outside the combined mesh.
             // Its 12 independently authored tube sections share the single painted FBX with metal end fittings.
-            var lead = world.GetComponentInChildren<CityCobblerYardWorld>(true).transform.Find("FeedCable");
+            var lead = city.World.RidgeRoot.GetComponentInChildren<CityCobblerYardWorld>(true).transform.Find("FeedCable");
             var leadFilter = lead.GetComponentsInChildren<MeshFilter>().Single(f => f.name == "FeedCable__Paint");
             var points = ReadLocalAcceptanceVertices(leadFilter.sharedMesh).Select(leadFilter.transform.TransformPoint).ToArray();
             var ends = lead.GetComponentsInChildren<Transform>();
@@ -435,7 +435,7 @@ namespace BarPromenade.Tests.PlayMode
 
             void Require(string path, string id)
             {
-                var found = world.Find(path);
+                var found = city.World.RidgeRoot.transform.Find(path) ?? world.Find(path);
                 Assert.That(found, Is.Not.Null, $"Missing architectural owner {id} at {path}.");
                 owners.Add(found, id);
             }

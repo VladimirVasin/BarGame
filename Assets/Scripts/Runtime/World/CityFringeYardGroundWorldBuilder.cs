@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -36,6 +37,14 @@ namespace BarPromenade
             CityLayout layout,
             CityFringeYardPlan fringePlan)
         {
+            CityFringeYardGroundWorldResult result = default;
+            RuntimeComposition.RunSynchronously(BuildSteps(parent, layout, fringePlan, false, value => result = value));
+            return result;
+        }
+
+        internal static IEnumerator BuildSteps(Transform parent, CityLayout layout, CityFringeYardPlan fringePlan,
+            bool background, Action<CityFringeYardGroundWorldResult> completed)
+        {
             if (parent == null)
             {
                 throw new ArgumentNullException(nameof(parent));
@@ -66,18 +75,11 @@ namespace BarPromenade
             CityEastExitPlan eastExit = CityEastExitPlanner.Create(layout);
             IReadOnlyList<Rect> roadCut = eastExit.IsEnabled
                 ? eastExit.RoadGroundCuts : null;
-            GameObject genericGround =
-                CityTerrainSurfaceWorldBuilder.Build(
-                    GenericGroundObjectName,
-                    parent,
-                    layout,
-                    CitySurfaceKind.OpenGround,
-                    CityExteriorAppearance.YardGround,
-                    false,
-                    groundRecipe.MetersPerTile,
-                    roadCut,
-                    CityTerrainSurfaceAreaFilter.Excluding(
-                        mountainAreaIds));
+            GameObject genericGround = null;
+            yield return CityTerrainSurfaceWorldBuilder.BuildTerrainSteps(GenericGroundObjectName, parent,
+                layout, CitySurfaceKind.OpenGround, CityExteriorAppearance.YardGround, false,
+                groundRecipe.MetersPerTile, roadCut, CityTerrainSurfaceAreaFilter.Excluding(mountainAreaIds),
+                background, value => genericGround = value);
             FootstepGround.Stamp(genericGround, FootstepGroundKind.Soil);
             if (genericGround != null)
             {
@@ -91,17 +93,10 @@ namespace BarPromenade
             if (mountainAreaIds.Count > 0)
             {
                 HomeSurfaceRecipe recipe = groundRecipe;
-                mountainGround = CityTerrainSurfaceWorldBuilder.Build(
-                    MountainGroundObjectName,
-                    parent,
-                    layout,
-                    CitySurfaceKind.OpenGround,
-                    CityExteriorAppearance.YardGround,
-                    false,
-                    recipe.MetersPerTile,
-                    null,
-                    CityTerrainSurfaceAreaFilter.IncludeOnly(
-                        mountainAreaIds));
+                yield return CityTerrainSurfaceWorldBuilder.BuildTerrainSteps(MountainGroundObjectName, parent,
+                    layout, CitySurfaceKind.OpenGround, CityExteriorAppearance.YardGround, false,
+                    recipe.MetersPerTile, null, CityTerrainSurfaceAreaFilter.IncludeOnly(mountainAreaIds),
+                    background, value => mountainGround = value);
                 if (mountainGround != null)
                 {
                     FootstepGround.Stamp(
@@ -116,9 +111,7 @@ namespace BarPromenade
                 }
             }
 
-            return new CityFringeYardGroundWorldResult(
-                genericGround,
-                mountainGround);
+            completed(new CityFringeYardGroundWorldResult(genericGround, mountainGround));
         }
 
         private static List<string> CollectMountainAreaIds(

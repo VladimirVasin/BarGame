@@ -70,10 +70,12 @@ namespace BarPromenade
             ApplyShopReceivingDoor();
         }
 
-        private void RestorePresentation()
+        internal void RestorePresentation()
         {
+            if (factoryPresentation == null && truckPresentation == null) return;
             factoryPresentation?.Dispose();
             truckPresentation?.Dispose();
+            factoryPresentation = truckPresentation = null;
             if (port == null) return;
             port.PresentationObserver = previousPortObserver;
             port.ForcePresentation = previousPortForcePresentation;

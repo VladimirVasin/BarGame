@@ -21,7 +21,7 @@ namespace BarPromenade.Tests.PlayMode
             Object.FindAnyObjectByType<GameTimeRuntime>().enabled = false;
             city.Weather.enabled = false;
             Assert.That(RidgeKioskSitePlan.TryCreate(city.Layout, out var site), Is.True);
-            Transform kiosk = city.World.Root.transform.Find("Ridge Kiosk");
+            Transform kiosk = city.World.RidgeRoot.transform.Find("Ridge Kiosk");
             var vendor = kiosk.GetComponentInChildren<RidgeKioskVendor>();
             var station = kiosk.GetComponentInChildren<RidgeKioskStation>();
             Assert.That(station, Is.Not.Null);
@@ -245,7 +245,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(GameSessionState.TryStartGameTimeAt(21 * 60 + 10), Is.True);
             yield return LoadProductionCity();
             Assert.That(RidgeKioskSitePlan.TryCreate(city.Layout, out var site), Is.True);
-            var court = city.World.Root.GetComponentInChildren<RidgeKioskCourtWorld>();
+            var court = city.World.RidgeRoot.GetComponentInChildren<RidgeKioskCourtWorld>();
             Assert.That(court, Is.Not.Null);
             var atmosphere = city.Night.Atmosphere;
             const string anchorName = CityNightAtmosphere.IndustrialTaskLightPrefix + RidgeKioskCourtWorld.LampPurpose;
@@ -519,9 +519,9 @@ namespace BarPromenade.Tests.PlayMode
             var follow = city.Camera.GetComponent<PlayerCameraFollow>();
             follow.SetOrbitInputEnabled(false);
             var atmosphere = city.Night.Atmosphere;
-            Transform homeLens = city.World.Root.GetComponentsInChildren<Transform>()
+            Transform homeLens = city.World.RidgeRoot.GetComponentsInChildren<Transform>()
                 .Single(t => t.name == "Home Entrance Lamp");
-            Transform homeAnchor = city.World.Root.GetComponentsInChildren<Transform>()
+            Transform homeAnchor = city.World.RidgeRoot.GetComponentsInChildren<Transform>()
                 .Single(t => t.name == "IndustrialTaskLight_HomeEntrance");
             Assert.That(Vector3.Distance(homeAnchor.position, homeLens.position), Is.LessThan(.45f),
                 "The real source belongs to the existing entrance lens.");
@@ -621,7 +621,7 @@ namespace BarPromenade.Tests.PlayMode
             IEnumerator CheckKioskAtCurrentTime(int minute)
             {
                 Assert.That(RidgeKioskSitePlan.TryCreate(city.Layout, out var site), Is.True);
-                Transform kiosk = city.World.Root.transform.Find("Ridge Kiosk");
+                Transform kiosk = city.World.RidgeRoot.transform.Find("Ridge Kiosk");
                 var vendor = kiosk.GetComponentInChildren<RidgeKioskVendor>();
                 Renderer lens = kiosk.GetComponentsInChildren<Renderer>()
                     .Single(renderer => renderer.name == "RidgeKiosk_KioskLampGlass");
@@ -695,7 +695,7 @@ namespace BarPromenade.Tests.PlayMode
 
             IEnumerator PhotographKiosk(Vector3 localEye, Vector3 localTarget, string name)
             {
-                Transform kiosk = city.World.Root.transform.Find("Ridge Kiosk");
+                Transform kiosk = city.World.RidgeRoot.transform.Find("Ridge Kiosk");
                 Vector3 eye = kiosk.TransformPoint(localEye), target = kiosk.TransformPoint(localTarget);
                 // Keep the real pool focus here, but exclude the body enclosing
                 // this observational lens. Restore every renderer afterwards.

@@ -27,7 +27,7 @@ namespace BarPromenade.Tests.PlayMode
                 System.Type.GetType("BarPromenade.Editor.CityMapArtReferenceExport, BarPromenade.Editor", true)
                     .GetMethod("ExportCurrent").Invoke(null, null);
 #endif
-            var live = city.World.Root.GetComponentInChildren<RidgeKioskCourtLife>();
+            var live = city.World.RidgeRoot.GetComponentInChildren<RidgeKioskCourtLife>();
             Assert.That(live, Is.Not.Null);
             RidgeKioskStation station = live.GetComponentInParent<RidgeKioskStation>();
             var dock = CityHillsideFurniturePlan.ForLayout(city.Layout).UtilityDocks.Single(item =>
@@ -568,7 +568,7 @@ namespace BarPromenade.Tests.PlayMode
                 System.Type.GetType("BarPromenade.Editor.CityMapArtReferenceExport, BarPromenade.Editor", true)
                     .GetMethod("ExportCurrent", System.Type.EmptyTypes).Invoke(null, null);
 #endif
-            Transform kiosk = city.World.Root.transform.Find("Ridge Kiosk");
+            Transform kiosk = city.World.RidgeRoot.transform.Find("Ridge Kiosk");
             Assert.That(kiosk, Is.Not.Null);
             Assert.That(kiosk.position, Is.EqualTo(site.Origin));
             var vendor = kiosk.GetComponentInChildren<RidgeKioskVendor>();
