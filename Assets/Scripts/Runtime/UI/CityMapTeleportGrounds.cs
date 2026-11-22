@@ -188,7 +188,7 @@ namespace BarPromenade
             if(CityPawnshopDescentPlan.ForLayout(layout).TrySampleTop(worldXZ,out top)) return true;
             if(CityPawnshopBenchTerracePlan.ForLayout(layout).TrySampleTop(worldXZ,out top)) return true;
             foreach (CityKioskSitePlan kiosk in kiosks)
-                if (kiosk.TrySampleApronTop(worldXZ, out top) ||
+                if (kiosk.TrySampleApronTop(worldXZ, out top) || kiosk.DistrictCourt?.Contains(worldXZ) == true ||
                     kiosk is RidgeKioskSitePlan { Court: { } court } && court.TrySurface(worldXZ, out top)) return true;
             if (terraces.ContainsFootprint(worldXZ))
                 return terraces.TrySampleStandingTop(worldXZ, 0f, out top);

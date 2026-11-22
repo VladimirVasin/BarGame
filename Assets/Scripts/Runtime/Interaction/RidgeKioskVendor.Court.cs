@@ -5,10 +5,11 @@ namespace BarPromenade
 {
     public sealed partial class RidgeKioskVendor
     {
-        private enum VendorPhase { Counter, ToDoor, Open, Cross, Close, ToDestination, Smoke, FinishSmoke }
+        private enum VendorPhase { Counter, ToDoor, Open, Cross, Close, ToDestination, Smoke, FinishSmoke, Chore, ToChair, Chair }
         private const float DoorSeconds = 1.10f, WalkingSpeed = .85f;
         private RidgeKioskStation courtStation;
         private RidgeKioskCourtWorld courtWorld;
+        private DistrictKioskCourtWorld districtCourt;
         private Transform door;
         private CharacterController sellerBody;
         private readonly NpcAttentionHeadLayer customerLook = new();
@@ -24,24 +25,14 @@ namespace BarPromenade
         private HomeBalconySmokingExhaleEffect exhale;
         private CityPedestrianHandPropRegistry cigarette;
         internal bool AtCounter => phase == VendorPhase.Counter;
+        internal bool IsWorkingInCourt => phase == VendorPhase.Chore;
+        internal bool IsAdjustingCourtChair => phase == VendorPhase.Chair;
         internal bool IsSmoking => phase == VendorPhase.Smoke || phase == VendorPhase.FinishSmoke;
 
         internal void ConfigureCourt(RidgeKioskCourtWorld court, Transform hinge, RidgeKioskStation station)
         {
-            courtStation = station;
+            ConfigureStaffDoor(hinge, station);
             courtWorld = court;
-            door = hinge;
-            counter = Actor.transform.position;
-            insideDoor = kiosk.TransformPoint(new Vector3(-.84f, .08f, -.21f));
-            outsideDoor = kiosk.TransformPoint(new Vector3(-2.22f, 0f, -.21f));
-            sellerBody = Actor.gameObject.AddComponent<CharacterController>();
-            sellerBody.height = 1.69f;
-            sellerBody.center = Vector3.up * .845f;
-            sellerBody.radius = .235f;
-            sellerBody.skinWidth = .024f;
-            sellerBody.stepOffset = .16f;
-            sellerBody.minMoveDistance = 0f;
-            customerLook.Bind(Actor.transform, Actor.Head, Actor.Animator);
             smokeDefinition = CityBalconySmokerPresentation.CreateAnimationDefinition();
             var hero = Player3DResources.LoadPrefab().GetComponent<Player3DAssetRegistry>();
             if (!hero.TryGetAnimation(smokeDefinition.LoopClipName, out var binding) || !binding.Clip)
@@ -66,6 +57,29 @@ namespace BarPromenade
             smokePose = new NpcHeroUpperBodyPose.Binding(Actor.ModelRoot);
         }
 
+        internal void ConfigureDistrictCourt(DistrictKioskCourtWorld court, Transform hinge, RidgeKioskStation station)
+        {
+            ConfigureStaffDoor(hinge, station);
+            districtCourt = court;
+        }
+
+        private void ConfigureStaffDoor(Transform hinge, RidgeKioskStation station)
+        {
+            courtStation = station;
+            door = hinge;
+            counter = Actor.transform.position;
+            insideDoor = kiosk.TransformPoint(new Vector3(-.84f, .08f, -.21f));
+            outsideDoor = kiosk.TransformPoint(new Vector3(-2.22f, 0f, -.21f));
+            sellerBody = Actor.gameObject.AddComponent<CharacterController>();
+            sellerBody.height = 1.69f;
+            sellerBody.center = Vector3.up * .845f;
+            sellerBody.radius = .235f;
+            sellerBody.skinWidth = .024f;
+            sellerBody.stepOffset = .16f;
+            sellerBody.minMoveDistance = 0f;
+            customerLook.Bind(Actor.transform, Actor.Head, Actor.Animator);
+        }
+
         internal void SetHandover(Vector3? worldPoint, float weight)
         {
             handoverPoint = worldPoint;
@@ -84,9 +98,13 @@ namespace BarPromenade
                 courtStation.ServePendingHero();
                 if (courtStation.HasCustomerNearby || double.IsNaN(nextBreak))
                     nextBreak = now + 8d + (GameSessionState.CitySeed & 7);
-                if (GameSessionState.IsGameTimeRunning && now >= nextBreak)
+                bool ready = districtCourt != null
+                    ? districtCourt.NeedsChore && !courtStation.HasCustomerNearby
+                    : GameSessionState.IsGameTimeRunning && now >= nextBreak;
+                if (ready)
                 {
                     returning = false;
+                    districtCourt?.BeginChore();
                     Enter(VendorPhase.ToDoor);
                     NpcFootstepSources.Register(Actor.transform);
                 }
@@ -97,16 +115,32 @@ namespace BarPromenade
             switch (phase)
             {
                 case VendorPhase.ToDoor:
-                    if (WalkTo(returning ? outsideDoor : insideDoor, step)) Enter(VendorPhase.Open);
+                    if (WalkTo(returning ? districtCourt != null ? districtCourt.Plan.StaffTurn : outsideDoor : insideDoor, step)) Enter(VendorPhase.Open);
                     break;
                 case VendorPhase.Open:
                     if (MoveDoor(true, step)) Enter(VendorPhase.Cross);
                     break;
                 case VendorPhase.Cross:
-                    if (WalkTo(returning ? insideDoor : outsideDoor, step)) Enter(VendorPhase.Close);
+                    if (WalkTo(returning ? insideDoor : districtCourt != null ? districtCourt.Plan.StaffTurn : outsideDoor, step)) Enter(VendorPhase.Close);
                     break;
                 case VendorPhase.Close:
                     if (MoveDoor(false, step)) Enter(VendorPhase.ToDestination);
+                    break;
+                case VendorPhase.ToDestination when districtCourt != null:
+                    AdvanceDistrictDestination(step);
+                    break;
+                case VendorPhase.Chore:
+                    if (!districtCourt.PresentChore(Actor, elapsed)) break;
+                    if (districtCourt.Plan.Residential) Enter(VendorPhase.ToChair);
+                    else ReturnFromDistrictChore();
+                    break;
+                case VendorPhase.ToChair:
+                    if (WalkTo(districtCourt.Plan.ChairWork, step) &&
+                        Face(Vector3.ProjectOnPlane(districtCourt.ChairBack - Actor.transform.position, Vector3.up), step))
+                        Enter(VendorPhase.Chair);
+                    break;
+                case VendorPhase.Chair:
+                    if (districtCourt.PresentChair(Actor, elapsed)) ReturnFromDistrictChore();
                     break;
                 case VendorPhase.ToDestination:
                     if (!returning && courtStation.HasCustomerNearby) { ReturnToCounter(); break; }
@@ -136,13 +170,37 @@ namespace BarPromenade
                     if (elapsed >= .35f) ReturnToCounter();
                     break;
             }
+            if (districtCourt != null && phase is not (VendorPhase.Chore or VendorPhase.Chair or VendorPhase.Counter))
+                districtCourt.CarryChore(Actor);
+        }
+
+        private void ReturnFromDistrictChore()
+        {
+            returning = true;
+            Enter(VendorPhase.ToDoor);
+        }
+
+        private void AdvanceDistrictDestination(float step)
+        {
+            if (returning)
+            {
+                if (!WalkTo(counter, step) || !Face(kiosk.forward, step)) return;
+                districtCourt.FinishChore(completed: true);
+                NpcFootstepSources.Unregister(Actor.transform);
+                Enter(VendorPhase.Counter);
+                return;
+            }
+
+            if (!WalkTo(districtCourt.Plan.StaffWork, step) ||
+                !Face(districtCourt.Plan.Residential ? -kiosk.forward : -kiosk.right - kiosk.forward * .72f, step)) return;
+            Enter(VendorPhase.Chore);
         }
 
         private void PresentAtCounter(float step)
         {
             idleClock += step;
             if (!streetCamera) streetCamera = Camera.main;
-            Transform focus = Session.IsActive && Session.HeroHead ? Session.HeroHead : courtStation.Customer;
+            Transform focus = Session != null && Session.IsActive && Session.HeroHead ? Session.HeroHead : courtStation.Customer;
             if (!focus && Time.time < nextIdleSample) return;
             float distance = streetCamera ? (streetCamera.transform.position - transform.position).sqrMagnitude : 0f;
             nextIdleSample = Time.time + (focus || distance < 100f ? 0f : distance < 900f ? .12f : .55f);
@@ -224,6 +282,7 @@ namespace BarPromenade
             handoverPoint = null;
             handoverWeight = 0f;
             nextBreak = double.NaN;
+            districtCourt?.FinishChore(completed: false);
             NpcFootstepSources.Unregister(Actor.transform);
             if (sellerBody) sellerBody.enabled = false;
             if (Actor && kiosk) Actor.transform.SetPositionAndRotation(counter, kiosk.rotation);

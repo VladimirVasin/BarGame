@@ -2919,10 +2919,8 @@ namespace BarPromenade
 
             if (!ReferenceEquals(decorationNightPlan, nightPlan))
             {
-                decoration = CityDecorationPlanner.CreatePlan(
-                    Layout,
-                    Fence,
-                    nightPlan);
+                decoration = CityKioskSites.ForLayout(Layout).ReserveCourtFurniture(Layout,
+                    CityDecorationPlanner.CreatePlan(Layout, Fence, nightPlan));
                 decorationNightPlan = nightPlan;
             }
 

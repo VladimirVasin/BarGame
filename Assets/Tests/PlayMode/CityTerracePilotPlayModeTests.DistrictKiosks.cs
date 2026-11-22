@@ -29,6 +29,198 @@ namespace BarPromenade.Tests.PlayMode
 
     public sealed partial class CityTerracePilotPlayModeTests
     {
+        [UnityTest, Timeout(240000)]
+        public IEnumerator LiveCity_DistrictKioskCourtsUseDistinctFurnitureRegularsAndChores()
+        {
+            yield return LoadProductionCity();
+            var residents = city.Pedestrians.Residents;
+            var courts = city.World.Root.GetComponentsInChildren<DistrictKioskCourtWorld>()
+                .OrderByDescending(court => court.Plan.Residential).ToArray();
+            var failures = new List<string>();
+            var seen = new HashSet<int>();
+            var motor = city.Player.Motor;
+            var hero = city.Player.Interactor;
+            bool previousFocus = GameInput.MovementFocused;
+            GameInput.HandleApplicationFocus(true);
+            try
+            {
+                Check(courts.Length == 2, "Production City must compose both district courts.");
+                Check(SystemInfo.graphicsDeviceType != GraphicsDeviceType.Null, "City captures require a graphics device.");
+                foreach (var court in courts)
+                {
+                    var plan = court.Plan;
+                    var station = court.GetComponentInParent<RidgeKioskStation>();
+                    string id = plan.Site.StableId;
+                    Check(!station.Vendor.HasDialogue, id + " seller dialogue");
+                    Check(Mathf.Abs(court.Table(0).position.y - plan.Site.Origin.y - (plan.Residential ? .75f : 1.04f)) < .02f,
+                        id + " imported first table height");
+                    Check(Mathf.Abs(court.Table(1).position.y - plan.Site.Origin.y - (plan.Residential ? .75f : 1.06f)) < .02f,
+                        id + " imported second table height");
+                    foreach (Vector3 spot in new[] { plan.Gate, plan.Site.PublicThroughLeft, plan.Site.PublicThroughRight })
+                        Check(city.World.WalkableArea.Contains(spot, .22f), id + " walking clearance " + spot);
+
+                    int[] cast = Enumerable.Range(0, CityResidentLifeRules.ResidentCount)
+                        .Where(person => residents.DistrictKioskVisit(person).Court == plan).ToArray();
+                    Check(cast.Length == plan.Capacity, id + " assigned regulars " + cast.Length);
+                    foreach (int person in cast)
+                    {
+                        Check(seen.Add(person) && residents.KioskPlace(person) < 0 &&
+                            !DefaultNpcPopulation.IsWomanPedestrian(person), id + " exclusive male regular " + person);
+                        int node = residents.Destination(person, CityResidentActivity.Leisure);
+                        Check(float.IsFinite(residents.DistancesTo(node)[residents.Workplace(person).PavementNode]),
+                            id + " work journey " + person);
+                        Check(residents.DistrictKioskVisit(person).Departure < 23 * 60, id + " departure " + person);
+                    }
+
+                    int bestMinute = 18 * 60, bestCount = 0;
+                    for (int minute = 15 * 60; minute < 22 * 60; minute++)
+                    {
+                        int count = cast.Count(person =>
+                        {
+                            var sample = residents.Schedule(person, 0, minute);
+                            return sample.Activity == CityResidentActivity.Leisure &&
+                                sample.StartedAt + 22 < minute && minute + 5 < sample.EndsAt;
+                        });
+                        if (count <= bestCount) continue;
+                        bestCount = count;
+                        bestMinute = minute;
+                    }
+                    Check(bestCount >= 2, id + " guests must overlap under the shift timetable");
+                    Check(GameSessionState.TryPrepareGameTimeAt(bestMinute), id + " prepared capture time");
+                    city.DayNight.ApplyCurrentTime(true);
+                    city.Night.Atmosphere.RefreshImmediate();
+                    motor.Teleport(plan.Site.PublicThroughCenter + Vector3.up * PlayerFactory.GroundedRootOffset);
+                    for (int i = 0; i < 6; i++) yield return null;
+                    city.Pedestrians.ReleaseResidentPresentationsForTimeJump();
+                    city.ResidentJourneys.Reset(bestMinute);
+                    city.ResidentJourneys.SeedKioskAtCityStart();
+                    Physics.SyncTransforms();
+                    for (int i = 0; i < plan.Capacity; i++)
+                        if (!city.Pedestrians.WarmKioskPopulation()) break;
+                    for (int i = 0; i < 8; i++) yield return null;
+
+                    var drinkers = city.Pedestrians.Actors.Where(actor => actor.IsSpawned &&
+                        cast.Contains(city.Pedestrians.ResidentIndex(actor)) &&
+                        actor.Presentation.GetComponent<BarPatronDrinkingArmPose>() is { isActiveAndEnabled: true })
+                        .ToArray();
+                    int seated = drinkers.Count(actor => actor.Presentation.IsSeated);
+                    Debug.Log($"DISTRICT KIOSK {id} at {bestMinute}: {bestCount} scheduled, " +
+                        $"{drinkers.Length} drinking, {seated} seated at {plan.Site.Origin:F2}.");
+                    Check(drinkers.Length >= bestCount, id + " drinkers " + drinkers.Length + "/" + bestCount);
+                    Check(plan.Residential ? seated >= 1 : seated == 0, id + " seated count " + seated);
+                    var poses = drinkers.Select(actor => actor.Presentation.GetComponent<BarPatronDrinkingArmPose>()).ToArray();
+                    float sipDeadline = Time.realtimeSinceStartup + 9f;
+                    while (poses.Length > 0 && !poses.Any(IsSipping) && Time.realtimeSinceStartup < sipDeadline)
+                        yield return null;
+                    Check(poses.Any(IsSipping), id + " visible sip");
+                    Capture(court, "company", company: true);
+
+                    if (plan.Residential)
+                    {
+                        Check(ChairClearsTables(court), id + " chair at rest clears both tables");
+                        // The departing visitor has cleared the seller's work spot.
+                        int departing = cast.Single(person => residents.DistrictKioskVisit(person).Slot == 2);
+                        int departure = Mathf.CeilToInt((float)residents.DistrictKioskVisit(departing).Departure);
+                        Check(GameSessionState.TryPrepareGameTimeAt(departure + 2), id + " time after departure");
+                        for (int i = 0; i < 6; i++) yield return null;
+                        court.MarkDeparture(2);
+                    }
+                    else
+                    {
+                        for (int i = 0; i < 2; i++)
+                        {
+                            var bottle = VodkaBottleView.Create(court.transform, InventoryItemId.VodkaBottle);
+                            bottle.SetRemaining(0f);
+                            bottle.SetOpened(true);
+                            Vector3 dock = court.BottleDock;
+                            Check(court.ReturnBottle(bottle), id + " empty bottle " + i);
+                            float baseY = bottle.GlassCells.Min(glass => glass.bounds.min.y);
+                            Check(Mathf.Abs(baseY - dock.y) < .004f &&
+                                bottle.Mouth.position.y - baseY > bottle.Profile.Height * .85f,
+                                id + " upright bottle base contacts the crate floor " + i);
+                        }
+                    }
+
+                    motor.Teleport(plan.Site.PublicThroughRight + Vector3.up * PlayerFactory.GroundedRootOffset);
+                    float deadline = Time.realtimeSinceStartup + 24f;
+                    while (station.Vendor.AtCounter && Time.realtimeSinceStartup < deadline) yield return null;
+                    Check(!station.Vendor.AtCounter, id + " seller leaves the window");
+                    motor.Teleport(plan.Site.Approach + Vector3.up * PlayerFactory.GroundedRootOffset);
+                    Physics.SyncTransforms();
+                    var camera = city.Camera;
+                    camera.transform.rotation = Quaternion.LookRotation(station.InteractionPosition - camera.transform.position);
+                    Check(station.CanInteract(hero), id + " service request at the window");
+                    station.Interact(hero);
+
+                    bool capturedChore = false, capturedChair = false;
+                    float choreTime = 0f;
+                    while (court.ChoresCompleted == 0 && Time.realtimeSinceStartup < deadline)
+                    {
+                        if (station.Vendor.IsWorkingInCourt) choreTime += Time.deltaTime;
+                        if (!capturedChair && station.Vendor.IsAdjustingCourtChair)
+                        {
+                            Check(ChairClearsTables(court), id + " moving chair clears both tables");
+                            Capture(court, "chair", company: false, chair: true);
+                            capturedChair = true;
+                        }
+                        if (!capturedChore && choreTime >= (plan.Residential ? 1f : .95f))
+                        {
+                            Capture(court, "seller", company: false);
+                            capturedChore = true;
+                        }
+                        yield return null;
+                    }
+                    Debug.Log($"DISTRICT KIOSK {id}: chores={court.ChoresCompleted}, returns={court.Returned}, " +
+                        $"seller={station.Vendor.Actor.transform.position:F2}, dock={plan.StaffWork:F2}.");
+                    Check(court.ChoresCompleted == 1 && !court.NeedsChore && court.Returned == 0, id + " completed chore");
+                    Check(capturedChore, id + " captured seller at work");
+                    if (plan.Residential)
+                        Check(capturedChair && ChairClearsTables(court), id + " captured and reset chair clear of tables");
+                    yield return null;
+                    Check(station.Menu.IsOpen, id + " pending window request after chore");
+                    station.Menu.Close();
+                }
+                Assert.That(failures, Is.Empty, string.Join("\n", failures));
+            }
+            finally { GameInput.HandleApplicationFocus(previousFocus); }
+
+            bool IsSipping(BarPatronDrinkingArmPose pose)
+                => pose && pose.Timeline.Phase == BarPatronDrinkPhase.Sip && pose.Timeline.PhaseElapsed > .35f;
+
+            void Check(bool condition, string message)
+            {
+                if (!condition) failures.Add(message);
+            }
+
+            bool ChairClearsTables(DistrictKioskCourtWorld court)
+            {
+                var chair = CityPedestrianHandProps.FindSocket(court.transform, "LooseChair");
+                var chairParts = chair.GetComponentsInChildren<MeshCollider>();
+                Physics.SyncTransforms();
+                for (int table = 0; table < 2; table++)
+                    foreach (var tablePart in court.Table(table).GetComponentsInChildren<MeshCollider>())
+                        foreach (var chairPart in chairParts)
+                            if (chairPart.bounds.Intersects(tablePart.bounds)) return false;
+                return true;
+            }
+
+            void Capture(DistrictKioskCourtWorld court, string name, bool company, bool chair = false)
+            {
+                if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.Null) return;
+                var plan = court.Plan;
+                var camera = city.Camera;
+                var previous = new Pose(camera.transform.position, camera.transform.rotation);
+                Vector3 target = company ? Vector3.Lerp(court.Table(0).position, court.Table(1).position, .5f) :
+                    (chair ? plan.ChairWork : plan.StaffWork) + Vector3.up * .85f;
+                Vector3 eye = company
+                    ? (plan.Residential ? plan.Point(-6.5f, 3.55f) : plan.Point(-4.4f, -2.35f)) + Vector3.up * 2.15f
+                    : (plan.Residential ? plan.Point(-1.88f, 1.72f) : plan.Point(-2.6f, -2.5f)) + Vector3.up * 1.79f;
+                camera.transform.SetPositionAndRotation(eye, Quaternion.LookRotation(target - eye));
+                try { AreaCaptureFixture.CaptureCurrentCamera(camera, "DistrictKioskCourts", plan.Site.StableId + "-" + name, 1280, 720); }
+                finally { camera.transform.SetPositionAndRotation(previous.position, previous.rotation); }
+            }
+        }
+
         [UnityTest, PrebuildSetup(typeof(DistrictKioskCaptureSetup)), Timeout(240000)]
         public IEnumerator LiveCity_DistrictKiosksKeepDistinctSellersSafeApproachesAndAtomicVodkaSales()
         {

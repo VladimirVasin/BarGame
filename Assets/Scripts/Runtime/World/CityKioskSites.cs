@@ -19,6 +19,33 @@ namespace BarPromenade
         public static CityKioskSites ForLayout(CityLayout layout) =>
             Plans.GetValue(layout ?? throw new ArgumentNullException(nameof(layout)), value => new CityKioskSites(value));
 
+        internal static bool TryGetCached(CityLayout layout, out CityKioskSites sites) => Plans.TryGetValue(layout, out sites);
+
+        internal CityDecorationPlan ReserveCourtFurniture(CityLayout layout, CityDecorationPlan scenery)
+        {
+            var areas = new List<Rect>(3);
+            foreach (var site in Sites)
+                if (site.DistrictCourt is { } court) areas.AddRange(court.FloorBounds);
+            if (areas.Count == 0) return scenery;
+
+            var footprints = new List<Rect>(CityStaticCollisionBuilder.MaximumDecorationProxyCount);
+            var bounds = new List<Bounds>(CityStaticCollisionBuilder.MaximumDecorationProxyCount);
+            var kept = new List<CityDecorationDescriptor>(scenery.Count);
+            foreach (var item in scenery.Descriptors)
+            {
+                CityBusPlatformClearance.AddDecorationFootprints(layout, item, footprints, bounds);
+                bool overlaps = false;
+                foreach (Rect area in areas)
+                {
+                    foreach (Rect footprint in footprints)
+                        if (area.Overlaps(footprint)) { overlaps = true; break; }
+                    if (overlaps) break;
+                }
+                if (!overlaps) kept.Add(item);
+            }
+            return new CityDecorationPlan(scenery.Seed, kept);
+        }
+
         private CityKioskSites(CityLayout layout)
         {
             var sites = new List<CityKioskSitePlan>(3);
@@ -53,7 +80,12 @@ namespace BarPromenade
                 TryIdentity(district.Kind, out string id, out string character);
                 CityKioskSitePlan site = Survey(layout, district, id, character, clearance, paving, barDistances,
                     out string diagnostics);
-                if (site != null) { sites.Add(site); reservations.Add(site.ReservedBounds); }
+                if (site != null)
+                {
+                    sites.Add(site);
+                    reservations.Add(site.ReservedBounds);
+                    if (site.DistrictCourt != null) reservations.AddRange(site.DistrictCourt.FloorBounds);
+                }
                 else if (layout.BlueprintId == CityBlueprintCatalog.DefaultBlueprintId)
                     throw new InvalidOperationException("No clear, supported street kiosk site in " + district.AreaId +
                         ". " + diagnostics);
@@ -72,6 +104,7 @@ namespace BarPromenade
             CityKioskSitePlan best = null;
             float bestDistance = float.NegativeInfinity;
             var survey = new SurveyDiagnostics();
+            var courtCandidates = layout.HasIndustrialShifts ? new List<(CityKioskSitePlan Site, float Score)>() : null;
             // One-metre stations and two sides of a finite street graph. Leave
             // junctions alone and retain the complete existing through pavement.
             foreach (RoadEdge edge in layout.RoadEdges)
@@ -106,13 +139,37 @@ namespace BarPromenade
                     { survey.Reject("distance"); continue; }
                     // Distance to every bar is part of selection, not a display-only label.
                     float score = float.IsPositiveInfinity(route) ? 0f : route;
+                    if (courtCandidates == null && score <= bestDistance) continue;
+                    var placed = new CityKioskSitePlan(id, district.Kind, origin, rotation, character, false, edge,
+                        candidate.StreetAnchor, route, planar, width);
+                    courtCandidates?.Add((placed, score));
                     if (score <= bestDistance) continue;
                     bestDistance = score;
-                    best = new CityKioskSitePlan(id, district.Kind, origin, rotation, character, false, edge,
-                        candidate.StreetAnchor, route, planar, width);
+                    best = placed;
                 }
             }
             diagnostics = survey.ToString();
+            if (best == null || courtCandidates == null) return best;
+
+            best.DistrictCourt = DistrictKioskCourtPlan.TryCreate(best, clearance, reservations, walkingRoutes, out string reason);
+            if (best.DistrictCourt != null) return best;
+
+            Vector3 preferred = best.Origin;
+            courtCandidates.Sort((a, b) =>
+            {
+                int order = (a.Site.Origin - preferred).sqrMagnitude.CompareTo((b.Site.Origin - preferred).sqrMagnitude);
+                return order != 0 ? order : b.Score.CompareTo(a.Score);
+            });
+            foreach (var candidate in courtCandidates)
+            {
+                if (candidate.Site == best) continue;
+                candidate.Site.DistrictCourt = DistrictKioskCourtPlan.TryCreate(candidate.Site, clearance,
+                    reservations, walkingRoutes, out _);
+                if (candidate.Site.DistrictCourt == null) continue;
+                Debug.Log($"KIOSK COURT {id}: {preferred:F2} ({reason}) -> {candidate.Site.Origin:F2}");
+                return candidate.Site;
+            }
+            Debug.Log($"KIOSK COURT {id}: no supported placement near {preferred:F2} ({reason}); candidates {courtCandidates.Count}");
             return best;
         }
 

@@ -81,15 +81,17 @@ namespace BarPromenade
             var shelters = new List<Collider>(5);
             if (site is RidgeKioskSitePlan { Court: { } rearCourt })
                 court = RidgeKioskCourtWorld.Build(root, rearCourt, interactive, shelters);
+            DistrictKioskCourtWorld districtCourt = site.DistrictCourt is { } plan
+                ? DistrictKioskCourtWorld.Build(root, plan, interactive, shelters) : null;
             if (interactive)
             {
-                shelters.AddRange(BuildCollision(root, court != null));
+                shelters.AddRange(BuildCollision(root, court != null || districtCourt != null));
                 rainShelters = shelters.ToArray();
                 var vendor = RidgeKioskVendor.Build(root, anchors["KioskVendor"], anchors["KioskTalk"], approach,
                     site.CharacterId, site.HasDialogue);
                 var station = root.gameObject.AddComponent<RidgeKioskStation>();
                 station.Initialize(vendor, offers, anchors["KioskTalk"], approach);
-                if (court != null)
+                if (court != null || districtCourt != null)
                 {
                     Transform authoredLeaf = anchors["KioskServiceDoor"];
                     var door = new GameObject("Kiosk staff door hinge").transform;
@@ -98,7 +100,8 @@ namespace BarPromenade
                     authoredLeaf.SetParent(door, true);
                     CityTerracePilotWorld.Box(door, "Kiosk staff door leaf", new Vector3(0f, 1.03f, .42f),
                         new Vector3(.06f, 2.05f, .84f), Quaternion.identity);
-                    vendor.ConfigureCourt(court, door, station);
+                    if (court != null) vendor.ConfigureCourt(court, door, station);
+                    else vendor.ConfigureDistrictCourt(districtCourt, door, station);
                 }
             }
             return root;

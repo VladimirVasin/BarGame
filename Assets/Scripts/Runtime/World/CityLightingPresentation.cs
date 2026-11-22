@@ -232,7 +232,7 @@ namespace BarPromenade
                 if (anchor == null) continue;
                 fixtureZones[anchor.position] = ResolveDistrict(anchor.position);
                 // The court fixtures already have registered physical lenses.
-                if (RidgeKioskCourtWorld.IsLampAnchor(anchor.name)) continue;
+                if (RidgeKioskCourtWorld.IsLampAnchor(anchor.name) || DistrictKioskCourtWorld.IsLampAnchor(anchor.name)) continue;
                 if (!HasEmitterNear(anchor.position)) AddEmitter(new Emitter { Anchor = anchor,
                     Radius = .13f, Strength = .25f }, false);
             }
@@ -258,7 +258,9 @@ namespace BarPromenade
                 bool entrance = fixtureBound && Atmosphere.IsResidentialEntranceLight(light);
                 bool courtLight = fixtureBound &&
                     (name.EndsWith(RidgeKioskCourtWorld.LampPurpose, StringComparison.Ordinal) ||
-                     name.EndsWith(RidgeKioskCourtWorld.EdgeLampPurpose, StringComparison.Ordinal));
+                     name.EndsWith(RidgeKioskCourtWorld.EdgeLampPurpose, StringComparison.Ordinal) ||
+                     name.EndsWith(DistrictKioskCourtWorld.ResidentialLamp, StringComparison.Ordinal) ||
+                     name.EndsWith(DistrictKioskCourtWorld.IndustrialLamp, StringComparison.Ordinal));
                 bool moving = name.StartsWith("Bus ", StringComparison.Ordinal) ||
                     name.StartsWith("Delivery Truck Headlamp ", StringComparison.Ordinal) ||
                     name == "Port Vessel Searchlight";

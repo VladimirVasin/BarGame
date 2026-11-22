@@ -44,7 +44,8 @@ namespace BarPromenade
                 CityTerrainStreetBoundaryPlan.SurfaceBoundaryContext streetBoundary = null,
                 CityLaundryPlan laundry = null,
                 CityDogParkPlan dogPark = null,
-                CityDogParkPlan.RetainedEarthwork dogYardGround = default)
+                CityDogParkPlan.RetainedEarthwork dogYardGround = default,
+                DistrictKioskCourtPlan kioskCourt = null)
             {
                 SouthWest = southWest;
                 SouthEast = southEast;
@@ -55,6 +56,7 @@ namespace BarPromenade
                 Laundry = laundry;
                 DogPark = dogPark;
                 DogYardGround = dogYardGround;
+                KioskCourt = kioskCourt;
             }
 
             internal float SouthWest { get; }
@@ -66,6 +68,7 @@ namespace BarPromenade
             internal CityLaundryPlan Laundry { get; }
             internal CityDogParkPlan DogPark { get; }
             internal CityDogParkPlan.RetainedEarthwork DogYardGround { get; }
+            internal DistrictKioskCourtPlan KioskCourt { get; }
         }
 
         internal static SurfaceContext ResolveSurfaceContext(
@@ -94,6 +97,11 @@ namespace BarPromenade
             CityPortAccessPlan access = surface.Kind == CitySurfaceKind.Beach
                 ? CityPortAccessPlan.ForLayout(layout)
                 : null;
+            DistrictKioskCourtPlan kioskCourt = null;
+            if (CityKioskSites.TryGetCached(layout, out var kiosks))
+                foreach (var kiosk in kiosks.Sites)
+                    if (kiosk.DistrictCourt is { } court && court.OverlapsGround(surface.WorldBounds))
+                    { kioskCourt = court; break; }
             return new SurfaceContext(
                 southWest,
                 southEast,
@@ -103,7 +111,8 @@ namespace BarPromenade
                 CityTerrainStreetBoundaryPlan.ForSurface(layout, surface),
                 CityLaundryPlan.CachedForSurface(layout, surface),
                 CityDogParkPlan.CachedForSurface(layout, surface),
-                CityDogParkPlan.FoundationForSurface(layout, surface));
+                CityDogParkPlan.FoundationForSurface(layout, surface),
+                kioskCourt);
         }
 
         public static float SampleDatum(
@@ -145,7 +154,7 @@ namespace BarPromenade
             // Terrain queries must only read the cached result, never trigger it.
             if (CityBuildingEntrancePlan.TrySampleCachedTop(layout, worldXZ, out float entranceTop))
                 supported = Mathf.Min(supported, entranceTop - .04f);
-            return supported - offset;
+            return (context.KioskCourt?.GradeGround(worldXZ, supported) ?? supported) - offset;
         }
 
         internal static float SampleTopWithoutRigidSupports(CityLayout layout, CitySurfaceDescriptor surface, Vector2 point)

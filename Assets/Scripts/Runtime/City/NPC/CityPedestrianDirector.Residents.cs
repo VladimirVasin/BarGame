@@ -34,6 +34,17 @@ namespace BarPromenade
         }
 
         internal void ConfigureKioskCourt(RidgeKioskCourtLife court) => kioskCourt = court;
+        private DistrictKioskCourtLife residentialCourt, industrialCourt;
+
+        internal void ConfigureDistrictCourt(DistrictKioskCourtLife court, bool residential)
+        {
+            if (residential) residentialCourt = court;
+            else industrialCourt = court;
+        }
+
+        private DistrictKioskCourtLife DistrictCourtFor(CityResidentWorld.DistrictVisit visit)
+            => visit.Court == null ? null : visit.Court.Residential ? residentialCourt : industrialCourt;
+
         internal bool IsNearKioskCourt => kioskCourt != null && kioskCourt.IsNear(player.position);
 
         public void ReleaseResidentPresentationsForTimeJump()
@@ -72,7 +83,7 @@ namespace BarPromenade
 
         internal bool WarmKioskPopulation()
         {
-            if (!HasResidentLife || !IsNearKioskCourt || ActiveCount >= CurrentActiveLimit) return false;
+            if (!HasResidentLife || !IsNearAnyCourt || ActiveCount >= CurrentActiveLimit) return false;
             for (int retry = 0; retry < MaximumSpawnProbes; retry++)
                 if (TrySpawnResident(allowNear: true, settledKioskOnly: true)) return true;
             return false;
@@ -83,6 +94,10 @@ namespace BarPromenade
             for (int i = 0; i < actors.Count; i++) if (actors[i] == actor) return HasResidentLife ? actorResidents[i] : -1;
             return -1;
         }
+
+        private bool IsNearAnyCourt => IsNearKioskCourt ||
+            residentialCourt && residentialCourt.IsNear(player.position) ||
+            industrialCourt && industrialCourt.IsNear(player.position);
 
         internal int ResidentAtSlot(int slot) => HasResidentLife ? actorResidents[slot] : -1;
 
@@ -111,6 +126,12 @@ namespace BarPromenade
                 bool followsResidentSchedule = resident >= 0 && !actor.IsRouteBound && !actor.IsYieldingToVehicle;
                 bool visitingKiosk = followsResidentSchedule && kioskCourt != null &&
                     kioskCourt.AdvanceResident(actor, resident, deltaTime, day, minute);
+                if (followsResidentSchedule && !visitingKiosk)
+                {
+                    var placement = residentWorld.DistrictKioskVisit(resident);
+                    var district = DistrictCourtFor(placement);
+                    visitingKiosk = district && district.AdvanceVisitor(actor, resident, placement, deltaTime, day, minute);
+                }
                 if (followsResidentSchedule && !visitingKiosk)
                 {
                     CityResidentLifeSample schedule = residentWorld.Schedule(resident, day, minute);
@@ -199,20 +220,23 @@ namespace BarPromenade
             float minimumSquared = allowNear ? 4f * 4f : MinimumConnectedSpawnDistance * MinimumConnectedSpawnDistance;
             int day = GameSessionState.GameDayIndex;
             double minute = GameSessionState.GameTimeOfDayMinutes;
-            bool nearCourt = IsNearKioskCourt;
+            bool nearCourt = IsNearAnyCourt;
             bool chosenAtCourt = false;
             bool chosenLeavingWork = false;
             for (int offset = 0; offset < CityResidentLifeRules.ResidentCount; offset++)
             {
                 int id = (residentCursor + offset) % CityResidentLifeRules.ResidentCount;
-                bool kioskRegular = kioskCourt != null && residentWorld.KioskPlace(id) >= 0;
+                var district = DistrictCourtFor(residentWorld.DistrictKioskVisit(id));
+                bool ridgeRegular = kioskCourt != null && residentWorld.KioskPlace(id) >= 0;
+                bool kioskRegular = ridgeRegular || district;
                 if (settledKioskOnly && !kioskRegular) continue;
                 if (blockedResidentsUntil[id] > residentSpawnTime || IsResidentPresented(id) || !residentWorld.TrySample(id, day, minute, out CityResidentWorld.StreetSample sample)) continue;
                 float distance = PlanarSquaredDistance(sample.Position, player.position);
                 bool kioskVisitor = kioskRegular && sample.Schedule.Activity == CityResidentActivity.Leisure;
                 bool atCourt = kioskVisitor && sample.AtLeisureDestination;
                 if (settledKioskOnly && !atCourt) continue;
-                if (kioskRegular && !atCourt && kioskCourt.IsCourtFloor(sample.Position)) continue;
+                if (kioskRegular && !atCourt &&
+                    (ridgeRegular ? kioskCourt.IsCourtFloor(sample.Position) : district.OnFloor(sample.Position))) continue;
                 float minimum = atCourt && allowNear ? 0f : kioskVisitor ? 4f * 4f : minimumSquared;
                 bool leavingWork = distance < minimum && plan.IsPrivateWorkNode(sample.FromNode) &&
                     journeys != null && journeys.IsLeavingWork(id) && StreetVisibility != null &&
@@ -249,7 +273,10 @@ namespace BarPromenade
             if (chosenAtCourt)
             {
                 actor.SettleAtSpawnedDestination();
-                kioskCourt.RestoreVisitorAtTable(actor, best, day, chosen.Schedule);
+                var placement = residentWorld.DistrictKioskVisit(best);
+                var district = DistrictCourtFor(placement);
+                if (district) district.Restore(actor, best, placement, day * 1440d + minute, chosen.Schedule);
+                else kioskCourt.RestoreVisitorAtTable(actor, best, day, chosen.Schedule);
             }
             residentCursor = (best + 1) % CityResidentLifeRules.ResidentCount;
             return true;
@@ -336,6 +363,8 @@ namespace BarPromenade
             try
             {
                 if (kioskCourt != null && residentWorld.KioskPlace(id) >= 0) kioskCourt.PrepareVisitorPresentation(result);
+                var placement = residentWorld.DistrictKioskVisit(id);
+                DistrictCourtFor(placement)?.PrepareVisitorPresentation(result);
             }
             catch
             {
@@ -402,7 +431,13 @@ namespace BarPromenade
         private void RetainResident(int slot)
         {
             if (!HasResidentLife || actorResidents[slot] < 0) return;
-            kioskCourt?.ReleaseResident(actorResidents[slot], actors[slot]);
+            int resident = actorResidents[slot];
+            if (resident >= 0)
+            {
+                kioskCourt?.ReleaseResident(resident, actors[slot]);
+                var placement = residentWorld.DistrictKioskVisit(resident);
+                DistrictCourtFor(placement)?.ReleaseResident(actors[slot], placement);
+            }
             residentWorld.Retain(actorResidents[slot], actors[slot], GameSessionState.GameDayIndex, GameSessionState.GameTimeOfDayMinutes);
             journeys?.SetStreetPresented(actorResidents[slot], false);
             actorResidents[slot] = -1;

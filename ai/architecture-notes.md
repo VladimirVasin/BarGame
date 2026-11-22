@@ -147,9 +147,9 @@
   ≤128 receivers restore disable/destroy;leases reset masks. 24FX;new GI/pass/
   grade/fog0;GPU unmeasured.
 
-- **Accepted 2026-11-05/2026-11-07,user — City kiosks:** Ridge/Residential/Industrial;
-  map IDs, only Ridge seller speaks. Act V bar closure ends alcohol.
-  User2026-11-08 E→shop browser,4 foci/Vendor0/atomic buy. Signs art§13/neon24/7.
+- **Accepted 2026-11-05/07/08/22,user — City kiosks.** 3 mapped shops, E/4 foci/atomic
+  buy; Ridge speaks. Act V alcohol ends. Lower courts share shifts/door/window:
+  seats+wipe vs standing+return crate. City wet paving/FX. Courtyard map exemption.
 
 - **Accepted 2026-11-04,user — pedestrian vehicle passage:** silent City walkers
   yield3bus lines/Ferryman/cannery truck;body/following gaps.

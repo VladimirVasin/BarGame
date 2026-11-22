@@ -680,9 +680,7 @@ namespace BarPromenade
         {
             visit.Timeline = null;
             if (!visit.Drinking) return;
-            visit.Drinking.SipCompleted = null;
-            visit.Drinking.enabled = false;
-            Destroy(visit.Drinking);
+            visit.Drinking.ReleaseTableBinding();
             visit.Drinking = null;
         }
 

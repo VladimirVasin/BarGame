@@ -29,6 +29,21 @@ namespace BarPromenade
         private readonly CityResidentWorkday[] workdays;
         private readonly int[] workExitOrder;
         private readonly HashSet<int> publicLeisureNodes = new HashSet<int>();
+        internal readonly struct DistrictVisit
+        {
+            internal readonly DistrictKioskCourtPlan Court;
+            internal readonly int Slot, Gate, Window, Return;
+            internal readonly double Departure;
+
+            internal DistrictVisit(DistrictKioskCourtPlan court, int slot, int gate, int window, int returns, double departure)
+            {
+                Court = court; Slot = slot; Gate = gate; Window = window; Return = returns; Departure = departure;
+            }
+        }
+
+        private readonly DistrictVisit[] districtVisits = new DistrictVisit[CityResidentLifeRules.ResidentCount];
+        internal DistrictVisit DistrictKioskVisit(int resident) => districtVisits[resident];
+
         private readonly int[] kioskPlaces = new int[CityResidentLifeRules.ResidentCount];
         private readonly int[] kioskWaiting = new int[RidgeKioskCourtPlan.Capacity];
         internal int KioskEntryNode { get; private set; } = -1;
@@ -162,7 +177,11 @@ namespace BarPromenade
                 }
                 AssignWorkplaces(workplaces, homeEntrances, layout, shops, walks, leisure);
             }
-            if (layout != null) AssignKioskLeisure();
+            if (layout != null)
+            {
+                AssignKioskLeisure();
+                if (workdays != null) AssignDistrictKiosks(layout);
+            }
 
             void AddHillHome(CityHillsideBuilding house)
             {
@@ -339,6 +358,56 @@ namespace BarPromenade
             }
         }
 
+        private void AssignDistrictKiosks(CityLayout layout)
+        {
+            var nodes = new Dictionary<string, int>();
+            for (int i = 0; i < plan.Nodes.Count; i++)
+                if (DistrictKioskCourtPlan.IsNode(plan.Nodes[i].Id))
+                    nodes.Add(plan.Nodes[i].Id, i);
+            foreach (var site in CityKioskSites.ForLayout(layout).Sites)
+            {
+                if (site.DistrictCourt is not { } court || !nodes.TryGetValue(court.Node("gate"), out int gate)) continue;
+                int window = nodes[court.Node("window")];
+                int returns = court.Residential ? -1 : nodes[court.Node("return")];
+                var distancesToCourt = DistancesTo(gate);
+                var candidates = new List<(int Id, float Score, double Arrival)>();
+                for (int id = 0; id < CityResidentLifeRules.ResidentCount; id++)
+                {
+                    if (kioskPlaces[id] != 0 || districtVisits[id].Court != null ||
+                        DefaultNpcPopulation.IsWomanPedestrian(id)) continue;
+                    float home = distancesToCourt[Destination(id, CityResidentActivity.Home)];
+                    float work = distancesToCourt[Destination(id, CityResidentActivity.Work)];
+                    if (!float.IsFinite(home) || !float.IsFinite(work)) continue;
+                    double arrival = workdays[id].Release + work / MetresPerGameMinute;
+                    if (arrival >= 19.5d * 60d) continue;
+                    candidates.Add((id, court.Residential ? home + .15f * work : work + .12f * home, arrival));
+                }
+                candidates.Sort((a, b) =>
+                {
+                    int order = a.Score.CompareTo(b.Score);
+                    return order != 0 ? order : a.Id.CompareTo(b.Id);
+                });
+                int count = Math.Min(court.Capacity, candidates.Count);
+                // Nearest homes/workplaces choose the cast. Time of actual shift release orders the arrivals.
+                candidates.Sort(0, count, Comparer<(int Id, float Score, double Arrival)>.Create((a, b) =>
+                {
+                    int order = a.Arrival.CompareTo(b.Arrival);
+                    return order != 0 ? order : a.Id.CompareTo(b.Id);
+                }));
+                for (int slot = 0; slot < count; slot++)
+                {
+                    var candidate = candidates[slot];
+                    double departure = court.Residential
+                        ? (slot == 2 ? 20 * 60 + 26 : 21 * 60 + 20 + slot * 23)
+                        : candidate.Arrival + (slot == 0 ? 33 : slot == 1 ? 73 : 59);
+                    int place = nodes[court.PlaceNode(slot)];
+                    districtVisits[candidate.Id] = new DistrictVisit(court, slot, gate, window, returns, departure);
+                    places[candidate.Id, (int)CityResidentActivity.Leisure] = place;
+                    publicLeisureNodes.Add(place);
+                }
+            }
+        }
+
         internal int KioskPlace(int resident) => kioskPlaces[resident] - 1;
         internal int KioskWaitingNode(int place) => kioskWaiting[place];
 
@@ -413,7 +482,8 @@ namespace BarPromenade
         public CityResidentLifeSample Schedule(int resident, int day, double minute)
         {
             if (workdays != null)
-                return CityResidentLifeRules.EvaluateWorkday(resident, day, minute, seed, workdays[resident], KioskPlace(resident));
+                return CityResidentLifeRules.EvaluateWorkday(resident, day, minute, seed, workdays[resident], KioskPlace(resident),
+                    districtVisits[resident].Court != null ? districtVisits[resident].Departure : null);
             return kioskPlaces[resident] == 0
                 ? CityResidentLifeRules.Evaluate(resident, day, minute, seed)
                 : CityResidentLifeRules.EvaluateKioskRegular(resident, KioskPlace(resident), day, minute, seed);
@@ -489,11 +559,13 @@ namespace BarPromenade
         {
             if (publicLeisureNodes.Contains(node))
             {
+                string id = plan.Nodes[node].Id;
+                bool courtPlace = id.StartsWith(RidgeKioskCourtPlan.NodePrefix, StringComparison.Ordinal) ||
+                    DistrictKioskCourtPlan.IsNode(id);
                 foreach (int index in plan.GetLinkIndices(node))
                 {
                     CityPedestrianLink link = plan.Links[index];
-                    if (link.Kind != CityPedestrianLinkKind.Sidewalk &&
-                        !plan.Nodes[node].Id.StartsWith(RidgeKioskCourtPlan.NodePrefix, StringComparison.Ordinal)) continue;
+                    if (link.Kind != CityPedestrianLinkKind.Sidewalk && !courtPlace) continue;
                     sample = new StreetSample(plan.Nodes[node].Position, link.Other(node), node, node, schedule, atLeisureDestination: true);
                     return true;
                 }

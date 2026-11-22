@@ -224,6 +224,15 @@ namespace BarPromenade
                         industrialSpotAngles[index] = 148f;
                         industrialInnerSpotAngles[index] = 104f;
                         break;
+                    case DistrictKioskCourtWorld.ResidentialLamp:
+                    case DistrictKioskCourtWorld.IndustrialLamp:
+                        bool workCourt = purposeName == DistrictKioskCourtWorld.IndustrialLamp;
+                        industrialPurposes[index] = workCourt ? CityIndustrialPurpose.CompressorHouse : CityIndustrialPurpose.RepairWorkshop;
+                        industrialIntensityScales[index] = workCourt ? .23f : .14f;
+                        industrialRangeLimits[index] = workCourt ? 4.3f : 3.3f;
+                        industrialSpotAngles[index] = workCourt ? 86f : 110f;
+                        industrialInnerSpotAngles[index] = workCourt ? 52f : 67f;
+                        break;
                     case RidgeKioskCourtWorld.EdgeLampPurpose:
                         industrialPurposes[index] = CityIndustrialPurpose.CompressorHouse;
                         industrialIntensityScales[index] = .025f;
@@ -366,7 +375,8 @@ namespace BarPromenade
                 if (purposeName == "RidgeKioskInterior" || purposeName == "GlassReturnWindow" || purposeName == "PawnshopSignLeft" ||
                     purposeName == "PawnshopSignRight" || purposeName == "GlassReturnSignLeft" ||
                     purposeName == "GlassReturnSignRight" || purposeName == "KioskSign" ||
-                    RidgeKioskCourtWorld.IsLampAnchor(taskAnchors[index].name)) continue;
+                    (RidgeKioskCourtWorld.IsLampAnchor(taskAnchors[index].name) ||
+                    DistrictKioskCourtWorld.IsLampAnchor(taskAnchors[index].name))) continue;
                 // Imported anchors inherit the FBX unit factor. Keep particle
                 // sizes in world metres and move their soft depth fade clear
                 // of the fixture housing and the adjacent opaque facade.
@@ -428,7 +438,8 @@ namespace BarPromenade
                 pooledLightBaseIntensities[index] = StreetLightIntensity;
                 string name = FixedLightPrefix + (index + 1);
                 if (index >= industrialAnchorStartIndex && index < lampAnchors.Length &&
-                    RidgeKioskCourtWorld.IsLampAnchor(lampAnchors[index].name))
+                    (RidgeKioskCourtWorld.IsLampAnchor(lampAnchors[index].name) ||
+                    DistrictKioskCourtWorld.IsLampAnchor(lampAnchors[index].name)))
                     name += " " + lampAnchors[index].name.Substring(IndustrialTaskLightPrefix.Length);
                 streetLightPool[index] = CreateLight(
                     name, transform.position,

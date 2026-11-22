@@ -317,7 +317,11 @@ namespace BarPromenade
             {
                 Layout = layout; Entrances = CityBuildingEntrancePlan.ForLayout(layout);
                 foreach (CityKioskSitePlan kiosk in CityKioskSites.ForLayout(layout).Sites)
+                {
                     ProtectedGround.Add(kiosk.ReservedBounds);
+                    if (kiosk.DistrictCourt is { } court)
+                        foreach (Rect floor in court.FloorBounds) ProtectedGround.Add(floor);
+                }
                 CityTerraceDistrictPlan terraces = CityTerraceDistrictPlan.ForLayout(layout);
                 if (terraces.IsEnabled)
                 {

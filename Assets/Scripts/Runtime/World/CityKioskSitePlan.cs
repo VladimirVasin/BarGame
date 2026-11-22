@@ -50,6 +50,7 @@ namespace BarPromenade
         public Rect Apron { get; }
         public Rect ReservedBounds { get; }
         public Rect StructureBounds { get; }
+        internal DistrictKioskCourtPlan DistrictCourt { get; set; }
         public string CharacterId { get; }
         public bool IsRidge { get; }
         public bool HasDialogue => IsRidge;
@@ -67,7 +68,7 @@ namespace BarPromenade
             return false;
         }
 
-        private Vector2[] Polygon(float left, float back, float right, float front)
+        internal Vector2[] Polygon(float left, float back, float right, float front)
         {
             Vector3 a = Origin + Rotation * new Vector3(left, 0f, back);
             Vector3 b = Origin + Rotation * new Vector3(right, 0f, back);

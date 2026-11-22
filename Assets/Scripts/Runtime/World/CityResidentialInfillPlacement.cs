@@ -21,7 +21,11 @@ namespace BarPromenade
         {
             layout = source;
             foreach (CityKioskSitePlan kiosk in CityKioskSites.ForLayout(layout).Sites)
+            {
                 blocked.Add(kiosk.ReservedBounds);
+                if (kiosk.DistrictCourt is { } court)
+                    foreach (Rect floor in court.FloorBounds) blocked.Add(floor);
+            }
             CityTerraceDistrictPlan terraces = CityTerraceDistrictPlan.ForLayout(layout);
             if (terraces.IsEnabled)
             {

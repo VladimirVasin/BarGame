@@ -146,11 +146,72 @@ namespace BarPromenade
             if (supportsCrosswalkNavigation) BuildPlatformCrossings(layout, streetSurfacePlan, graph);
             if (layout.HasIndustrialShifts)
                 BuildWorkplacePaths(layout, streetSurfacePlan, graph);
+            BuildDistrictKioskPaths(layout, graph);
             return graph.CreatePlan(
                 layout.Seed,
                 populationSeed,
                 stableSeed,
                 terrace.IsEnabled ? layout : null);
+        }
+
+        private static void BuildDistrictKioskPaths(CityLayout layout, GraphBuilder graph)
+        {
+            foreach (var site in CityKioskSites.ForLayout(layout).Sites)
+            {
+                if (site.DistrictCourt is not { } court) continue;
+                Vector3 street = court.Street;
+                int seam = graph.SplitTerraceStreetAt(court.Node("sidewalk"), new Vector2(street.x, street.z),
+                    _ => street.y);
+                if (seam < 0) continue;
+
+                graph.AddNavigationPolygons(court.Floors);
+                graph.AddNavigationPolygon(court.Entrance);
+                graph.AddNavigationPolygons(site.WalkableApronPolygons);
+                int gate = Join(seam, "gate", court.Gate);
+                Join(gate, "window", court.Window);
+                int turn = gate;
+                if (!court.Residential)
+                {
+                    turn = Join(gate, "service-turn", court.ServiceTurn);
+                    turn = Join(turn, "return-turn", court.ReturnTurn);
+                    Join(turn, "return", court.ReturnDock);
+                }
+                int corner = Join(turn, "corner", court.Corner);
+                if (court.Residential)
+                {
+                    for (int i = 2; i >= 0; i--)
+                    {
+                        corner = Join(corner, "aisle:" + i, court.AisleAt(i));
+                        Join(corner, "place:" + i, court.Place(i));
+                    }
+                }
+                else
+                {
+                    int west = Join(corner, "aisle:0", court.AisleAt(0));
+                    Join(west, "place:0", court.Place(0));
+                    for (int i = 1; i < court.Capacity; i++)
+                    {
+                        corner = Join(corner, "aisle:" + i, court.AisleAt(i));
+                        Join(corner, "place:" + i, court.Place(i));
+                    }
+                }
+
+                int Join(int from, string suffix, Vector3 point)
+                {
+                    string id = court.Node(suffix);
+                    int node = graph.AddNode(id, point, false);
+                    graph.RetainEntranceTerminal(node);
+                    Vector3 start = graph.Nodes[from].Position;
+                    Vector2 a = new Vector2(start.x, start.z);
+                    Vector2 b = new Vector2(point.x, point.z);
+                    Vector2 span = b - a;
+                    var path = new CityRoadPath(new[] { a, b });
+                    float Height(Vector2 sample) => Mathf.Lerp(start.y, point.y,
+                        Vector2.Dot(sample - a, span) / span.sqrMagnitude);
+                    graph.AddLink(id + ":walk", from, node, CityPedestrianLinkKind.HomeEntrance, false, path, Height);
+                    return node;
+                }
+            }
         }
 
         private static void BuildWorkplacePaths(CityLayout layout, CityStreetSurfacePlan streets, GraphBuilder graph)
@@ -252,6 +313,12 @@ namespace BarPromenade
                 area.AttachTerraceDistrict(plan.TerraceLayout);
                 foreach (CityHillsideBuilding house in CityHillsideNeighborhoodPlan.ForLayout(plan.TerraceLayout).AllBuildings)
                     area.ExcludePolygons(house.EntryRailFootprints);
+                foreach (var district in CityKioskSites.ForLayout(plan.TerraceLayout).Sites)
+                    if (district.DistrictCourt is { } court)
+                    {
+                        foreach (Rect solid in court.Obstacles) area.Exclude(solid);
+                        area.ExcludePolygons(new[] { district.Footprint });
+                    }
                 if (RidgeKioskSitePlan.TryCreate(plan.TerraceLayout, out var kiosk) && kiosk.Court != null)
                 {
                     area.AddPolygons(kiosk.WalkableApronPolygons);

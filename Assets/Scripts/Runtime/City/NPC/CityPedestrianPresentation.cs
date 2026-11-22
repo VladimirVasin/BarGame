@@ -524,9 +524,51 @@ namespace BarPromenade
             EvaluateAnimation(elapsed);
         }
 
+        private Transform[] seatTransitionBones;
+        private Quaternion[] seatTransitionStart;
+        private Vector3 seatTransitionRoot;
+        private float seatTransitionTime, seatTransitionDuration;
+
+        internal void BeginGroundSeatTransition(float seconds)
+        {
+            if (seatTransitionBones == null)
+            {
+                var bones = new HashSet<Transform>();
+                foreach (var renderer in registry.Renderers)
+                    if (renderer is SkinnedMeshRenderer skin)
+                        foreach (Transform bone in skin.bones)
+                            if (bone && bone != registry.ModelRoot) bones.Add(bone);
+                seatTransitionBones = new Transform[bones.Count];
+                bones.CopyTo(seatTransitionBones);
+                seatTransitionStart = new Quaternion[bones.Count];
+            }
+            for (int i = 0; i < seatTransitionBones.Length; i++)
+                seatTransitionStart[i] = seatTransitionBones[i].localRotation;
+            seatTransitionRoot = registry.ModelRoot.localPosition;
+            seatTransitionTime = 0f;
+            seatTransitionDuration = seconds;
+        }
+
+        internal void CancelGroundSeatTransition() => seatTransitionDuration = 0f;
+
+        private void BlendGroundSeatTransition(float elapsed)
+        {
+            if (seatTransitionDuration <= 0f) return;
+            seatTransitionTime += elapsed;
+            float blend = Mathf.SmoothStep(0f, 1f, seatTransitionTime / seatTransitionDuration);
+            registry.ModelRoot.localPosition = Vector3.Lerp(seatTransitionRoot, registry.ModelRoot.localPosition, blend);
+            for (int i = 0; i < seatTransitionBones.Length; i++)
+            {
+                Transform bone = seatTransitionBones[i];
+                bone.localRotation = Quaternion.Slerp(seatTransitionStart[i], bone.localRotation, blend);
+            }
+            if (blend >= 1f) seatTransitionDuration = 0f;
+        }
+
         private void EvaluateAnimation(float elapsed)
         {
             EvaluateGraph(elapsed);
+            BlendGroundSeatTransition(elapsed);
             attention.Apply(elapsed);
             LastAdvanceDeltaTime = elapsed;
             Advanced?.Invoke(elapsed);
@@ -541,6 +583,7 @@ namespace BarPromenade
 
             standing?.Release();
             seatedPose?.Release();
+            CancelGroundSeatTransition();
             RestoreModelBasePosition();
             if (graph.IsValid())
             {

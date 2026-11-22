@@ -185,7 +185,8 @@ namespace BarPromenade
             Vector3 current = Position;
             Vector2 currentXZ = new Vector2(current.x, current.z);
             bool kioskStop = targetNodeIndex == ResidentDestinationNode &&
-                plan.Nodes[targetNodeIndex].Id.StartsWith(RidgeKioskCourtPlan.NodePrefix, System.StringComparison.Ordinal);
+                (plan.Nodes[targetNodeIndex].Id.StartsWith(RidgeKioskCourtPlan.NodePrefix, System.StringComparison.Ordinal) ||
+                 DistrictKioskCourtPlan.IsNode(plan.Nodes[targetNodeIndex].Id));
             Vector3 stop = plan.Nodes[targetNodeIndex].Position;
             if (!hold && leg.Length - leg.Progress <= .025f && (!kioskStop ||
                 (currentXZ - new Vector2(stop.x, stop.z)).sqrMagnitude <= .04f * .04f))

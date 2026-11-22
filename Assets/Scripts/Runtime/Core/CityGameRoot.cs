@@ -592,6 +592,12 @@ namespace BarPromenade
                     Pedestrians.Residents, ResidentJourneys, Player, camera);
                 Pedestrians.ConfigureKioskCourt(kioskLife);
             }
+            foreach (var districtCourt in World.Root.GetComponentsInChildren<DistrictKioskCourtWorld>())
+            {
+                var life = districtCourt.gameObject.AddComponent<DistrictKioskCourtLife>();
+                life.Initialize(districtCourt, Pedestrians.Residents, ResidentJourneys, Player);
+                Pedestrians.ConfigureDistrictCourt(life, districtCourt.Plan.Residential);
+            }
             GameLogPhases.Report("city", "pedestrian_pool", stepTimer);
             stepTimer.Restart();
             var lowLampAnchors = new List<Transform>(World.RiverQuayLampAnchors);

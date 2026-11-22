@@ -187,6 +187,8 @@ namespace BarPromenade
             {
                 Reserve(site.Footprint);
                 foreach (var apron in site.ApronPolygons) Reserve(apron);
+                if (site.DistrictCourt is { } districtCourt)
+                    foreach (var floor in districtCourt.Floors) Reserve(floor);
                 if (site is RidgeKioskSitePlan { Court: { } court })
                     foreach (Rect area in court.Reservations) ReserveRect(area);
             }

@@ -41,20 +41,29 @@ namespace BarPromenade
         }
 
         internal BarPatronDrinkingArmPose BindTable(BarPatronDrinkProp drink, Vector3 top, int place, BarPatronDrinkTimeline timeline)
+            => BindTable(drink, top, RidgeKioskCourtPlan.PlaceDirection(place), .56f,
+                timeline, keepInHand: true);
+
+        internal BarPatronDrinkingArmPose BindTable(BarPatronDrinkProp drink, Vector3 top, Vector3 outward,
+            float edge, BarPatronDrinkTimeline timeline, bool keepInHand, bool seated = false)
         {
             RestoreContactCulling();
             AttachToHand(drink);
             presentation.Advance(0f, false, true);
-            Vector3 outward = RidgeKioskCourtPlan.PlaceDirection(place);
             Vector3 right = Vector3.Cross(Vector3.up, -outward);
             Quaternion upright = CarryRotation();
-            Vector3 vesselBase = ResolveCarryGrip() + upright * (drink.BaseLocalPosition - drink.GripLocalPosition);
-            Vector3 support = top + outward * .56f - right * .20f;
-            var pose = presentation.gameObject.AddComponent<BarPatronDrinkingArmPose>();
+            Vector3 vesselBase = keepInHand
+                ? ResolveCarryGrip() + upright * (drink.BaseLocalPosition - drink.GripLocalPosition)
+                : top + outward * edge + right * .12f;
+            Vector3 support = top + outward * edge - right * .20f;
+            var pose = presentation.GetComponent<BarPatronDrinkingArmPose>();
+            if (!pose) pose = presentation.gameObject.AddComponent<BarPatronDrinkingArmPose>();
             pose.InitializeTable(timeline, presentation, actor.transform,
                 shoulder, upper, lower, hand, socket, leftShoulder, leftUpper, leftLower, leftSocket,
                 spine, chest, head, mouth, drink.Root, drink.Mouth, drink.GripToLipDistance,
-                drink.GripToBaseDistance, vesselBase, support, drinkProp: drink, keepDrinkInHand: true);
+                drink.GripToBaseDistance, vesselBase, support, isSeatedTable: seated,
+                drinkProp: drink, keepDrinkInHand: keepInHand);
+            pose.enabled = true;
             return pose;
         }
 

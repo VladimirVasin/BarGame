@@ -41,6 +41,14 @@ hot spot and keeps the berth side dark beyond the lit paving. The Blender
 port art contract and `CityPortCraneLighting` passed. Reviewed the empty quay
 and both crane transfers at night. The truck sweep clears the new housings.
 
+Added side seating and table/chair cleanup in Residential and standing
+post-shift visits with crate exchange in Industrial. Kept both kiosk sites.
+Routed around lamp bases, deepened the work court foundation and restored
+pooled guests at table nodes. Blender validation passed.
+`LiveCity_DistrictKioskCourtsUseDistinctFurnitureRegularsAndChores` passed.
+Reviewed companies and chores in City, including the moved chair and bottles
+supported by the crate floor.
+
 ## 2026-11-18
 
 Restored the olive M-65 and oxblood 1460-style boots. Formed pocket bellows,

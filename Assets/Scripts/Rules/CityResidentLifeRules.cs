@@ -221,7 +221,7 @@ namespace BarPromenade
         }
 
         public static CityResidentLifeSample EvaluateWorkday(int resident, int day, double minute, int seed,
-            CityResidentWorkday workday, int kioskPlace = -1)
+            CityResidentWorkday workday, int kioskPlace = -1, double? districtCourtDeparture = null)
         {
             ValidateResident(resident);
             ValidateMinute(minute);
@@ -234,14 +234,14 @@ namespace BarPromenade
             double release = midnight + workday.Release;
             // Use the same timestamp when ending the old interval and starting the new one.
             double nextDeparture = (midnight + MinutesPerDay) + workday.Departure;
-            bool kiosk = kioskPlace >= 0;
+            bool kiosk = kioskPlace >= 0 || districtCourtDeparture.HasValue;
             int cohort = resident % 8;
             int offset = ScheduleOffsetMinutes(resident, seed);
             CityResidentActivity evening = kiosk || cohort < 3 ? CityResidentActivity.Leisure :
                 cohort < 7 ? CityResidentActivity.Shopping : CityResidentActivity.Walking;
-            double returnMinute = kiosk ? KioskDeparture(resident, kioskPlace, shiftDay, seed) :
+            double returnMinute = districtCourtDeparture ?? (kiosk ? KioskDeparture(resident, kioskPlace, shiftDay, seed) :
                 cohort < 3 ? 1230 + offset :
-                cohort < 6 ? 1170 + offset : 1320 + offset;
+                cohort < 6 ? 1170 + offset : 1320 + offset);
             // Preserve home before the next departure even if its lead crosses midnight.
             double returning = Math.Max(release, Math.Min(midnight + returnMinute, nextDeparture - workday.ExpectedReturnMinutes));
             double atHome = Math.Min(nextDeparture, returning + Math.Max(1d, workday.ExpectedReturnMinutes));

@@ -1231,7 +1231,8 @@ namespace BarPromenade
                 {
                     Rect cell = Rect.MinMaxRect(xCoordinates[xIndex], zCoordinates[zIndex],
                         xCoordinates[xIndex + 1], zCoordinates[zIndex + 1]);
-                    if (!seabedOnly && ((context.StreetBoundary != null && context.StreetBoundary.HasCut(cell)) || rigidSupports.HasCut(cell)))
+                    if (!seabedOnly && ((context.StreetBoundary != null && context.StreetBoundary.HasCut(cell)) ||
+                        rigidSupports.HasCut(cell) || context.KioskCourt?.OverlapsGround(cell) == true))
                     {
                         AppendConstrainedPolygon(layout, surface, in context,
                             CityRoadPolygon.Rectangle(cell), worldUvTileSize,
@@ -1313,8 +1314,10 @@ namespace BarPromenade
                             clean.RemoveAt(clean.Count - 1);
                         polygon = clean;
                         if (polygon.Count < 3) continue;
-                        if ((context.StreetBoundary != null && context.StreetBoundary.HasCut(CityRoadPolygon.Bounds(polygon))) ||
-                            CityFairGroundSupportPlan.ForLayout(layout).HasCut(CityRoadPolygon.Bounds(polygon)))
+                        Rect polygonBounds = CityRoadPolygon.Bounds(polygon);
+                        if ((context.StreetBoundary != null && context.StreetBoundary.HasCut(polygonBounds)) ||
+                            CityFairGroundSupportPlan.ForLayout(layout).HasCut(polygonBounds) ||
+                            context.KioskCourt?.OverlapsGround(polygonBounds) == true)
                         {
                             AppendConstrainedPolygon(layout, surface, in context, polygon, tileSize,
                                 vertices, normals, uvs, triangles);
@@ -1354,6 +1357,7 @@ namespace BarPromenade
             if (context.StreetBoundary != null)
                 foreach (CityTerrainStreetBoundaryPlan.Cut cut in context.StreetBoundary.Cuts) constraintCuts.Add(cut);
             CityFairGroundSupportPlan.ForLayout(layout).AppendCuts(bounds, constraintCuts);
+            context.KioskCourt?.AppendFoundationCuts(bounds, constraintCuts);
             foreach (CityTerrainStreetBoundaryPlan.Cut cut in constraintCuts)
             {
                 if (!cut.Bounds.Overlaps(bounds)) continue;

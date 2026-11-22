@@ -1405,6 +1405,21 @@ namespace BarPromenade
             RestoreAnimatorCulling();
         }
 
+        internal void ReleaseTableBinding()
+        {
+            // A city body can be released and rebound in the same frame.
+            // Leave one disabled component on that body for the next drink.
+            enabled = false;
+            isInitialized = false;
+            timeline = null;
+            presentation = null;
+            bottleRoot = bottleMouth = null;
+            drinkProp = null;
+            SipCompleted = null;
+            HoldNewSips = false;
+            SampleContacts = true;
+        }
+
         private void OnDestroy()
         {
             ClearKaraokeFocus(karaokeFocusOwner);

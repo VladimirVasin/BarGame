@@ -145,7 +145,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | City visual variants | Deterministic variants share assets and simple semantic colliders. | `CityDecoration{Descriptor,Plan,Planner,Validator,WorldBuilder}`, `CityDecorationCollisionCatalog` | Current |
 | Road-edge fences | Planned fences leave road and waterside openings clear. | `RoadFence{Planner,Plan,WorldBuilder}`, `CitySurfaceDescriptor` | Current |
 | Shops | 3 kiosks; Ridge talk; shop7. Shared browser/3D receipt. | `RidgeKiosk*`, `IWorldShelfMenu`, `SupermarketShelfShop*` | Current |
-| Ridge kiosk court | Warm tables, dim rail lamp. Both swap drinks for gifts, then talk. Evening resume. | `RidgeKioskCourt*`, `CityResident*` | Current |
+| Kiosk courts | Ridge talks; Residential seats/cleanup; Industrial bottle return. | `RidgeKioskCourt*`, `DistrictKioskCourt*` | Current |
 | Pawnshop | Island pavilion/secure clerk. Gap:trade stubs have no transactions. | `CityPawnshop*`, `PawnshopInterior*`, `PawnshopTradeController` | Partial |
 | Ridge workshops | Cobbler11–20:30/home;glass08–23/switch/grille. | `CityCobbler*`,`CityGlassReturn*` | Current |
 

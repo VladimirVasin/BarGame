@@ -104,7 +104,7 @@ namespace BarPromenade
             const double initialWalkMinutes = 20d;
             for (int id = 0; id < residents.Length; id++)
             {
-                if (world.KioskPlace(id) < 0) continue;
+                if (world.KioskPlace(id) < 0 && world.DistrictKioskVisit(id).Court == null) continue;
                 CityResidentLifeSample schedule = Schedule(id, now);
                 if (schedule.Activity != CityResidentActivity.Leisure || now < schedule.StartedAt + initialWalkMinutes) continue;
 

@@ -1759,6 +1759,12 @@ namespace BarPromenade
                 DrawGroundQuad(kiosk.Footprint,
                     kiosk.District == CityDistrictKind.Industrial ? IndustrialBuilding : ResidentialBuilding);
                 foreach (Vector2[] apron in kiosk.ApronPolygons) DrawGroundQuad(apron, PublicPlaceLand);
+                if (kiosk.DistrictCourt is { } districtCourt)
+                {
+                    foreach (var floor in districtCourt.Floors) DrawGroundQuad(floor, PublicPlaceLand);
+                    foreach (Rect solid in districtCourt.Obstacles)
+                        DrawGroundQuad(CityRoadPolygon.Rectangle(solid), ResidentialBuilding);
+                }
                 if (kiosk is RidgeKioskSitePlan { Court: { } court })
                 {
                     DrawGroundQuad(CityRoadPolygon.Rectangle(court.Slab), PublicPlaceLand);

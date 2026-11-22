@@ -15,6 +15,8 @@ namespace BarPromenade
         internal const float PavementOffsetFromLane = 2.05f;
         private static readonly ConditionalWeakTable<CityLayout, CityBusPlatformClearance> Plans = new();
         private readonly Dictionary<Vector2Int, List<Rect>> cells = new();
+        private readonly Dictionary<Vector2Int, List<Rect>> decorationCells = new();
+        private readonly Dictionary<Vector2Int, List<Rect>> streetLampCells = new();
         private readonly CityLayout layout;
         private readonly CityStreetSupportPlan paving;
         private readonly IReadOnlyList<CityHillsideGroundGrid> hillsideGround;
@@ -37,7 +39,7 @@ namespace BarPromenade
             foreach (var segment in fences.Segments)
                 Add(Envelope(segment.Start + segment.OutwardNormal * .08f, segment.End + segment.OutwardNormal * .08f, .09f));
             foreach (var pole in fixtures.StreetLamps)
-                Add(Xz(CityStaticCollisionBuilder.CreateLowerPoleBounds(pole.Position)));
+                Add(Xz(CityStaticCollisionBuilder.CreateLowerPoleBounds(pole.Position)), streetLampCells);
             foreach (var signal in fixtures.TrafficSignals)
                 Add(Xz(CityStaticCollisionBuilder.CreateLowerPoleBounds(signal.Position)));
             foreach (Vector3 tree in layout.Park.TreePositions)
@@ -77,18 +79,12 @@ namespace BarPromenade
                         Add(Xz(CityBuildingPrototypePlacement.TransformBounds(new Bounds(Vector3.zero, part.Size),
                             new CityBuildingPrototypePose(part.Center, part.Rotation))));
 
-            var proxies = new List<Bounds>(CityStaticCollisionBuilder.MaximumDecorationProxyCount);
+            var proxies = new List<Rect>(CityStaticCollisionBuilder.MaximumDecorationProxyCount);
+            var boundsScratch = new List<Bounds>(CityStaticCollisionBuilder.MaximumDecorationProxyCount);
             foreach (var item in scenery.Descriptors)
             {
-                if (item.CollisionTier == CityDecorationCollisionTier.None)
-                {
-                    if (item.AnchorKind == CityDecorationAnchorKind.Roadside || item.AnchorKind == CityDecorationAnchorKind.LotGround)
-                        Add(Envelope(item.Position, item.Position, CityDecorationValidator.ResolveProtectionRadius(item.Kind)));
-                    continue;
-                }
-                proxies.Clear();
-                CityStaticCollisionBuilder.AddDecorationProxyBounds(layout, item, proxies);
-                foreach (Bounds bounds in proxies) Add(Xz(bounds));
+                AddDecorationFootprints(layout, item, proxies, boundsScratch);
+                foreach (Rect footprint in proxies) Add(footprint, decorationCells);
             }
             foreach (var house in layout.BuildingMasses)
             {
@@ -216,15 +212,31 @@ namespace BarPromenade
             return Envelope(center - reach, center + reach, CityPedestrianPlanner.AgentRadius);
         }
 
-        private void Add(Rect rect)
+        internal static void AddDecorationFootprints(CityLayout layout, CityDecorationDescriptor item,
+            List<Rect> footprints, List<Bounds> boundsScratch)
         {
+            footprints.Clear();
+            if (item.CollisionTier == CityDecorationCollisionTier.None)
+            {
+                if (item.AnchorKind == CityDecorationAnchorKind.Roadside || item.AnchorKind == CityDecorationAnchorKind.LotGround)
+                    footprints.Add(Envelope(item.Position, item.Position, CityDecorationValidator.ResolveProtectionRadius(item.Kind)));
+                return;
+            }
+            boundsScratch.Clear();
+            CityStaticCollisionBuilder.AddDecorationProxyBounds(layout, item, boundsScratch);
+            foreach (Bounds bounds in boundsScratch) footprints.Add(Xz(bounds));
+        }
+
+        private void Add(Rect rect, Dictionary<Vector2Int, List<Rect>> index = null)
+        {
+            index ??= cells;
             if (rect.width <= 0f || rect.height <= 0f) return;
             Vector2Int min = Cell(rect.min), max = Cell(rect.max);
             for (int x = min.x; x <= max.x; x++)
             for (int z = min.y; z <= max.y; z++)
             {
                 var key = new Vector2Int(x, z);
-                if (!cells.TryGetValue(key, out var bucket)) cells.Add(key, bucket = new List<Rect>());
+                if (!index.TryGetValue(key, out var bucket)) index.Add(key, bucket = new List<Rect>());
                 bucket.Add(rect);
             }
         }
@@ -232,13 +244,19 @@ namespace BarPromenade
         // Shared upstream reservation query; does not ask the bus network or final ground mask.
         internal bool IsStaticFootprintClear(Rect rect) => IsClear(rect);
 
-        private bool IsClear(Rect rect)
+        internal bool IsFixedFootprintClear(Rect rect) => IsClear(rect, cells);
+
+        internal bool IsStreetLampClear(Rect rect) => IsClear(rect, streetLampCells);
+
+        private bool IsClear(Rect rect) => IsClear(rect, cells) && IsClear(rect, streetLampCells) && IsClear(rect, decorationCells);
+
+        private static bool IsClear(Rect rect, Dictionary<Vector2Int, List<Rect>> index)
         {
             Vector2Int min = Cell(rect.min), max = Cell(rect.max);
             for (int x = min.x; x <= max.x; x++)
             for (int z = min.y; z <= max.y; z++)
             {
-                if (!cells.TryGetValue(new Vector2Int(x, z), out var bucket)) continue;
+                if (!index.TryGetValue(new Vector2Int(x, z), out var bucket)) continue;
                 for (int i = 0; i < bucket.Count; i++)
                     if (bucket[i].Overlaps(rect)) return false;
             }
