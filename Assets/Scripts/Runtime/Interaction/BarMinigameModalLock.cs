@@ -38,6 +38,9 @@ namespace BarPromenade
 
         public static BarMinigameModalLockOptions BalanceCheck =>
             new BarMinigameModalLockOptions(false, false, false, false);
+
+        internal static BarMinigameModalLockOptions StationaryAction =>
+            new BarMinigameModalLockOptions(true, false, false, false, true);
     }
 
     public sealed class BarMinigameModalLock

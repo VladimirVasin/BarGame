@@ -2,13 +2,14 @@
 
 ## Current facts
 
+- **Accepted 2026-11-22, user — wristwatch.** H loans the existing camera and
+  uses stationary contextual ownership. Right pinch follows the left cuff.
+  The bezel stays on the forearm and the LCD follows the session minute.
+  Bevels, matte surfaces and area lighting/fog/post.
+
 - **Accepted 2026-11-18, user — hero outfit.** Restored olive M-65 and oxblood
-  1460-style boots. Four formed pockets, overlapping flaps, standing collar,
-  yoke and cuff tabs. Raised eyestays and heel pulls, yellow welt, grooved sole.
-  Length/planting/animation bank held. Same materials, atlases and render
-  passes; pocket volumes and pigment separate him from the crowd. No insignia
-  or added lights/outlines. Existing 24FX assessment below applies. Art §2,
-  story §7.
+  1460-style boots. Sole length, planting, clips and material passes retained.
+  Forms and finishes in `player-art-spec.md`, art §2 and story §7.
 
 - **Accepted 2026-11-17, user — hero redesign.** Swept hair and sculpted face.
   Same rig and anchors. Default male

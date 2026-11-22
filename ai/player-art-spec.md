@@ -11,7 +11,7 @@
   sleeve repair. Brown knit and peat trousers tuck into oxblood 1460-style
   boots. Raised eyestays, heel loops, yellow welt stitches and a recessed sole
   profile. Separate webbing belt with a dull buckle.
-  Skin, canvas, knit, leather and metal keep separate finishes to their edges.
+  Separate skin, canvas, knit, leather and metal finishes. Left wrist: LCD watch.
 - Accepted `2026-09-09`: optional separate yellow scarf:
   neck/nape wrap, lower face covered when raised, back knot and a hanging cloth
   tail. Decision `2026-09-19`: the shared left-hand pull lowers it outside Alpine

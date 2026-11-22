@@ -253,6 +253,8 @@ namespace BarPromenade
                     return Read(Mouse.current?.leftButton, held) || Read(gamepad?.rightTrigger, held);
                 case GameInputAction.VodkaSip:
                     return Read(Mouse.current?.leftButton, held);
+                case GameInputAction.CheckWatch:
+                    return Read(keyboard?.hKey, held);
                 case GameInputAction.MeleeBlock:
                     return Read(Mouse.current?.rightButton, held) || Read(gamepad?.leftTrigger, held);
                 case GameInputAction.CombatReset:

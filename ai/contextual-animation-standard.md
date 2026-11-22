@@ -91,6 +91,11 @@ decision recorded as an accepted exception in `ai/architecture-notes.md`.
    positioning/timeline/cleanup path, or extend that path generically. Do not
    add a one-off interaction that bypasses this standard.
 
+An upper-body action on the currently grounded support pose may use the
+controller's stationary ownership. Hold the neutral entry and exit frames,
+solve contacts on the production rig, and use shared cancellation and input
+restoration. The wristwatch uses this path with a reversible timeline.
+
 ## Required coverage, not a per-request run list
 
 Shared contextual coverage owns bounded positioning, held-input resistance,

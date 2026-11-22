@@ -267,6 +267,8 @@ namespace BarPromenade
         private bool externalClockPaused;
         private PlayerVodkaBottleController handEquipment;
         private bool handEquipmentResolved;
+        private BarMinigameModalLock stationaryInput;
+        private Action stationaryCleanup;
 
         public event Action<PlayerAnimatedInteractionPhase> PhaseChanged;
         public event Action<PlayerAnimatedInteractionPhase>
@@ -335,8 +337,24 @@ namespace BarPromenade
             presentation.Registry != null
                 ? presentation.Registry.Anchors.Mouth
                 : null;
-        public bool IsActive => isPositioning ||
+        public bool IsActive => stationaryCleanup != null || isPositioning ||
                                 (timeline != null && timeline.IsActive);
+
+        /// <summary>Owns neutral support and cleanup for an in-place procedural action.</summary>
+        internal bool TryBeginStationary(PlayerCameraFollow camera, Action cleanup)
+        {
+            if (!isActiveAndEnabled || !IsInitialized || IsActive || externalClockOwner != null ||
+                cleanup == null || !player.Motor.InputEnabled || !player.Motor.IsGrounded ||
+                !player.Interactor.InputEnabled || clipPresentation.IsClipActive ||
+                !GameInput.CanRead(GameInputContext.Gameplay)) return false;
+
+            stationaryInput ??= new BarMinigameModalLock();
+            if (!stationaryInput.TryCaptureAndDisable(player.Interactor, camera, null,
+                    BarMinigameModalLockOptions.StationaryAction)) return false;
+            stationaryCleanup = cleanup;
+            player.Visual.SetInteractionHandoffLocked(true);
+            return true;
+        }
         public bool AllowsHandEquipment => IsActive && timeline != null && timeline.Definition.AllowsHandEquipment;
         public float ExitDurationMultiplier => timeline != null
             ? timeline.ExitDurationMultiplier
@@ -1098,7 +1116,7 @@ namespace BarPromenade
 
         private void AdvanceInteraction(float seconds)
         {
-            if (!IsActive)
+            if (!IsActive || stationaryCleanup != null)
             {
                 return;
             }
@@ -1404,6 +1422,15 @@ namespace BarPromenade
         private void CompleteInteraction(
             bool completedNormally = false)
         {
+            if (stationaryCleanup != null)
+            {
+                Action cleanup = stationaryCleanup;
+                stationaryCleanup = null;
+                cleanup();
+                player.Visual?.SetInteractionHandoffLocked(false);
+                stationaryInput.Restore();
+            }
+
             bool hadNestedLoopAction = IsNestedLoopActionActive;
             bool shouldNotify =
                 isPositioning ||

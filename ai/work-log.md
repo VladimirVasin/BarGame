@@ -5,6 +5,10 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-22
 
+H pinches both left cuff meshes on the world rig. The LCD colon follows
+calendar seconds. Proof: Blender watch FBX, `PlayerWatchPlayModeTests`
+and City/Home frames.
+
 Detailed the working port from the service-road entrance to the quay. The fixed
 net bench, wash hose, refrigeration fittings and fender pads stay beside the
 working lanes. A local weather-aware mask locates the wheel wear on the actual

@@ -67,7 +67,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Calm Home opening | Five eased views/noon→E wake; physical foley/breath, seated return/idle→fresh E stand. | `HomeOpening{Controller,CameraSequence}`, `HomeSleepController` | Current |
 | Session clock and day/night rules | Persistent 96-minute day at ×1; four real seconds per game minute. Intoxication preserves its rate. | `GameTimeState`, `GameTimeRuntime` | Current |
 | World time and pause ownership | Intoxication/debug factors compose; pauses freeze world/calendar. Debug speed preserves the physics step. | `GameTimeScale{State,Runtime}`, `PauseMenuController` | Current |
-| Session day/time displays | Inventory/day announcements follow calendar; final7 clock display is an exception. | `HomeAlarmClock`, `InventoryView` | Current |
+| Session day/time displays | Calendar HUD and H wristwatch. Final7 alarm clock can lie. | `HomeAlarmClock`, `InventoryView`, `PlayerWatchController` | Current |
 | Pause / cutscene debug | Pause/replay/timecode;safe hoist→pistol∞reserve/reload→Crane rises/attacks. | `PauseMenu*`,`Cutscene*`,`WarehouseDoorAmbush*` | Current |
 | Hero inventory | HP state;equip/fill;LMB1/held sips;close→stow;empty→eye look/2shakes/toss. | `Inventory*`,`GameSessionState`,`PlayerVodkaBottleController` | Current |
 | World item pickup and its found screen | Shared lit 3D turn/owned focus;one take;isolated lights;layers restored. | `WorldItem{PickupPlan,Pickup,PickupModel,FoundScreen,FoundView,InspectionPresenter}` | Current |

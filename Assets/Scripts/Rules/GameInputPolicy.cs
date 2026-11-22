@@ -40,7 +40,8 @@ namespace BarPromenade
         PuzzlePreviousControl,
         PuzzleNextControl,
         PuzzleExit,
-        VodkaSip
+        VodkaSip,
+        CheckWatch
     }
 
     /// <summary>Input ownership rules with no device or scene dependencies.</summary>

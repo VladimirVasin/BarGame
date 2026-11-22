@@ -1,0 +1,71 @@
+{
+  "generator": "tools/build-player-watch-3d-model.py",
+  "generator_version": "1.0.0",
+  "blender_version": "5.2.3 LTS",
+  "build_signature": "03fdeb4b7aca61cdab0d6d16c01d23e621afab428f7bd424e9039c0eeec11780",
+  "units": "metres",
+  "unity_forward": "+Z",
+  "unity_up": "+Y",
+  "passive": true,
+  "fbx_bake_space_transform": false,
+  "exported_fbx_validation": "mesh and anchor world metres after FBX round trip",
+  "signed_volumes": "every solid positive before and after axis swap",
+  "determinism": "two independent geometry builds match",
+  "triangle_count": 388,
+  "materials": {
+    "Resin": [
+      0.13,
+      0.14,
+      0.13
+    ],
+    "Steel": [
+      0.37,
+      0.37,
+      0.33
+    ],
+    "Rubber": [
+      0.105,
+      0.107,
+      0.099
+    ],
+    "LCD": [
+      0.51,
+      0.55,
+      0.45
+    ]
+  },
+  "models": [
+    {
+      "name": "PlayerWatch",
+      "bounds_min": [
+        -0.024,
+        -0.037,
+        -0.036
+      ],
+      "bounds_max": [
+        0.024,
+        0.037,
+        0.0429
+      ],
+      "triangle_count": 388,
+      "solid_count": 8,
+      "mesh_count": 4,
+      "anchors": [
+        {
+          "name": "Dial",
+          "position": [
+            0,
+            0,
+            0.043
+          ],
+          "parent": null
+        }
+      ]
+    }
+  ],
+  "lcd_uv": "readable from +Z",
+  "lcd_size_m": [
+    0.034,
+    0.021
+  ]
+}

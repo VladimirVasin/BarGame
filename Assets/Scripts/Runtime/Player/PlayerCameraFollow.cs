@@ -594,28 +594,8 @@ namespace BarPromenade
             float unscaledDeltaTime,
             bool includeKeyboard = true)
         {
-            GameCursor.Refresh();
-            if (mouseLookRevision != GameCursor.MouseLookRevision || mouseLookResetPending)
-            {
-                mouseLookRevision = GameCursor.MouseLookRevision;
-                mouseLookResetPending = false;
-                // Ownership may change after this frame's input update. The
-                // cursor-warp delta can therefore arrive on the following frame.
-                mouseLookResumeFrame = Time.frameCount + 1;
-            }
-            if (!OrbitInputEnabled || TargetLockActive || !GameCursor.ApplicationFocused)
-            {
-                return Vector2.zero;
-            }
-
-            Vector2 degrees = Vector2.zero;
-            Mouse mouse = Mouse.current;
-            if (mouse != null && GameCursor.GameplayMouseInputAllowed && Time.frameCount > mouseLookResumeFrame)
-            {
-                Vector2 delta = mouse.delta.ReadValue();
-                degrees.x += delta.x * mouseYawSensitivity;
-                degrees.y -= delta.y * mousePitchSensitivity;
-            }
+            if (!PrepareLookSample()) return Vector2.zero;
+            Vector2 degrees = ReadMouseLookDegrees();
 
             Gamepad gamepad = Gamepad.current;
             if (gamepad != null)
@@ -626,9 +606,6 @@ namespace BarPromenade
                 degrees.y -= stick.y * gamepadPitchSpeed * deltaTime;
             }
 
-            // The arrow keys are a normalized axis like the stick, so
-            // they take the stick's per-second scaling, not the mouse's
-            // per-pixel one. Up looks up, matching stick-up.
             Keyboard keyboard = Keyboard.current;
             if (includeKeyboard && keyboard != null)
             {
@@ -638,16 +615,50 @@ namespace BarPromenade
                 float pitchAxis =
                     (keyboard.upArrowKey.isPressed ? 1f : 0f) -
                     (keyboard.downArrowKey.isPressed ? 1f : 0f);
-                if (yawAxis != 0f || pitchAxis != 0f)
-                {
-                    float deltaTime = Mathf.Max(0f, unscaledDeltaTime);
-                    degrees.x += yawAxis * keyboardYawSpeed * deltaTime;
-                    degrees.y -=
-                        pitchAxis * keyboardPitchSpeed * deltaTime;
-                }
+                float deltaTime = Mathf.Max(0f, unscaledDeltaTime);
+                degrees.x += yawAxis * keyboardYawSpeed * deltaTime;
+                degrees.y -= pitchAxis * keyboardPitchSpeed * deltaTime;
             }
 
             return degrees;
+        }
+
+        internal Vector2 SampleMouseLookDegrees() =>
+            PrepareLookSample() ? ReadMouseLookDegrees() : Vector2.zero;
+
+        private bool PrepareLookSample()
+        {
+            GameCursor.Refresh();
+            if (mouseLookRevision != GameCursor.MouseLookRevision || mouseLookResetPending)
+            {
+                mouseLookRevision = GameCursor.MouseLookRevision;
+                mouseLookResetPending = false;
+                // Ownership may change after this frame's input update. The
+                // cursor-warp delta can therefore arrive on the following frame.
+                mouseLookResumeFrame = Time.frameCount + 1;
+            }
+            return OrbitInputEnabled && !TargetLockActive && GameCursor.ApplicationFocused;
+        }
+
+        private Vector2 ReadMouseLookDegrees()
+        {
+            Mouse mouse = Mouse.current;
+            if (mouse != null && GameCursor.GameplayMouseInputAllowed && Time.frameCount > mouseLookResumeFrame)
+            {
+                Vector2 delta = mouse.delta.ReadValue();
+                return new Vector2(delta.x * mouseYawSensitivity, -delta.y * mousePitchSensitivity);
+            }
+
+            return Vector2.zero;
+        }
+
+        internal Vector3 ConstrainContextualCamera(Vector3 from, Vector3 target)
+        {
+            Vector3 delta = target - from;
+            float distance = delta.magnitude;
+            if (distance <= .0001f) return target;
+            Vector3 direction = delta / distance;
+            return from + direction * GetCameraClearance(from, direction, distance);
         }
 
         /// <summary>

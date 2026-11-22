@@ -139,8 +139,9 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   Clock persists across Single loads: CalendarDeltaTime advances0.25game min/
   real second,24h=5760s(96min). Midnight increments a zero-based index/display
   one-based DAY N. True pause stops it; intoxication slowdown does not.
-  Home shows HH:MM, inventory Status DAY N · HH:MM; a persistent view announces
-  day1 after Wake and every midnight;
+  Home and H wristwatch show HH:MM; wristwatch colon toggles each game second.
+  Inventory shows DAY N · HH:MM.
+  Day announced at Wake and midnight;
 - a separately runtime-composed `MountainRoad` area. The hero arrives `6 m`
   inside a `9 m` physical/walkable tunnel. Its open `72 m` visual tail bends
   after `12 m`, hiding the end without a wall or added navigation; materials,
