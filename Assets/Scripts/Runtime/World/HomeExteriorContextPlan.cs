@@ -249,10 +249,7 @@ namespace BarPromenade
             RoadFencePlan fence =
                 RoadFencePlanner.CreatePlan(layout);
             CityDecorationPlan cityDecorations =
-                CityDecorationPlanner.CreatePlan(
-                    layout,
-                    fence,
-                    night);
+                CityWorldPlans.GetOrCreate(layout).GetDecoration(night);
             CityBusStopDescriptor homeBusStop = null;
             int homeBusNumber = 0;
             foreach (CityBusPlan line in CityDistrictBusPlanner.Create(layout))

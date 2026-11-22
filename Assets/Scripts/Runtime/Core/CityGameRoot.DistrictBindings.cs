@@ -306,12 +306,9 @@ namespace BarPromenade
                 restPlan = planning.GetAwaiter().GetResult();
             }
             district.BenchRests = CityBenchNpcRestController.Create(owner, restPlan, Pedestrians, GameSessionState.CitySeed);
-            // Placeholder interactions on every booth door and dumpster
-            // lid: the real prompt on the real dock, answered with a
-            // feedback line until the actual call and search ship.
             var docks = new List<CityStreetUtilityDock>(CityStreetUtilityDock.CreateAll(Layout, world.DecorationPlan));
             if (districtPlan != null) docks.RemoveAll(dock => districtPlan.IsRidge(dock.StandPosition) != district.Ridge);
-            district.StreetUtilities = CityStreetUtilityWorldBuilder.Build(owner, docks);
+            district.StreetUtilities = CityStreetUtilityWorldBuilder.Build(owner, docks, this);
 
             if (!district.Ridge)
             {

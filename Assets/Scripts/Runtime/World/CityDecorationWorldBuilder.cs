@@ -147,8 +147,21 @@ namespace BarPromenade
             {
                 parts.Clear();
                 CityDecorationDescriptor descriptor = descriptors[index];
-                if (descriptor.Kind == CityDecorationKind.RoadsidePhoneBooth)
-                    BuildPhoneBoothLightAnchor(root, layout, descriptor, homeContext);
+                if (CityStreetUtilityModel.IsUtility(descriptor.Kind))
+                {
+                    Vector3 origin = descriptor.Position, forward = descriptor.Forward;
+                    if (homeContext != null)
+                    {
+                        origin = PlayerHomeBalconyGeometry.ToHomeLocal(homeContext.PlayerHome, origin);
+                        forward = PlayerHomeBalconyGeometry.ToHomeLocalDirection(homeContext.PlayerHome, forward);
+                        if (origin.x < HomeExteriorViewBuilder.ExteriorMinimumX) continue;
+                    }
+                    CityStreetUtilityModel.Build(root, descriptor, origin, forward,
+                        homeContext == null && descriptor.CollisionTier == CityDecorationCollisionTier.Blocking);
+                    if (descriptor.Kind == CityDecorationKind.RoadsidePhoneBooth)
+                        BuildPhoneBoothLightAnchor(root, layout, descriptor, homeContext);
+                    continue;
+                }
                 bool imported = homeContext == null &&
                     TryAppendImportedDecoration(
                         root,
@@ -230,7 +243,7 @@ namespace BarPromenade
         private static void BuildPhoneBoothLightAnchor(Transform root, CityLayout layout,
             CityDecorationDescriptor descriptor, HomeExteriorContextPlan homeContext)
         {
-            GetDecorationFrame(layout, descriptor, out Vector3 origin, out _, out Vector3 forward);
+            Vector3 origin = descriptor.Position, forward = descriptor.Forward;
             // Just outside the fluorescent panel's front face: the roof fascia
             // must not shadow its own doorway. The .82 depth is the shared booth recipe.
             Vector3 position = origin + Vector3.up * 2.65f + forward * (.725f * .82f + .035f);
@@ -1348,41 +1361,9 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(target));
             }
 
-            descriptor.TryResolveLot(
-                layout,
-                out BuildingLot lot);
-            var context = new RecipeContext(layout, descriptor, lot);
-            float depthScale = context.StreetDepthScale;
-            switch (descriptor.Kind)
-            {
-                case CityDecorationKind.RoadsidePhoneBooth:
-                    float doorReach =
-                        (PhoneBoothDoorLocalZ +
-                         PhoneBoothDoorHalfDepth) * depthScale +
-                        UtilityDockClearance;
-                    target.Add(new CityStreetUtilityDock(
-                        $"{descriptor.StableId}-door",
-                        descriptor.StableId,
-                        CityStreetUtilityKind.PhoneBooth,
-                        context.Origin + context.Forward * doorReach,
-                        -context.Forward));
-                    return;
-                case CityDecorationKind.RoadsideDumpsterAndUtility:
-                    float lidReach =
-                        DumpsterBodyHalfDepth * depthScale +
-                        UtilityDockClearance;
-                    target.Add(new CityStreetUtilityDock(
-                        $"{descriptor.StableId}-lid",
-                        descriptor.StableId,
-                        CityStreetUtilityKind.Dumpster,
-                        context.Origin +
-                        context.Tangent * DumpsterBodyLocalX +
-                        context.Forward * lidReach,
-                        -context.Forward));
-                    return;
-                default:
-                    return;
-            }
+            if (CityStreetUtilityModel.IsUtility(descriptor.Kind))
+                target.Add(CityStreetUtilityDock.At(descriptor.StableId, descriptor.Kind == CityDecorationKind.RoadsidePhoneBooth,
+                    descriptor.Position, descriptor.Forward, descriptor.PublicApproach));
         }
 
         private static void BuildFurniture(

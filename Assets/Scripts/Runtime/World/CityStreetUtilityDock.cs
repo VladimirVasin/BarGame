@@ -11,11 +11,7 @@ namespace BarPromenade
     }
 
     /// <summary>
-    /// The service point one street utility offers a future
-    /// interaction: where a standing body docks, which way it faces
-    /// and which decoration owns it. Derived from the decoration
-    /// recipes the same way the bench seats are, so the prompt and the
-    /// drawn door or lid can never disagree.
+    /// The public approach, standing position and facing for one door or lid.
     /// </summary>
     public readonly struct CityStreetUtilityDock
     {
@@ -24,7 +20,7 @@ namespace BarPromenade
             string decorationId,
             CityStreetUtilityKind kind,
             Vector3 standPosition,
-            Vector3 facing)
+            Vector3 facing, Vector3? publicApproach = null)
         {
             facing.y = 0f;
             if (string.IsNullOrEmpty(id) ||
@@ -40,9 +36,19 @@ namespace BarPromenade
             Kind = kind;
             StandPosition = standPosition;
             Facing = facing.normalized;
+            Approach = publicApproach ?? standPosition - Facing * 1.0f;
             IsPresent = true;
         }
 
+        internal static CityStreetUtilityDock At(string id, bool phone, Vector3 origin, Vector3 front, Vector3? approach = null)
+        {
+            front = front.normalized;
+            return new CityStreetUtilityDock(id + (phone ? "-door" : "-lid"), id,
+                phone ? CityStreetUtilityKind.PhoneBooth : CityStreetUtilityKind.Dumpster,
+                origin + front * (phone ? CityStreetUtilityModel.Outside : CityStreetUtilityModel.BinStand), -front, approach);
+        }
+
+        public Vector3 Approach { get; }
         public string Id { get; }
         public string DecorationId { get; }
         public CityStreetUtilityKind Kind { get; }
@@ -56,10 +62,7 @@ namespace BarPromenade
         public bool IsPresent { get; }
 
         /// <summary>
-        /// Collects the dock every phone booth and dumpster in the city
-        /// carries, including the pair leaning on the bar-side yard wall,
-        /// so a future interaction pass can install triggers the same
-        /// way the bench sit pass does.
+        /// Collects the lower city, bar yard and Ridge service points.
         /// </summary>
         public static List<CityStreetUtilityDock> CreateAll(
             CityLayout layout,

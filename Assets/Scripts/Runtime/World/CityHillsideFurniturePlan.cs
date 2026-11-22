@@ -96,7 +96,29 @@ namespace BarPromenade
                     courtPhone = item.Id;
                 }
             string homeFailure = "raw candidate missing: " + raw.HomeFailure;
-            foreach (var item in raw.Sites)
+            // The original surveyed pads are part of the terrain recipe (including viewpoints).
+            // Only the two public destinations retain phones. Household bins use the actual houses.
+            var candidates = new List<CityHillsideFurniturePlacement>();
+            foreach (var prior in raw.Sites)
+                if (prior.Kind == CityMiscKind.ParkBench || prior.Id == courtPhone || prior.Id == LoftPhoneId)
+                    candidates.Add(prior);
+            var housing = CityHillsideNeighborhoodPlan.ForLayout(layout);
+            foreach (var house in housing.AllBuildings)
+            {
+                Vector3 curb = house.StreetContactWorld;
+                float side = Mathf.Sign(house.DoorWorld.z-curb.z);
+                Vector3 front = Vector3.back*side;
+                foreach (float lateral in new[] { 2.75f,-2.75f,4.25f,-4.25f })
+                {
+                    Vector2 p = new(curb.x+lateral,curb.z+side*2.65f);
+                    var bounds = RotatedBounds(p,front,new Vector2(1.04f,.64f),Vector2.zero);
+                    var access = RotatedBounds(p,front,new Vector2(1.04f,1.15f),new Vector2(0f,.42f));
+                    Vector3 path = new(p.x,curb.y,curb.z);
+                    candidates.Add(new CityHillsideFurniturePlacement($"ridge-house-{house.Lot.Cell.x}-{house.Lot.Cell.y}-bin",
+                        CityMiscKind.RoadsideDumpsterAndUtility,new Vector3(p.x,curb.y,p.y),front,path,bounds,access,0));
+                }
+            }
+            foreach (var item in candidates)
             {
                 bool onCourt = item.Id == courtPhone;
                 var candidate = onCourt ? new CityHillsideFurniturePlacement(item.Id, item.Kind, court.Phone,
@@ -124,6 +146,27 @@ namespace BarPromenade
                     foreach (Vector2 corner in Corners(candidate.AccessBounds))
                         if (!ground.TrySampleTop(corner, out float y) || Mathf.Abs(y - top) > .085f)
                         { clear = false; if (candidate.Id == HomeBenchId) homeFailure = $"ground corner {corner}: {y:F4} versus {top:F4}"; }
+                if (candidate.Kind == CityMiscKind.RoadsideDumpsterAndUtility)
+                {
+                    if (!clear || solids.Exists(r => r.Overlaps(candidate.AccessBounds)) ||
+                        placements.Exists(p => p.Kind == candidate.Kind &&
+                            Mathf.Abs(p.Position.y-top)<.8f && Vector3.Distance(p.ViewTarget,candidate.ViewTarget)<43f))
+                        continue;
+                    // The collection lane ends on this house's own street, on this level.
+                    Vector2 curb = new(candidate.ViewTarget.x,candidate.ViewTarget.z);
+                    var lane = CityStreetUtilitySites.Strip(point,curb,.94f);
+                    foreach (Rect area in busReservations) if (area.Overlaps(lane)) clear = false;
+                    foreach (var detail in CityHillsideSiteDetails.ForLayout(layout))
+                        if (detail.Bounds.Overlaps(lane)) clear = false;
+                    foreach (var house in housing.AllBuildings)
+                        if (house.FoundationBounds.Overlaps(lane) || house.ApproachBounds.Overlaps(lane)) clear = false;
+                    if (Mathf.Abs(top-candidate.ViewTarget.y)>.27f) clear = false;
+                    for (int i=0; clear && i<7; i++)
+                    {
+                        Vector2 sample = Vector2.Lerp(point,curb,i/8f);
+                        if (!ground.TrySampleTop(sample,out float level) || Mathf.Abs(top-level)>.24f) clear=false;
+                    }
+                }
                 if (!clear) continue;
                 // The two benches share the new straight terrace frontage.
                 // Keep the surveyed earth/reservation recipe unchanged: its
@@ -140,20 +183,24 @@ namespace BarPromenade
                 solids.Add(placed.Bounds);
                 Vector2 half = placed.Kind == CityMiscKind.ParkBench ? new Vector2(1.15f, .36f)
                     : placed.Kind == CityMiscKind.RoadsidePhoneBooth ? new Vector2(.74f, .57f) : new Vector2(1.98f, .60f);
-                polygons.Add(Rectangle(point, placed.Forward, half));
+                bool phone = placed.Kind == CityMiscKind.RoadsidePhoneBooth;
+                if (phone)
+                {
+                    Vector2 side = new(placed.Forward.z, -placed.Forward.x);
+                    foreach (float x in new[] { -.64f, .64f })
+                        polygons.Add(Rectangle(point + side*x, placed.Forward, new Vector2(.0375f,.53f)));
+                    polygons.Add(Rectangle(point - new Vector2(placed.Forward.x, placed.Forward.z)*.53f,
+                        placed.Forward, new Vector2(.67f,.033f)));
+                }
+                else polygons.Add(Rectangle(point, placed.Forward, placed.Kind == CityMiscKind.ParkBench ? half : new Vector2(.89f,.48f)));
                 if (placed.Kind == CityMiscKind.ParkBench)
                     seats.Add(new CityBenchSeat(placed.Id, placed.Position + Vector3.up * CityBenchSitPlan.ParkSeatTopHeight,
                         CityBenchSitPlan.ParkSeatWidth, CityBenchSitPlan.ParkSeatDepth, top, placed.Forward));
                 else
                 {
-                    bool phone = placed.Kind == CityMiscKind.RoadsidePhoneBooth;
-                    Vector3 side = Vector3.Cross(Vector3.up, placed.Forward);
-                    Vector3 dock = placed.Position + placed.Forward * (phone ? 1.137f : 1.106f);
-                    // Legacy utility recipes reflect local X before import; the lid is on
-                    // the sitter's right, matching CityDecorationWorldBuilder's tangent.
-                    if (!phone) dock += side * .65f;
-                    docks.Add(new CityStreetUtilityDock(placed.Id + (phone ? "-door" : "-lid"), placed.Id,
-                        phone ? CityStreetUtilityKind.PhoneBooth : CityStreetUtilityKind.Dumpster, dock, -placed.Forward));
+                    Vector3 approach = onCourt ? court.Point(-2.55f,-2.43f) :
+                        phone ? new Vector3(placed.Position.x,placed.ViewTarget.y,raw.LoftPhoneApproach.yMax+.32f) : placed.ViewTarget;
+                    docks.Add(CityStreetUtilityDock.At(placed.Id,phone,placed.Position,placed.Forward,approach));
                 }
             }
             if (layout.HasSummitHome && !seats.Exists(s => s.Id == HomeBenchId))

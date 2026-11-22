@@ -427,9 +427,8 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   guarded3×2.4m east exit atX126.4. Hero/NPC/map use distinct floors.
   Two seven-tier climbs link coast, Lower Court and upper homes. Streamed
   Ridge/lowland districts share the hero, bus fleet and map.
-  Stairs→tiers/court/crest. Bevelled soil closes stair cuts. Soil blends at curbs.
-  Grass outside paths/loft.
-  Benches/bins/booths on pockets;fixed entry light. Home bench→truss/ravine/roofs.
+  Bevelled stair cuts to tiers/court/crest. Soil blends at curbs, grass off paths/loft.
+  Home bench→truss/ravine/roofs. Yard bins open. Lit booths at loft/kiosk admit first-person calls.
   West Lane6: (-24,-8)/4fl/X-99.2; (-25,-8)/3fl/X-84.
   `CityHillsideBenchPocketPlan`:pawnshop≤45mXZ;origins fixed;West11/13 face+Z/new docks.
   Plaza/stone1.6m по грунту с мягким краем→footways;West landing:AsphaltRoad/Concrete.

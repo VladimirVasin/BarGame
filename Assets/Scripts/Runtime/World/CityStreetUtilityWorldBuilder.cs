@@ -5,9 +5,7 @@ using UnityEngine;
 namespace BarPromenade
 {
     /// <summary>
-    /// Installs the placeholder interaction on every street utility
-    /// dock: one trigger volume per phone booth door and dumpster lid,
-    /// the same way the bench sit pass installs its seats.
+    /// Binds each public interaction volume to its physical door or lid.
     /// </summary>
     public static class CityStreetUtilityWorldBuilder
     {
@@ -18,7 +16,7 @@ namespace BarPromenade
 
         public static IReadOnlyList<CityStreetUtilityInteraction> Build(
             Transform parent,
-            IReadOnlyList<CityStreetUtilityDock> docks)
+            IReadOnlyList<CityStreetUtilityDock> docks, CityGameRoot city = null)
         {
             if (parent == null)
             {
@@ -38,6 +36,10 @@ namespace BarPromenade
                 return interactions;
             }
 
+            var models = new Dictionary<string, CityStreetUtilityModel>(StringComparer.Ordinal);
+            if (city != null)
+                foreach (var model in parent.GetComponentsInChildren<CityStreetUtilityModel>(true))
+                    models.TryAdd(model.SiteId, model);
             Transform root = new GameObject(RootName).transform;
             root.SetParent(parent, false);
             for (int index = 0; index < docks.Count; index++)
@@ -68,7 +70,9 @@ namespace BarPromenade
                     TriggerReach);
                 var interaction = trigger.AddComponent<
                     CityStreetUtilityInteraction>();
-                interaction.Initialize(dock);
+                models.TryGetValue(dock.DecorationId, out var model);
+                if (city && !model) throw new InvalidOperationException("Missing street utility " + dock.DecorationId);
+                interaction.Initialize(dock, city, model);
                 interactions.Add(interaction);
             }
 

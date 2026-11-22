@@ -205,6 +205,21 @@ namespace BarPromenade
                 ReserveRect(house.CourtBounds);
                 ReserveRect(house.ApproachBounds);
             }
+            var decoration = CityWorldPlans.GetOrCreate(city).GetDecoration(CityLayoutCache.GetOrCreateNightPlan(city));
+            foreach (var dock in CityStreetUtilityDock.CreateAll(city, decoration))
+            {
+                bool phone = dock.Kind == CityStreetUtilityKind.PhoneBooth;
+                Vector2 facing = CityStreetUtilitySites.XZ(dock.Facing);
+                Vector2 stand = CityStreetUtilitySites.XZ(dock.StandPosition);
+                Vector2 centre = stand + facing * (phone ? CityStreetUtilityModel.Outside : CityStreetUtilityModel.BinStand);
+                Vector2 side = new Vector2(-facing.y, facing.x) * (phone ? .76f : 1.03f);
+                Vector2 rear = centre + facing * .63f, front = centre - facing * .93f;
+                Reserve(new[] { rear - side, rear + side, front + side, front - side });
+                Vector2 approach = CityStreetUtilitySites.XZ(dock.Approach);
+                Vector2 path = (stand - approach).normalized;
+                Vector2 shoulder = new Vector2(-path.y, path.x) * .50f;
+                Reserve(new[] { approach - shoulder, approach + shoulder, stand + shoulder, stand - shoulder });
+            }
             foreach (var stair in CityHillsideAccessPlan.ForLayout(city).AllStairs)
                 foreach (Rect piece in stair.WalkableBounds) ReserveRect(piece);
             foreach (var pocket in CityHillsideBenchPocketPlan.ForLayout(city).Pockets)

@@ -341,7 +341,12 @@ namespace BarPromenade
                                 (timeline != null && timeline.IsActive);
 
         /// <summary>Owns neutral support and cleanup for an in-place procedural action.</summary>
-        internal bool TryBeginStationary(PlayerCameraFollow camera, Action cleanup)
+        internal bool TryBeginStationary(PlayerCameraFollow camera, Action cleanup) =>
+            TryBeginGroundedSequence(camera, cleanup, holdNeutral: true);
+
+        // Positioned procedural interactions can walk through an opened door with the same
+        // motor and modal ownership, then take neutral support at each authored contact.
+        internal bool TryBeginGroundedSequence(PlayerCameraFollow camera, Action cleanup, bool holdNeutral = false)
         {
             if (!isActiveAndEnabled || !IsInitialized || IsActive || externalClockOwner != null ||
                 cleanup == null || !player.Motor.InputEnabled || !player.Motor.IsGrounded ||
@@ -352,7 +357,7 @@ namespace BarPromenade
             if (!stationaryInput.TryCaptureAndDisable(player.Interactor, camera, null,
                     BarMinigameModalLockOptions.StationaryAction)) return false;
             stationaryCleanup = cleanup;
-            player.Visual.SetInteractionHandoffLocked(true);
+            if (holdNeutral) player.Visual.SetInteractionHandoffLocked(true);
             return true;
         }
         public bool AllowsHandEquipment => IsActive && timeline != null && timeline.Definition.AllowsHandEquipment;

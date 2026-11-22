@@ -70,7 +70,7 @@ namespace BarPromenade.Tests.EditMode
                 float planarDistance = new Vector2(
                     dock.StandPosition.x - owner.Position.x,
                     dock.StandPosition.z - owner.Position.z).magnitude;
-                Assert.That(planarDistance, Is.InRange(0.9f, 1.6f));
+                Assert.That(planarDistance, Is.EqualTo(dock.Kind == CityStreetUtilityKind.PhoneBooth ? CityStreetUtilityModel.Outside : CityStreetUtilityModel.BinStand).Within(.002f));
             }
         }
 
@@ -110,7 +110,7 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void WorldBuilder_InstallsOnePlaceholderPerDock()
+        public void WorldBuilder_InstallsOneTriggerPerDock()
         {
             CityDecorationPlan plan = CreatePlan(
                 GameSessionState.DefaultCitySeed,
@@ -128,7 +128,7 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(
                     interactions,
                     Has.Count.EqualTo(docks.Count),
-                    "Every dock must carry its placeholder.");
+                    "Every dock must carry its interaction.");
                 for (int index = 0; index < interactions.Count; index++)
                 {
                     CityStreetUtilityInteraction interaction =

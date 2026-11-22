@@ -88,7 +88,7 @@ Repair/publication: [../tools/README.md](../tools/README.md).
   Hero:wounds/no detach;bar:hit/parry;skin/aim.
   Gap:pierce/balance. [World](current-world.md)
 - City:west work/east homes3–5storeys+park;144lots/courts/wings.
-  Hillside yards/lit bench paths near pawnshop/bins/booths share plans/contacts.
+  Hillside yards and lit bench paths share plans. Street bins and public phones use surveyed approaches and first-person hero contacts.
   2 buses/ring, transfer stairs, stop zebras. 10 seats+3 stands.
   City NPC192/≤36+12 ambient, Home5/2, dogs3/owners2.
   Eight industrial types with staff entries and shifts. Coastal utilities stay passive.

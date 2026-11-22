@@ -1,76 +1,53 @@
-using System;
 using UnityEngine;
 
 namespace BarPromenade
 {
-    /// <summary>
-    /// The placeholder interaction on every phone booth door and
-    /// dumpster lid. It stands on the recipe-derived dock, offers the
-    /// real prompt and answers with a short feedback line — the same
-    /// stub contract the stairwell cat shipped with before feeding
-    /// existed. A future pass replaces <see cref="Interact"/> with the
-    /// actual call or search without moving the trigger or the dock.
-    /// </summary>
     [DisallowMultipleComponent]
-    public sealed class CityStreetUtilityInteraction :
-        MonoBehaviour,
-        IInteractable
+    public sealed class CityStreetUtilityInteraction : MonoBehaviour, IInteractable
     {
-        public const string PhoneBoothPromptKey =
-            "interaction.use_phone_booth";
-        public const string DumpsterPromptKey =
-            "interaction.search_dumpster";
-        public const string PhoneBoothPlaceholderKey =
-            "city.phone_booth.placeholder";
-        public const string DumpsterPlaceholderKey =
-            "city.dumpster.placeholder";
-        public const float ResponseDurationSeconds = 2.5f;
+        public const string PhoneBoothPromptKey = "interaction.enter_phone_booth";
+        public const string DumpsterPromptKey = "interaction.search_dumpster";
+        public const string PhoneBoothPlaceholderKey = "city.phone_booth.placeholder";
+        public const string DumpsterPlaceholderKey = "city.dumpster.placeholder";
+        private CityGameRoot city;
+        internal CityStreetUtilityModel Model { get; private set; }
+        public CityStreetUtilityDock Dock { get; private set; }
+        public string PromptKey => Dock.Kind == CityStreetUtilityKind.PhoneBooth ? PhoneBoothPromptKey : DumpsterPromptKey;
+        public Vector3 InteractionPosition => Dock.StandPosition;
 
-        private CityStreetUtilityDock dock;
-        private bool isInitialized;
-
-        public string PromptKey =>
-            dock.Kind == CityStreetUtilityKind.PhoneBooth
-                ? PhoneBoothPromptKey
-                : DumpsterPromptKey;
-        public Vector3 InteractionPosition => dock.StandPosition;
-        public CityStreetUtilityDock Dock => dock;
-
-        public void Initialize(CityStreetUtilityDock utilityDock)
+        public void Initialize(CityStreetUtilityDock dock, CityGameRoot owner = null, CityStreetUtilityModel model = null)
         {
-            if (!utilityDock.IsPresent)
-            {
-                throw new ArgumentException(
-                    "The utility interaction requires a present dock.",
-                    nameof(utilityDock));
-            }
-
-            dock = utilityDock;
-            isInitialized = true;
+            if (!dock.IsPresent) throw new System.ArgumentException("Utility needs an exterior standing point.");
+            Dock = dock;
+            city = owner;
+            Model = model;
         }
 
         public bool CanInteract(PlayerInteractor interactor)
         {
-            return isInitialized &&
-                   isActiveAndEnabled &&
-                   interactor != null &&
-                   interactor.isActiveAndEnabled &&
-                   interactor.InputEnabled &&
-                   !SceneTransitionService.IsTransitioning;
+            if (!city || !Model || !isActiveAndEnabled || city.IsDormant || interactor != city.Player.Interactor ||
+                !interactor || !interactor.InputEnabled || BarMinigameModalLock.IsAnyLocked ||
+                SceneTransitionService.IsTransitioning) return false;
+            Vector3 delta = interactor.transform.position - Dock.StandPosition;
+            if (Mathf.Abs(delta.y) > .32f || delta.sqrMagnitude > 1.65f*1.65f ||
+                Vector3.Dot(delta,Dock.Facing) > .24f) return false;
+            Vector3 from = interactor.transform.position + Vector3.up*.84f;
+            Vector3 to = Dock.StandPosition + Vector3.up*.84f;
+            return !Physics.Linecast(from, to, PlayerInteractor.InteractionLayerMask, QueryTriggerInteraction.Ignore);
         }
 
         public void Interact(PlayerInteractor interactor)
         {
-            if (!CanInteract(interactor))
-            {
-                return;
-            }
+            if (!CanInteract(interactor)) return;
+            var session = interactor.GetComponent<CityStreetUtilitySession>();
+            if (!session) session = interactor.gameObject.AddComponent<CityStreetUtilitySession>();
+            session.Begin(city, this);
+        }
 
-            interactor.ShowFeedback(
-                dock.Kind == CityStreetUtilityKind.PhoneBooth
-                    ? PhoneBoothPlaceholderKey
-                    : DumpsterPlaceholderKey,
-                ResponseDurationSeconds);
+        private void OnDisable()
+        {
+            if (city && city.Player.GameObject && city.Player.GameObject.TryGetComponent<CityStreetUtilitySession>(out var session))
+                session.Release(this);
         }
     }
 }

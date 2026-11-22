@@ -116,7 +116,7 @@ namespace BarPromenade
             groundSurface.SetBuildingPerimeters(CityBuildingPerimeterPlan.ForLayout(layout, cemeteryPlan));
             groundSurface.SetResidentialCourtyards(residentialCourtyards);
             CityDecorationPlan decorationPlan =
-                plans.GetDecoration(nightPlan);
+                plans.GetDecoration(nightPlan, walkableArea);
             // Planned before the ground pass: when the seacoast will
             // draw its own animated sea, the ground pass must not lay
             // the flat municipal slab under it.
@@ -2964,7 +2964,7 @@ namespace BarPromenade
         /// avoids are the ones that will actually stand there.
         /// </summary>
         internal CityDecorationPlan GetDecoration(
-            CityNightFixturePlan nightPlan)
+            CityNightFixturePlan nightPlan, RoadWalkableArea walk = null)
         {
             if (nightPlan == null)
             {
@@ -2973,8 +2973,9 @@ namespace BarPromenade
 
             if (!ReferenceEquals(decorationNightPlan, nightPlan))
             {
-                decoration = CityKioskSites.ForLayout(Layout).ReserveCourtFurniture(Layout,
+                var provisional = CityKioskSites.ForLayout(Layout).ReserveCourtFurniture(Layout,
                     CityDecorationPlanner.CreatePlan(Layout, Fence, nightPlan));
+                decoration = CityStreetUtilitySites.Survey(Layout, provisional, walk ?? RoadWalkableArea.FromLayout(Layout,MountainBoundary), nightPlan);
                 decorationNightPlan = nightPlan;
             }
 

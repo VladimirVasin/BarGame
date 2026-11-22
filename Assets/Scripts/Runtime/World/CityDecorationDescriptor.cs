@@ -110,7 +110,7 @@ namespace BarPromenade
             CityDecorationPalette palette,
             CityDecorationVisibilityTier visibilityTier,
             CityDecorationCollisionTier collisionTier,
-            bool fixedSupportPlane = false)
+            bool fixedSupportPlane = false, Vector3? publicApproach = null)
         {
             StableId = stableId ?? string.Empty;
             Kind = kind;
@@ -124,6 +124,7 @@ namespace BarPromenade
             VisibilityTier = visibilityTier;
             CollisionTier = collisionTier;
             HasFixedSupportPlane = fixedSupportPlane;
+            PublicApproach = publicApproach;
         }
 
         public string StableId { get; }
@@ -142,6 +143,8 @@ namespace BarPromenade
         public CityDecorationCollisionTier CollisionTier { get; }
         /// <summary>Feet and seat approaches rest on the authored origin plane.</summary>
         public bool HasFixedSupportPlane { get; }
+
+        public Vector3? PublicApproach { get; }
 
         public bool HasLotAnchor =>
             AnchorKind == CityDecorationAnchorKind.BuildingRoof ||
@@ -201,7 +204,7 @@ namespace BarPromenade
                    Palette == other.Palette &&
                    VisibilityTier == other.VisibilityTier &&
                    CollisionTier == other.CollisionTier &&
-                   HasFixedSupportPlane == other.HasFixedSupportPlane;
+                   HasFixedSupportPlane == other.HasFixedSupportPlane && PublicApproach.Equals(other.PublicApproach);
         }
 
         public override bool Equals(object obj)
@@ -228,7 +231,7 @@ namespace BarPromenade
                 hash = (hash * 31) + (int)VisibilityTier;
                 hash = (hash * 31) + (int)CollisionTier;
                 hash = (hash * 31) + HasFixedSupportPlane.GetHashCode();
-                return hash;
+                return hash * 31 + PublicApproach.GetHashCode();
             }
         }
 

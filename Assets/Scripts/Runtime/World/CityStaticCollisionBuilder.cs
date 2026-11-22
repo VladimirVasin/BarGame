@@ -77,6 +77,22 @@ namespace BarPromenade
             CityDecorationDescriptor descriptor, ICollection<RuntimeOrientedBox> target)
         {
             if (target == null) throw new ArgumentNullException(nameof(target));
+            if (CityStreetUtilityModel.IsUtility(descriptor.Kind))
+            {
+                if (descriptor.CollisionTier == CityDecorationCollisionTier.None) return;
+                Quaternion facing = Quaternion.LookRotation(descriptor.Forward);
+                if (descriptor.Kind == CityDecorationKind.RoadsideDumpsterAndUtility)
+                    Box(0,.57f,0,1.78f,1.13f,.96f);
+                else
+                {
+                    Box(-.64f,1.25f,0,.075f,2.5f,1.06f);
+                    Box(.64f,1.25f,0,.075f,2.5f,1.06f);
+                    Box(0,1.25f,-.53f,1.34f,2.5f,.065f);
+                }
+                return;
+                void Box(float x,float y,float z,float w,float h,float d) =>
+                    target.Add(new RuntimeOrientedBox(descriptor.Position + facing*new Vector3(x,y,z), facing, new Vector3(w,h,d)));
+            }
             if (descriptor.Kind == CityDecorationKind.ParkBandstand)
             {
                 CityParkGazeboGeometry.AppendRouteBlockers(descriptor, target);

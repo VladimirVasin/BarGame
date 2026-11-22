@@ -79,7 +79,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | City blueprint/roads | Two districts+park;144 IDs/−29.2% land; fronts/courts share ground/navigation. | `City{Layout,SpatialPlan,RoadGeometryPlan,CourtyardBlockPlanner}`, `BuildingLot` | Current |
 | Coastal utilities | City/Home share facade feeds clear of bays and roofs. | `CityCoastalInfrastructure*`, `CityElectrical*` | Current |
 | City elevation/stairs | Shared heights align stairs, ground and collision. Closed hillside cuts. | `CityElevation*`, `CityTerrainSurfacePlan`, `CityHillsideStairCut` | Current |
-| Terraced City | Yards/steps;loft/birds;keeper chores/commute/gate/speech/cry;upper phone. | `CityHillside*`,`CityTerrace*`,`CityPawnshopDescent*`,`CityPigeon*` | Current |
+| Terraced City | Yards/steps, loft/keeper, lit phones and household bins with first-person interaction. | `CityHillside*`,`CityTerrace*`,`CityPawnshopDescent*`,`CityPigeon*` | Current |
 | City mountain boundary | West/south fractured cliffs, graded talus, river cave and open portal. | `CityMountain{Boundary*,Talus*}`, `CityRockface*`, `CityFringeYard*` | Current |
 | Eastern mainland view | Closed post; shared road/traffic datum; skyline/glow fade beyond checkpoint. One fixed mast. | `CityEastExit*`, `CityEastRoadProfile`, `CityEastDistance*` | Current |
 | City litter | 36 Blender variants off roads; dense east/no near repeats; solids block; finite shared palette per root. | `CityLitterCatalog`, `CityLitter{Plan,Planner,WorldBuilder,Instancer}`, `CityEastLitter*` | Current |

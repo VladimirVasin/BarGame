@@ -327,6 +327,18 @@ namespace BarPromenade
         /// constraint, facing, gait and footsteps remain in use, so this is a
         /// visible short approach rather than a hidden teleport.
         /// </summary>
+        internal bool MoveTowardsSupportedInteractionPose(Vector3 target, Quaternion facing, float deltaTime,
+            bool walkBackward = false)
+        {
+            // A sloped landing stops the capsule at its skin, sometimes a few mm off centre.
+            // Only settle inside the ordinary planar contact tolerance on the same support.
+            Vector3 here = transform.position;
+            if (IsGrounded && PlanarDistance(here, target) <= InteractionPositionTolerance &&
+                Mathf.Abs(here.y - target.y) <= .14f)
+                target = here;
+            return MoveTowardsInteractionPose(target, facing, deltaTime, walkBackward);
+        }
+
         public bool MoveTowardsInteractionPose(
             Vector3 targetPosition,
             Quaternion targetRotation,

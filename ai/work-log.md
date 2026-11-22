@@ -12,6 +12,12 @@ distant district objects, keep shared clocks, hero and Line 03 seats.
 samples and drives the seated hero across both seams. `CityTerracePilotPlayModeTests`
 covers boarding and transfers.
 
+Placed bins by service yards and phones by public approaches. The hero opens
+the lid, inspects wet cardboard, enters the booth and tries the handset.
+`LiveCity_StreetUtilitiesWalkOpenCallAndLeave` exercised public approaches,
+first-person interactions and return to walking. The Blender FBX check reads
+the keys from the caller's side and measures the cardboard against all walls.
+
 ## 2026-11-22
 
 City binds shared ground and lighting, then moves the Ridge to its additive

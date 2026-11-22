@@ -785,12 +785,24 @@
       "value": "E — встать"
     },
     {
+      "key": "interaction.enter_phone_booth",
+      "value": "E — войти в будку"
+    },
+    {
+      "key": "interaction.leave_phone_booth",
+      "value": "E — выйти из будки"
+    },
+    {
+      "key": "interaction.close_dumpster",
+      "value": "E — закрыть крышку"
+    },
+    {
       "key": "interaction.use_phone_booth",
       "value": "E — позвонить"
     },
     {
       "key": "interaction.search_dumpster",
-      "value": "E — заглянуть в контейнер"
+      "value": "E — открыть контейнер"
     },
     {
       "key": "city.phone_booth.placeholder",
