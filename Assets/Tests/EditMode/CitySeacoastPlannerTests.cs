@@ -51,8 +51,8 @@ namespace BarPromenade.Tests.EditMode
                 Is.GreaterThan(0));
             Assert.That(
                 first.GetCount(CitySeacoastPartKind.HutSign),
-                Is.GreaterThan(10),
-                "The hire board should carry its lettering.");
+                Is.EqualTo(1),
+                "One printed rental board carries all lettering.");
             Assert.That(
                 first.GetCount(CitySeacoastPartKind.EsplanadeSlab),
                 Is.GreaterThan(15));

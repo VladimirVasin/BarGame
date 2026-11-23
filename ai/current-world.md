@@ -1143,8 +1143,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   The shore is zoned around the river mouth — a
   working fishing port with a quay, two cranes and a breakwater
   to the west; a granite esplanade with sparse glow lamps, benches and the
-  abandoned municipal boat station (hut, «ПРОКАТ ЛОДОК» board, sea pier
-  with the fisherman, chained slipway, hauled hulls) at the centre; rotten
+  rental hut, printed «ПРОКАТ ЛОДОК», one hooded bulb, boarded hatch, pier ramp and fisherman, chained slip and four keel-up hulls on timbers; rotten
   breakwater piles, driftwood, dune grass and a stranded barge on the wild
   east — with a timber footbridge over the mouth, full-width quay thresholds
   adopting both river promenades' north ends while short transverse rails
@@ -1379,7 +1378,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   bus shelters/poles, the eastern yard, cemetery graves and vegetation,
     the church-yard surfaces and planting plus the modified cemetery
     north-fence posts and rails,
-  seacoast hut/pier/esplanade joints, cemetery hut/gates, boats/barge/driftwood,
+  esplanade coping, pier sleeves, cemetery hut/gates and the coastal barge/driftwood,
   fringe utility dressing, the static shells
   of all four district points of interest and the Nightlife arch-shelter kit,
   including its full-height masonry platform support and worn slab. Its former

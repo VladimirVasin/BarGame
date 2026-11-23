@@ -1,18 +1,18 @@
 {
   "tool": "built-in image_gen",
-  "intent": "Final City sheet follows the locally graded road verges on both Ridge banks.",
-  "prompt": "imagegen-ridge-verges-prompt.txt",
+  "intent": "Final municipal boat station and shore approach on the surveyed City sheet.",
+  "prompt": "imagegen-boat-rental-prompt.txt",
   "references": [
     "CityMapImage.reference.png",
     "map-reference.png"
   ],
   "geography": "CityMapImage.accepted-geography.json",
   "image": "CityMapImage.generated.png",
-  "image_sha256": "c920b7fee4263023220907a54cf6c60dfbe84143be7abb569327f425d0731632",
-  "runtime_image_sha256": "c920b7fee4263023220907a54cf6c60dfbe84143be7abb569327f425d0731632",
-  "previous_image_sha256": "971db223b399cf547ed4894beade1687267f8b5842bf1e5638042d937f2cba19",
+  "image_sha256": "8c57424633e78b4f01533644de47dc32e8b6d6da43ea5241f98fc1aba8b95f80",
+  "runtime_image_sha256": "8c57424633e78b4f01533644de47dc32e8b6d6da43ea5241f98fc1aba8b95f80",
+  "previous_image_sha256": "c920b7fee4263023220907a54cf6c60dfbe84143be7abb569327f425d0731632",
   "registration": {
-    "description": "Full-bleed north-up sheet. Soft terrain beside Ridge pavements; roads, buildings and bridges register to the survey. Live overlays and arrivals use the actual plan.",
+    "description": "North-up City sheet. Rental pier and stored hulls east of the river mouth. Roads, Ridge and live overlays share the surveyed rectangle.",
     "source_size": [
       1172,
       1342
@@ -22,7 +22,7 @@
       2048
     ]
   },
-  "fingerprint": "bc113bea7b7478e12bd1bc99360c687bd3899315c04067f4135c7e383c891ac9",
+  "fingerprint": "e97db4ba3794f153bc59390e5f24d35657e571322bd1a6485ba31eee7182ba49",
   "schemaVersion": 2,
   "width": 1172,
   "height": 1342,

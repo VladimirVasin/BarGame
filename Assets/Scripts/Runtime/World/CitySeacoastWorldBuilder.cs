@@ -62,9 +62,9 @@ namespace BarPromenade
         // night, never switched off.
         internal static readonly Color HutBulbColor =
             new Color(1.00f, 0.80f, 0.55f);
-        internal const float HutBulbNightIntensity = 64f;
-        internal const float HutBulbDayIntensity = 14f;
-        internal const float HutBulbRange = 7.0f;
+        internal const float HutBulbNightIntensity = 8f;
+        internal const float HutBulbDayIntensity = 5.4f;
+        internal const float HutBulbRange = 3.9f;
 
         // The esplanade lamps glow without casting: iron posts and an
         // emissive plafond on the glow registry, the embankment lamp
@@ -82,8 +82,6 @@ namespace BarPromenade
         private static readonly Color EsplanadeHaloOuter =
             new Color(1.62f, 0.93f, 0.42f, 0.055f);
 
-        private static readonly Color LampIronColor =
-            new Color(0.070f, 0.075f, 0.075f);
 
         public static GameObject Build(
             Transform parent,
@@ -109,8 +107,9 @@ namespace BarPromenade
             root.SetParent(parent, false);
 
             BuildSea(root, plan.Frame, layout);
-            BuildDressing(root, plan);
-            BuildLamps(root, plan);
+            var rental = new CityBoatRentalArt(root);
+            BuildDressing(root, plan, rental);
+            BuildLamps(root, plan, rental);
 
             return root.gameObject;
         }
@@ -248,7 +247,7 @@ namespace BarPromenade
 
         private static void BuildDressing(
             Transform root,
-            CitySeacoastPlan plan)
+            CitySeacoastPlan plan, CityBoatRentalArt rental)
         {
             var batches =
                 new Dictionary<BatchKey, List<RuntimeOrientedBox>>();
@@ -261,12 +260,8 @@ namespace BarPromenade
             CityMiscAssetProvider miscProvider =
                 CityMiscAssetProvider.Load();
 
-            AppendImportedBoatStation(plan.Parts, miscProvider, importedBatches, importedIds);
-            TryAppendImportedBoats(
-                plan.Parts,
-                miscProvider,
-                importedBatches,
-                importedIds);
+            AppendImportedBoatStation(plan, rental, miscProvider, importedBatches, importedIds);
+            AppendRentalBoats(plan, rental, importedIds);
             TryAppendImportedSlipwayBarrier(
                 plan.Parts,
                 miscProvider,
@@ -297,7 +292,7 @@ namespace BarPromenade
                 if (part.Kind == CitySeacoastPartKind.ShoreGrass) continue;
                 if (importedIds.Contains(part.StableId))
                 {
-                    if (part.BlocksMovement)
+                    if (part.BlocksMovement && part.Kind != CitySeacoastPartKind.Boat && part.Kind != CitySeacoastPartKind.BoatRest)
                     {
                         AppendBox(collisionBatches, key, part);
                     }
@@ -416,117 +411,26 @@ namespace BarPromenade
             }
         }
 
-        private static void TryAppendImportedBoats(
-            IReadOnlyList<CitySeacoastPartDescriptor> parts,
-            CityMiscAssetProvider provider,
-            IDictionary<BatchKey, List<RuntimeMeshPlacement>> batches,
-            ISet<string> importedIds)
+        private static void AppendRentalBoats(CitySeacoastPlan coast, CityBoatRentalArt rental, ISet<string> importedIds)
         {
-            var groups = new Dictionary<
-                int,
-                List<CitySeacoastPartDescriptor>>();
-            for (int index = 0; index < parts.Count; index++)
+            var firstRest = new Dictionary<int, CitySeacoastPartDescriptor>();
+            foreach (var part in coast.Parts)
             {
-                CitySeacoastPartDescriptor part = parts[index];
-                if (part.BoatOrdinal < 0 ||
-                    (part.Kind != CitySeacoastPartKind.Boat &&
-                     part.Kind != CitySeacoastPartKind.BoatRest))
+                if (part.Kind != CitySeacoastPartKind.BoatRest && part.Kind != CitySeacoastPartKind.Boat) continue;
+                importedIds.Add(part.StableId);
+                if (part.Kind != CitySeacoastPartKind.BoatRest) continue;
+                if (!firstRest.TryGetValue(part.BoatOrdinal, out var other))
                 {
+                    firstRest.Add(part.BoatOrdinal, part);
                     continue;
                 }
-
-                if (!groups.TryGetValue(
-                        part.BoatOrdinal,
-                        out List<CitySeacoastPartDescriptor> group))
+                firstRest.Remove(part.BoatOrdinal);
+                Vector3 ground = (other.Center + part.Center) * .5f - part.Rotation * Vector3.up * (part.Size.y * .5f);
+                rental.Hull(part.BoatOrdinal, part.Variant, ground, part.Rotation);
+                if (coast.TryGetPart($"seacoast-boat-{part.BoatOrdinal:D2}-oar", out var oar))
                 {
-                    group = new List<CitySeacoastPartDescriptor>();
-                    groups.Add(part.BoatOrdinal, group);
-                }
-
-                group.Add(part);
-            }
-
-            var ordinals = new List<int>(groups.Keys);
-            ordinals.Sort();
-            for (int index = 0; index < ordinals.Count; index++)
-            {
-                int ordinal = ordinals[index];
-                List<CitySeacoastPartDescriptor> group = groups[ordinal];
-                CitySeacoastPartDescriptor restA = default;
-                CitySeacoastPartDescriptor restB = default;
-                int restCount = 0;
-                for (int partIndex = 0;
-                     partIndex < group.Count;
-                     partIndex++)
-                {
-                    if (group[partIndex].Kind !=
-                        CitySeacoastPartKind.BoatRest)
-                    {
-                        continue;
-                    }
-
-                    if (restCount == 0)
-                    {
-                        restA = group[partIndex];
-                    }
-                    else if (restCount == 1)
-                    {
-                        restB = group[partIndex];
-                    }
-
-                    restCount++;
-                }
-
-                if (restCount < 2)
-                {
-                    continue;
-                }
-
-                Vector3 origin = new Vector3(
-                    (restA.Center.x + restB.Center.x) * 0.5f,
-                    Mathf.Min(
-                        restA.Center.y - restA.Size.y * 0.5f,
-                        restB.Center.y - restB.Size.y * 0.5f),
-                    (restA.Center.z + restB.Center.z) * 0.5f);
-                TryAppendAssembly(
-                    provider,
-                    CityMiscKind.SeacoastBoat,
-                    (int)restA.Variant,
-                    origin,
-                    restA.Rotation,
-                    CitySeacoastStyle.HullPaint,
-                    group,
-                    Vector3.one,
-                    batches,
-                    importedIds);
-
-                string oarId =
-                    $"seacoast-boat-{ordinal:D2}-oar";
-                for (int partIndex = 0;
-                     partIndex < parts.Count;
-                     partIndex++)
-                {
-                    CitySeacoastPartDescriptor part = parts[partIndex];
-                    if (!string.Equals(
-                            part.StableId,
-                            oarId,
-                            StringComparison.Ordinal))
-                    {
-                        continue;
-                    }
-
-                    TryAppendAssembly(
-                        provider,
-                        CityMiscKind.SeacoastOar,
-                        0,
-                        origin,
-                        restA.Rotation,
-                        CitySeacoastStyle.Litter,
-                        new List<CitySeacoastPartDescriptor> { part },
-                        Vector3.one,
-                        batches,
-                        importedIds);
-                    break;
+                    rental.Oar(ground, part.Rotation);
+                    importedIds.Add(oar.StableId);
                 }
             }
         }
@@ -698,11 +602,12 @@ namespace BarPromenade
         }
 
         private static void AppendImportedBoatStation(
-            IReadOnlyList<CitySeacoastPartDescriptor> descriptors,
+            CitySeacoastPlan plan, CityBoatRentalArt rental,
             CityMiscAssetProvider provider,
             IDictionary<BatchKey, List<RuntimeMeshPlacement>> batches,
             ISet<string> importedIds)
         {
+            var descriptors = plan.Parts;
             var hut = new List<CitySeacoastPartDescriptor>();
             var cosmeticIds = new HashSet<string>(StringComparer.Ordinal);
             CitySeacoastPartDescriptor floor = default;
@@ -717,17 +622,19 @@ namespace BarPromenade
             if (hut.Count > 0)
             {
                 if (!hasFloor) throw new InvalidOperationException("Boat station lost its authored floor frame.");
-                RequireStationAssembly(provider, CityMiscKind.SeacoastHutShell,
-                    floor.Center - Vector3.up * .08f, Quaternion.identity,
-                    CitySeacoastStyle.Concrete, hut, Vector3.one, batches, importedIds);
+                rental.Hut(floor.Center - Vector3.up * .08f);
+                foreach (var piece in hut) importedIds.Add(piece.StableId);
             }
             for (int i = 0; i < descriptors.Count; i++)
             {
                 CitySeacoastPartDescriptor part = descriptors[i];
+                if (rental.Append(part, plan.Frame.SeaTopY))
+                {
+                    importedIds.Add(part.StableId);
+                    continue;
+                }
                 CityMiscKind kind;
                 if (part.StableId == CitySeacoastPlanner.HutDoorId) kind = CityMiscKind.CoastalDoorLeaf;
-                else if (part.Kind == CitySeacoastPartKind.PierDeck) kind = CityMiscKind.SeacoastPierDeckBoard;
-                else if (part.Kind == CitySeacoastPartKind.PierPile) kind = CityMiscKind.SeacoastPierPile;
                 else if (part.Kind == CitySeacoastPartKind.EsplanadeParapet) kind = CityMiscKind.SeacoastEsplanadeCoping;
                 else
                 {
@@ -748,6 +655,7 @@ namespace BarPromenade
                     part.Center - Vector3.up * (part.Size.y * .5f), part.Rotation,
                     part.Style, new[] { part }, part.Size, batches, importedIds);
             }
+            rental.FinishPier();
         }
 
         private static void RequireStationAssembly(
@@ -863,23 +771,8 @@ namespace BarPromenade
         {
             switch (kind)
             {
-                case CityMiscKind.SeacoastHutShell:
-                    return role == CityMiscMeshRole.Masonry ? CitySeacoastStyle.Concrete :
-                        role == CityMiscMeshRole.Timber ? CitySeacoastStyle.Planking : CitySeacoastStyle.Iron;
                 case CityMiscKind.CoastalDoorLeaf:
-                case CityMiscKind.SeacoastPierDeckBoard:
-                case CityMiscKind.SeacoastPierPile:
                     return role == CityMiscMeshRole.Timber ? sourceStyle : CitySeacoastStyle.Iron;
-                case CityMiscKind.SeacoastBoat:
-                    if (role == CityMiscMeshRole.Timber)
-                    {
-                        return CitySeacoastStyle.TarredTimber;
-                    }
-
-                    return role == CityMiscMeshRole.Street
-                        ? CitySeacoastStyle.HullTar
-                        : CitySeacoastStyle.HullPaint;
-                case CityMiscKind.SeacoastOar:
                 case CityMiscKind.SeacoastDriftwood:
                     return CitySeacoastStyle.Litter;
                 case CityMiscKind.SeacoastSlipwayBarrier:
@@ -963,7 +856,7 @@ namespace BarPromenade
 
         private static void BuildLamps(
             Transform root,
-            CitySeacoastPlan plan)
+            CitySeacoastPlan plan, CityBoatRentalArt rental)
         {
             var esplanadePosts = new List<Bounds>();
             var esplanadeBulbs = new List<Bounds>();
@@ -974,7 +867,7 @@ namespace BarPromenade
                 switch (lamp.Kind)
                 {
                     case CitySeacoastLampKind.HutDoor:
-                        BuildHutDoorLamp(root, lamp);
+                        BuildHutDoorLamp(root, lamp, rental);
                         break;
                     case CitySeacoastLampKind.PierHead:
                         CityHandLampWorldBuilder.Build(
@@ -1046,7 +939,7 @@ namespace BarPromenade
         /// </summary>
         private static void BuildHutDoorLamp(
             Transform parent,
-            CitySeacoastLampDescriptor descriptor)
+            CitySeacoastLampDescriptor descriptor, CityBoatRentalArt rental)
         {
             Transform assembly = new GameObject(
                 "Seacoast Hut Door Lamp").transform;
@@ -1055,38 +948,14 @@ namespace BarPromenade
                 descriptor.GroundPosition,
                 Quaternion.Euler(0f, descriptor.YawDegrees, 0f));
 
-            RuntimePrimitiveFactory.CreateBox(
-                "Hut Lamp Stem",
-                assembly,
-                new Vector3(0f, 2.32f, 0f),
-                new Vector3(0.05f, 0.24f, 0.05f),
-                LampIronColor,
-                false);
-            RuntimePrimitiveFactory.CreateBox(
-                "Hut Lamp Hood",
-                assembly,
-                new Vector3(0f, 2.15f, 0f),
-                new Vector3(0.24f, 0.07f, 0.24f),
-                LampIronColor,
-                false);
-
-            Color glow = MultiplyRgb(HutBulbColor, 4.6f, 1f);
-            GameObject lens = RuntimePrimitiveFactory.CreateBox(
-                "Hut Lamp Bulb",
-                assembly,
-                new Vector3(0f, 2.01f, 0f),
-                new Vector3(0.14f, 0.22f, 0.14f),
-                glow,
-                CityNightResources.EmissiveMaterial,
-                false);
-            CityNightGlowRegistry.Register(
-                lens.GetComponent<Renderer>(),
-                glow);
+            Color glow = MultiplyRgb(HutBulbColor, 3.2f, 1f);
+            var lens = rental.Bulb(assembly, new Vector3(0f, 2.135f, 0f));
+            CityNightGlowRegistry.Register(lens, glow);
 
             GameObject emitter = new GameObject("Hut Lamp Light");
             emitter.transform.SetParent(assembly, false);
             emitter.transform.localPosition =
-                new Vector3(0f, 1.99f, 0f);
+                new Vector3(0f, 2.13f, 0f);
             Light light = emitter.AddComponent<Light>();
             light.type = LightType.Point;
             light.color = HutBulbColor;

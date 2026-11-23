@@ -92,7 +92,7 @@ namespace BarPromenade
         private const float HutWallHeight = 2.35f;
         private const float HutZOffset = 11.5f;
         private const float HutLateralFromPier = 7.4f;
-        private const float HutSignGlyphHeight = 0.34f;
+        internal const string HutSignId = "seacoast-hut-signboard";
 
         private const float BoatLength = 4.1f;
         private const float BoatBeam = 1.35f;
@@ -390,6 +390,12 @@ namespace BarPromenade
             {
                 return SampleEsplanadeTop(layout, frame, x);
             }
+
+            float pierX = ResolvePierLateral(frame);
+            float pierZ = frame.WaterlineZ - PierRootDepth;
+            if (z > bandNorth && z < pierZ && Mathf.Abs(x - pierX) <= PierWidth*.5f)
+                return Mathf.Lerp(SampleEsplanadeTop(layout, frame, pierX), frame.SeaTopY + PierDeckTopAboveSea,
+                    Mathf.InverseLerp(bandNorth, pierZ, z));
 
             return SampleSandTop(layout, x, z);
         }
@@ -1504,9 +1510,9 @@ namespace BarPromenade
                 "seacoast-lamp-hut-door",
                 CitySeacoastLampKind.HutDoor,
                 new Vector3(
-                    hutX + doorWidth * 0.72f,
+                    hutX + .32f,
                     ground,
-                    hutZ + HutFootprintDepth * 0.5f + 0.30f),
+                    hutZ + 3.14f),
                 0f));
 
             reserved.Add(Expand(footprint, 0.9f));
@@ -1519,62 +1525,11 @@ namespace BarPromenade
             float hutZ,
             float floorTop)
         {
-            const string word = "ПРОКАТ ЛОДОК";
-            float boardZ = hutZ + HutFootprintDepth * 0.5f + 0.48f;
-            float boardTop = floorTop + HutWallHeight + 0.46f;
-            float advance = HutSignGlyphHeight * 0.80f;
-            float boardWidth = word.Length * advance + 0.34f;
-
-            // The board itself, hanging off the eave, and a little out
-            // of true: it has been up there a long time — first over
-            // the pond, now over the sea.
-            parts.Add(Part(
-                "seacoast-hut-signboard",
-                CitySeacoastPartKind.HutSign,
-                CitySeacoastStyle.Planking,
-                new Vector3(hutX, boardTop, boardZ),
-                Quaternion.Euler(0f, 0f, -3.5f),
-                new Vector3(
-                    boardWidth,
-                    HutSignGlyphHeight + 0.30f,
-                    0.07f)));
-
-            IReadOnlyList<SignSegmentRect> segments =
-                CitySignLettering.Layout(
-                    word,
-                    HutSignGlyphHeight * 0.62f,
-                    HutSignGlyphHeight,
-                    advance);
-            for (int index = 0; index < segments.Count; index++)
-            {
-                SignSegmentRect segment = segments[index];
-
-                // The lettering rides the board's own list, so the
-                // strokes stay square to the plank rather than to the
-                // world.
-                float tilt = -3.5f * Mathf.Deg2Rad;
-                float localLateral = segment.Center.x;
-                float localHeight = segment.Center.y;
-                float rotatedLateral =
-                    localLateral * Mathf.Cos(tilt) -
-                    localHeight * Mathf.Sin(tilt);
-                float rotatedHeight =
-                    localLateral * Mathf.Sin(tilt) +
-                    localHeight * Mathf.Cos(tilt);
-                parts.Add(Part(
-                    $"seacoast-hut-sign-{index:D2}",
-                    CitySeacoastPartKind.HutSign,
-                    CitySeacoastStyle.PaintAccent,
-                    new Vector3(
-                        hutX - rotatedLateral,
-                        boardTop + rotatedHeight,
-                        boardZ + 0.05f),
-                    Quaternion.Euler(0f, 0f, -3.5f),
-                    new Vector3(
-                        Mathf.Max(0.02f, segment.Size.x),
-                        Mathf.Max(0.02f, segment.Size.y),
-                        0.03f)));
-            }
+            float boardZ = hutZ + 2.55f;
+            float boardY = floorTop + HutWallHeight + .30f;
+            parts.Add(Part(HutSignId, CitySeacoastPartKind.HutSign, CitySeacoastStyle.Planking,
+                new Vector3(hutX, boardY, boardZ), Quaternion.Euler(0, 0, -3.5f),
+                new Vector3(3.33f, .64f, .07f)));
         }
 
         private static void AddPier(
@@ -1591,6 +1546,21 @@ namespace BarPromenade
             float deckTop = frame.SeaTopY + PierDeckTopAboveSea;
             float deckCenterY = deckTop - PierDeckThickness * 0.5f;
             Quaternion rotation = Quaternion.identity;
+
+            // Three timber panels bridge the exposed granite lip and the first level deck board.
+            float quayZ = frame.WaterlineZ - EsplanadeSetback;
+            float quayY = SampleEsplanadeTop(layout, frame, pierLateral);
+            Vector3 start = new(pierLateral, quayY, quayZ);
+            Vector3 end = new(pierLateral, deckTop, rootZ);
+            Vector3 approach = end - start;
+            Quaternion slope = Quaternion.FromToRotation(Vector3.forward, approach.normalized);
+            for (int bay = 0; bay < 3; bay++)
+            {
+                Vector3 top = Vector3.Lerp(start, end, (bay + .5f)/3f);
+                parts.Add(Part($"seacoast-pier-approach-{bay}", CitySeacoastPartKind.PierDeck,
+                    CitySeacoastStyle.Planking, top - slope*Vector3.up*(PierDeckThickness*.5f), slope,
+                    new Vector3(PierWidth, PierDeckThickness, approach.magnitude/3f - .005f)));
+            }
 
             // Deck boards laid across the pier, one per metre-ish, so
             // the pier has a rhythm at walking speed. The root and
@@ -1830,7 +1800,7 @@ namespace BarPromenade
             float pierLateral,
             int seed,
             bool hasHut,
-            IReadOnlyList<Rect> reserved,
+            List<Rect> reserved,
             CityOpenAreaAccessDescriptor access)
         {
             var footprints = new List<Rect>(BoatTarget);
@@ -1895,6 +1865,7 @@ namespace BarPromenade
                 footprints.Add(footprint);
                 accepted++;
             }
+            reserved.AddRange(footprints);
         }
 
         private static void EmitBoat(
@@ -1912,7 +1883,6 @@ namespace BarPromenade
             // backs rather than a row of tubs. Keel-up: a wide gunwale
             // on the ground, two panels sloping up and in, the bottom
             // as a ridge along the sky.
-            float ground = SampleSandTop(layout, x, z);
             float yaw = 90f + yawJitter;
             Quaternion rotation = Quaternion.Euler(0f, yaw, 0f);
 
@@ -1939,7 +1909,18 @@ namespace BarPromenade
                     break;
             }
 
-            Vector3 hullBase = new Vector3(x, ground + 0.18f, z);
+            // Seat both timbers on the sampled sand and pitch the hull with them.
+            Vector3 along = rotation * Vector3.right * (length * .28f);
+            Vector3 across = rotation * Vector3.forward * (beam * .5f);
+            float sandA = SampleSandTop(layout, x - along.x, z - along.z);
+            float sandB = SampleSandTop(layout, x + along.x, z + along.z);
+            along.y = (sandB - sandA) * .5f;
+            across.y = (SampleSandTop(layout, x + across.x, z + across.z)
+                - SampleSandTop(layout, x - across.x, z - across.z)) * .5f;
+            Vector3 normal = Vector3.Cross(across, along).normalized;
+            rotation = Quaternion.LookRotation(Vector3.Cross(along, normal), normal);
+            var basePoint = new Vector3(x, (sandA + sandB)*.5f - .008f, z);
+            Vector3 hullBase = basePoint + normal * .18f;
             for (int rest = 0; rest < 2; rest++)
             {
                 float offset = (rest == 0 ? -1f : 1f) * length * 0.28f;
@@ -1947,8 +1928,7 @@ namespace BarPromenade
                     $"seacoast-boat-{ordinal:D2}-rest-{rest}",
                     CitySeacoastPartKind.BoatRest,
                     CitySeacoastStyle.TarredTimber,
-                    new Vector3(x, ground + 0.09f, z) +
-                        rotation * new Vector3(offset, 0f, 0f),
+                    basePoint + rotation * new Vector3(offset, .09f, 0f),
                     rotation,
                     new Vector3(0.22f, 0.18f, beam + 0.3f),
                     ordinal,
@@ -1982,7 +1962,7 @@ namespace BarPromenade
                     Place(
                         (gunwaleY + ridgeY) * 0.5f,
                         sign * (gunwaleZ + ridgeZ) * 0.5f),
-                    Quaternion.Euler(sign * panelTilt, yaw, 0f),
+                    rotation * Quaternion.Euler(sign * panelTilt, 0f, 0f),
                     new Vector3(length * 0.97f, 0.08f, panelSpan),
                     ordinal,
                     variant));

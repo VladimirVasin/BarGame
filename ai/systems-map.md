@@ -116,7 +116,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Sitting on the mother's sofa | The sofa reuses shared bench seating with front-only approach, measured cushion contact and owned shadow cleanup. | `MothersHouseSofaSeatPlanner`, `CityBenchSit{Plan,Interaction,WorldBuilder}` | Current |
 | The mother in her chair | She rocks on measured runner contact, greets him at the door and speaks from one shuffled bag that `E` shares. | `MothersHouseMother{Presentation,Factory,Interaction,Quips,SpeechSession,SpeechController}`, `NpcHeroAttentionLook` | Current |
 | Outdoor raven roosts | Seeded pairs occupy bounded open-world perches, flush locally and obey area exclusion/vehicle gates. | `RavenRoost{Plan,Controller}`, `{City,MountainRoad,AlpineVillage}RavenRoostPlanner` | Current |
-| Seacoast precinct | Port reached by truck road/shoulders; internal dock walks and station/east-shore approaches retained. | `CitySeacoast*`, `CityPort*`, `CitySeaResources` | Current |
+| Seacoast precinct | Truck road to port; rental hut, hauled hulls, pier and east shore. | `CitySeacoast*`, `CityBoatRentalArt`, `CityPort*` | Current |
 | Port social life | Canopy breaks, paired city/weather talk in nonrepeating rounds; driver speaks only to docker. | `CityPortCrew*`, `CityPortConversation*`, `CityPortLighting` | Current |
 | Port cold store | Braced canopy/rigging rack, supported cooling and three warm lamps retain cargo lanes; fan follows pause/distance. | `build-city-port-3d-model.py`, `CityPortLighting`, `CityPortSound` | Current |
 | Port foreman | Carrot custody retained; voluntary two-speaker E dialogue, no work/pay. | `CityPortForeman*`, `CityPortConversation*` | Current |

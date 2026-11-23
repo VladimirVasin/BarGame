@@ -5,13 +5,12 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-23
 
-CityRiverEmbankments checks Mouth bearings, sea views, stairs, rain, walks, moorings and line 03 hull clearance on an empty lane. validate_mooring_feet checks deck contact.
-CityParkBandstand checks seat transfers, corner clicks, both boards under one lamp and the default residents’ wardrobe. The old bodies are retired.
+CityBoatRentalStation checks sign UVs, hull rests and pier return. ImageGenCityMap_PreservesPlanAndLivePlaces checks the redrawn map. CityRiverEmbankments checks bridge walks and line 03 clearance; validate_mooring_feet checks contact.
+CityParkBandstand checks seat transfers, corner clicks, both boards under one lamp and default residents’ wardrobe.
 
 CityCanneryFinishes checks the rebuilt bay, work surfaces, dispatch and the equipped apron panels in pose.
 
-The wristwatch colon switches with each real second. `PlayerWatchPlayModeTests`
-samples the LCD while the calendar is paused and captures the night dial.
+PlayerWatchPlayModeTests checks the LCD colon against real seconds with the calendar paused and captures the night dial.
 
 CityAsphaltPaving shows staggered runs, sealed joints and fine aggregate under street lights.
 CityGroceryStreetFinishes checks the surveyed curb and running bond. BeerCanFinishFollowsTheHeldParts checks sleeve fibres, grip polish and lid marks in hand.
