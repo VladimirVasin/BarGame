@@ -7,6 +7,8 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 Ridge pawnshop tray runs through the grille. Cases support the radio, tools and appliance. Floor seams and wear follow the public aisle. `CityPawnshop_EnterOpenBothStubsAndReturn` checks fitted materials, door, both menus and street return.
 
+The café cigarette takes its bind position from the catalog woman's hand landmarks. `Attach_SeatsThePropOnItsSocketAtHandScale` checks the filter against her grip and seats the towel and coffee pot on the café attendant.
+
 ## 2026-11-23
 
 VillageBakeryWindowClearance/VillageBakeryFinishes: glazing, doors, flue, cart, path. VillageWorkroom_RepairChairAndStowBox: cast, peg/hammer, arm/lid clearance, packed box. CafeRefit: outfits/fittings/tiles. DrinkReleaseFrame/CounterSeat: cups/menu. BarFurnitureFinishes: seats/bottles. VodkaBottle_NeckClearsPouringPalm, CounterLip_ClearsCuffDuringPickup: hands. BarFullRoomFrameTime: full room. HomeFurnitureFinishes checks wear and seal reversal. HomeBedDeformableSurfaceTests: support. SupermarketFinishes: purchases. CityCheckpointFinishes covers entry/road light, boom, gravel and E. CitySouthTunnel covers masonry, drain, rain and return. CityTrawlerVisit checks hull/cargo. CityPort's road assertion expects an enabled source mesh. CityBoatRentalStation covers sign UVs, rests and return. ImageGenCityMap_PreservesPlanAndLivePlaces checks the redraw. CityRiverEmbankments covers walks/03. validate_mooring_feet checks contact.

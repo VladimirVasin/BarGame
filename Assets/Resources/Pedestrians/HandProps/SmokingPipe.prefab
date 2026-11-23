@@ -272,7 +272,7 @@ MonoBehaviour:
     transform: {fileID: 2750287797693647641}
   sourceTriangleCount: 222
   sourceGeneratorVersion: 4.5.2
-  buildSignature: 1c982e335dd83843b81c1011f38d502d3d878c27738fd31df8c6d6acda1dc0fd
+  buildSignature: 5ef78c00be6aa38274474c3bf97d3d3dda4f1def9b4a583b590421b706c1ead4
   paletteVariant: 0
 --- !u!1 &6464478269844438302
 GameObject:

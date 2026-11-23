@@ -1,7 +1,7 @@
 {
   "generator": "tools/build-city-pedestrian-3d-model.py",
   "generator_version": "4.5.2",
-  "blender_version": "5.0.1",
+  "blender_version": "5.2.3 LTS",
   "library": "CityPedestrianHandProps",
   "anatomy_standard": "NpcHumanV2",
   "forward_axis": "-Y",
@@ -11,7 +11,7 @@
   "colliders": false,
   "mesh_count": 33,
   "triangle_count": 1318,
-  "build_signature": "1c982e335dd83843b81c1011f38d502d3d878c27738fd31df8c6d6acda1dc0fd",
+  "build_signature": "5ef78c00be6aa38274474c3bf97d3d3dda4f1def9b4a583b590421b706c1ead4",
   "props": [
     {
       "id": "carpet_beater",
@@ -470,21 +470,21 @@
       "reference_design": "cafe_couple_woman_v2",
       "root": "PROP_CafeCigarette",
       "socket_head_m": [
-        -0.73776,
+        -0.680952,
         -0.02888,
-        1.045
+        1.03
       ],
       "mesh_count": 3,
       "triangle_count": 52,
       "bounds_min": [
-        -0.750996,
+        -0.694188,
         -0.082894,
-        1.022192
+        1.007192
       ],
       "bounds_max": [
-        -0.727235,
+        -0.670428,
         0.008815,
-        1.042211
+        1.027211
       ],
       "parts": [
         {

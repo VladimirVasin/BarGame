@@ -1240,6 +1240,18 @@ SKELETON = npc_v2_bone_specs()
 BONE_BY_NAME = {bone.name: bone for bone in SKELETON}
 
 
+def woman_bind_point(bone_name, point):
+    """Map a canonical joint or socket landmark to the woman's bind pose."""
+    x, y, z = point
+    if abs(x) > 0.15 and z > 1.0:
+        if abs(x) < 0.25:
+            return (x * 0.85, y, z - 0.024)
+        return (x * 0.923, y, z - 0.015)
+    if bone_name.startswith(("thigh.", "shin.", "foot.")):
+        return (x * (1.14 if z > 0.80 else 0.89), y, z)
+    return point
+
+
 # Visible geometry in this file was authored against the V1 joints.  Rewriting
 # hundreds of deterministic primitive calls by hand would make the sources
 # harder to review and would very easily separate a prop from its socket.  The
@@ -13842,6 +13854,13 @@ def hand_prop_reference_id(prop):
     return ARCHETYPES[prop.reference_design].design_id
 
 
+def hand_prop_socket_head(prop: HandPropSpec) -> Vector:
+    head = BONE_BY_NAME[prop.socket].head
+    if prop.reference_design == "cafe_couple_woman":
+        head = woman_bind_point(prop.socket, head)
+    return v(head)
+
+
 def hand_prop_rest_geometry(
     prop: HandPropSpec,
 ) -> dict[str, tuple[list[Vector], list[tuple[int, ...]]]]:
@@ -13856,11 +13875,14 @@ def hand_prop_rest_geometry(
     """
 
     builder = PedestrianBuilder(ARCHETYPES.get(prop.reference_design))
+    # Move every rigid part together when its reference hand has a different
+    # bind position. The grip, length and direction within the hand stay fixed.
+    socket_offset = hand_prop_socket_head(prop) - v(BONE_BY_NAME[prop.socket].head)
     geometry: dict[str, tuple[list[Vector], list[tuple[int, ...]]]] = {}
     for part in prop.parts:
         vertices, faces = part.geometry()
         remapped = [
-            builder.remap_geometry_point(vertex, prop.bone, part.role, part.name)
+            builder.remap_geometry_point(vertex, prop.bone, part.role, part.name) + socket_offset
             for vertex in vertices
         ]
         geometry[part.name] = (remapped, [tuple(face) for face in faces])
@@ -13926,7 +13948,7 @@ def build_hand_prop_scene() -> HandPropLibraryResult:
                 f"Hand prop {prop.id}: {prop.socket} hangs off "
                 f"{BONE_BY_NAME[prop.socket].parent!r}, not {prop.bone!r}"
             )
-        socket_head = v(BONE_BY_NAME[prop.socket].head)
+        socket_head = hand_prop_socket_head(prop)
         empty = bpy.data.objects.new(f"PROP_{prop.prefab_name}", None)
         export_collection.objects.link(empty)
         empty.empty_display_type = "PLAIN_AXES"

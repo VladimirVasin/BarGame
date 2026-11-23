@@ -354,15 +354,33 @@ namespace BarPromenade.Tests.EditMode
             var parent = new GameObject("Hand Prop Attach Test");
             try
             {
-                CityPedestrianAssetRegistry body = InstantiateBodyFor(id, parent.transform);
-                Transform socket = CityPedestrianHandProps.FindSocket(body.ModelRoot, id);
+                Transform modelRoot;
+                CityPedestrianHandPropRegistry prop;
+                if (id == CityPedestrianHandPropId.CafeCigarette ||
+                    id == CityPedestrianHandPropId.ServiceTowel ||
+                    id == CityPedestrianHandPropId.CoffeePot)
+                {
+                    var role = id == CityPedestrianHandPropId.CafeCigarette
+                        ? MountainRoadCafeCastRole.PairWoman : MountainRoadCafeCastRole.Attendant;
+                    var actor = MountainRoadCafeCastFactory.CreateBody(
+                        parent.transform, role, MountainRoadCafeCastProvider.Load());
+                    modelRoot = actor.ModelRoot;
+                    prop = CityPedestrianHandProps.Attach(
+                        actor.FindModelTransform(expected.socket), id, actor.BodyRenderers[0].sharedMaterial, 0);
+                }
+                else
+                {
+                    CityPedestrianAssetRegistry body = InstantiateBodyFor(id, parent.transform);
+                    modelRoot = body.ModelRoot;
+                    prop = CityPedestrianHandProps.Attach(body, id);
+                }
+
+                Transform socket = CityPedestrianHandProps.FindSocket(modelRoot, id);
                 Assert.That(
                     socket,
                     Is.Not.Null,
-                    $"{body.DesignId} has no '{CityPedestrianHandProps.GetSocketName(id)}'.");
+                    $"The body for {id} has no '{expected.socket}'.");
 
-                CityPedestrianHandPropRegistry prop =
-                    CityPedestrianHandProps.Attach(body, id);
                 Assert.That(prop, Is.Not.Null);
                 Assert.That(prop.Id, Is.EqualTo(id));
                 Assert.That(prop.transform.parent, Is.SameAs(socket));
@@ -377,6 +395,14 @@ namespace BarPromenade.Tests.EditMode
                     prop.gameObject.layer,
                     Is.EqualTo(socket.gameObject.layer));
 
+                if (id == CityPedestrianHandPropId.CafeCigarette)
+                {
+                    Renderer filter = prop.FindRenderer("ACC_CafeCigaretteFilter");
+                    Assert.That(filter, Is.Not.Null);
+                    Assert.That(Vector3.Distance(filter.bounds.ClosestPoint(socket.position), socket.position),
+                        Is.LessThan(SocketSeatTolerance), "The visible filter must reach the woman's grip.");
+                }
+
                 // The body stands in its bind pose, and the Mount was
                 // measured with the reference FBX at identity — but the
                 // pedestrian prefab turns its Model child by 180 degrees
@@ -385,13 +411,13 @@ namespace BarPromenade.Tests.EditMode
                 // IS the FBX frame. A socket that has moved in that frame
                 // since the build means a stale Mount.
                 Vector3 socketInModelFrame =
-                    body.ModelRoot.InverseTransformPoint(socket.position);
+                    modelRoot.InverseTransformPoint(socket.position);
                 Assert.That(
                     Vector3.Distance(
                         socketInModelFrame,
                         prop.ReferenceSocketRestPosition),
                     Is.LessThan(SocketSeatTolerance),
-                    $"{body.DesignId}'s '{socket.name}' rests " +
+                    $"The {id} socket '{socket.name}' rests " +
                     $"{Vector3.Distance(socketInModelFrame, prop.ReferenceSocketRestPosition):F4} m " +
                     "from where the prop was measured.");
 
@@ -818,9 +844,7 @@ namespace BarPromenade.Tests.EditMode
         /// <summary>
         /// A body that has the prop's socket: the fisherman's staged
         /// prefab for the rod and the pipe (his own props), the
-        /// babushka from Resources for everything else — every design
-        /// shares one skeleton, so her left grip serves the towel and
-        /// her right grip the pot exactly as the cafe attendant's do.
+        /// babushka from Resources for the other pedestrian props.
         /// </summary>
         private static CityPedestrianAssetRegistry InstantiateBodyFor(
             CityPedestrianHandPropId id,

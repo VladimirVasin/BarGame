@@ -64,18 +64,11 @@ def woman_skeleton():
     Animation export owns this rig's rest translations; copying the hero's
     shoulder envelope would silently bring back the masculine silhouette.
     """
-    updated=[]
-    for bone in base.SKELETON:
-        def point(p):
-            x,y,z=p
-            if abs(x)>.15 and z>1.0:
-                if abs(x)<.25:return (x*.85,y,z-.024)
-                return (x*.923,y,z-.015)
-            if bone.name.startswith(("thigh.","shin.","foot.")):
-                if z>.80:return (x*1.14,y,z)
-                return (x*.89,y,z)
-            return p
-        updated.append(replace(bone,head=point(bone.head),tail=point(bone.tail)))
+    updated = [
+        replace(bone, head=base.woman_bind_point(bone.name, bone.head),
+                tail=base.woman_bind_point(bone.name, bone.tail))
+        for bone in base.SKELETON
+    ]
     for prefix,path in HAIR_PATHS.items():
         for i in range(3):updated.append(base.BoneSpec(prefix+f".{i:02}",path[i],path[i+1],"head" if i==0 else prefix+f".{i-1:02}"))
         last=Vector(path[-1]);tip=last+(last-Vector(path[-2])).normalized()*.035
