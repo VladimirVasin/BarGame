@@ -20,7 +20,8 @@ namespace BarPromenade
             "Timber", "Joinery", "Stone", "Roof", "Plaster", "Concrete", "RustedIron", "PaintedMetal",
             "Enamel", "Linoleum", "WallPaint", "Cloth", "Asphalt", "ForestFloor", "Snow", "Needles", "Bark",
             "AbandonedWood", "AbandonedPlaster", "AbandonedRoof", "WreckRust", "WreckPaint",
-            "LodgeFloorWood", "LodgeHatchWood", "LodgePaintedWood", "LodgeOakWood", "LodgePaleWood", "LodgeDarkWood", "LodgeRoughWood"
+            "LodgeFloorWood", "LodgeHatchWood", "LodgePaintedWood", "LodgeOakWood", "LodgePaleWood", "LodgeDarkWood", "LodgeRoughWood",
+            "BakeryYardWood", "BakeryTrayWood", "BakeryFlue", "BakeryGlass"
         };
         private static readonly Dictionary<string, Texture2D> Textures = new Dictionary<string, Texture2D>(StringComparer.Ordinal);
         private static readonly MaterialPropertyBlock Properties = new MaterialPropertyBlock();
@@ -88,7 +89,7 @@ namespace BarPromenade
                 if (sheet == null || Array.IndexOf(Families, sheet.family) < 0 || !found.Add(sheet.family) ||
                     sheet.albedo != ResourceFolder + sheet.family + "Albedo" || sheet.response != ResourceFolder + sheet.family + "Response" ||
                     !Hash(sheet.albedo_sha256) || !Hash(sheet.response_sha256) ||
-                    sheet.size < 512 || sheet.size > 2048 || sheet.response_size != sheet.size / 2 ||
+                    (sheet.family.StartsWith("Bakery", StringComparison.Ordinal) ? sheet.size != (sheet.family == "BakeryGlass" ? 128 : 256) : sheet.size < 512) || sheet.size > 2048 || sheet.response_size != sheet.size / 2 ||
                     !FinitePositive(sheet.meters_per_tile) || !FinitePositive(sheet.mean_linear_luminance) || sheet.mean_linear_luminance > 1f ||
                     (!string.IsNullOrEmpty(sheet.ground_response) &&
                      (sheet.ground_response != ResourceFolder + sheet.family + "GroundResponse" || !Hash(sheet.ground_response_sha256))))

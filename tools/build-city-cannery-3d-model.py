@@ -793,7 +793,7 @@ def truck_tail_lift_mechanism(root,lift,mat):
     pose_lift_fold_cylinders(root)
 
 
-def truck(mat):
+def truck(mat, *, include_finishes=True):
     root=empty("Truck");g=Geometry();glass=Geometry();driverdoor=Geometry();doorglass=Geometry()
     driverhinge=empty("MOVE_DriverDoor",root,(-1.08,1.12,4.94+TRUCK_CAB_OFFSET))
     # Rear axle origin. The shorter chassis moves the full-sized cab as a unit;
@@ -964,7 +964,8 @@ def truck(mat):
         # Resize only the goods leaf; its mechanisms retain proper thickness.
         d.vertices=[(v[0]*1.01/1.15,v[1],v[2]*1.9/2.2) for v in d.vertices]
         obj(d,"RearDoorVisible"+side,pivot,mat)
-        finishes.doors(port,pivot,direction,mat)
+        if include_finishes:
+            finishes.doors(port,pivot,direction,mat)
     lift=empty("MOVE_TailLift",root,(0,1.2,-1.88));l=Geometry()
     l.role="Deck";chamfer(l,(0,-.055,-1),(2.24,.11,2),METAL,.02);l.role=None
     for x in (-.82,.82):
@@ -979,11 +980,12 @@ def truck(mat):
         anchor('LiftFoldTip'+side,lift,(x,-.08,-.35))
     for z in (-.1,-1.91):l.box((0,.006,z),(2.14,.012,.045),EDGE)
     obj(l,"TailLiftVisible",lift,mat);anchor("TailLiftLoad",lift,(0,.01,-.8))
-    tread=finishes.Batch(port)
-    for x in (-.92,.92):
-        tread.box("deck",(x,.004,-1),(.29,.008,1.71),.0016)
-    tread.publish(lift,"LiftTread",mat)
-    finishes.transport(port,root,mat)
+    if include_finishes:
+        tread=finishes.Batch(port)
+        for x in (-.92,.92):
+            tread.box("deck",(x,.004,-1),(.29,.008,1.71),.0016)
+        tread.publish(lift,"LiftTread",mat)
+        finishes.transport(port,root,mat)
     truck_tail_lift_mechanism(root,lift,mat)
     anchor("TruckDriver",root,(-.56,1.56,4.0+TRUCK_CAB_OFFSET));anchor("DriverLeftHand",root,(-.76,2.01,4.5+TRUCK_CAB_OFFSET))
     anchor("DriverRightHand",root,(-.36,2.01,4.5+TRUCK_CAB_OFFSET));anchor("DriverFoot",root,(-.55,1.17,4.55+TRUCK_CAB_OFFSET))

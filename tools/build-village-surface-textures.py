@@ -15,6 +15,7 @@ import numpy as np
 from PIL import Image
 
 import village_surface_authoring as art
+import village_bakery_finishes as bakery
 
 ROOT, OUTPUT = art.ROOT, art.OUTPUT
 PREFIX = "Village/Textures/Surfaces/"
@@ -143,6 +144,40 @@ def check_packed_slopes(family,raw,size):
         raise ValueError("Packed village physical slope orientation drifted: "+family)
 
 
+def bakery_rows(check):
+    rows=[]
+    cost=0
+    for name,pitch in bakery.PITCH.items():
+        albedo_size=128 if name=="BakeryGlass" else 256
+        row=dict(family=name,size=albedo_size,response_size=albedo_size//2,meters_per_tile=pitch,full_color=True,
+                 ground_response="",ground_response_sha256="")
+        for kind,size in (("albedo",row["size"]),("response",row["response_size"])):
+            axis=(np.arange(size,dtype=np.float32)+.5)*pitch/size
+            rgb,physical=bakery.sample(name,*np.meshgrid(axis,axis),pitch/size)
+            linear=kind=="response"
+            if not linear:
+                row["mean_linear_luminance"]=round(float(np.mean(art.linear(rgb) @ np.array((.2126,.7152,.0722)))),8)
+            values=physical if linear else rgb
+            assert np.isfinite(values).all() and values.min()>=0 and values.max()<=1
+            filename=name+kind.capitalize()
+            row[kind]=PREFIX+filename
+            row[kind+"_sha256"]=publish(OUTPUT/(filename+".png"),png(values),size,linear,check)
+            cost+=bc7_bytes(size)
+        rows.append(row)
+    return rows,cost
+
+
+def publish_bakery(check):
+    manifest=json.loads(MANIFEST.read_text())
+    rows,cost=bakery_rows(check)
+    previous=[r for r in manifest["sheets"] if r["family"] in bakery.PITCH]
+    previous_cost=sum(bc7_bytes(r["size"])+bc7_bytes(r["response_size"]) for r in previous)
+    manifest["sheets"]=[r for r in manifest["sheets"] if r["family"] not in bakery.PITCH]+rows
+    manifest["estimated_gpu_bytes"]+=cost-previous_cost
+    assert manifest["estimated_gpu_bytes"]<=art.BUDGET
+    write_or_check(MANIFEST,(json.dumps(manifest,indent=2)+"\n").encode(),check)
+
+
 def build(check):
     art.sources(); check_physics()
     rows=[]; estimated=0
@@ -170,6 +205,8 @@ def build(check):
             estimated+=bc7_bytes(512)
         rows.append(row)
         print("Village surface:",family,flush=True)
+    bakery_sheets,bakery_cost=bakery_rows(check)
+    rows.extend(bakery_sheets); estimated+=bakery_cost
     extras=[]
     for name,size,linear in (("VillageUniqueAlbedo",4096,False),("VillageUniqueResponse",2048,True)):
         path=ROOT/("ArtSource/Village/Surfaces/Atlases/"+name+".source.png")
@@ -216,4 +253,6 @@ def build(check):
 if __name__=="__main__":
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--validate-only",action="store_true")
-    build(parser.parse_args().validate_only)
+    parser.add_argument("--bakery-only",action="store_true")
+    args=parser.parse_args()
+    (publish_bakery if args.bakery_only else build)(args.validate_only)

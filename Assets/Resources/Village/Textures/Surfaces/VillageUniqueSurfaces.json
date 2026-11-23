@@ -7,13 +7,13 @@
   "response_size": 2048,
   "unique_part_count": 264,
   "geometry_signatures": {
-    "Expansion": "0d36f0a930dea7e7093da98830b1a0d73973ed53cc286bba5430d1ad54b11b68",
+    "Expansion": "2ed259fe2340da7c8c6729743158f0a2a15ecee7386602d47a3b97cc82ffe323",
     "Workroom": "d4f8024cedfb3128e8effb6d349b28f8d453e514cfd70571f2cf21546860ec9b",
     "Life": "954ba12857cb25532b083d8b84fe8cb8368e8a95c714a7ba7e1134737abb761a",
     "Narrative": "ea2b119d56f9e86f1e2041fe7d47ce1c03f984d8d518b174d48df4559a184a9d"
   },
-  "source_geometry_signature": "082c93ba27f480ad7cecb3459e4fa8715935176c8e21168fa6bc9348c0c18bbb",
-  "uv_signature": "395ddc23ba16fc68368fcce2c37645f3fd647a6ec041f80981dd8ad6d49240c6",
+  "source_geometry_signature": "990f12d86e4d4c04815d415375fb4008fee837480e427d23518c485e8c26f7e6",
+  "uv_signature": "f0d53eb16bb82c4d6bca021c119ff1e34271365d843291b40445fa2e6b6eb769",
   "projection": {
     "chart_count": 1578,
     "base_texels_per_metre": 125.11148386545884,
@@ -36871,7 +36871,7 @@
     {
       "mesh": "GEO_Expansion_ShopBakeryYard_AbandonedBreadCartTimber",
       "owner": "Expansion",
-      "family": "Timber",
+      "family": "BakeryTrayWood",
       "tint": [
         0.405,
         0.385,
@@ -36879,9 +36879,39 @@
         1
       ],
       "unique_surface": false,
-      "geometry_signature": "316b3a7287daca900a6d97d3a3fa53130c473de354fada93acb8e5257129859b",
-      "uv1_signature": "fbde18e6fe259f57fadf20541c557653ffc443dfb47d027acd610664962f18e9",
+      "geometry_signature": "b7e11a2b006757b5348504804d9a920670347f4a0369627a139d44eec516a497",
+      "uv1_signature": "e7a9e9f87e48330258afdcb4cd0e9976db587571b31c4ac46729f0693eb28436",
       "part_name": "AbandonedBreadCartTimber"
+    },
+    {
+      "mesh": "GEO_Expansion_ShopBakeryYard_BracketRunoff",
+      "owner": "Expansion",
+      "family": "AbandonedPlaster",
+      "tint": [
+        0.32,
+        0.276,
+        0.214,
+        1
+      ],
+      "unique_surface": false,
+      "geometry_signature": "fe02dc29c69d37a103dc989fd54fab2cde4442a21733853e9605be9b4898a298",
+      "uv1_signature": "3ec1822ad4c694601c1b1d47a4e88e427672ff338cd108a6f7212067fbb02f44",
+      "part_name": "BracketRunoff"
+    },
+    {
+      "mesh": "GEO_Expansion_ShopBakeryYard_BrokenBeamSocket",
+      "owner": "Expansion",
+      "family": "BakeryYardWood",
+      "tint": [
+        0.295,
+        0.285,
+        0.25,
+        1
+      ],
+      "unique_surface": false,
+      "geometry_signature": "f0e22d5114c2ce0359e06fffa625e26d4c444d8f9969c01a1ce499ed0ef2f682",
+      "uv1_signature": "36af78b61f34be5bd0ba562b94e6a084f46c8837e81220af546cb43f62d4c52a",
+      "part_name": "BrokenBeamSocket"
     },
     {
       "mesh": "GEO_Expansion_ShopBakeryYard_CanopyAndWoodstoreSnow",
@@ -36894,14 +36924,14 @@
         1
       ],
       "unique_surface": false,
-      "geometry_signature": "b9b20cb106bc53b5e4368c2c802f8effafc418ced5dc354fecd04b3067a7f692",
-      "uv1_signature": "9dbf42ebb4f0da8b629c5af792ee037bde221714f1bbb07c7f3f3feddecb606b",
+      "geometry_signature": "c55607080f01da43a3566867eaa22b62573028f058382c53fd4fcafffea6ba38",
+      "uv1_signature": "d69e2702a53f32c3292c03f21e175a2247aa2f7cf5160cb5854e72629fc95176",
       "part_name": "CanopyAndWoodstoreSnow"
     },
     {
       "mesh": "GEO_Expansion_ShopBakeryYard_CanopyWeatheredBoards",
       "owner": "Expansion",
-      "family": "Timber",
+      "family": "BakeryYardWood",
       "tint": [
         0.405,
         0.385,
@@ -36909,8 +36939,8 @@
         1
       ],
       "unique_surface": false,
-      "geometry_signature": "1015f3fdaeb5fb4c5df5911019ac548eb1a8147b847e939fa3327892e46fa478",
-      "uv1_signature": "f3621f791074edc64cc75ab40a5a325e6e6f8ee1f1c1a0c39bb2af067931f878",
+      "geometry_signature": "154d355e26133732c152f01ad785a4bc558dc2fd1e6606f9d3109137d4e247b5",
+      "uv1_signature": "536985600582a3320a6d6df6ee8835e35eca33f893f7eb7e32a782ff4f0c91a7",
       "part_name": "CanopyWeatheredBoards"
     },
     {
@@ -36924,14 +36954,14 @@
         1
       ],
       "unique_surface": false,
-      "geometry_signature": "b68bc1078c0b5e3cb0cdca8fb295da71b5f0b68a64cea16e434cc5b8b44bd6ba",
-      "uv1_signature": "fe0144033bae29f1db4e9b58defdc581e714f9fc8a3969ffed55d5ffdd074f70",
+      "geometry_signature": "cd49c96301ee4aa51556a85545bc436ec311cef0aa0195422c083f27f9ba4df9",
+      "uv1_signature": "cd11d2196af953169db3706f19dd45494bf2614b73e3f9c91d1180b9c41943a9",
       "part_name": "CartAxleAndWheels"
     },
     {
       "mesh": "GEO_Expansion_ShopBakeryYard_CollapsedCanopyEnd",
       "owner": "Expansion",
-      "family": "Timber",
+      "family": "BakeryYardWood",
       "tint": [
         0.295,
         0.285,
@@ -36939,14 +36969,14 @@
         1
       ],
       "unique_surface": false,
-      "geometry_signature": "a5b35f566224687727a9d9e5a5f2e88f2160726c94d780777803da392db97db3",
-      "uv1_signature": "4a10075e18a92741810f97e1547186741c13b5ac7d4e6e1707bf4de13089c46e",
+      "geometry_signature": "d42f273b54d66d24be2e7385395788d33c329d265fde44a62b5202a411f3bb98",
+      "uv1_signature": "17b4ed74387875cde42072c38868bfd26d3852b61bbd47f7310cc220aaa4421b",
       "part_name": "CollapsedCanopyEnd"
     },
     {
       "mesh": "GEO_Expansion_ShopBakeryYard_CollapsedWoodstore",
       "owner": "Expansion",
-      "family": "Timber",
+      "family": "BakeryYardWood",
       "tint": [
         0.295,
         0.285,
@@ -36954,14 +36984,14 @@
         1
       ],
       "unique_surface": false,
-      "geometry_signature": "dc4657e61ddd5223984bb99e0b75ff1b9df5900edc94f4bd34b13b0083f4fc63",
-      "uv1_signature": "d7e5eb0af1bd94a9c7c1b01d4fa31bbf1a502515602ef59749907e4a16f87f3e",
+      "geometry_signature": "e7a69788454a422521af4fbec0128ce3631bed27a247222314d9edcf35d880f5",
+      "uv1_signature": "2a8151f38f5fc981650d0e2404fe78eaef02fc250bfb4db7f00ba2bd76189e24",
       "part_name": "CollapsedWoodstore"
     },
     {
       "mesh": "GEO_Expansion_ShopBakeryYard_EmptyBreadTrays",
       "owner": "Expansion",
-      "family": "Timber",
+      "family": "BakeryTrayWood",
       "tint": [
         0.405,
         0.385,
@@ -36969,9 +36999,39 @@
         1
       ],
       "unique_surface": false,
-      "geometry_signature": "a3fee156c958a261720d57c3336efd1b89351b2ffbbf0990e379f1978c55cc6d",
-      "uv1_signature": "d702700aeee97df6f00b47ba3fa1a01c0953ddb532b218499bf0aa242437db6d",
+      "geometry_signature": "1a88d29c695f5b9df2057e3e14edad561a55f051f98fafb362689470b26c1fcc",
+      "uv1_signature": "cf68b9df29a7a0b37a50779365bc9fc455b53dd4290bb359beb36ac7f1507709",
       "part_name": "EmptyBreadTrays"
+    },
+    {
+      "mesh": "GEO_Expansion_ShopBakeryYard_LoadingApproachSteps",
+      "owner": "Expansion",
+      "family": "Stone",
+      "tint": [
+        0.43,
+        0.44,
+        0.415,
+        1
+      ],
+      "unique_surface": false,
+      "geometry_signature": "5aa4eaf2a6dcadadc2270e18f9ba690a176fa06742e9fd11f3931866c52b9e14",
+      "uv1_signature": "c8a55ca07d33637d873802ef54881f023a69b4b85b087e3cebb3b429fa90e0d1",
+      "part_name": "LoadingApproachSteps"
+    },
+    {
+      "mesh": "GEO_Expansion_ShopBakeryYard_LoadingShelter",
+      "owner": "Expansion",
+      "family": "BakeryYardWood",
+      "tint": [
+        0.295,
+        0.285,
+        0.25,
+        1
+      ],
+      "unique_surface": false,
+      "geometry_signature": "1d11899d15cbaa537b724d850ef69f9cf4b666d970d4dc2637549586e2393a26",
+      "uv1_signature": "681c4a3c21570f77c312fc1542886a0d4ee24a988e92040614eda4acbc40d79c",
+      "part_name": "LoadingShelter"
     },
     {
       "mesh": "GEO_Expansion_ShopBakeryYard_RearLoadingSlab",
@@ -36991,7 +37051,7 @@
     {
       "mesh": "GEO_Expansion_ShopBakeryYard_RemainingDryWood",
       "owner": "Expansion",
-      "family": "Timber",
+      "family": "BakeryYardWood",
       "tint": [
         0.405,
         0.385,
@@ -36999,14 +37059,14 @@
         1
       ],
       "unique_surface": false,
-      "geometry_signature": "9b03fe9419e314ea21fba1584f276eb5752a7194611f86bc445ea747fc8fc448",
-      "uv1_signature": "f1fb4d70e79c95aad3edca26f1ab370e656844a4d516cd1b86d4c3aa2c3526de",
+      "geometry_signature": "86e9428447dd1ef844601fa1b56d32b7a2121556e690babbe0ca34db4f2188d3",
+      "uv1_signature": "a3ab23a25018eddf1444227324c7252cb548aca7715571b5dadf356ce9c54175",
       "part_name": "RemainingDryWood"
     },
     {
       "mesh": "GEO_Expansion_ShopBakeryYard_SurvivingCanopyFrame",
       "owner": "Expansion",
-      "family": "Timber",
+      "family": "BakeryYardWood",
       "tint": [
         0.295,
         0.285,
@@ -37015,7 +37075,7 @@
       ],
       "unique_surface": false,
       "geometry_signature": "21a3986d728d465c68cff8c6afdaf41c6c6d157bf08c544512f3f8ce3ae0fad6",
-      "uv1_signature": "0ab6842aeea4da8225e5e95e4c6bf63a76cff0eb728a89ba81351534b6b41cc3",
+      "uv1_signature": "e8e3344db1142f53a2fb67a307ee5d9fbd59fdc12f262f6087cab23f0c7502dd",
       "part_name": "SurvivingCanopyFrame"
     },
     {
@@ -37029,8 +37089,8 @@
         1
       ],
       "unique_surface": false,
-      "geometry_signature": "ab50b6dbf1fccc8c41f30083a39fda5cd4fb7556caa84a77f8fe0abd992d1a5f",
-      "uv1_signature": "0f4bbb429588c99c88cb9b30cdd0234e3451514e7ee115794d4ee0b4fa66eca1",
+      "geometry_signature": "93d9ae550760e1cc2c0a07e0b51d5478cab1014de953d8e44a649120bc2f3932",
+      "uv1_signature": "91711e4ae74361d08b450af48022dd3afbbb70081ff7c8794bf7085b55510afc",
       "part_name": "SurvivingIronBrackets"
     },
     {
@@ -37044,8 +37104,8 @@
         1
       ],
       "unique_surface": false,
-      "geometry_signature": "e2b5cfbc58d4daa70bc0f5280a924bbd9eedcce05821b153caf3eacc57201026",
-      "uv1_signature": "eb236aec9973ade434402cb6ec24fea41bd4171de9a3494cf68100904892a5fc",
+      "geometry_signature": "55f7897400b57ebcde05352e16ee2e7e93cac9e80f47bdc5567a809768428286",
+      "uv1_signature": "9c333acdc99fbcdce406349515cd509448ee64de9329c9336020ecf55b784641",
       "part_name": "TradingPaving"
     },
     {
@@ -37064,39 +37124,9 @@
       "part_name": "WoodstoreFoot"
     },
     {
-      "mesh": "GEO_Expansion_ShopBakery_BakeryChimney_LayeredStone",
-      "owner": "Expansion",
-      "family": "Stone",
-      "tint": [
-        0.32,
-        0.345,
-        0.34,
-        1
-      ],
-      "unique_surface": false,
-      "geometry_signature": "7a164bba7e54c90003f4674214fefde2af99ec242267b37e1fdd041b2700cb3c",
-      "uv1_signature": "bc3d4765a52bf6655a7a75b28e9b2bd501ede0ca527e8d52e4fa080056a2ad81",
-      "part_name": "BakeryChimney_LayeredStone"
-    },
-    {
-      "mesh": "GEO_Expansion_ShopBakery_BakeryChimney_Masonry",
-      "owner": "Expansion",
-      "family": "Stone",
-      "tint": [
-        0.49,
-        0.485,
-        0.445,
-        1
-      ],
-      "unique_surface": false,
-      "geometry_signature": "7f28598b831be79818f1dd4bb920ec385622066b9dce3a8ec1b060a5e40108b3",
-      "uv1_signature": "ba8c63037772b8ef4ea91113b6e84e360d6fbcb61121838ce6f5607f9a66e03c",
-      "part_name": "BakeryChimney_Masonry"
-    },
-    {
       "mesh": "GEO_Expansion_ShopBakery_BearingTimbers",
       "owner": "Expansion",
-      "family": "AbandonedWood",
+      "family": "BakeryYardWood",
       "tint": [
         0.34,
         0.305,
@@ -37105,28 +37135,13 @@
       ],
       "unique_surface": false,
       "geometry_signature": "661a656d407ae74be09ff59322332093067498dfa3d1507019b0ca19a3531497",
-      "uv1_signature": "2cf7a658ab639ef9cd7034db7414513bf331302983ca11e28a6a694699604f33",
+      "uv1_signature": "fdc2d1a0b4e4f10d6337f8a560c8d9471dd488254579a93aa0b9d57ad9a236f2",
       "part_name": "BearingTimbers"
-    },
-    {
-      "mesh": "GEO_Expansion_ShopBakery_ChimneyDarkMouth",
-      "owner": "Expansion",
-      "family": "DarkWindow",
-      "tint": [
-        0.075,
-        0.085,
-        0.08,
-        1
-      ],
-      "unique_surface": false,
-      "geometry_signature": "e3640d9dbafac3c579bf24a0d0fb8f6a8f758454507aef4055837b307b26056d",
-      "uv1_signature": "6bcb8be5fcec84f5342a2a2338bd77995c005f7f9abe06561a88581fd83f442a",
-      "part_name": "ChimneyDarkMouth"
     },
     {
       "mesh": "GEO_Expansion_ShopBakery_ClosedDoorLeaves",
       "owner": "Expansion",
-      "family": "AbandonedWood",
+      "family": "BakeryYardWood",
       "tint": [
         0.34,
         0.305,
@@ -37135,13 +37150,13 @@
       ],
       "unique_surface": false,
       "geometry_signature": "1790318eb53628af3077ec07a88e74ce64bff5c57e7585b597e1e03b48b3b2b3",
-      "uv1_signature": "15d9bdc9cdf1eac334737fca37f97425c19283f50299e27ccd9de67ef0c511db",
+      "uv1_signature": "7257aa192c18e91d89e61813b19a7d27dbdc4eb42ada4d6db4259667154e2f0d",
       "part_name": "ClosedDoorLeaves"
     },
     {
       "mesh": "GEO_Expansion_ShopBakery_ClosedGables",
       "owner": "Expansion",
-      "family": "AbandonedWood",
+      "family": "BakeryYardWood",
       "tint": [
         0.34,
         0.305,
@@ -37150,13 +37165,58 @@
       ],
       "unique_surface": false,
       "geometry_signature": "88b543928cc1a32b7bd93beadacd877522fb9b216f3f974e1fe0a848522f8d07",
-      "uv1_signature": "9a79d88f8a199eff465c3416fbe3e2ca58afde6f1481494fefaf6c91105626a1",
+      "uv1_signature": "4ac48f40c40775598011a7be303cfa097dbf027d2d9db17b7376da3dffa94083",
       "part_name": "ClosedGables"
+    },
+    {
+      "mesh": "GEO_Expansion_ShopBakery_DisplayDripSills",
+      "owner": "Expansion",
+      "family": "RustedIron",
+      "tint": [
+        0.3,
+        0.255,
+        0.21,
+        1
+      ],
+      "unique_surface": false,
+      "geometry_signature": "2c80348afe2132cb7add041d07f457546016b13889335b6b9162eafdda727e11",
+      "uv1_signature": "c3d963d766fc5c0047a61d726a57040ef33403b0b6ad8e6642597a1650b60a9d",
+      "part_name": "DisplayDripSills"
+    },
+    {
+      "mesh": "GEO_Expansion_ShopBakery_DisplayGlass",
+      "owner": "Expansion",
+      "family": "BakeryGlass",
+      "tint": [
+        0.075,
+        0.085,
+        0.08,
+        1
+      ],
+      "unique_surface": false,
+      "geometry_signature": "42854de56f507f887e25514cdb239654af021ec224fedd72ae5da37a7ea6b27f",
+      "uv1_signature": "4e791a4e5d8e305120eee9803b809ff0410b97028c4f212e048b09711ff3fe97",
+      "part_name": "DisplayGlass"
+    },
+    {
+      "mesh": "GEO_Expansion_ShopBakery_DisplayRebates",
+      "owner": "Expansion",
+      "family": "BakeryYardWood",
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "unique_surface": false,
+      "geometry_signature": "192550c114542074a378ea0cf79ea49a39769f582e29c115fb66097ac2806783",
+      "uv1_signature": "d8d9f762bb1ceec8f671c1d66eb44e4ab4cf9a4af2067de8776f8c2663b6121c",
+      "part_name": "DisplayRebates"
     },
     {
       "mesh": "GEO_Expansion_ShopBakery_EavesAndGutters",
       "owner": "Expansion",
-      "family": "AbandonedWood",
+      "family": "BakeryYardWood",
       "tint": [
         0.34,
         0.305,
@@ -37165,7 +37225,7 @@
       ],
       "unique_surface": false,
       "geometry_signature": "d9ecb368b6b8adbbd1b735b51bb3e16a16b7a5fdafb7ab509f3a835f0e6acf0c",
-      "uv1_signature": "3a4953c56e059b80a72ddc765ea411c723421a0468df34bf1be74f8d1ac2fcf7",
+      "uv1_signature": "e8e90ce629dc40fd4343ea152caef24d65fedbe09ce3e66f05ed2bfecd5bede6",
       "part_name": "EavesAndGutters"
     },
     {
@@ -37184,6 +37244,36 @@
       "part_name": "FacadeBearingBands"
     },
     {
+      "mesh": "GEO_Expansion_ShopBakery_FlueBed",
+      "owner": "Expansion",
+      "family": "DarkWindow",
+      "tint": [
+        0.075,
+        0.085,
+        0.08,
+        1
+      ],
+      "unique_surface": false,
+      "geometry_signature": "6e6135388904e67a6b2653cbff3d6a20c1c0654d083a861f4d1a8267b9559886",
+      "uv1_signature": "568ace02f1dc5a47df33028c3095165bd7b3b2b83e382516d7a8ec76b97862fa",
+      "part_name": "FlueBed"
+    },
+    {
+      "mesh": "GEO_Expansion_ShopBakery_FlueCourses",
+      "owner": "Expansion",
+      "family": "BakeryFlue",
+      "tint": [
+        0.32,
+        0.345,
+        0.34,
+        1
+      ],
+      "unique_surface": false,
+      "geometry_signature": "e8cd21641068ac51b18cd2d0210d66620b688f19cb1bd155994cc54e03aaf388",
+      "uv1_signature": "0a10736135793663720e003cdca197c995c5b193eca7b173400c7107b128d967",
+      "part_name": "FlueCourses"
+    },
+    {
       "mesh": "GEO_Expansion_ShopBakery_IronHardware",
       "owner": "Expansion",
       "family": "RustedIron",
@@ -37199,34 +37289,19 @@
       "part_name": "IronHardware"
     },
     {
-      "mesh": "GEO_Expansion_ShopBakery_OldChimneySoot",
+      "mesh": "GEO_Expansion_ShopBakery_OvenBreast",
       "owner": "Expansion",
-      "family": "DarkWindow",
+      "family": "Stone",
       "tint": [
-        0.23,
-        0.235,
-        0.22,
+        0.32,
+        0.345,
+        0.34,
         1
       ],
       "unique_surface": false,
-      "geometry_signature": "8a12a1a359e9d6f28829bec6993e2eeb8cd751e84310bb84efecc95397190da7",
-      "uv1_signature": "7e1a19106d657dcf44a2ee2be0b20ecdb3d5d4ee8ebf87e71343f9e008dc79ac",
-      "part_name": "OldChimneySoot"
-    },
-    {
-      "mesh": "GEO_Expansion_ShopBakery_OpaqueWindowBacking",
-      "owner": "Expansion",
-      "family": "DarkWindow",
-      "tint": [
-        0.075,
-        0.085,
-        0.08,
-        1
-      ],
-      "unique_surface": false,
-      "geometry_signature": "140defa98d140b9d2f8759551afa2075a92684e8b3c03dfac0e340109f475490",
-      "uv1_signature": "84f1f2bb29420e666589dedc5ed4f2278820233249688e6ce7430910cbf4bb12",
-      "part_name": "OpaqueWindowBacking"
+      "geometry_signature": "220ded8c69325edd2bf4aab233c62c5c3a0ab766ce4ea7c5cd647b75537fe56a",
+      "uv1_signature": "93c773ec141c712c950173b34b7384f925e0537ab52ac49c1bfe818bd687c8f9",
+      "part_name": "OvenBreast"
     },
     {
       "mesh": "GEO_Expansion_ShopBakery_PlasterWalls",
@@ -37254,8 +37329,8 @@
         1
       ],
       "unique_surface": false,
-      "geometry_signature": "86fc64561553168f147ffe9d66b9cf0b6e58846e013aaf79de6ba3dc06c00bc6",
-      "uv1_signature": "02fc39467f5b4aab670b81893af2c0033cc468d88dc6bc5f689c4304e01e6cd1",
+      "geometry_signature": "4fe0b138afe91a8c2852e33292128faeb0c3626f10e7c6f7683d9e5ae377dd50",
+      "uv1_signature": "5f59f6bf201aeb7dcfc932070b91ef4e82e842248a7167ec5d60a7667ef7242e",
       "part_name": "PlinthStoneCourses"
     },
     {
@@ -37334,9 +37409,9 @@
       "part_name": "RootedStonePlinth"
     },
     {
-      "mesh": "GEO_Expansion_ShopBakery_ShuttersAndBoards",
+      "mesh": "GEO_Expansion_ShopBakery_ServiceSashes",
       "owner": "Expansion",
-      "family": "AbandonedWood",
+      "family": "BakeryYardWood",
       "tint": [
         0.34,
         0.305,
@@ -37344,9 +37419,24 @@
         1
       ],
       "unique_surface": false,
-      "geometry_signature": "6be0ba9582b208c4edbf5baf48c4f19069a1699f0d1992e732a325d95d10671b",
-      "uv1_signature": "13184e153e9c533bc44b22a51d5c831b9ed7c55c73159d936db083fe42066d55",
-      "part_name": "ShuttersAndBoards"
+      "geometry_signature": "92f694517cd71c91169f610a64f6fb56fdbcc50d9f668ea1ac09ea79b900aee4",
+      "uv1_signature": "c8014b572c6bf95ded36a7612b5d9c924dcf51b9e7a9bc41d8497870433b0053",
+      "part_name": "ServiceSashes"
+    },
+    {
+      "mesh": "GEO_Expansion_ShopBakery_ServiceWindowBacks",
+      "owner": "Expansion",
+      "family": "DarkWindow",
+      "tint": [
+        0.075,
+        0.085,
+        0.08,
+        1
+      ],
+      "unique_surface": false,
+      "geometry_signature": "3cf14a2e21dc595be6976411c57399a9b8cd0bfb281d5d869bf60c39e9e3d2f6",
+      "uv1_signature": "3ff0f6f959d5925e274f3e7657dadecc2f778d8fa395bedf9196bec91faa459f",
+      "part_name": "ServiceWindowBacks"
     },
     {
       "mesh": "GEO_Expansion_ShopBakery_WeatherExposedMasonry",
@@ -37362,21 +37452,6 @@
       "geometry_signature": "2508d3860e5a604a38e40cd1b28b5fc89464c3debd7cbd231e29a2a65e19b839",
       "uv1_signature": "59ea21b227d6c6ebb176d0f1386afa78a41c377c0b7412351fad9f401eb3732c",
       "part_name": "WeatherExposedMasonry"
-    },
-    {
-      "mesh": "GEO_Expansion_ShopBakery_WindowJoinery",
-      "owner": "Expansion",
-      "family": "AbandonedWood",
-      "tint": [
-        0.34,
-        0.305,
-        0.26,
-        1
-      ],
-      "unique_surface": false,
-      "geometry_signature": "7266bc39caffe560c506b27ca25e71cc44a438c781292c8207cbf6fde4d0596e",
-      "uv1_signature": "58c304da417f7396c1d9e4e29074c82d8d9a0dcff8a62f2a221654dca6374494",
-      "part_name": "WindowJoinery"
     },
     {
       "mesh": "GEO_Expansion_ShopBakery_WornEntranceSteps",

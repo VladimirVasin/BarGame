@@ -31,7 +31,7 @@ from village_lodge_minibar import (ANCHORS as MINIBAR_ANCHORS,
     add_minibar as lodge_minibar, validate_minibar)
 from village_lodge_cellar import (ANCHORS as CELLAR_ANCHORS,
     add_cellar as lodge_cellar, floor_geometry as lodge_floor, validate_cellar)
-from village_lodge_wood import WOOD_PITCH, assign_wood, validate_wood
+from village_lodge_wood import WOOD_PITCH, assign_wood, validate_wood, authored_uv
 
 VERSION = "1.12.0"
 ANCHORS = STOVE_ANCHORS + LODGE_ANCHORS + FURNITURE_ANCHORS + MINIBAR_ANCHORS + CELLAR_ANCHORS
@@ -556,6 +556,16 @@ def create_parts():
     lodge_furniture(add,parts)
     lodge_minibar(add,parts)
     lodge_cellar(add,parts)
+    for part in parts:
+        if part["kind"] not in ("ShopBakery","ShopBakeryYard"):
+            continue
+        if part["name"] == "DisplayGlass":
+            part["surface"] = "BakeryGlass"
+        elif part["name"] == "FlueCourses":
+            part["surface"] = "BakeryFlue"
+        elif part["surface"] in ("Timber","AbandonedWood"):
+            part["surface"] = "BakeryTrayWood" if part["name"] in ("EmptyBreadTrays","AbandonedBreadCartTimber") else "BakeryYardWood"
+            part["wood_uv"] = authored_uv(part)
     assign_wood(parts)
     return parts
 
@@ -770,6 +780,14 @@ def build(parts):
                 assert len(face.loop_indices)==len(coordinates)
                 for index,coordinate in zip(face.loop_indices,reversed(coordinates)):
                     uv.data[index].uv=coordinate
+        if p["surface"] == "BakeryFlue":
+            for face in mesh.polygons:
+                for i in face.loop_indices:
+                    x,z,y=mesh.vertices[mesh.loops[i].vertex_index].co
+                    across=z if abs(face.normal.x)>.6 else x
+                    # The top of the coping sits in the darkest band. Both
+                    # sides of a masonry joint sample the same height field.
+                    uv.data[i].uv=(across, .10+(y-4.904)*.485) if abs(face.normal.z)<.8 else (x,.865+.035*(z+2))
         if p["surface"] in ("LodgePictures","LodgeGroupPhotograph"):
             for loop in mesh.loops:uv.data[loop.index].uv=p["picture_uv"][loop.vertex_index]
         if p["surface"]=="Fire":
@@ -781,6 +799,22 @@ def build(parts):
         obj=bpy.data.objects.new(p["mesh"],mesh);bpy.context.scene.collection.objects.link(obj);obj.parent=root
         mat=bpy.data.materials.new(p["mesh"]+"_Review")
         mat.diffuse_color={"WreckRust":(.27,.14,.085,1),"WreckPaint":(.38,.31,.22,1)}.get(p["surface"],p["tint"])
+        if p["surface"].startswith("Bakery"):
+            from village_bakery_finishes import PITCH
+            mat.use_nodes=True
+            tree=mat.node_tree
+            shader=tree.nodes.get("Principled BSDF")
+            mat.diffuse_color=(1,1,1,1)
+            tex=tree.nodes.new("ShaderNodeTexImage")
+            tex.image=bpy.data.images.load(str(ROOT/"Assets/Resources/Village/Textures/Surfaces"/(p["surface"]+"Albedo.png")),check_existing=True)
+            tex.image.pack()
+            scale=tree.nodes.new("ShaderNodeVectorMath")
+            scale.operation="SCALE"
+            scale.inputs[3].default_value=1/PITCH[p["surface"]]
+            tree.links.new(tree.nodes.new("ShaderNodeTexCoord").outputs["UV"],scale.inputs[0])
+            tree.links.new(scale.outputs[0],tex.inputs["Vector"])
+            tree.links.new(tex.outputs["Color"],shader.inputs["Base Color"])
+            shader.inputs["Roughness"].default_value=.92
         if "appearance" in p:
             mat.use_nodes=True
             mat.diffuse_color=(1,1,1,1)

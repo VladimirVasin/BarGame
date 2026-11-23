@@ -2,7 +2,7 @@
   "design_id": "village_material_surfaces_v1",
   "generator_version": "1.0.0",
   "gpu_budget_bytes": 100663296,
-  "estimated_gpu_bytes": 100228240,
+  "estimated_gpu_bytes": 100583440,
   "channels": [
     "signed_physical_slope_u",
     "signed_physical_slope_v",
@@ -477,6 +477,62 @@
       "albedo_sha256": "aef9fcda0f2f2b463d4a1246232b3a89c1cb69f4fc469dd3f8f255fc19c8af16",
       "response": "Village/Textures/Surfaces/LodgeRoughWoodResponse",
       "response_sha256": "ae950bd41e7e3cbbe731c8160b4cadbbc38654ff01cac735e98535115f0a4181"
+    },
+    {
+      "family": "BakeryYardWood",
+      "size": 256,
+      "response_size": 128,
+      "meters_per_tile": 0.58,
+      "full_color": true,
+      "ground_response": "",
+      "ground_response_sha256": "",
+      "mean_linear_luminance": 0.14197696,
+      "albedo": "Village/Textures/Surfaces/BakeryYardWoodAlbedo",
+      "albedo_sha256": "197a797f51dc8aaac05bf9fc18745136c7145184ba7f78dcde8716d589e11925",
+      "response": "Village/Textures/Surfaces/BakeryYardWoodResponse",
+      "response_sha256": "9482f01d10aa49af2f038bffc262935d40eb045f8b14a9c8394b371911e082c3"
+    },
+    {
+      "family": "BakeryTrayWood",
+      "size": 256,
+      "response_size": 128,
+      "meters_per_tile": 0.42,
+      "full_color": true,
+      "ground_response": "",
+      "ground_response_sha256": "",
+      "mean_linear_luminance": 0.22253879,
+      "albedo": "Village/Textures/Surfaces/BakeryTrayWoodAlbedo",
+      "albedo_sha256": "f5d48059e016542486adc4c45e1eb09f7ea5bf394979a420bf11d7be4eca4d97",
+      "response": "Village/Textures/Surfaces/BakeryTrayWoodResponse",
+      "response_sha256": "a56c65ccf97ff24a9ff0027c8de9cb0c65fc17797442956cd8220ddd4a66a78f"
+    },
+    {
+      "family": "BakeryFlue",
+      "size": 256,
+      "response_size": 128,
+      "meters_per_tile": 1.8,
+      "full_color": true,
+      "ground_response": "",
+      "ground_response_sha256": "",
+      "mean_linear_luminance": 0.11567983,
+      "albedo": "Village/Textures/Surfaces/BakeryFlueAlbedo",
+      "albedo_sha256": "9d2d3f2ab5fc43d51ce2e2cfda71b6d2adc3a1f68ecc84d2dcce127567476693",
+      "response": "Village/Textures/Surfaces/BakeryFlueResponse",
+      "response_sha256": "34e463237c66a8155378ebbcbd4ee0da4b14b60ebe120488d2afc65b28e94bd5"
+    },
+    {
+      "family": "BakeryGlass",
+      "size": 128,
+      "response_size": 64,
+      "meters_per_tile": 0.92,
+      "full_color": true,
+      "ground_response": "",
+      "ground_response_sha256": "",
+      "mean_linear_luminance": 0.02179181,
+      "albedo": "Village/Textures/Surfaces/BakeryGlassAlbedo",
+      "albedo_sha256": "d52fad7dfb8367f251420cc1dc167a602b7b7049af45bfad77eaf3cfbca0efa5",
+      "response": "Village/Textures/Surfaces/BakeryGlassResponse",
+      "response_sha256": "a5b06bfa648dd13230dbc43592098e2a46b53c0ed242fb918673828590c91196"
     }
   ],
   "additional_maps": [

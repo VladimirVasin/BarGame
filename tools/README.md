@@ -63,7 +63,8 @@ Checks: `VillageOutdoorLife` (contacts/carry/reload), `VillageOutdoorPartners` (
 `build-village-expansion-3d-model.py`:houses/yards/lodge/stove/flue/warehouse/bridge;
 `VillageExpansionAssetSetup` imports `Assets/Resources/Village/Expansion/VillageExpansion3D.{fbx,json}`.
 `--validate-only`:bounds/winding/openings/determinism;`--preview-kind`:views.
-`build-village-unique-surfaces.py`:4K/2K;rebuild expansion/workroom/life/narrative. `build-village-surface-textures.py [--validate-only]`:
+`build-village-unique-surfaces.py`: 4K/2K expansion/workroom/life/narrative; `--unmapped-only` for non-atlas expansion edits.
+`build-village-surface-textures.py [--validate-only] [--bakery-only]`:
 BC7≤96MiB. `build-village-surface-shader.py --check`: Lit/wind parity.
 `ArtSource/Village/Surfaces/Source/generation.json`.
 `VillageSurfaceTextureSetup.BuildOrThrow`:junction bake/masks kept/hash/gate/publish.

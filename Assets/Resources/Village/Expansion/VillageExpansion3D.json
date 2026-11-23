@@ -3,9 +3,9 @@
   "design_id": "village_forest_ski_base_old_road_v1",
   "scale_mode": "fixed_metres",
   "uv_mode": "projected_metres",
-  "build_signature": "a6fc285d83db438a60730081bf24254685e40b7fd89c0e0a702972d5ebb89dd2",
-  "mesh_count": 654,
-  "triangle_count": 184816,
+  "build_signature": "d661e16380d2044ce660532d8301a82d1257fc3c9498a4ab48fce2a1839817a1",
+  "mesh_count": 659,
+  "triangle_count": 184904,
   "avalanche_origin": [
     -158,
     110
@@ -3181,7 +3181,7 @@
       "bounds_min": [
         -1.4058434723331792,
         0.145090234375,
-        0.053895131663358076
+        0.05389513166335802
       ],
       "bounds_max": [
         -0.5232466675554499,
@@ -4829,16 +4829,16 @@
         1
       ],
       "bounds_min": [
-        -6.0295,
-        0.011999999999999997,
-        -4.5295000000000005
+        -6.0375000000000005,
+        0.195,
+        -4.5375000000000005
       ],
       "bounds_max": [
-        6.0295,
-        0.4536,
-        4.5295
+        6.0375000000000005,
+        0.465,
+        4.5375
       ],
-      "triangles": 1848,
+      "triangles": 672,
       "unique_surface": false
     },
     {
@@ -4868,9 +4868,9 @@
     },
     {
       "kind": "ShopBakery",
-      "name": "OpaqueWindowBacking",
-      "mesh": "GEO_Expansion_ShopBakery_OpaqueWindowBacking",
-      "surface": "DarkWindow",
+      "name": "DisplayGlass",
+      "mesh": "GEO_Expansion_ShopBakery_DisplayGlass",
+      "surface": "BakeryGlass",
       "solid": true,
       "tint": [
         0.075,
@@ -4879,24 +4879,24 @@
         1
       ],
       "bounds_min": [
-        -5.81,
-        1.0775000000000001,
-        -4.31
+        -5.0329999999999995,
+        1.084,
+        4.2405
       ],
       "bounds_max": [
-        5.81,
-        2.8725,
-        4.31
+        4.868,
+        2.866,
+        4.2755
       ],
-      "triangles": 84,
+      "triangles": 56,
       "unique_surface": false
     },
     {
       "kind": "ShopBakery",
-      "name": "WindowJoinery",
-      "mesh": "GEO_Expansion_ShopBakery_WindowJoinery",
-      "surface": "AbandonedWood",
-      "solid": true,
+      "name": "DisplayRebates",
+      "mesh": "GEO_Expansion_ShopBakery_DisplayRebates",
+      "surface": "BakeryYardWood",
+      "solid": false,
       "tint": [
         0.34,
         0.305,
@@ -4904,48 +4904,48 @@
         1
       ],
       "bounds_min": [
-        -6.19,
-        0.94,
-        -4.6899999999999995
+        -5.0249999999999995,
+        1.0899999999999999,
+        4.266
       ],
       "bounds_max": [
-        6.19,
-        2.945,
-        4.6899999999999995
+        4.859999999999999,
+        2.8600000000000003,
+        4.502
       ],
-      "triangles": 1148,
+      "triangles": 392,
       "unique_surface": false
     },
     {
       "kind": "ShopBakery",
-      "name": "ShuttersAndBoards",
-      "mesh": "GEO_Expansion_ShopBakery_ShuttersAndBoards",
-      "surface": "AbandonedWood",
-      "solid": true,
+      "name": "DisplayDripSills",
+      "mesh": "GEO_Expansion_ShopBakery_DisplayDripSills",
+      "surface": "RustedIron",
+      "solid": false,
       "tint": [
-        0.34,
-        0.305,
-        0.26,
+        0.3,
+        0.255,
+        0.21,
         1
       ],
       "bounds_min": [
-        -6.1875,
-        1.0481823181931362,
-        -4.687499999999999
+        -5.115,
+        1.0266543240472943,
+        4.350945236985308
       ],
       "bounds_max": [
-        6.235,
-        2.9074754046840567,
-        4.734999999999999
+        4.95,
+        1.1213456759527056,
+        4.6930547630146915
       ],
-      "triangles": 712,
+      "triangles": 56,
       "unique_surface": false
     },
     {
       "kind": "ShopBakery",
       "name": "ClosedDoorLeaves",
       "mesh": "GEO_Expansion_ShopBakery_ClosedDoorLeaves",
-      "surface": "AbandonedWood",
+      "surface": "BakeryYardWood",
       "solid": true,
       "tint": [
         0.34,
@@ -5043,6 +5043,56 @@
     },
     {
       "kind": "ShopBakery",
+      "name": "ServiceWindowBacks",
+      "mesh": "GEO_Expansion_ShopBakery_ServiceWindowBacks",
+      "surface": "DarkWindow",
+      "solid": true,
+      "tint": [
+        0.075,
+        0.085,
+        0.08,
+        1
+      ],
+      "bounds_min": [
+        -5.82,
+        1.3795000000000002,
+        -4.319999999999999
+      ],
+      "bounds_max": [
+        5.82,
+        2.745,
+        2.6450000000000005
+      ],
+      "triangles": 140,
+      "unique_surface": false
+    },
+    {
+      "kind": "ShopBakery",
+      "name": "ServiceSashes",
+      "mesh": "GEO_Expansion_ShopBakery_ServiceSashes",
+      "surface": "BakeryYardWood",
+      "solid": false,
+      "tint": [
+        0.34,
+        0.305,
+        0.26,
+        1
+      ],
+      "bounds_min": [
+        -5.985,
+        1.3845,
+        -4.484999999999999
+      ],
+      "bounds_max": [
+        5.985,
+        2.7399999999999998,
+        2.64
+      ],
+      "triangles": 700,
+      "unique_surface": false
+    },
+    {
+      "kind": "ShopBakery",
       "name": "RoofDeck",
       "mesh": "GEO_Expansion_ShopBakery_RoofDeck",
       "surface": "AbandonedRoof",
@@ -5120,7 +5170,7 @@
       "kind": "ShopBakery",
       "name": "BearingTimbers",
       "mesh": "GEO_Expansion_ShopBakery_BearingTimbers",
-      "surface": "AbandonedWood",
+      "surface": "BakeryYardWood",
       "solid": true,
       "tint": [
         0.34,
@@ -5145,7 +5195,7 @@
       "kind": "ShopBakery",
       "name": "EavesAndGutters",
       "mesh": "GEO_Expansion_ShopBakery_EavesAndGutters",
-      "surface": "AbandonedWood",
+      "surface": "BakeryYardWood",
       "solid": false,
       "tint": [
         0.34,
@@ -5195,7 +5245,7 @@
       "kind": "ShopBakery",
       "name": "ClosedGables",
       "mesh": "GEO_Expansion_ShopBakery_ClosedGables",
-      "surface": "AbandonedWood",
+      "surface": "BakeryYardWood",
       "solid": true,
       "tint": [
         0.34,
@@ -5243,8 +5293,8 @@
     },
     {
       "kind": "ShopBakery",
-      "name": "BakeryChimney_LayeredStone",
-      "mesh": "GEO_Expansion_ShopBakery_BakeryChimney_LayeredStone",
+      "name": "OvenBreast",
+      "mesh": "GEO_Expansion_ShopBakery_OvenBreast",
       "surface": "LayeredStone",
       "solid": true,
       "tint": [
@@ -5254,47 +5304,47 @@
         1
       ],
       "bounds_min": [
-        3.6999999999999997,
-        0.48,
-        -2.54
+        3.71,
+        0.0,
+        -2.5300000000000002
       ],
       "bounds_max": [
-        4.8999999999999995,
-        6.359999999999999,
-        -1.46
+        4.89,
+        4.904,
+        -1.47
       ],
       "triangles": 28,
       "unique_surface": false
     },
     {
       "kind": "ShopBakery",
-      "name": "BakeryChimney_Masonry",
-      "mesh": "GEO_Expansion_ShopBakery_BakeryChimney_Masonry",
-      "surface": "Masonry",
+      "name": "FlueCourses",
+      "mesh": "GEO_Expansion_ShopBakery_FlueCourses",
+      "surface": "BakeryFlue",
       "solid": true,
       "tint": [
-        0.49,
-        0.485,
-        0.445,
+        0.32,
+        0.345,
+        0.34,
         1
       ],
       "bounds_min": [
-        3.605,
-        6.33,
-        -2.635
+        3.6199999999999997,
+        4.904,
+        -2.6149999999999998
       ],
       "bounds_max": [
-        4.995,
-        6.529999999999999,
-        -1.365
+        4.9799999999999995,
+        6.5120000000000005,
+        -1.3850000000000002
       ],
-      "triangles": 28,
+      "triangles": 512,
       "unique_surface": false
     },
     {
       "kind": "ShopBakery",
-      "name": "ChimneyDarkMouth",
-      "mesh": "GEO_Expansion_ShopBakery_ChimneyDarkMouth",
+      "name": "FlueBed",
+      "mesh": "GEO_Expansion_ShopBakery_FlueBed",
       "surface": "DarkWindow",
       "solid": false,
       "tint": [
@@ -5304,41 +5354,16 @@
         1
       ],
       "bounds_min": [
-        3.855,
-        6.5245,
-        -2.365
+        3.88,
+        4.9075,
+        -2.36
       ],
       "bounds_max": [
-        4.745,
-        6.5495,
-        -1.635
+        4.72,
+        4.9425,
+        -1.6400000000000001
       ],
-      "triangles": 12,
-      "unique_surface": false
-    },
-    {
-      "kind": "ShopBakery",
-      "name": "OldChimneySoot",
-      "mesh": "GEO_Expansion_ShopBakery_OldChimneySoot",
-      "surface": "DarkWindow",
-      "solid": false,
-      "tint": [
-        0.23,
-        0.235,
-        0.22,
-        1
-      ],
-      "bounds_min": [
-        3.9099999999999997,
-        5.425,
-        -1.464
-      ],
-      "bounds_max": [
-        4.71,
-        6.335,
-        -1.4380000000000002
-      ],
-      "triangles": 12,
+      "triangles": 28,
       "unique_surface": false
     },
     {
@@ -8611,7 +8636,7 @@
       "bounds_max": [
         1.7566443794464934,
         0.5490242675863102,
-        0.10337137605613156
+        0.10337137605613145
       ],
       "triangles": 364,
       "unique_surface": false
@@ -9486,7 +9511,7 @@
       "bounds_max": [
         1.3966443794464931,
         0.5490242675863102,
-        0.7633713760561316
+        0.7633713760561315
       ],
       "triangles": 364,
       "unique_surface": false
@@ -10105,7 +10130,7 @@
       ],
       "bounds_min": [
         2.7574556350467336,
-        0.49022027190820844,
+        0.4902202719082081,
         -6.507425873569083
       ],
       "bounds_max": [
@@ -10179,16 +10204,16 @@
         1
       ],
       "bounds_min": [
-        -5.605,
+        -5.2648025886638,
         0.0,
-        4.790313157689811
+        4.766001616304145
       ],
       "bounds_max": [
-        5.449139808381491,
-        0.17,
-        9.709494895078326
+        5.096382988059011,
+        0.09,
+        9.313998383695855
       ],
-      "triangles": 952,
+      "triangles": 616,
       "unique_surface": false
     },
     {
@@ -10218,9 +10243,34 @@
     },
     {
       "kind": "ShopBakeryYard",
+      "name": "LoadingApproachSteps",
+      "mesh": "GEO_Expansion_ShopBakeryYard_LoadingApproachSteps",
+      "surface": "LayeredStone",
+      "solid": true,
+      "tint": [
+        0.43,
+        0.44,
+        0.415,
+        1
+      ],
+      "bounds_min": [
+        -2.6799999999999997,
+        0.0,
+        -8.28
+      ],
+      "bounds_max": [
+        -1.22,
+        0.278,
+        -7.66
+      ],
+      "triangles": 56,
+      "unique_surface": false
+    },
+    {
+      "kind": "ShopBakeryYard",
       "name": "SurvivingCanopyFrame",
       "mesh": "GEO_Expansion_ShopBakeryYard_SurvivingCanopyFrame",
-      "surface": "Timber",
+      "surface": "BakeryYardWood",
       "solid": true,
       "tint": [
         0.295,
@@ -10245,7 +10295,7 @@
       "kind": "ShopBakeryYard",
       "name": "CanopyWeatheredBoards",
       "mesh": "GEO_Expansion_ShopBakeryYard_CanopyWeatheredBoards",
-      "surface": "Timber",
+      "surface": "BakeryYardWood",
       "solid": true,
       "tint": [
         0.405,
@@ -10254,16 +10304,16 @@
         1
       ],
       "bounds_min": [
-        -4.805000000000001,
-        2.7750836866743827,
-        4.611180390672386
+        -4.803,
+        2.795310780982801,
+        4.548639110356122
       ],
       "bounds_max": [
-        -0.1550000000000005,
-        3.024916313325617,
-        8.708819609327614
+        -0.1570000000000005,
+        3.038969117093721,
+        8.597191697296271
       ],
-      "triangles": 420,
+      "triangles": 300,
       "unique_surface": false
     },
     {
@@ -10279,23 +10329,73 @@
         1
       ],
       "bounds_min": [
-        -4.875,
-        2.177862065396043,
-        4.49
+        -4.87,
+        2.2249999999999996,
+        4.4975
       ],
       "bounds_max": [
-        4.875,
-        2.9099999999999997,
-        5.449296521341326
+        4.87,
+        2.9225,
+        5.445
       ],
-      "triangles": 280,
+      "triangles": 620,
+      "unique_surface": false
+    },
+    {
+      "kind": "ShopBakeryYard",
+      "name": "BracketRunoff",
+      "mesh": "GEO_Expansion_ShopBakeryYard_BracketRunoff",
+      "surface": "AbandonedPlaster",
+      "solid": false,
+      "tint": [
+        0.32,
+        0.276,
+        0.214,
+        1
+      ],
+      "bounds_min": [
+        -4.8389999999999995,
+        2.022,
+        4.499
+      ],
+      "bounds_max": [
+        4.84,
+        2.246,
+        4.507
+      ],
+      "triangles": 80,
+      "unique_surface": false
+    },
+    {
+      "kind": "ShopBakeryYard",
+      "name": "BrokenBeamSocket",
+      "mesh": "GEO_Expansion_ShopBakeryYard_BrokenBeamSocket",
+      "surface": "BakeryYardWood",
+      "solid": false,
+      "tint": [
+        0.295,
+        0.285,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        -0.11500000000000002,
+        2.591,
+        8.424999999999999
+      ],
+      "bounds_max": [
+        0.43500000000000005,
+        2.8089999999999997,
+        8.615
+      ],
+      "triangles": 112,
       "unique_surface": false
     },
     {
       "kind": "ShopBakeryYard",
       "name": "CollapsedCanopyEnd",
       "mesh": "GEO_Expansion_ShopBakeryYard_CollapsedCanopyEnd",
-      "surface": "Timber",
+      "surface": "BakeryYardWood",
       "solid": false,
       "tint": [
         0.295,
@@ -10306,12 +10406,12 @@
       "bounds_min": [
         1.9542126234366752,
         0.03581216720191452,
-        7.2769431198504035
+        7.210655692129884
       ],
       "bounds_max": [
         4.84494317005855,
         1.2407751952862762,
-        8.865193679972961
+        8.889344307870118
       ],
       "triangles": 196,
       "unique_surface": false
@@ -10320,7 +10420,7 @@
       "kind": "ShopBakeryYard",
       "name": "AbandonedBreadCartTimber",
       "mesh": "GEO_Expansion_ShopBakeryYard_AbandonedBreadCartTimber",
-      "surface": "Timber",
+      "surface": "BakeryTrayWood",
       "solid": true,
       "tint": [
         0.405,
@@ -10329,16 +10429,16 @@
         1
       ],
       "bounds_min": [
-        -4.278945306778034,
-        0.6364085656595011,
-        -8.191283022843562
+        -4.303612108973154,
+        0.4,
+        -7.738944168952656
       ],
       "bounds_max": [
-        -2.8567803801658456,
-        1.3399999999999999,
-        -5.85977186985742
+        -2.9390952179922483,
+        1.225,
+        -5.405868810208711
       ],
-      "triangles": 280,
+      "triangles": 616,
       "unique_surface": false
     },
     {
@@ -10354,23 +10454,23 @@
         1
       ],
       "bounds_min": [
-        -4.364760386610866,
-        0.425,
-        -6.869844482775051
+        -4.34167112379773,
+        0.4,
+        -6.4771252194601825
       ],
       "bounds_max": [
-        -2.9391954587980136,
-        1.095,
-        -5.941081716858047
+        -2.958126487794795,
+        1.1,
+        -5.533363932187591
       ],
-      "triangles": 200,
+      "triangles": 384,
       "unique_surface": false
     },
     {
       "kind": "ShopBakeryYard",
       "name": "EmptyBreadTrays",
       "mesh": "GEO_Expansion_ShopBakeryYard_EmptyBreadTrays",
-      "surface": "Timber",
+      "surface": "BakeryTrayWood",
       "solid": false,
       "tint": [
         0.405,
@@ -10379,16 +10479,41 @@
         1
       ],
       "bounds_min": [
-        -1.2375,
-        0.4195,
-        -6.255083116105123
+        -1.1179999999999999,
+        0.4,
+        -6.189067802293705
       ],
       "bounds_max": [
-        -0.20920544871504992,
-        1.04,
-        -5.344916883894877
+        -0.43453882991815207,
+        0.976,
+        -5.371559368485902
       ],
-      "triangles": 756,
+      "triangles": 936,
+      "unique_surface": false
+    },
+    {
+      "kind": "ShopBakeryYard",
+      "name": "LoadingShelter",
+      "mesh": "GEO_Expansion_ShopBakeryYard_LoadingShelter",
+      "surface": "BakeryYardWood",
+      "solid": true,
+      "tint": [
+        0.295,
+        0.285,
+        0.25,
+        1
+      ],
+      "bounds_min": [
+        -3.3569999999999998,
+        1.7604421183620587,
+        -6.55090713688287
+      ],
+      "bounds_max": [
+        0.4169999999999999,
+        2.769369045610406,
+        -4.5090928631171305
+      ],
+      "triangles": 364,
       "unique_surface": false
     },
     {
@@ -10420,7 +10545,7 @@
       "kind": "ShopBakeryYard",
       "name": "CollapsedWoodstore",
       "mesh": "GEO_Expansion_ShopBakeryYard_CollapsedWoodstore",
-      "surface": "Timber",
+      "surface": "BakeryYardWood",
       "solid": true,
       "tint": [
         0.295,
@@ -10429,23 +10554,23 @@
         1
       ],
       "bounds_min": [
-        5.925,
-        0.16999999999999993,
-        -6.389866959530848
+        5.8485,
+        0.32856475215306946,
+        -6.258619450762071
       ],
       "bounds_max": [
-        8.675,
-        2.27,
-        -3.3249999999999997
+        8.7515,
+        2.042494664183941,
+        -3.350359182752618
       ],
-      "triangles": 336,
+      "triangles": 476,
       "unique_surface": false
     },
     {
       "kind": "ShopBakeryYard",
       "name": "RemainingDryWood",
       "mesh": "GEO_Expansion_ShopBakeryYard_RemainingDryWood",
-      "surface": "Timber",
+      "surface": "BakeryYardWood",
       "solid": false,
       "tint": [
         0.405,
@@ -10454,16 +10579,16 @@
         1
       ],
       "bounds_min": [
-        6.33,
-        0.38,
-        -3.8699999999999997
+        6.705427664129268,
+        0.36136730222890123,
+        -4.574999999999999
       ],
       "bounds_max": [
-        7.49,
-        0.76,
-        -3.73
+        7.32,
+        0.6906326977710987,
+        -3.7849999999999997
       ],
-      "triangles": 196,
+      "triangles": 192,
       "unique_surface": false
     },
     {
@@ -10479,16 +10604,16 @@
         1
       ],
       "bounds_min": [
-        -4.4566,
-        0.83,
-        -7.037346931706762
+        -4.43224,
+        0.6631153846153846,
+        -6.26
       ],
       "bounds_max": [
-        8.3,
-        3.1964091390629066,
-        8.45635810712027
+        8.17,
+        3.125311775052676,
+        8.1294312341572
       ],
-      "triangles": 108,
+      "triangles": 152,
       "unique_surface": false
     },
     {
@@ -10585,7 +10710,7 @@
       ],
       "bounds_max": [
         9.345,
-        3.0245161618323286,
+        3.024516161832328,
         4.525
       ],
       "triangles": 224,
@@ -10755,7 +10880,7 @@
       ],
       "bounds_min": [
         6.278029705594604,
-        0.02538371855680821,
+        0.025383718556807905,
         4.0175
       ],
       "bounds_max": [
@@ -12064,11 +12189,11 @@
       "bounds_min": [
         -14.495843068728888,
         2.3897442529623896,
-        12.05058666636182
+        12.050586666361822
       ],
       "bounds_max": [
         -7.872714729689677,
-        4.444910106502003,
+        4.444910106502002,
         16.752089777847342
       ],
       "triangles": 48,
@@ -13107,7 +13232,7 @@
         5
       ],
       "bounds_min": [
-        -7.207201969824129,
+        -7.207201969824128,
         4.272521689207657,
         2.5274895606557233
       ],
@@ -13433,7 +13558,7 @@
       ],
       "bounds_min": [
         -3.622382914222476,
-        0.23980338205420154,
+        0.23980338205420157,
         -1.6191119807002283
       ],
       "bounds_max": [
@@ -14232,7 +14357,7 @@
       ],
       "bounds_min": [
         -8.040000000000001,
-        0.4860000000000002,
+        0.4860000000000003,
         -0.11750000000000016
       ],
       "bounds_max": [
@@ -15277,7 +15402,7 @@
       "bounds_max": [
         -1.1914311193617206,
         1.08,
-        -0.9401507505623917
+        -0.9401507505623918
       ],
       "triangles": 892,
       "unique_surface": true,

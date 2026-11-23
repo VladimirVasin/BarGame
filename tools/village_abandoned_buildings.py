@@ -211,7 +211,17 @@ def _standing(kind, width, depth, wall_height, rise, levels=1, wear=0,
     parts = _Parts(kind)
     base = .62 if levels == 2 else .48
     parts.put("RootedStonePlinth", _box((0, base*.5, 0), (width, base, depth), .045), "LayeredStone")
-    _courses(parts, width, depth, base)
+    if kind == "ShopBakery":
+        # Large dressed foundation stones are bedded behind the render. Only
+        # the exposed top course projects beyond the battered plinth.
+        for angle, length, offset in ((0,width,(0,0,depth/2)), (180,width,(0,0,-depth/2)),
+                                      (90,depth,(width/2,0,0)), (-90,depth,(-width/2,0,0))):
+            count = int(length/1.65)
+            for i in range(count):
+                stone = _box(((i+.5)*length/count-length/2,.33,0),(length/count-.028,.27,.075),.018)
+                parts.put("PlinthStoneCourses", _face(stone,angle,offset), "LayeredStone", False)
+    else:
+        _courses(parts, width, depth, base)
     floor_height = wall_height/levels
     for level in range(levels):
         y0 = base+level*floor_height
@@ -242,7 +252,18 @@ def _standing(kind, width, depth, wall_height, rise, levels=1, wear=0,
             parts.put("TimberWalls" if surface == "AbandonedWood" else "PlasterWalls",
                       _face(shell, angle, offset), surface)
             for i, (entry, x, w, bottom, height) in enumerate(layout):
-                if entry == "window":
+                if entry == "display":
+                    _shop_window(parts, x, bottom, w, height, offset)
+                elif entry == "window" and kind == "ShopBakery":
+                    # Small service windows are simpler fixed sashes. Their dark
+                    # backs stay inside the same deep masonry openings.
+                    y = bottom+height/2
+                    parts.put("ServiceWindowBacks",_face(_box((x,y,-.05),(w+.01,height+.01,.06)),angle,offset),"DarkWindow")
+                    frame = [_box((x+side*(w-.080)/2,y,.08),(.080,height,.13)) for side in (-1,1)]
+                    frame += [_box((x,bottom+dy,.08),(w-.16,.076,.13)) for dy in (.038,height-.038)]
+                    frame.append(_box((x,y,.058),(.048,height-.12,.095),.009))
+                    parts.put("ServiceSashes",_face(_merge(frame),angle,offset),"AbandonedWood",False)
+                elif entry == "window":
                     _window(parts, x, bottom, w, height, angle, offset,
                             wear, i+face_index*3+level*7)
                 else:
@@ -326,21 +347,43 @@ def _school():
     return parts
 
 
+def _shop_window(parts, x, sill, width, height, offset):
+    def add(name, geometry, surface, solid=False):
+        parts.put(name, _move(geometry,offset), surface, solid)
+    y = sill+height/2
+    add("DisplayGlass", _box((x,y,-.082),(width+.016,height+.012,.035),.01), "DarkWindow", True)
+    joinery = [_box((x+sign*(width/2-.047),y,.044),(.094,height,.236),.012) for sign in (-1,1)]
+    joinery += [_box((x,sill+dy,.044),(width-.188,.086,.236),.012) for dy in (.043,height-.043)]
+    joinery += [_box((x+sign*width*.20,y,.004),(.049,height-.16,.117),.01) for sign in (-1,1)]
+    joinery.append(_box((x,sill+height*.75,.026),(width-.18,.058,.135),.012))
+    add("DisplayRebates", _merge(joinery), "AbandonedWood")
+    lip = _turn(_box((0,0,0),(width+.18,.062,.34),.012),(6,0,0))
+    add("DisplayDripSills",_move(lip,(x,sill-.016,.182)),"RustedIron")
+
+
 def _shop_bakery():
-    front = [("window", -3.65, 2.75, .61, 1.77),
-             ("door", 0, 1.35, 0, 2.47), ("window", 3.55, 2.62, .61, 1.77)]
+    front = [("display", -3.65, 2.75, .61, 1.77),
+             ("door", 0, 1.35, 0, 2.47), ("display", 3.55, 2.62, .61, 1.77)]
     back = [("window", -3.7, 1.12, 1.09, 1.17), ("door", 1.95, 2.48, 0, 2.51)]
     parts = _standing("ShopBakery", 12, 9, 3.16, 1.15, 1, 1, False, front, back)
     _steps(parts, 4.48, 2.05, .48)
     _steps(parts, -5.03, 2.8, .59, -1.95)
-    # A thick masonry oven/chimney remains inside the footprint of the bakery wing.
-    parts.put("BakeryChimney", _box((4.30, 3.42, -2.0), (1.20, 5.88, 1.08), .035), "LayeredStone")
-    parts.put("BakeryChimney", _box((4.30, 6.43, -2.0), (1.39, .20, 1.27), .028), "Masonry")
-    parts.put("ChimneyDarkMouth", _box((4.30, 6.537, -2.0), (.89, .025, .73), .005), "DarkWindow", False)
-    soot = _box((4.31, 5.88, -1.451), (.80, .91, .026), .006)
-    parts.put("OldChimneySoot", soot, "DarkWindow", False, (.23, .235, .22, 1))
+    # The original masonry mass stops below the exposed courses. Four corner-
+    # bonded stones per course leave an actual throat right up to the coping.
+    parts.put("OvenBreast", _box((4.30,2.452,-2.0),(1.18,4.904,1.06),.035), "LayeredStone")
+    for row in range(6):
+        cap = row == 5
+        w,d = (1.36,1.23) if cap else (1.18,1.06)
+        t = .215 if cap else .177
+        y = 4.904 + row*.268 + .134
+        for sign in (-1,1):
+            span_x = w if row%2 else w-2*t-.012
+            span_z = d-2*t-.012 if row%2 else d
+            for dx,dz,sx,sz in ((0,sign*(d-t)/2,span_x,t),(sign*(w-t)/2,0,t,span_z)):
+                block = kit.chamfered_box((4.30+dx,y,-2+dz),(sx,.268,sz),.019 if cap else .012,bottom=cap)
+                parts.put("FlueCourses",block,"LayeredStone")
+    parts.put("FlueBed",_box((4.3,4.925,-2),(.84,.035,.72),.01),"DarkWindow",False)
     return parts
-
 
 def _workshop():
     front = [("door", -1.0, 4.05, 0, 2.91), ("window", 3.3, 1.32, 1.01, 1.44)]

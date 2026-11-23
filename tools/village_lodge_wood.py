@@ -41,8 +41,17 @@ def appearance_for(name):
     return "LodgeRoughWood"
 
 
+def ordered_sum(terms):
+    # The original grain frames use left-to-right addition. Python 3.12+
+    # compensates built-in sum(), which chooses a different axis on square stock.
+    total = 0.0
+    for value in terms:
+        total += value
+    return total
+
+
 def dot(a, b):
-    return sum(x*y for x, y in zip(a, b))
+    return ordered_sum(x*y for x, y in zip(a, b))
 
 
 def cross(a, b):
@@ -78,7 +87,7 @@ def components(vertices, faces):
 def member_axis(points, center):
     """Principal length, including the already rotated chair's narrow legs."""
     relative = [tuple(p[i]-center[i] for i in range(3)) for p in points]
-    covariance = [[sum(p[i]*p[j] for p in relative) for j in range(3)] for i in range(3)]
+    covariance = [[ordered_sum(p[i]*p[j] for p in relative) for j in range(3)] for i in range(3)]
     longest = max(range(3), key=lambda i: covariance[i][i])
     direction = tuple(float(i == longest) for i in range(3))
     for _ in range(24):
@@ -106,7 +115,7 @@ def authored_uv(part):
              (0., 0., 1.) if name in ("CellarHatchLid", "CellarHatchBacking") else None)
     for number, indices in enumerate(components(vertices, faces)):
         points = [vertices[index] for index in indices]
-        center = tuple(sum(p[i] for p in points)/len(points) for i in range(3))
+        center = tuple(ordered_sum(p[i] for p in points)/len(points) for i in range(3))
         grain = fixed or member_axis(points, center)
         # Physical floor seams must remain continuous across the hatch cutout.
         # Other members sample different places in their own repeatable sheet.

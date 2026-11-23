@@ -60,7 +60,7 @@ def _donor_parts():
     donor.collision_box = lambda *args: None
     donor.truck_tail_lift_mechanism = lambda *args: None
     donor.obj = capture
-    donor.truck(None)
+    donor.truck(None, include_finishes=False)
     required = {"TruckVisible", "TruckFrontPanel", "DriverDoorVisible", "CabinGlass",
                 "RearDoorVisibleLeft", "RearDoorVisibleRight", "CabinDoorGlass"}
     required.update("WheelVisible" + axle + side for axle in ("F", "R") for side in ("L", "R"))

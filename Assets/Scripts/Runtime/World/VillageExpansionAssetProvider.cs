@@ -242,6 +242,13 @@ namespace BarPromenade
                     new Vector4(scale.x / 1.2f, scale.y / 1.2f, 0f, 0f), .72f);
                 return;
             }
+            if (part.surface.StartsWith("Bakery", StringComparison.Ordinal))
+            {
+                float metres = VillageSurfaceAppearance.GetSheet(part.surface).meters_per_tile;
+                VillageSurfaceAppearance.ApplyFamily(renderer, part.surface, Color.white,
+                    new Vector4(scale.x / metres, scale.y / metres, 0f, 0f));
+                return;
+            }
             if (part.surface == "DarkWindow")
             {
                 renderer.sharedMaterial = RuntimePrimitiveFactory.DefaultMaterial;

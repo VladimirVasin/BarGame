@@ -12,6 +12,78 @@ namespace BarPromenade.Tests.PlayMode
     public sealed partial class AreaCaptureFixture
     {
         [UnityTest]
+        [Explicit("The closed bakery windows, rear delivery route and bread cart.")]
+        public IEnumerator VillageBakeryFinishes()
+        {
+            GameSessionState.BeginNewGame();
+            GameSessionState.TryStartGameTimeFromWake();
+            Assert.That(GameSessionState.TrySetDebugGameDay(2), Is.True);
+            GameSessionState.AdvanceGameTime((float)((12d * 60d - GameSessionState.GameTimeOfDayMinutes) /
+                GameTimeState.GameMinutesPerRealSecond));
+            AlpineVillageRoot root = null;
+            yield return Capture(SceneIds.AlpineVillage, () =>
+            {
+                root = Object.FindAnyObjectByType<AlpineVillageRoot>();
+                return root != null && root.IsInitialized ? root : null;
+            }, () =>
+            {
+                AlpineVillageAbandonedPlot plot = null;
+                foreach (var candidate in root.Plan.Expansion.Abandonment.Plots)
+                    if (candidate.Id == "shop-bakery") plot = candidate;
+                Assert.That(plot, Is.Not.Null);
+                var building = root.World.Root.transform.Find("Village Expansion/" + AlpineVillageAbandonmentPlan.RootName + "/" + plot.Id);
+                var yard = building.Find("Former Household Yard");
+                var block = new MaterialPropertyBlock();
+                void Finish(Transform owner, string part, string family)
+                {
+                    var renderer = owner.Find(part).GetComponent<Renderer>();
+                    renderer.GetPropertyBlock(block);
+                    Assert.That(block.GetTexture("_BaseMap").name, Is.EqualTo(family + "Albedo"), part);
+                    Assert.That(block.GetTexture("_SceneMaterialResponse").name, Is.EqualTo(family + "Response"), part);
+                }
+                Finish(building,"FlueCourses","BakeryFlue");
+                Finish(building,"DisplayRebates","BakeryYardWood");
+                Finish(building,"DisplayGlass","BakeryGlass");
+                Finish(yard,"EmptyBreadTrays","BakeryTrayWood");
+                Assert.That(building.GetComponentsInChildren<Light>(), Is.Empty);
+
+                Vector3 P(float x, float y, float z) => plot.World(new Vector2(x,z)) + Vector3.up*y;
+                var wheel = yard.Find("CartAxleAndWheels").GetComponent<MeshCollider>();
+                var slab = yard.Find("RearLoadingSlab").GetComponent<MeshCollider>();
+                Assert.That(wheel.bounds.min.y, Is.EqualTo(slab.bounds.max.y).Within(.006f));
+                Assert.That(yard.Find("EmptyBreadTrays").GetComponent<Renderer>().bounds.min.y,
+                    Is.EqualTo(slab.bounds.max.y).Within(.006f));
+
+                var cc = root.Player.GameObject.GetComponent<CharacterController>();
+                Vector3 start = P(-3.2f,0,7.05f);
+                root.Player.Motor.Teleport(start + Vector3.up*PlayerFactory.GroundedRootOffset);
+                Physics.SyncTransforms();
+                foreach (var goal in new[] { P(-6.95f,0,7.05f), P(-6.95f,0,-8.42f),
+                    P(-1.85f,0,-8.42f), P(-1.85f,0,-5.32f) })
+                {
+                    for (int step=0; step<160; step++)
+                    {
+                        Vector3 delta = Vector3.ProjectOnPlane(goal-cc.transform.position,Vector3.up);
+                        if (delta.magnitude < .06f) break;
+                        Vector3 move = Vector3.ClampMagnitude(delta,.13f);
+                        Assert.That(root.World.WalkableArea.Contains(cc.transform.position + move, cc.radius), Is.True,
+                            "Bakery route leaves the walkable area at " + cc.transform.position);
+                        cc.Move(move + Vector3.down*.025f);
+                    }
+                    Assert.That(Vector3.ProjectOnPlane(goal-cc.transform.position,Vector3.up).magnitude,
+                        Is.LessThan(.08f),"Player capsule blocked on the route to the loading door at " + goal);
+                }
+                return new[] {
+                    VillageYardShot(root,"bakery-square",P(2.1f,0,13.3f),P(-1.0f,2.20f,4.64f),fov:68f),
+                    VillageYardShot(root,"bakery-window",P(-3.05f,0,7.17f),P(-3.32f,1.77f,4.53f),fov:58f),
+                    VillageYardShot(root,"bakery-loading",P(-5.82f,0,-8.49f),P(-2.10f,1.06f,-5.78f),fov:60f),
+                    VillageYardShot(root,"bakery-trays",P(.95f,0,-7.68f),P(-.83f,.77f,-5.77f),fov:54f),
+                    VillageYardShot(root,"bakery-woodstore",P(9.34f,0,-9.50f),P(5.34f,2.88f,-3.27f),fov:70f)
+                };
+            });
+        }
+
+        [UnityTest]
         [Explicit("Rescue paving/snow regression and the village lighting/forest review.")]
         [PrebuildSetup(typeof(VillageArtAssetsSetup))]
         public IEnumerator AlpineVillagePolish()
@@ -40,8 +112,8 @@ namespace BarPromenade.Tests.PlayMode
                     var shots = new List<Shot>();
                     Vector3 front = plot.World(new Vector2(0f, 15.5f));
                     Vector3 target = plot.World(new Vector2(0f, 7f)) + Vector3.up * .9f;
-                    shots.Add(RescuePolishShot(root, "polish-00-rescue-forecourt", front, target));
-                    shots.Add(RescuePolishShot(root, "polish-01-rescue-pressed",
+                    shots.Add(VillageYardShot(root, "polish-00-rescue-forecourt", front, target));
+                    shots.Add(VillageYardShot(root, "polish-01-rescue-pressed",
                         plot.World(new Vector2(-5.7f, 13.5f)), target, () =>
                         {
                             foreach (int index in apronVertices) snow.Press(original[index]);
@@ -53,7 +125,7 @@ namespace BarPromenade.Tests.PlayMode
                                 lowered |= pressed[index].y < original[index].y - .01f;
                             Assert.That(lowered, Is.True, "The regression never pressed actual apron snow.");
                         }));
-                    shots.Add(RescuePolishShot(root, "polish-02-rescue-refilled", front, target, () =>
+                    shots.Add(VillageYardShot(root, "polish-02-rescue-refilled", front, target, () =>
                     {
                         snow.Advance(60f);
                         Vector3[] restored = mesh.vertices;
@@ -140,11 +212,11 @@ namespace BarPromenade.Tests.PlayMode
                     "A rendered snow triangle cuts the paved apron: " + vertices[index]);
         }
 
-        private static Shot RescuePolishShot(AlpineVillageRoot root, string name,
-            Vector3 foot, Vector3 target, Action prepare = null)
+        private static Shot VillageYardShot(AlpineVillageRoot root, string name,
+            Vector3 foot, Vector3 target, Action prepare = null, float fov = 74f)
         {
             int frames = 0;
-            return Shot.At(name, foot + Vector3.up * EyeHeight, target, 74f, 0, () =>
+            return Shot.At(name, foot + Vector3.up * EyeHeight, target, fov, 0, () =>
             {
                 if (frames++ == 0)
                 {
