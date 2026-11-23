@@ -11,9 +11,8 @@ namespace BarPromenade.Tests.PlayMode
 {
     public sealed partial class AreaCaptureFixture
     {
-        [UnityTest]
-        [Explicit("The closed bakery windows, rear delivery route and bread cart.")]
-        public IEnumerator VillageBakeryFinishes()
+        private static IEnumerator CaptureBakery(
+            Func<AlpineVillageRoot, AlpineVillageAbandonedPlot, Transform, Transform, Shot[]> shots)
         {
             GameSessionState.BeginNewGame();
             GameSessionState.TryStartGameTimeFromWake();
@@ -33,6 +32,67 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(plot, Is.Not.Null);
                 var building = root.World.Root.transform.Find("Village Expansion/" + AlpineVillageAbandonmentPlan.RootName + "/" + plot.Id);
                 var yard = building.Find("Former Household Yard");
+                return shots(root, plot, building, yard);
+            });
+        }
+
+        [UnityTest]
+        [Explicit("The shop glass and door openings under both bakery canopies.")]
+        public IEnumerator VillageBakeryWindowClearance()
+        {
+            return CaptureBakery((root, plot, building, yard) =>
+            {
+                // Visible glass starts inside the perimeter rebate. Include the depth
+                // between the glass and the canopy arms so mounts in front also fail.
+                var leftPane = new Bounds(new Vector3(-3.65f,1.975f,4.78f),new Vector3(2.55f,1.58f,1.12f));
+                var rightPane = new Bounds(new Vector3(3.55f,1.975f,4.78f),new Vector3(2.42f,1.58f,1.12f));
+                var frontDoor = new Bounds(new Vector3(0f,1.72f,4.84f),new Vector3(1.34f,2.45f,.80f));
+                var rearDoor = new Bounds(new Vector3(-1.95f,1.74f,-4.84f),new Vector3(2.46f,2.48f,.80f));
+                var glass = building.Find("DisplayGlass").GetComponent<MeshCollider>();
+                foreach (Bounds pane in new[] { leftPane, rightPane })
+                {
+                    var inward = new Ray(building.TransformPoint(pane.center), -building.forward);
+                    Assert.That(glass.Raycast(inward, out _, 1f), Is.True, "Missing recessed shop glass");
+                }
+                void Clear(Transform member, params Bounds[] openings)
+                {
+                    var mesh = member.GetComponent<MeshFilter>().sharedMesh;
+                    var vertices = mesh.vertices;
+                    var toFacade = building.worldToLocalMatrix * member.localToWorldMatrix;
+                    for (int i=0; i<vertices.Length; i++)
+                        vertices[i] = toFacade.MultiplyPoint3x4(vertices[i]);
+                    var triangles = mesh.triangles;
+                    for (int i=0; i<triangles.Length; i+=3)
+                    {
+                        var face = new Bounds(vertices[triangles[i]], Vector3.zero);
+                        face.Encapsulate(vertices[triangles[i+1]]);
+                        face.Encapsulate(vertices[triangles[i+2]]);
+                        foreach (var opening in openings)
+                            if (face.Intersects(opening))
+                                Assert.Fail($"{member.name} crosses the opening at {opening.center}.");
+                    }
+                }
+                Clear(building.Find("DisplayRebates"), leftPane, rightPane);
+                foreach (string part in new[] { "SurvivingCanopyFrame", "SurvivingIronBrackets", "BracketRunoff" })
+                    Clear(yard.Find(part), leftPane, rightPane, frontDoor);
+                Clear(yard.Find("LoadingShelter"), rearDoor);
+
+                Vector3 P(float x, float y, float z) => plot.World(new Vector2(x,z)) + Vector3.up*y;
+                return new[] {
+                    VillageYardShot(root,"bakery-fixed-square",P(2.1f,0,13.3f),P(-1.0f,2.20f,4.64f),fov:68f),
+                    VillageYardShot(root,"bakery-fixed-window",P(-3.05f,0,7.17f),P(-3.32f,1.77f,4.53f),fov:58f),
+                    VillageYardShot(root,"bakery-fixed-window-right",P(3.28f,0,8.04f),P(3.55f,2.05f,4.50f),fov:58f),
+                    VillageYardShot(root,"bakery-fixed-loading",P(-5.82f,0,-8.49f),P(-2.10f,1.60f,-5.78f),fov:60f)
+                };
+            });
+        }
+
+        [UnityTest]
+        [Explicit("The closed bakery windows, rear delivery route and bread cart.")]
+        public IEnumerator VillageBakeryFinishes()
+        {
+            return CaptureBakery((root, plot, building, yard) =>
+            {
                 var block = new MaterialPropertyBlock();
                 void Finish(Transform owner, string part, string family)
                 {

@@ -326,11 +326,12 @@ def shop_bakery(add):
     steps = [box((-1.95,.072,-8.09),(1.46,.144,.38),.016),
              box((-1.95,.139,-7.83),(1.46,.278,.34),.016)]
     emit(add,kind,"LoadingApproachSteps",steps,"LayeredStone",True,STONE)
-    canopy = [box((x, 1.38, 8.52), (.17, 2.76, .18), .018) for x in (-4.75, -.20)]
-    canopy += [box((-2.46, 2.70, 8.52), (4.85, .20, .19)),
-               box((0, 2.93, 4.68), (10.0, .17, .17))]
-    canopy += [beam((x, 2.02, 8.52), (x, 2.79, 7.68), .115) for x in (-4.75, -.20)]
-    canopy += [beam((x, 2.91, 4.68), (x, 2.73, 8.65), .14) for x in (-4.78, -2.52, -.19)]
+    # The wall plate sits on the lintel above the door and both shop windows.
+    canopy = [box((x, 1.535, 8.52), (.17, 3.07, .18), .018) for x in (-4.75, -.20)]
+    canopy += [box((-2.46, 3.01, 8.52), (4.85, .20, .19)),
+               box((0, 3.24, 4.58), (10.90, .17, .17))]
+    canopy += [beam((x, 2.33, 8.52), (x, 3.10, 7.68), .115) for x in (-4.75, -.20)]
+    canopy += [beam((x, 3.22, 4.60), (x, 3.04, 8.65), .14) for x in (-4.78, -2.52, -.19)]
     emit(add, kind, "SurvivingCanopyFrame", canopy, "Timber", True, WOOD)
     boards = []
     for i in range(15):
@@ -340,23 +341,24 @@ def shop_bakery(add):
         tip = length-.12-(i%3)*.035
         outline = [(-.153,0),(.153,0),(.153,length-.045),(.05,tip),(-.016,length),(-.153,length-.02)]
         plank = kit.prism(outline,.06)
-        boards.append(put(plank,(-4.65+i*.31,3.009,4.55),(2.6,0,0)))
+        boards.append(put(plank,(-4.65+i*.31,3.319,4.55),(2.6,0,0)))
     emit(add,kind,"CanopyWeatheredBoards",boards,"Timber",True,BLEACHED)
     iron,stains=[],[]
-    for x in (-4.8,-2.5,0,2.5,4.8):
-        iron += [box((x,2.57,4.550),(.14,.69,.105),.009),
-                 beam((x,2.29,4.59),(x,2.89,5.43),.047),
-                 box((x,2.895,4.99),(.12,.055,.91),.007)]
-        for y in (2.31,2.81):
-            iron.append(put(cylinder((0,0,0),.064,.027,6),(x,y,4.616),(90,0,0)))
+    # Each bracket and its rust trail sit on a solid plaster pier.
+    for x in (-5.29,-1.75,1.68,5.17):
+        iron += [box((x,2.83,4.542),(.14,.69,.105),.009),
+                 beam((x,2.56,4.59),(x,3.145,5.43),.047),
+                 box((x,3.14,4.99),(.12,.055,.91),.007)]
+        for y in (2.58,3.07):
+            iron.append(put(cylinder((0,0,0),.064,.027,6),(x,y,4.601),(90,0,0)))
         trail = kit.prism([(-.039,0),(.04,0),(.019,-.088),(.009,-.224),(-.008,-.20)][::-1],.008)
-        stains.append(put(trail,(x,2.246,4.503),(-90,0,0)))
+        stains.append(put(trail,(x,2.49,4.503),(-90,0,0)))
     emit(add,kind,"SurvivingIronBrackets",iron,"RustedIron",False,IRON)
     emit(add,kind,"BracketRunoff",stains,"AbandonedPlaster",False,(.32,.276,.214,1))
     # A mortise remains in the end of the surviving beam. The dark opening
     # has a back, four cheeks and an irregular split beside the original peg.
-    pocket = [box((.16,y,8.52),(.55,.058,.19),.006) for y in (2.62,2.78)]
-    pocket += [box((.16,2.70,z),(.55,.105,.04),.006) for z in (8.445,8.595)]
+    pocket = [box((.16,y,8.52),(.55,.058,.19),.006) for y in (2.93,3.09)]
+    pocket += [box((.16,3.01,z),(.55,.105,.04),.006) for z in (8.445,8.595)]
     emit(add,kind,"BrokenBeamSocket",pocket,"AbandonedWood",False,WOOD)
     emit(add,kind,"CollapsedCanopyEnd",[beam((4.75,.10,8.5),(3.83,1.18,7.55),.17),
         beam((2.0,.11,7.4),(4.1,.30,8.8),.15)] +
@@ -369,9 +371,10 @@ def shop_bakery(add):
     tray=bread_tray()
     emit(add,kind,"EmptyBreadTrays",[put(tray,(-.82+i*.025,.40+i*.192,-5.78),(0,i*3,0))
         for i in range(3)],"Timber",False,BLEACHED)
-    cover=[beam((x,2.66,-4.55),(x,2.44,-6.52),.105) for x in (-3.1,.14)]
-    cover += [beam((x,1.80,-4.54),(x,2.47,-6.18),.092) for x in (-3.1,.14)]
-    cover += [put(box((0,0,0),(.414,.058,2.05),.009),(-3.15+i*.42,2.628,-5.53),(-6.36,0,0)) for i in range(9)]
+    rear_piers = (-3.49,.05)
+    cover=[beam((x,3.19,-4.488),(x,2.97,-6.52),.105) for x in rear_piers]
+    cover += [beam((x,2.33,-4.488),(x,3.0,-6.18),.092) for x in rear_piers]
+    cover += [put(box((0,0,0),(.414,.058,2.05),.009),(-3.34+i*.42,3.158,-5.53),(-6.36,0,0)) for i in range(9)]
     emit(add,kind,"LoadingShelter",cover,"AbandonedWood",True,WOOD)
 
     emit(add,kind,"WoodstoreFoot",[box((7.3,.18,-4.95),(2.9,.36,3.5),.05)],"LayeredStone",True,STONE)
@@ -392,9 +395,9 @@ def shop_bakery(add):
               (90,0,0)) for i in range(6)]
     emit(add,kind,"RemainingDryWood",logs,"Timber",False,BLEACHED)
     emit(add,kind,"CanopyAndWoodstoreSnow",[
-        put(snow((0,0,0),4.12,3.50,.105),(-2.57,2.957,6.52),(2.6,0,0)),
+        put(snow((0,0,0),4.12,3.50,.105),(-2.57,3.267,6.52),(2.6,0,0)),
         woodstore_snow(),
-        put(snow((0,0,0),2.87,1.53,.075),(-1.52,2.68,-5.50),(-6.36,0,0))],"WindSnow",False)
+        put(snow((0,0,0),2.87,1.53,.075),(-1.71,3.21,-5.50),(-6.36,0,0))],"WindSnow",False)
 
 
 def workshop(add):

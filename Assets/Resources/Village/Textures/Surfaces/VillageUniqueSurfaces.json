@@ -7,13 +7,13 @@
   "response_size": 2048,
   "unique_part_count": 264,
   "geometry_signatures": {
-    "Expansion": "2ed259fe2340da7c8c6729743158f0a2a15ecee7386602d47a3b97cc82ffe323",
+    "Expansion": "2e23563416e27d1db10c08018ac4a978ab4f10328754a1e0f1f140422a2f78de",
     "Workroom": "d4f8024cedfb3128e8effb6d349b28f8d453e514cfd70571f2cf21546860ec9b",
     "Life": "954ba12857cb25532b083d8b84fe8cb8368e8a95c714a7ba7e1134737abb761a",
     "Narrative": "ea2b119d56f9e86f1e2041fe7d47ce1c03f984d8d518b174d48df4559a184a9d"
   },
-  "source_geometry_signature": "990f12d86e4d4c04815d415375fb4008fee837480e427d23518c485e8c26f7e6",
-  "uv_signature": "f0d53eb16bb82c4d6bca021c119ff1e34271365d843291b40445fa2e6b6eb769",
+  "source_geometry_signature": "1293841fe42f8e4990c1a59443d3c3b6e7330131eaa97110a92e988f4dc422c5",
+  "uv_signature": "172e44c34b0ef9b2805d23bcc3ffe2b209882760f83548e6204afbe4428009b5",
   "projection": {
     "chart_count": 1578,
     "base_texels_per_metre": 125.11148386545884,
@@ -36894,8 +36894,8 @@
         1
       ],
       "unique_surface": false,
-      "geometry_signature": "fe02dc29c69d37a103dc989fd54fab2cde4442a21733853e9605be9b4898a298",
-      "uv1_signature": "3ec1822ad4c694601c1b1d47a4e88e427672ff338cd108a6f7212067fbb02f44",
+      "geometry_signature": "4c1f4431bbb4dcfffaad10edf516c7284edf9fa4ddd4ef85cdfafd1e4a84faf0",
+      "uv1_signature": "cee7c936d403363fdd28720e415b5c19760af25f2d6051cf57d9adc7f2658124",
       "part_name": "BracketRunoff"
     },
     {
@@ -36909,7 +36909,7 @@
         1
       ],
       "unique_surface": false,
-      "geometry_signature": "f0e22d5114c2ce0359e06fffa625e26d4c444d8f9969c01a1ce499ed0ef2f682",
+      "geometry_signature": "a89edcf7ba6403e0b1e91141163cc3d8e0c2dbf3729d05cafcf26a284f9b2d8b",
       "uv1_signature": "36af78b61f34be5bd0ba562b94e6a084f46c8837e81220af546cb43f62d4c52a",
       "part_name": "BrokenBeamSocket"
     },
@@ -36924,8 +36924,8 @@
         1
       ],
       "unique_surface": false,
-      "geometry_signature": "c55607080f01da43a3566867eaa22b62573028f058382c53fd4fcafffea6ba38",
-      "uv1_signature": "d69e2702a53f32c3292c03f21e175a2247aa2f7cf5160cb5854e72629fc95176",
+      "geometry_signature": "a2ff676faedc321cc2b374aebe438fa086c032b4286171f58b6a34d16f6f8cd3",
+      "uv1_signature": "0023e9a5a8f15a5261b3b4d079bea6d66ea0d63af402b5dcaa5cf18a77eb209f",
       "part_name": "CanopyAndWoodstoreSnow"
     },
     {
@@ -36939,7 +36939,7 @@
         1
       ],
       "unique_surface": false,
-      "geometry_signature": "154d355e26133732c152f01ad785a4bc558dc2fd1e6606f9d3109137d4e247b5",
+      "geometry_signature": "028feaf4b129d9b9554117f26dbe557d0f0f4386338ed75c1fdc056a71c18344",
       "uv1_signature": "536985600582a3320a6d6df6ee8835e35eca33f893f7eb7e32a782ff4f0c91a7",
       "part_name": "CanopyWeatheredBoards"
     },
@@ -37029,8 +37029,8 @@
         1
       ],
       "unique_surface": false,
-      "geometry_signature": "1d11899d15cbaa537b724d850ef69f9cf4b666d970d4dc2637549586e2393a26",
-      "uv1_signature": "681c4a3c21570f77c312fc1542886a0d4ee24a988e92040614eda4acbc40d79c",
+      "geometry_signature": "b997dcdbc5978d0c6cc97ea04cd0ba8bc775fd6ce79182fd240e8cd42f31506b",
+      "uv1_signature": "afe4ad1400770e51550f580d946d22a071ed9896c56c931c67e7245febea947d",
       "part_name": "LoadingShelter"
     },
     {
@@ -37074,8 +37074,8 @@
         1
       ],
       "unique_surface": false,
-      "geometry_signature": "21a3986d728d465c68cff8c6afdaf41c6c6d157bf08c544512f3f8ce3ae0fad6",
-      "uv1_signature": "e8e3344db1142f53a2fb67a307ee5d9fbd59fdc12f262f6087cab23f0c7502dd",
+      "geometry_signature": "5dc07ec9e692f48ab268ab5a647751ca8d8dd15230ff20e49ea99d19325f63bb",
+      "uv1_signature": "bf2a01ae5f5152bd9acbcbd8645f6b2c186f1881f567accad621bf4d34f2632a",
       "part_name": "SurvivingCanopyFrame"
     },
     {
@@ -37089,8 +37089,8 @@
         1
       ],
       "unique_surface": false,
-      "geometry_signature": "93d9ae550760e1cc2c0a07e0b51d5478cab1014de953d8e44a649120bc2f3932",
-      "uv1_signature": "91711e4ae74361d08b450af48022dd3afbbb70081ff7c8794bf7085b55510afc",
+      "geometry_signature": "82ccf9ced0af35131fd18f3516b7290cb0c1046f3b9ff2d965d6a06f9a5a7d63",
+      "uv1_signature": "facb684f1e2c46658b07264c7593fb44ec11edc2b44abb8770a34de04c1e2e07",
       "part_name": "SurvivingIronBrackets"
     },
     {
@@ -37209,8 +37209,8 @@
         1
       ],
       "unique_surface": false,
-      "geometry_signature": "192550c114542074a378ea0cf79ea49a39769f582e29c115fb66097ac2806783",
-      "uv1_signature": "d8d9f762bb1ceec8f671c1d66eb44e4ab4cf9a4af2067de8776f8c2663b6121c",
+      "geometry_signature": "24c6372906a3cd9545c824bb37d552d70879b69542c2d68d3dbe4d37dd709054",
+      "uv1_signature": "5e50c744e2a0e3f289b444a68811152de79b4309da9fdb2c334030b4d1644e83",
       "part_name": "DisplayRebates"
     },
     {

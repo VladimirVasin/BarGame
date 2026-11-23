@@ -354,8 +354,6 @@ def _shop_window(parts, x, sill, width, height, offset):
     add("DisplayGlass", _box((x,y,-.082),(width+.016,height+.012,.035),.01), "DarkWindow", True)
     joinery = [_box((x+sign*(width/2-.047),y,.044),(.094,height,.236),.012) for sign in (-1,1)]
     joinery += [_box((x,sill+dy,.044),(width-.188,.086,.236),.012) for dy in (.043,height-.043)]
-    joinery += [_box((x+sign*width*.20,y,.004),(.049,height-.16,.117),.01) for sign in (-1,1)]
-    joinery.append(_box((x,sill+height*.75,.026),(width-.18,.058,.135),.012))
     add("DisplayRebates", _merge(joinery), "AbandonedWood")
     lip = _turn(_box((0,0,0),(width+.18,.062,.34),.012),(6,0,0))
     add("DisplayDripSills",_move(lip,(x,sill-.016,.182)),"RustedIron")
