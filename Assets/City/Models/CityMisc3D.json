@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-city-misc-3d-model.py",
-  "generator_version": "4.16.0",
+  "generator_version": "4.17.0",
   "blender_version": "5.2.3 LTS",
   "design_id": "city_misc_citywide_v4",
   "display_name": "City Misc Citywide Catalog + Church Courtyard + Nightlife Shelter + Residential Courtyard Life + Park Gazebo and Furniture + River Fittings + Cemetery Entrance and Closed Boat Station",
@@ -147,9 +147,9 @@
   "materials": false,
   "preview_materials_in_presentation_only": true,
   "animation_count": 0,
-  "mesh_count": 308,
+  "mesh_count": 310,
   "assembly_count": 145,
-  "triangle_count": 57582,
+  "triangle_count": 61694,
   "assemblies": [
     {
       "kind": "IndustrialStacksAndTanks",
@@ -3910,36 +3910,39 @@
         }
       ],
       "unity_owned_parts": [
-        "Dark Water",
-        "Working Lamp",
-        "Waterworks Basin Collider"
+        "Water surface material",
+        "Lamp emission",
+        "Waterworks Basin Collider",
+        "Waterworks Standpipe Collider"
       ],
       "root_derivation": "POIRecipeRoot@descriptor.Center+ResolveForward",
       "coordinate_profile": "root_local_direct",
       "expected_source_min_z": 0.0,
       "part_meshes": [
         "GEO_CMM_PoiOldTownWaterworksShell_Variant01_Masonry",
-        "GEO_CMM_PoiOldTownWaterworksShell_Variant01_Street"
+        "GEO_CMM_PoiOldTownWaterworksShell_Variant01_Street",
+        "GEO_CMM_PoiOldTownWaterworksShell_Variant01_Water",
+        "GEO_CMM_PoiOldTownWaterworksShell_Variant01_LampGlass"
       ],
       "bounds_min_source": [
         -2.98,
-        -2.08,
+        -1.4875,
         0.0
       ],
       "bounds_max_source": [
-        1.38,
-        1.73,
-        3.67
+        1.36,
+        1.215,
+        2.877317
       ],
       "bounds_min_unity": [
         -2.98,
         0.0,
-        -2.08
+        -1.4875
       ],
       "bounds_max_unity": [
-        1.38,
-        3.67,
-        1.73
+        1.36,
+        2.877317,
+        1.215
       ]
     },
     {
@@ -13493,27 +13496,27 @@
       "tint_role": "Masonry",
       "placement_mode": "recipe_local_rigid",
       "normalized_height_m": null,
-      "vertices": 128,
-      "triangles": 228,
+      "vertices": 188,
+      "triangles": 356,
       "bounds_min_source": [
         -2.98,
-        -0.42,
+        -0.415,
         0.0
       ],
       "bounds_max_source": [
-        1.38,
-        1.22,
-        0.98
+        1.36,
+        1.215,
+        0.87
       ],
       "bounds_min_unity": [
         -2.98,
         0.0,
-        -0.42
+        -0.415
       ],
       "bounds_max_unity": [
-        1.38,
-        0.98,
-        1.22
+        1.36,
+        0.87,
+        1.215
       ],
       "uv_min": [
         0.0,
@@ -13533,27 +13536,107 @@
       "tint_role": "Street",
       "placement_mode": "recipe_local_rigid",
       "normalized_height_m": null,
-      "vertices": 216,
-      "triangles": 380,
+      "vertices": 2268,
+      "triangles": 4220,
       "bounds_min_source": [
-        -1.88,
-        -2.08,
-        0.0625
+        -1.895,
+        -1.4875,
+        0.055
       ],
       "bounds_max_source": [
-        1.08,
-        1.73,
-        3.67
+        1.152,
+        1.1,
+        2.877317
       ],
       "bounds_min_unity": [
-        -1.88,
-        0.0625,
-        -2.08
+        -1.895,
+        0.055,
+        -1.4875
       ],
       "bounds_max_unity": [
-        1.08,
-        3.67,
-        1.73
+        1.152,
+        2.877317,
+        1.1
+      ],
+      "uv_min": [
+        0.015,
+        0.015
+      ],
+      "uv_max": [
+        0.985,
+        0.985
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_PoiOldTownWaterworksShell_Variant01_Water",
+      "kind": "PoiOldTownWaterworksShell",
+      "variant": 0,
+      "part_role": "Water",
+      "surface_kind": "Water",
+      "tint_role": "Water",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min_source": [
+        -2.705,
+        -0.17,
+        0.425
+      ],
+      "bounds_max_source": [
+        0.275,
+        0.97,
+        0.443
+      ],
+      "bounds_min_unity": [
+        -2.705,
+        0.425,
+        -0.17
+      ],
+      "bounds_max_unity": [
+        0.275,
+        0.443,
+        0.97
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_PoiOldTownWaterworksShell_Variant01_LampGlass",
+      "kind": "PoiOldTownWaterworksShell",
+      "variant": 0,
+      "part_role": "LampGlass",
+      "surface_kind": "LampGlass",
+      "tint_role": "LampGlass",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 60,
+      "triangles": 116,
+      "bounds_min_source": [
+        0.696,
+        0.546,
+        2.602
+      ],
+      "bounds_max_source": [
+        0.964,
+        0.814,
+        2.78
+      ],
+      "bounds_min_unity": [
+        0.696,
+        2.602,
+        0.546
+      ],
+      "bounds_max_unity": [
+        0.964,
+        2.78,
+        0.814
       ],
       "uv_min": [
         0.0,
@@ -18965,5 +19048,5 @@
       ]
     }
   ],
-  "build_signature": "7b5794ca72a7877a47f31d954e6a7f243b0eab00e6cabd81b5b8f1be6419d952"
+  "build_signature": "eeea8a4d70e068bf9f5c06527255ae39f2e40d48b6177091f6c89ce98173d1ab"
 }

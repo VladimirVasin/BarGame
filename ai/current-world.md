@@ -1394,10 +1394,9 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   three-loop idle bank. Fifteen shell, terrace, barrel, bedding and clutter
   renderers reuse measured City surface albedos through property blocks.
   Tilted cemetery monuments intentionally retain their legacy visual builder;
-- four full-block semantic places: working bank waterworks court/cannery;
-  residential drying yard/last-route island. Canonical descriptors reserve
-  public ground/street access, excluding ordinary buildings/bars/home/primary
-  landmarks; cannery hall keeps production out of its public passage/bypass.
+- Four public sites reserve entire blocks and street access clear of ordinary buildings, bar, home and landmarks.
+  The working bank has a paved court with a cast standpipe, wheel, trough and grated drains. A public passage skirts the cannery.
+  The residential bank has the drying yard and last-route island.
   Each has a distinct silhouette/movement grammar; Home reconstructs nearby
   descriptors locally. The last-route island keeps its broken
   canopy ring but uses no emissive strips: the old departure board is visibly

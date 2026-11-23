@@ -272,6 +272,8 @@ namespace BarPromenade.Tests.EditMode
             Part(CityMiscKind.FringeFloodGaugeShell, 1, CityMiscMeshRole.Fixture),
             Part(CityMiscKind.PoiOldTownWaterworksShell, 0, CityMiscMeshRole.Masonry),
             Part(CityMiscKind.PoiOldTownWaterworksShell, 0, CityMiscMeshRole.Street),
+            Part(CityMiscKind.PoiOldTownWaterworksShell, 0, CityMiscMeshRole.Water),
+            Part(CityMiscKind.PoiOldTownWaterworksShell, 0, CityMiscMeshRole.LampGlass),
             Part(CityMiscKind.PoiResidentialDryingYardShell, 0, "Residential_PaintedMetal", CityMiscMeshRole.Residential, CityMiscSurfaceKind.PaintedMetal),
             Part(CityMiscKind.PoiResidentialDryingYardShell, 0, "Residential_Timber", CityMiscMeshRole.Residential, CityMiscSurfaceKind.Timber),
             Part(CityMiscKind.PoiIndustrialWeighbridgeShell, 0, CityMiscMeshRole.Industrial),
@@ -417,7 +419,7 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo("city_misc_citywide_v4"));
             Assert.That(
                 CityMiscAssetProvider.GeneratorVersion,
-                Is.EqualTo("4.16.0"));
+                Is.EqualTo("4.17.0"));
             Assert.That(
                 CityMiscAssetProvider.SupportedKindCount,
                 Is.EqualTo(104));
@@ -426,8 +428,8 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(145));
             Assert.That(
                 CityMiscAssetProvider.ExpectedMeshCount,
-                Is.EqualTo(308));
-            Assert.That(ExpectedParts, Has.Length.EqualTo(308));
+                Is.EqualTo(310));
+            Assert.That(ExpectedParts, Has.Length.EqualTo(310));
 
             var actualNames = new List<string>();
             int assemblies = 0;
@@ -463,7 +465,7 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(ExpectedParts.Select(part => part.MeshName)));
             Assert.That(
                 actualNames.Distinct(StringComparer.Ordinal).Count(),
-                Is.EqualTo(308));
+                Is.EqualTo(310));
             Assert.That(
                 actualNames.Take(33),
                 Is.EqualTo(ExpectedParts.Take(33).Select(part => part.MeshName)),
@@ -502,13 +504,13 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(manifest.lights, Is.False);
             Assert.That(manifest.cameras, Is.False);
             Assert.That(manifest.animation_count, Is.Zero);
-            Assert.That(manifest.mesh_count, Is.EqualTo(308));
+            Assert.That(manifest.mesh_count, Is.EqualTo(310));
             Assert.That(manifest.assembly_count, Is.EqualTo(145));
-            Assert.That(manifest.triangle_count, Is.EqualTo(57582));
+            Assert.That(manifest.triangle_count, Is.EqualTo(61694));
             Assert.That(
                 manifest.build_signature,
                 Is.EqualTo(
-                    "7b5794ca72a7877a47f31d954e6a7f243b0eab00e6cabd81b5b8f1be6419d952"));
+                    "eeea8a4d70e068bf9f5c06527255ae39f2e40d48b6177091f6c89ce98173d1ab"));
             Assert.That(
                 manifest.wave1_compatibility_signature,
                 Is.EqualTo(
@@ -634,7 +636,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(imported.OfType<Material>(), Is.Empty);
             Assert.That(imported.OfType<AnimationClip>(), Is.Empty);
             Mesh[] meshes = imported.OfType<Mesh>().ToArray();
-            Assert.That(meshes, Has.Length.EqualTo(308));
+            Assert.That(meshes, Has.Length.EqualTo(310));
             Assert.That(meshes.All(mesh => mesh.isReadable), Is.True);
             Assert.That(meshes.All(mesh => mesh.vertexCount > 0), Is.True);
 
@@ -702,7 +704,7 @@ namespace BarPromenade.Tests.EditMode
                 actualNames.Add(part.Mesh.name);
             }
 
-            Assert.That(actualNames, Has.Count.EqualTo(308));
+            Assert.That(actualNames, Has.Count.EqualTo(310));
             UnityEngine.Object[] imported =
                 AssetDatabase.LoadAllAssetsAtPath(
                     ModelPath);
@@ -1043,7 +1045,9 @@ namespace BarPromenade.Tests.EditMode
                     poiRenderers.Count(renderer =>
                         renderer.name.StartsWith(
                             "Imported ",
-                            StringComparison.Ordinal)),
+                            StringComparison.Ordinal) ||
+                        (renderer.transform.parent.name == "Old Town Waterworks Court" &&
+                         (renderer.name == "Working Lamp" || renderer.name == "Dark Water"))),
                     Is.EqualTo(expectedImportedPoiParts),
                     "The three static POI shells use every authored " +
                     "role mesh of their catalog entries.");

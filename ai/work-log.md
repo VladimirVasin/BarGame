@@ -14,6 +14,9 @@ a running bond. The held can uses a shared sleeve/body/lid atlas with grip polis
 CityGroceryStreetFinishes checks the composed curb and masonry. BeerCanFinishFollowsTheHeldParts
 checks the equipped finish. Lid marks read in the hand view, finer paper fibres fall into shadow.
 CityGrocerySignFromStreet checks the enamel print from both approaches and the overlapping pools of light at night.
+CityWaterworksPaving checks the cut-stone court, new trough, spout over the water and caged lamp.
+The column, zinc bypass, worn wheel and drains share a metallic atlas. The City misc Blender
+generator checks the remaining catalogue against the previous revision.
 The focused City publisher checks the new sheets. The older
 BuildingOldTownFacadePrimary dimension mismatch remains.
 

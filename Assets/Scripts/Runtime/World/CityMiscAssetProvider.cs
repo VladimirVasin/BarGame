@@ -131,7 +131,9 @@ namespace BarPromenade
         Timber = 6,
         Residential = 7,
         BacklitSign = 8,
-        Fixture = 9
+        Fixture = 9,
+        Water = 10,
+        LampGlass = 11
     }
 
     public enum CityMiscSurfaceKind
@@ -204,10 +206,10 @@ namespace BarPromenade
     public sealed partial class CityMiscAssetProvider : ScriptableObject
     {
         public const string ResourcePath = "City/CityMiscAssetProvider";
-        public const string GeneratorVersion = "4.16.0";
+        public const string GeneratorVersion = "4.17.0";
         public const string DesignId = "city_misc_citywide_v4";
         public const int ExpectedAssemblyCount = 145;
-        public const int ExpectedMeshCount = 308;
+        public const int ExpectedMeshCount = 310;
         public const int SupportedKindCount = 104;
 
         private const float GroundTolerance = 0.003f;
@@ -540,10 +542,12 @@ namespace BarPromenade
             P("Street", CityMiscMeshRole.Street),
             P("Residential", CityMiscMeshRole.Residential)
         };
-        private static readonly ExpectedPartSpec[] MasonryStreetParts =
+        private static readonly ExpectedPartSpec[] WaterworksParts =
         {
             P("Masonry", CityMiscMeshRole.Masonry),
-            P("Street", CityMiscMeshRole.Street)
+            P("Street", CityMiscMeshRole.Street),
+            P("Water", CityMiscMeshRole.Water),
+            P("LampGlass", CityMiscMeshRole.LampGlass)
         };
         private static readonly ExpectedPartSpec[] StreetMasonryParts =
         {
@@ -1326,7 +1330,7 @@ namespace BarPromenade
                 case CityMiscKind.FringeFloodGaugeShell:
                     return IndustrialFixtureParts;
                 case CityMiscKind.PoiOldTownWaterworksShell:
-                    return MasonryStreetParts;
+                    return WaterworksParts;
                 case CityMiscKind.PoiResidentialDryingYardShell:
                     return DryingYardParts;
                 case CityMiscKind.PoiNightlifeLastRouteIslandShell:

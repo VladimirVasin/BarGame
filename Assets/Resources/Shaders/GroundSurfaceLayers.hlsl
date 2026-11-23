@@ -18,6 +18,7 @@ float _GroundJunctions;
 float _GroundKind;
 float _GroundPavingMetres;
 float _GroundSidewalkMetres;
+float4 _GroundCourtStoneFrame;
 float _GroundWetness;
 float _GroundRoadCoordinates;
 float _GroundVertexData;
@@ -177,6 +178,35 @@ void ApplyCitySidewalk(float2 metres, float4 edges, float footprint, half wetnes
     relief -= .0015h * seam * visible;
 }
 
+void ApplyWaterworksStone(float2 position, float footprint, half wetness,
+    inout SurfaceData surface, inout half relief)
+{
+    float2 relative = position - _GroundCourtStoneFrame.xy;
+    float2 forward = _GroundCourtStoneFrame.zw;
+    float2 metres = float2(dot(relative, float2(forward.y, -forward.x)), dot(relative, forward));
+    // A boundary is shared by the stones on either side. Offset alternating
+    // courses and vary each cut slightly without moving the neighbouring bed.
+    float bed = floor(metres.y / .32 + .5);
+    float toBed = metres.y - .32 * bed - .045 * (GroundHash(float2(bed, 7)) - .5);
+    float row = bed - (toBed < 0 ? 1.0 : 0.0);
+    float along = metres.x + .27 * (2.0 * frac(.5 * row));
+    float cut = floor(along / .54 + .5);
+    float toCut = along - .54 * cut - .15 * (GroundHash(float2(cut, row)) - .5);
+    float face = GroundHash(float2(cut - (toCut < 0 ? 1.0 : 0.0), row + 31));
+    float distance = min(abs(toBed), abs(toCut));
+    float aa = clamp(footprint * .5, .001, .12);
+    half joint = PavingJoint(distance, .007, aa);
+    half lip = 1.0h - smoothstep(.006 - aa, .019 + aa, distance);
+    half visible = 1.0h - smoothstep(.06h, .26h, footprint);
+    // Wear is concentrated where a person can stand at the spout.
+    half wear = (1.0h - smoothstep(.25, 1.15, length(metres * float2(.91, 1.6)))) * (1.0h - lip);
+    half3 tone = lerp(half3(.77h,.81h,.84h), half3(1.23h,1.19h,1.14h), face);
+    surface.albedo *= lerp(1.0h, tone * (1.0h - .48h * joint) * (1.0h + .11h * wear), visible);
+    surface.smoothness = saturate(surface.smoothness + visible *
+        ((.055h + .08h * wetness) * wear - .08h * joint));
+    relief -= visible * (.003h * lip + .001h * joint);
+}
+
 void ApplyGroundAsphalt(float2 plane, half upward, float4 road, float roadFootprint,
     inout half3 albedo, inout half smoothness)
 {
@@ -271,6 +301,8 @@ void ApplyGroundLayers(float2 uv, float3 world, half3 normal,
     surface.smoothness *= response.r;
     surface.smoothness *= lerp(0.65h, 1.0h, damp);
     relief = (response.g - 0.5h) * 0.0015h;
+    [branch] if (dot(_GroundCourtStoneFrame.zw, _GroundCourtStoneFrame.zw) > .5 && normal.y > .5)
+        ApplyWaterworksStone(world.xz, max(length(groundDx), length(groundDy)), wetness, surface, relief);
     [branch] if (_GroundSidewalkMetres > 0.0)
         ApplyCitySidewalk(uv * _GroundSidewalkMetres, road,
             max(length(uvDx), length(uvDy)) * _GroundSidewalkMetres, wetness, surface, relief);

@@ -310,6 +310,9 @@ namespace BarPromenade.Tests.EditMode
                 Texture pavingTexture =
                     CityPointOfInterestSurfaceAppearance.GetTexture(
                         CityPointOfInterestSurfaceKind.Paving);
+                var waterworks = layout.DistrictPointsOfInterest.Single(site =>
+                    site.Kind == CityDistrictPointOfInterestKind.OldTownWaterworksCourt);
+                string waterworksName = CityDistrictPointOfInterestWorldBuilder.GetSiteName(waterworks.Id);
                 int pavedGroundCount = 0;
                 foreach (Renderer renderer in
                          root.GetComponentsInChildren<Renderer>(true))
@@ -323,10 +326,11 @@ namespace BarPromenade.Tests.EditMode
 
                     var properties = new MaterialPropertyBlock();
                     renderer.GetPropertyBlock(properties);
-                    Assert.That(
-                        properties.GetTexture(BaseMapId),
-                        Is.SameAs(pavingTexture),
-                        "Every public ground carries the paving sheet.");
+                    bool stoneCourt = renderer.transform.parent.name == waterworksName;
+                    Texture expected = stoneCourt ? CityParkSurfaceAppearance.GetTexture(CityParkSurfaceKind.Stone) : pavingTexture;
+                    Assert.That(properties.GetTexture(BaseMapId), Is.SameAs(expected), renderer.transform.parent.name);
+                    Assert.That(properties.GetVector(CityPointOfInterestSurfaceAppearance.CourtStoneFrameId) != Vector4.zero,
+                        Is.EqualTo(stoneCourt));
                     pavedGroundCount++;
                 }
 

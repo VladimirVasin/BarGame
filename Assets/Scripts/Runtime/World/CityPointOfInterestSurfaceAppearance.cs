@@ -59,6 +59,8 @@ namespace BarPromenade
             Shader.PropertyToID("_Smoothness");
         private static readonly int MetallicId =
             Shader.PropertyToID("_Metallic");
+        internal static readonly int CourtStoneFrameId = Shader.PropertyToID("_GroundCourtStoneFrame");
+        internal const float BasinStoneMetresPerTile = .75f;
 
         private static Texture2D[] cachedTextures =
             new Texture2D[SurfaceCount];
@@ -165,6 +167,53 @@ namespace BarPromenade
             GroundSurfaceAppearance.WriteProperties(renderer, properties, materialIndex);
             if (kind == CityPointOfInterestSurfaceKind.Paving)
                 GroundSurfaceAppearance.ApplyCity(renderer, GroundSurfaceKind.Paving, GetTexture(kind), materialIndex);
+        }
+
+        internal static void ApplyWaterworksPaving(Renderer renderer, Color tint, Transform recipe)
+        {
+            const CityParkSurfaceKind stone = CityParkSurfaceKind.Stone;
+            CityParkSurfaceAppearance.ApplyCombined(renderer, stone, tint, -1);
+            var block = new MaterialPropertyBlock();
+            renderer.GetPropertyBlock(block);
+            block.SetVector(BaseMapTransformId, SurfaceAppearanceCore.CreateBaseMapTransform(renderer,
+                CityParkSurfaceAppearance.GetRecipe(stone).MetersPerTile, MinimumUvScale,
+                SurfaceProjection.BoxXZ, HashSaltBase));
+            // Footing in front of the handwheel. Both City and the balcony place the same scaled recipe.
+            Vector3 footing = recipe.TransformPoint(new Vector3(.74f, 0f, 1.52f));
+            Vector3 forward = recipe.forward;
+            block.SetVector(CourtStoneFrameId, new Vector4(footing.x, footing.z, forward.x, forward.z));
+            renderer.SetPropertyBlock(block);
+        }
+
+        private static Material waterworksMetal;
+
+        internal static void ApplyWaterworksMetal(Renderer renderer)
+        {
+            if (waterworksMetal == null)
+                waterworksMetal = Resources.Load<Material>("City/Surfaces/WaterworksMetal");
+            if (waterworksMetal == null)
+                throw new InvalidOperationException("Missing waterworks metal finish.");
+            renderer.sharedMaterial = waterworksMetal;
+            renderer.SetPropertyBlock(null);
+        }
+
+        internal static void ApplyBasinStone(Renderer renderer, Color tint, SurfaceProjection? projection = null)
+        {
+            const CityParkSurfaceKind stone = CityParkSurfaceKind.Stone;
+            var recipe = CityParkSurfaceAppearance.GetRecipe(stone);
+            var block = new MaterialPropertyBlock();
+            renderer.GetPropertyBlock(block);
+            block.SetTexture(BaseMapId, CityParkSurfaceAppearance.GetTexture(stone));
+            Color stoneTint = SurfaceAppearanceCore.CreateDisplayTint(tint, recipe.AlbedoCompensation);
+            block.SetColor(BaseColorId, stoneTint);
+            block.SetColor(ColorId, stoneTint);
+            block.SetFloat(SmoothnessId, recipe.Smoothness);
+            block.SetFloat(MetallicId, recipe.Metallic);
+            block.SetVector(BaseMapTransformId, projection.HasValue
+                ? SurfaceAppearanceCore.CreateBaseMapTransform(renderer, BasinStoneMetresPerTile, MinimumUvScale,
+                    projection.Value, HashSaltBase)
+                : new Vector4(1f, 1f, 0f, 0f));
+            renderer.SetPropertyBlock(block);
         }
 
         /// <summary>

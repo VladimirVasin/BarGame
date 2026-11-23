@@ -1051,6 +1051,18 @@ MonoBehaviour:
     role: 1
     surface: 0
     mesh: {fileID: 3669779941699320969, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 57
+    variant: 0
+    component: Water
+    role: 10
+    surface: 0
+    mesh: {fileID: -2631476281405879128, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 57
+    variant: 0
+    component: LampGlass
+    role: 11
+    surface: 0
+    mesh: {fileID: 3954250525082783183, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
   - kind: 58
     variant: 0
     component: Residential_PaintedMetal
@@ -1861,4 +1873,4 @@ MonoBehaviour:
     role: 2
     surface: 1
     mesh: {fileID: 8952813868899882856, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
-  buildSignature: 7b5794ca72a7877a47f31d954e6a7f243b0eab00e6cabd81b5b8f1be6419d952
+  buildSignature: eeea8a4d70e068bf9f5c06527255ae39f2e40d48b6177091f6c89ce98173d1ab

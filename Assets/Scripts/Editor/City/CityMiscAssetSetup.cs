@@ -245,6 +245,9 @@ namespace BarPromenade.Editor
                     return "ResidentialGlass";
                 case CityMiscMeshRole.BacklitSign:
                     return "BacklitSign";
+                case CityMiscMeshRole.Water:
+                case CityMiscMeshRole.LampGlass:
+                    return role.ToString();
                 case CityMiscMeshRole.Fixture:
                     return "FixtureMetal";
                 default:

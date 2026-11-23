@@ -47,11 +47,12 @@ sys.dont_write_bytecode = True
 sys.path.insert(0, str(ROOT / "tools"))
 
 import interior_kit as kit  # noqa: E402
+import city_waterworks_model as waterworks
 import city_river_parts as river_parts  # noqa: E402
 import city_coastal_site_parts as coastal_site_parts  # noqa: E402
 
 
-GENERATOR_VERSION = "4.16.0"
+GENERATOR_VERSION = "4.17.0"
 DESIGN_ID = "city_misc_citywide_v4"
 DISPLAY_NAME = (
     "City Misc Citywide Catalog + Church Courtyard + Nightlife Shelter + "
@@ -147,6 +148,8 @@ PREVIEW_COLORS = {
     "Timber": (0.32, 0.205, 0.095, 1.0),
     "Residential": (0.16, 0.29, 0.31, 1.0),
     "BacklitSign": (0.74, 0.92, 0.72, 1.0),
+    "Water": (0.055, 0.130, 0.145, 1.0),
+    "LampGlass": (0.85, 0.43, 0.16, 1.0),
     "Fixture": (0.085, 0.095, 0.12, 1.0),
     "Masonry_Stone": (0.39, 0.37, 0.34, 1.0),
     "Street_Stone": (0.105, 0.11, 0.115, 1.0),
@@ -169,6 +172,8 @@ SURFACE_KINDS = {
     "Timber": "Timber",
     "Residential": "ResidentialGlass",
     "BacklitSign": "BacklitSign",
+    "Water": "Water",
+    "LampGlass": "LampGlass",
     "Fixture": "FixtureMetal",
     "Masonry_Stone": "Stone",
     "Street_Stone": "Stone",
@@ -3591,43 +3596,15 @@ def poi_scale_metadata() -> tuple[
 
 def build_poi_old_town_waterworks_shell() -> AssemblySpec:
     kind, variant = "PoiOldTownWaterworksShell", 0
-    masonry = [
-        local_box(-0.80, 0.15, 0.40, 4.15, 0.30, 1.55, 0.055),
-        local_box(-0.80, 0.43, 1.10, 4.35, 0.56, 0.24, 0.04),
-        local_box(-0.80, 0.43, -0.30, 4.35, 0.56, 0.24, 0.04),
-        local_box(-2.86, 0.43, 0.40, 0.24, 0.56, 1.18, 0.04),
-        local_box(1.26, 0.43, 0.40, 0.24, 0.56, 1.18, 0.04),
-        local_vertical_solid(0.55, 0.0, 0.90, 0.40,
-                             0.54, 0.54, top_scale=0.88, sides=12),
-        local_vertical_solid(0.55, 0.82, 0.98, 0.40,
-                             0.62, 0.62, top_scale=0.82, sides=12),
-    ]
-    street = [
-        local_vertical_solid(0.55, 0.46, 3.50, 0.40,
-                             0.29, 0.29, top_scale=0.72, sides=10),
-        local_vertical_solid(0.55, 3.43, 3.67, 0.40,
-                             0.51, 0.51, top_scale=0.90, sides=10),
-        local_box(0.55, 2.82, 0.98, 0.30, 0.28, 1.28, 0.035),
-        local_box(0.55, 2.62, 1.58, 0.42, 0.58, 0.30, 0.04),
-        local_box(0.98, 1.82, 0.40, 0.20, 2.20, 0.20, 0.028),
-        local_box(0.77, 2.73, 0.40, 0.62, 0.18, 0.22, 0.025),
-        local_box(0.55, 1.32, 0.40, 0.78, 0.15, 0.78, 0.028),
-        local_box(0.55, 2.42, 0.40, 0.76, 0.15, 0.76, 0.028),
-        local_box(-0.02, 2.05, 0.40, 0.95, 0.14, 0.14, 0.022),
-        local_box(-0.47, 2.05, 0.40, 0.12, 0.72, 0.12, 0.018),
-        local_box(-1.80, 0.075, -1.08, 0.16, 0.025, 2.00, 0.006),
-        local_box(-0.95, 0.075, -1.28, 0.16, 0.025, 1.55, 0.006),
-        local_box(-0.10, 0.075, -1.02, 0.16, 0.025, 1.95, 0.006),
-    ]
+    parts = waterworks.build(sys.modules[__name__], kind)
     canonical, parameters = poi_scale_metadata()
     return AssemblySpec(
         kind, variant,
-        (make_part(kind, variant, "Masonry", *masonry),
-         make_part(kind, variant, "Street", *street)),
+        parts,
         canonical_reference=canonical,
         scale_parameters=parameters,
         unity_owned_parts=(
-            "Dark Water", "Working Lamp", "Waterworks Basin Collider"),
+            "Water surface material", "Lamp emission", "Waterworks Basin Collider", "Waterworks Standpipe Collider"),
         root_derivation="POIRecipeRoot@descriptor.Center+ResolveForward",
         coordinate_profile="root_local_direct",
         expected_source_min_z=0.0,
@@ -6097,7 +6074,7 @@ EXPECTED_ROLES = {
     ("FringeUtilityShedShell", 0): ("Industrial", "Fixture"),
     **{("FringeFloodGaugeShell", index): ("Industrial", "Fixture")
        for index in range(2)},
-    ("PoiOldTownWaterworksShell", 0): ("Masonry", "Street"),
+    ("PoiOldTownWaterworksShell", 0): ("Masonry", "Street", "Water", "LampGlass"),
     ("PoiResidentialDryingYardShell", 0):
         ("Residential_PaintedMetal", "Residential_Timber"),
     ("PoiIndustrialWeighbridgeShell", 0): ("Industrial", "Street"),
@@ -7003,8 +6980,8 @@ def validate_assemblies(assemblies: Sequence[AssemblySpec]) -> None:
     if len(assemblies) != 145:
         problems.append(
             f"assembly count is {len(assemblies)}, expected 145")
-    if len(names) != 308:
-        problems.append(f"mesh count is {len(names)}, expected 308")
+    if len(names) != 310:
+        problems.append(f"mesh count is {len(names)}, expected 310")
     validate_mirror_bounds(assemblies, "IndustrialCargo", problems)
     validate_mirror_bounds(
         assemblies, "RoadsideRoadworkAndBicycle", problems)
@@ -7206,7 +7183,7 @@ def create_material(role: str) -> bpy.types.Material:
             "PaintedMetal" in role
         node.inputs["Roughness"].default_value = 0.48 if metal else 0.76
         node.inputs["Metallic"].default_value = 0.28 if metal else 0.0
-        if role in {"Neon", "BacklitSign"}:
+        if role in {"Neon", "BacklitSign", "LampGlass"}:
             emission = node.inputs.get("Emission Color") or \
                 node.inputs.get("Emission")
             if emission is not None:

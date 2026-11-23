@@ -939,11 +939,11 @@ namespace BarPromenade
                 case CityDistrictPointOfInterestKind
                     .OldTownWaterworksCourt:
                     loopLocal = new Bounds(
-                        new Vector3(0.55f, 1.98f, 0.40f),
-                        new Vector3(1.08f, 3.20f, 1.08f));
+                        new Vector3(.74f, 1.58f, .40f),
+                        new Vector3(.72f, 1.54f, .72f));
                     detailLocal = new Bounds(
-                        new Vector3(0.55f, 2.62f, 1.58f),
-                        new Vector3(0.44f, 0.60f, 0.32f));
+                        new Vector3(-.40f, 1.61f, .40f),
+                        new Vector3(.20f, .16f, .20f));
                     break;
                 case CityDistrictPointOfInterestKind
                     .ResidentialDryingYard:
@@ -1083,6 +1083,8 @@ namespace BarPromenade
                 return;
             }
             Rect publicBounds = descriptor.PublicBounds;
+            Transform recipe = CreateRecipeRoot(site, descriptor, descriptor.Center,
+                ResolveForward(descriptor), ResolveHorizontalScale(publicBounds));
             CreatePublicGround(
                 site,
                 new Vector3(
@@ -1092,20 +1094,13 @@ namespace BarPromenade
                 new Vector2(
                     publicBounds.width,
                     publicBounds.height),
-                ResolvePavingColor(descriptor.Kind),
+                descriptor.Kind, recipe,
                 true,
                 false,
                 ResolvePublicGroundFoundationDepth(
                     layout,
                     descriptor));
 
-            Vector3 forward = ResolveForward(descriptor);
-            Transform recipe = CreateRecipeRoot(
-                site,
-                descriptor,
-                descriptor.Center,
-                forward,
-                ResolveHorizontalScale(publicBounds));
             BuildRecipe(recipe, descriptor, true, false);
         }
 
@@ -1138,6 +1133,10 @@ namespace BarPromenade
                 PlayerHomeBalconyGeometry.ToHomeLocal(
                     context.PlayerHome,
                     descriptor.Center);
+            Vector3 localForward = PlayerHomeBalconyGeometry.ToHomeLocalDirection(
+                context.PlayerHome, ResolveForward(descriptor));
+            Transform recipe = CreateRecipeRoot(site, descriptor, localCenter, localForward,
+                ResolveHorizontalScale(localBounds));
             CreatePublicGround(
                 site,
                 new Vector3(
@@ -1147,21 +1146,11 @@ namespace BarPromenade
                 new Vector2(
                     localBounds.width,
                     localBounds.height),
-                ResolvePavingColor(descriptor.Kind),
+                descriptor.Kind, recipe,
                 false,
                 true,
                 0f);
 
-            Vector3 localForward =
-                PlayerHomeBalconyGeometry.ToHomeLocalDirection(
-                    context.PlayerHome,
-                    ResolveForward(descriptor));
-            Transform recipe = CreateRecipeRoot(
-                site,
-                descriptor,
-                localCenter,
-                localForward,
-                ResolveHorizontalScale(localBounds));
             BuildRecipe(recipe, descriptor, false, true);
         }
 
@@ -1318,11 +1307,12 @@ namespace BarPromenade
             Transform parent,
             Vector3 center,
             Vector2 size,
-            Color color,
+            CityDistrictPointOfInterestKind kind, Transform recipe,
             bool collider,
             bool homeExterior,
             float foundationDepth)
         {
+            Color color = ResolvePavingColor(kind);
             GameObject ground = RuntimePrimitiveFactory.CreateBox(
                 PublicGroundName,
                 parent,
@@ -1335,11 +1325,12 @@ namespace BarPromenade
                 RuntimePrimitiveFactory.DefaultMaterial,
                 collider);
             ConfigureRenderer(ground, homeExterior);
-            CityPointOfInterestSurfaceAppearance.Apply(
-                ground.GetComponent<Renderer>(),
-                CityPointOfInterestSurfaceKind.Paving,
-                SurfaceProjection.BoxXZ,
-                color);
+            Renderer renderer = ground.GetComponent<Renderer>();
+            if (kind == CityDistrictPointOfInterestKind.OldTownWaterworksCourt)
+                CityPointOfInterestSurfaceAppearance.ApplyWaterworksPaving(renderer, color, recipe);
+            else
+                CityPointOfInterestSurfaceAppearance.Apply(renderer, CityPointOfInterestSurfaceKind.Paving,
+                    SurfaceProjection.BoxXZ, color);
             if (collider)
             {
                 FootstepGround.Stamp(ground, FootstepGroundKind.Concrete);
@@ -1496,22 +1487,32 @@ namespace BarPromenade
                         out Color color,
                         out CityPointOfInterestSurfaceKind? surface,
                         out SurfaceProjection projection);
-                    GameObject chunk =
-                        RuntimePrimitiveFactory.CreateCombinedMeshes(
-                            $"Imported {GetRecipeName(kind)} " +
-                            $"{part.Component}",
-                            parent,
-                            new[]
-                            {
-                                new RuntimeMeshPlacement(
-                                    part.Mesh,
-                                    Vector3.zero,
-                                    Quaternion.identity)
-                            },
-                            color,
-                            keepReadable: surface == CityPointOfInterestSurfaceKind.Paving);
+                    bool waterworks = kind == CityDistrictPointOfInterestKind.OldTownWaterworksCourt;
+                    bool basinStone = waterworks && part.Role == CityMiscMeshRole.Masonry;
+                    bool water = part.Role == CityMiscMeshRole.Water;
+                    bool lamp = part.Role == CityMiscMeshRole.LampGlass;
+                    string name = water ? "Dark Water" : lamp ? "Working Lamp" : $"Imported {GetRecipeName(kind)} {part.Component}";
+                    // Keep the contact anchors at the fixtures, even though FBX vertices use the recipe origin.
+                    Vector3 anchor = water || lamp ? part.Mesh.bounds.center : Vector3.zero;
+                    GameObject chunk = RuntimePrimitiveFactory.CreateCombinedMeshes(
+                        name, parent, new[] { new RuntimeMeshPlacement(part.Mesh, -anchor, Quaternion.identity) },
+                        color,
+                        worldUvTileSize: basinStone ? CityPointOfInterestSurfaceAppearance.BasinStoneMetresPerTile : null,
+                        uvMode: RuntimeWorldUvMode.BoxProjected,
+                        keepReadable: surface == CityPointOfInterestSurfaceKind.Paving);
+                    chunk.transform.localPosition = anchor;
                     ConfigureRenderer(chunk, homeExterior);
-                    if (surface.HasValue)
+                    var renderer = chunk.GetComponent<Renderer>();
+                    if (basinStone)
+                        CityPointOfInterestSurfaceAppearance.ApplyBasinStone(renderer, color);
+                    else if (waterworks && part.Role == CityMiscMeshRole.Street)
+                        CityPointOfInterestSurfaceAppearance.ApplyWaterworksMetal(renderer);
+                    else if (lamp)
+                    {
+                        renderer.sharedMaterial = CityNightResources.EmissiveMaterial;
+                        CityNightGlowRegistry.Register(renderer, color);
+                    }
+                    else if (surface.HasValue)
                     {
                         CityPointOfInterestSurfaceAppearance.Apply(
                             chunk.GetComponent<Renderer>(),
@@ -1548,10 +1549,7 @@ namespace BarPromenade
             {
                 case CityDistrictPointOfInterestKind
                     .OldTownWaterworksCourt:
-                    BuildImportedWaterworksRuntime(
-                        parent,
-                        colliders,
-                        homeExterior);
+                    BuildWaterworksCollider(parent, colliders);
                     return;
                 case CityDistrictPointOfInterestKind
                     .ResidentialDryingYard:
@@ -1581,22 +1579,17 @@ namespace BarPromenade
             }
         }
 
-        private static void BuildImportedWaterworksRuntime(
-            Transform parent,
-            bool colliders,
-            bool homeExterior)
+        private static void BuildWaterworksCollider(Transform parent, bool colliders)
         {
-            AddBox(parent, "Dark Water", -1.02f, 0.32f, 0.40f,
-                3.45f, 0.045f, 1.04f, OldWater, false, homeExterior);
-            AddBox(parent, "Working Lamp", 0.55f, 3.88f, 0.40f,
-                0.34f, 0.20f, 0.34f, AmberGlow, true, homeExterior);
             if (colliders)
             {
                 AddObstacleCollider(
                     parent,
                     "Waterworks Basin Collider",
-                    new Vector3(-0.80f, 0.55f, 0.40f),
-                    new Vector3(4.40f, 1.10f, 1.85f));
+                    new Vector3(-.81f, .35f, .40f),
+                    new Vector3(4.34f, .70f, 1.63f));
+                AddObstacleCollider(parent, "Waterworks Standpipe Collider",
+                    new Vector3(.74f, 1.53f, .40f), new Vector3(.52f, 1.66f, .52f));
             }
         }
 
@@ -1856,9 +1849,13 @@ namespace BarPromenade
             {
                 case CityDistrictPointOfInterestKind
                     .OldTownWaterworksCourt:
-                    color = part.Role == CityMiscMeshRole.Masonry
-                        ? OldStone
-                        : OldMetal;
+                    color = part.Role switch
+                    {
+                        CityMiscMeshRole.Masonry => OldStone,
+                        CityMiscMeshRole.Water => OldWater,
+                        CityMiscMeshRole.LampGlass => AmberGlow,
+                        _ => Color.white
+                    };
                     return;
                 case CityDistrictPointOfInterestKind
                     .ResidentialDryingYard:
@@ -1919,59 +1916,45 @@ namespace BarPromenade
             bool colliders,
             bool homeExterior)
         {
-            AddBox(parent, "Basin Floor", -0.80f, 0.15f, 0.40f,
-                4.15f, 0.30f, 1.55f, OldStone, false, homeExterior);
-            AddBox(parent, "Basin North Rim", -0.80f, 0.43f, 1.10f,
-                4.35f, 0.56f, 0.24f, OldStone, false, homeExterior);
-            AddBox(parent, "Basin South Rim", -0.80f, 0.43f, -0.30f,
-                4.35f, 0.56f, 0.24f, OldStone, false, homeExterior);
-            AddBox(parent, "Basin West Rim", -2.86f, 0.43f, 0.40f,
-                0.24f, 0.56f, 1.18f, OldStone, false, homeExterior);
-            AddBox(parent, "Basin East Rim", 1.26f, 0.43f, 0.40f,
-                0.24f, 0.56f, 1.18f, OldStone, false, homeExterior);
-            AddBox(parent, "Dark Water", -1.02f, 0.32f, 0.40f,
-                3.45f, 0.045f, 1.04f, OldWater, false, homeExterior);
-
-            AddCylinder(parent, "Standpipe Pedestal", 0.55f, 0.45f, 0.40f,
-                1.08f, 0.45f, 1.08f, OldStone, false, homeExterior);
-            AddCylinder(parent, "Cast Iron Standpipe", 0.55f, 1.98f, 0.40f,
-                0.58f, 1.52f, 0.58f, OldMetal, false, homeExterior);
-            AddCylinder(parent, "Standpipe Cap", 0.55f, 3.55f, 0.40f,
-                1.02f, 0.12f, 1.02f, OldMetal, false, homeExterior);
-            AddBox(parent, "Water Spout", 0.55f, 2.82f, 0.98f,
-                0.30f, 0.28f, 1.28f, OldMetal, false, homeExterior);
-            AddBox(parent, "Water Spout Mouth", 0.55f, 2.62f, 1.58f,
-                0.42f, 0.58f, 0.30f, OldMetal, false, homeExterior);
-            AddBox(parent, "Repair Riser", 0.98f, 1.82f, 0.40f,
-                0.20f, 2.20f, 0.20f, OldRepairMetal, false, homeExterior);
-            AddBox(parent, "Repair Bridge", 0.77f, 2.73f, 0.40f,
-                0.62f, 0.18f, 0.22f, OldRepairMetal, false, homeExterior);
-            AddBox(parent, "Lower Pipe Clamp", 0.55f, 1.32f, 0.40f,
-                0.78f, 0.15f, 0.78f, OldRepairMetal, false, homeExterior);
-            AddBox(parent, "Upper Pipe Clamp", 0.55f, 2.42f, 0.40f,
-                0.76f, 0.15f, 0.76f, OldRepairMetal, false, homeExterior);
-            AddBox(parent, "Valve Crossbar", -0.02f, 2.05f, 0.40f,
-                0.95f, 0.14f, 0.14f, OldRepairMetal, false, homeExterior);
-            AddBox(parent, "Valve Handle", -0.47f, 2.05f, 0.40f,
-                0.12f, 0.72f, 0.12f, OldRepairMetal, false, homeExterior);
-            AddBox(parent, "Working Lamp", 0.55f, 3.88f, 0.40f,
-                0.34f, 0.20f, 0.34f, AmberGlow, true, homeExterior);
-
-            AddBox(parent, "Drain Channel A", -1.80f, 0.075f, -1.08f,
-                0.16f, 0.025f, 2.00f, OldMetal, false, homeExterior);
-            AddBox(parent, "Drain Channel B", -0.95f, 0.075f, -1.28f,
-                0.16f, 0.025f, 1.55f, OldMetal, false, homeExterior);
-            AddBox(parent, "Drain Channel C", -0.10f, 0.075f, -1.02f,
-                0.16f, 0.025f, 1.95f, OldMetal, false, homeExterior);
-
-            if (colliders)
+            void BasinBlock(string name, float x, float y, float z, float w, float h, float d)
             {
-                AddObstacleCollider(
-                    parent,
-                    "Waterworks Basin Collider",
-                    new Vector3(-0.80f, 0.55f, 0.40f),
-                    new Vector3(4.40f, 1.10f, 1.85f));
+                var renderer = AddBox(parent, name, x, y, z, w, h, d, OldStone, false, homeExterior)
+                    .GetComponent<Renderer>();
+                CityPointOfInterestSurfaceAppearance.ApplyBasinStone(renderer, OldStone,
+                    SurfaceAppearanceCore.ResolveBoxProjection(renderer));
             }
+            BasinBlock("Basin Floor", -.80f, .15f, .40f, 4.15f, .30f, 1.55f);
+            BasinBlock("Basin North Rim", -.80f, .43f, 1.10f, 4.35f, .56f, .24f);
+            BasinBlock("Basin South Rim", -.80f, .43f, -.30f, 4.35f, .56f, .24f);
+            BasinBlock("Basin West Rim", -2.86f, .43f, .40f, .24f, .56f, 1.18f);
+            BasinBlock("Basin East Rim", 1.26f, .43f, .40f, .24f, .56f, 1.18f);
+            AddBox(parent, "Dark Water", -1.215f, .434f, .40f,
+                2.98f, .018f, 1.14f, OldWater, false, homeExterior);
+            var pedestal = AddCylinder(parent, "Standpipe Pedestal", .74f, .42f, .40f,
+                .92f, .42f, .92f, OldStone, false, homeExterior);
+            CityPointOfInterestSurfaceAppearance.ApplyBasinStone(pedestal.GetComponent<Renderer>(), OldStone,
+                SurfaceProjection.CylinderSide);
+            AddCylinder(parent, "Cast Iron Standpipe", .74f, 1.58f, .40f,
+                .48f, .76f, .48f, OldMetal, false, homeExterior);
+            AddBox(parent, "Water Spout", .17f, 1.89f, .4f,
+                1.23f, .19f, .19f, OldMetal, false, homeExterior);
+            AddCylinder(parent, "Water Spout Mouth", -.40f, 1.73f, .40f,
+                .20f, .14f, .20f, OldMetal, false, homeExterior);
+            AddCylinder(parent, "Repair Riser", 1.085f, 1.48f, .40f,
+                .11f, .60f, .11f, OldRepairMetal, false, homeExterior);
+            foreach (float y in new[] { 1.22f, 1.76f })
+                AddBox(parent, "Repair Clamp", .80f, y, .40f, .68f, .08f, .51f,
+                    OldRepairMetal, false, homeExterior);
+            AddBox(parent, "Valve Handle", .74f, 1.50f, .98f, .47f, .07f, .10f,
+                OldMetal, false, homeExterior);
+            AddBox(parent, "Lamp Bracket", .83f, 2.54f, .40f, .09f, .5f, .09f,
+                OldMetal, false, homeExterior);
+            AddBox(parent, "Working Lamp", .83f, 2.69f, .68f,
+                .24f, .18f, .24f, AmberGlow, true, homeExterior);
+            foreach (float x in new[] { -1.77f, -.77f, .23f })
+                AddBox(parent, "Drain Channel", x, .08f, -.93f, .22f, .04f, 1.09f,
+                    OldMetal, false, homeExterior);
+            BuildWaterworksCollider(parent, colliders);
         }
 
         private static void BuildDryingYard(
@@ -3475,7 +3458,7 @@ namespace BarPromenade
             return part;
         }
 
-        private static void AddCylinder(
+        private static GameObject AddCylinder(
             Transform parent,
             string name,
             float x,
@@ -3522,6 +3505,7 @@ namespace BarPromenade
                 FootstepGround.Stamp(part, FootstepGroundKind.Stone);
                 CityGroundSurfaceSystem.Register(part, collider ? 40 : 100, paint: !collider);
             }
+            return part;
         }
 
         private static void AddObstacleCollider(
@@ -3588,7 +3572,7 @@ namespace BarPromenade
                 1.08f);
         }
 
-        private static Color ResolvePavingColor(
+        internal static Color ResolvePavingColor(
             CityDistrictPointOfInterestKind kind)
         {
             switch (kind)

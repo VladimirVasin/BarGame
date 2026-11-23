@@ -13,6 +13,136 @@ namespace BarPromenade.Tests.PlayMode
 {
     public sealed partial class AreaCaptureFixture
     {
+        [UnityTest, Explicit("Inspect the complete waterworks and its cut-stone court in the composed City.")]
+        public IEnumerator CityWaterworksPaving()
+        {
+            GameSessionState.BeginNewGame();
+            GameSessionState.PrepareSupermarketReturn();
+            Assert.That(GameSessionState.TryStartGameTimeAt(12 * 60), Is.True);
+            CityGameRoot city = null;
+            yield return Capture(SceneIds.City, () =>
+            {
+                city = Object.FindAnyObjectByType<CityGameRoot>();
+                return city != null && city.IsInitialized ? city : null;
+            }, () =>
+            {
+                const CityDistrictPointOfInterestKind kind = CityDistrictPointOfInterestKind.OldTownWaterworksCourt;
+                var descriptor = city.Layout.DistrictPointsOfInterest.Single(site => site.Kind == kind);
+                var site = city.World.Root.transform.Find(CityDistrictPointOfInterestWorldBuilder.CityRootName)
+                    .Find(CityDistrictPointOfInterestWorldBuilder.GetSiteName(descriptor.Id));
+                var recipe = site.Find(CityDistrictPointOfInterestWorldBuilder.GetRecipeName(kind));
+                var source = site.Find(CityDistrictPointOfInterestWorldBuilder.PublicGroundName).GetComponent<Renderer>();
+                var ground = city.World.Root.GetComponent<CityGroundSurfaceSystem>();
+                Vector3 foot = recipe.TransformPoint(new Vector3(.74f, 0, 1.52f));
+                Physics.SyncTransforms();
+                Assert.That(TryCommonGroundHit(ground, foot, out RaycastHit hit), Is.True);
+                var floor = hit.collider.GetComponent<Renderer>();
+                var block = new MaterialPropertyBlock();
+                floor.GetPropertyBlock(block, CommonGroundSlot(hit));
+                int frameId = CityPointOfInterestSurfaceAppearance.CourtStoneFrameId;
+                Vector4 frame = block.GetVector(frameId);
+                Assert.That(Vector2.Distance(new Vector2(frame.x, frame.y), new Vector2(foot.x, foot.z)), Is.LessThan(.002f));
+                Assert.That(new Vector2(frame.z, frame.w).magnitude, Is.EqualTo(1f).Within(.001f));
+                Assert.That(block.GetTexture("_BaseMap").name, Is.EqualTo("CityParkStoneAlbedo"));
+                Assert.That(block.GetTexture("_GroundResponse").name, Is.EqualTo("CityParkStoneGroundResponse"));
+                var basin = recipe.Find("Imported Old Town Waterworks Court Masonry").GetComponent<Renderer>();
+                var finish = new MaterialPropertyBlock();
+                basin.GetPropertyBlock(finish);
+                Assert.That(finish.GetTexture("_BaseMap").name, Is.EqualTo("CityParkStoneAlbedo"));
+                Assert.That(finish.GetTexture("_SceneMaterialResponse").name, Is.EqualTo("CityParkStoneResponse"));
+                Assert.That(finish.GetVector(frameId), Is.EqualTo(Vector4.zero));
+                Renderer hardware = recipe.Find("Imported Old Town Waterworks Court Street").GetComponent<Renderer>();
+                var metal = hardware.sharedMaterial;
+                Assert.That(metal.GetTexture("_BaseMap").name, Is.EqualTo("WaterworksMetalAlbedo"));
+                Assert.That(metal.GetTexture("_MetallicGlossMap").name, Is.EqualTo("WaterworksMetalMask"));
+                Assert.That(metal.IsKeywordEnabled("_METALLICSPECGLOSSMAP"), Is.True);
+                var water = recipe.Find("Dark Water").GetComponent<Renderer>();
+                var lamp = recipe.Find("Working Lamp").GetComponent<Renderer>();
+                Assert.That(lamp.sharedMaterial, Is.SameAs(CityNightResources.EmissiveMaterial));
+                Assert.That(Vector3.Distance(lamp.transform.position, recipe.TransformPoint(new Vector3(.83f, 2.69f, .68f))),
+                    Is.LessThan(.025f));
+                Assert.That(CityDistrictPointOfInterestWorldBuilder.TryDescribeSoundGeometry(descriptor, out var sound), Is.True);
+                Vector3 mouth = recipe.TransformPoint(new Vector3(-.40f, 1.61f, .40f));
+                Assert.That(Vector3.Distance(sound.DetailPosition, mouth), Is.LessThan(.025f));
+                var column = recipe.Find("Waterworks Standpipe Collider").GetComponent<BoxCollider>();
+                Assert.That(column.bounds.Contains(sound.LoopPosition), Is.True);
+                Assert.That(water.bounds.Contains(new Vector3(mouth.x, water.bounds.center.y, mouth.z)), Is.True,
+                    "Drops from the open spout must land inside the trough.");
+                var basinMaterial = basin.sharedMaterial;
+                var originalBasin = new MaterialPropertyBlock();
+                Color flat = finish.GetColor("_BaseColor") / CityParkSurfaceAppearance.GetRecipe(CityParkSurfaceKind.Stone).AlbedoCompensation;
+                flat.a = 1f;
+                originalBasin.SetColor("_BaseColor", flat);
+                originalBasin.SetColor("_Color", flat);
+
+                // Reproduce the former public-ground recipe at the same physical size and camera pose.
+                const CityPointOfInterestSurfaceKind paving = CityPointOfInterestSurfaceKind.Paving;
+                Assert.That(CitySurfaceLibrary.TryGroundJointMaps(CityPointOfInterestSurfaceAppearance.GetTexture(paving),
+                    out var oldAlbedo, out var oldResponse), Is.True);
+                var oldUv = CityPointOfInterestSurfaceAppearance.CreateBaseMapTransform(source, paving, SurfaceProjection.BoxXZ);
+                var oldTint = CityPointOfInterestSurfaceAppearance.CreateDisplayTint(
+                    CityDistrictPointOfInterestWorldBuilder.ResolvePavingColor(kind), paving);
+                var slots = new List<(Renderer renderer, int index, MaterialPropertyBlock original)>();
+                foreach (var sector in floor.transform.parent.GetComponentsInChildren<MeshRenderer>())
+                {
+                    if (!sector.bounds.Intersects(source.bounds)) continue;
+                    for (int i = 0; i < sector.sharedMaterials.Length; i++)
+                    {
+                        var original = new MaterialPropertyBlock();
+                        sector.GetPropertyBlock(original, i);
+                        if (original.GetVector(frameId) == frame) slots.Add((sector, i, original));
+                    }
+                }
+                Assert.That(slots, Is.Not.Empty);
+                bool SetStones(bool enabled)
+                {
+                    basin.sharedMaterial = enabled ? basinMaterial : RuntimePrimitiveFactory.DefaultMaterial;
+                    basin.SetPropertyBlock(enabled ? finish : originalBasin);
+                    foreach (var slot in slots)
+                    {
+                        if (enabled) slot.renderer.SetPropertyBlock(slot.original, slot.index);
+                        else
+                        {
+                            slot.renderer.GetPropertyBlock(block, slot.index);
+                            block.SetVector(frameId, Vector4.zero);
+                            block.SetTexture("_BaseMap", oldAlbedo);
+                            block.SetTexture("_GroundResponse", oldResponse);
+                            block.SetVector("_BaseMap_ST", oldUv);
+                            block.SetColor("_BaseColor", oldTint);
+                            block.SetColor("_Color", oldTint);
+                            block.SetFloat("_GroundKind", (float)GroundSurfaceKind.Paving);
+                            block.SetFloat("_Smoothness", CityPointOfInterestSurfaceAppearance.GetRecipe(paving).Smoothness);
+                            slot.renderer.SetPropertyBlock(block, slot.index);
+                        }
+                    }
+                    return true;
+                }
+                Vector3 bySpout = hit.point + recipe.forward * .9f + recipe.right * .75f;
+                Vector3 eye = bySpout + Vector3.up * EyeHeight;
+                Vector3 entry = hit.point + recipe.forward * 4f - recipe.right * 1.3f + Vector3.up * EyeHeight;
+                city.Player.Motor.Teleport(bySpout + Vector3.up * PlayerFactory.GroundedRootOffset);
+                bool Night()
+                {
+                    if (GameSessionState.GameTimeOfDayMinutes < 21 * 60)
+                        GameSessionState.AdvanceGameTime((float)((22 * 60 - GameSessionState.GameTimeOfDayMinutes) /
+                            GameTimeState.GameMinutesPerRealSecond));
+                    city.DayNight.ApplyCurrentTime(true);
+                    return true;
+                }
+                return new[] {
+                    Shot.At("waterworks-paving-before", eye, hit.point, 68f, readyWhen: () => SetStones(false)),
+                    Shot.At("waterworks-paving-stone", eye, hit.point, 68f, readyWhen: () => SetStones(true)),
+                    Shot.At("waterworks-paving-court", entry, recipe.position + Vector3.up * .6f, 68f),
+                    Shot.At("waterworks-wheel", recipe.TransformPoint(new Vector3(-.45f, 1.76f, 2.72f)),
+                        recipe.TransformPoint(new Vector3(.48f, 1.68f, .55f)), 58f),
+                    Shot.At("waterworks-drain", recipe.TransformPoint(new Vector3(-3.15f, 1.76f, -2.76f)),
+                        recipe.TransformPoint(new Vector3(-.79f, 1.12f, .32f)), 64f),
+                    Shot.At("waterworks-lamp", entry, recipe.TransformPoint(new Vector3(-.65f, 1.30f, .40f)), 64f, readyWhen: Night),
+                    Shot.At("waterworks-paving-night", eye, hit.point, 68f, readyWhen: Night)
+                };
+            });
+        }
+
         [UnityTest, Explicit("Read the printed supermarket sign from both approaches and inspect its night lighting.")]
         public IEnumerator CityGrocerySignFromStreet()
         {
