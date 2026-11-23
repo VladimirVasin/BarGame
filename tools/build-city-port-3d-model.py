@@ -65,6 +65,9 @@ WAREHOUSE_LIGHTS = {"A":(0,4.58,-13.7),"B":(.8,4.58,-17.45),"C":(-6.6,4.58,-15.2
 WAREHOUSE_REFRIGERATION = (3.12,4.02,-17.1)
 YARD_WEAR_BOUNDS = (-24.0, -36.0, 30.0, 2.0)
 YARD_DRAIN_Z = -26.9
+QUAY_BOLLARD_Z = -.78
+# longitudinal station, lateral distance from centreline, deck height, foredeck grade
+SHIP_BOLLARDS = {"Bow": (6.85, 1.62, 1.8275, .15), "Stern": (-8.45, 2.0, 1.6, 0.0)}
 
 
 def surface_role(name,color,face=None,geom=None,index=0):
@@ -144,8 +147,14 @@ def ring(geom, center, radius, thickness, color, normal=(0,1,0), steps=16):
         geom.rod(points[i],points[(i+1)%steps],thickness,color,6)
 
 
-def bollard(geom,x,y,z):
-    chamfer(geom,(x,y+.05,z),(.62,.1,.56),METAL)
+def bollard(geom, x, y, z, grade=0.0):
+    start = len(geom.vertices)
+    chamfer(geom,(x,y+.05,z),(.62,.1,.56),METAL,.015)
+    # Bed the underside against the deck rake while keeping the pin upright.
+    if grade:
+        for i in range(start, len(geom.vertices)):
+            vx, vz, vy = geom.vertices[i]
+            geom.vertices[i] = (vx, vz, vy + grade*(vz-z)*(1-(vy-y)/.10))
     geom.rod((x,y+.1,z),(x,y+.52,z),.16,DARK,8)
     geom.rod((x-.35,y+.46,z),(x+.35,y+.46,z),.13,METAL,8)
 
@@ -574,7 +583,7 @@ def yard_wear_png():
     for drain_x in (-11,-3,5,13):
         damp += .56*stain(drain_x,-8.75,1.1,.57)
     for bollard_x in (-11,11):
-        light += .60*stain(bollard_x,-.63,.90,.49)
+        light += .60*stain(bollard_x,QUAY_BOLLARD_Z-.33,.90,.49)
     dirt += .48*stain(-15.15,-8.35,1.27,1.58)
     moisture_edge = fade(z,-.95,-.18) * (1-fade(z,-.12,.24))
     damp += .29*moisture_edge*fade(15.8-abs(x),0,.8)*grain
@@ -830,12 +839,13 @@ def dock(mat):
         for j in range(3):
             g.rod((x+j*.17,1.504,z+j*.11),(x+(j+1)*.17,1.504,z+(j+1)*.11+(.06 if j%2 else -.04)),.009,METAL,4)
     for x in (-11,11):
-        bollard(g,x,1.5,-.3)
+        for target in (g, rail):
+            bollard(target, x, 1.5, QUAY_BOLLARD_Z)
         for dx in (-.24,.24):
             for dz in (-.20,.20):
-                g.rod((x+dx,1.60,-.3+dz),(x+dx,1.64,-.3+dz),.030,DARK,6)
-        empty("ANCHOR_Bollard"+("West" if x<0 else "East"),root,(x,2,-.3))
-        empty("ANCHOR_Moor"+("Bow" if x<0 else "Stern"),root,(x,2,-.3))
+                g.rod((x+dx,1.60,QUAY_BOLLARD_Z+dz),(x+dx,1.64,QUAY_BOLLARD_Z+dz),.030,DARK,6)
+        empty("ANCHOR_Bollard"+("West" if x<0 else "East"),root,(x,1.96,QUAY_BOLLARD_Z))
+        empty("ANCHOR_Moor"+("Bow" if x<0 else "Stern"),root,(x,1.96,QUAY_BOLLARD_Z))
     for x in (-12,-8,-4,0,4,8,12):
         # The existing rubber bears on an inset sacrificial timber pad.
         g.role="Timber"
@@ -1078,8 +1088,9 @@ def trawler(mat):
     for z in (-1.1,-.6,0,.6):
         for x in (-2.25,2.25):
             ring(g,(x,1.8,z),.22,.055,METAL,steps=10)
-    for side in (-1,1):
-        for z in (-8.8,8): bollard(g,side*(1.5 if z<0 else 1.4),1.65 if z<0 else 2.02,z)
+    for z, lateral, y, grade in SHIP_BOLLARDS.values():
+        for side in (-1, 1):
+            bollard(g, side*lateral, y, z, grade)
     # Scuffs and welded repair plates are sparse and dull, never fresh damage.
     for side in (-1,1):
         for z in (-5,-2,1,3):
@@ -1175,11 +1186,13 @@ def trawler(mat):
         g.rod((0,-.85,-10.2),(.5*math.cos(a),-.85+.5*math.sin(a),-10.2),.11,METAL,6,end_radius=.035)
     chamfer(g,(0,-.7,-10.55),(.10,1,.42),METAL)
     obj(g,"TrawlerVisible",root,mat)
-    anchors={"MooringBowPort":(-1.4,2.5,8),"MooringBowStarboard":(1.4,2.5,8),
-             "MooringSternPort":(-1.5,2.13,-8.8),"MooringSternStarboard":(1.5,2.13,-8.8),
-             "Captain":(-.7,1.6,-7.18),"HelmLeft":(-.86,2.94,-6.88),"HelmRight":(-.54,2.94,-6.88),
-             "Deckhand":(-2.43,1.6,-4),"MoorBow":(-1.4,2.5,8),"MoorStern":(-1.5,2.13,-8.8),
+    anchors={"Captain":(-.7,1.6,-7.18),"HelmLeft":(-.86,2.94,-6.88),"HelmRight":(-.54,2.94,-6.88),
+             "Deckhand":(-2.43,1.6,-4),
              "Engine":(0,.1,-8),"Horn":(0,4.4,-6.8)}
+    for end, (z, lateral, y, grade) in SHIP_BOLLARDS.items():
+        for side, label in ((-1, "Port"), (1, "Starboard")):
+            anchors["Mooring"+end+label] = (side*lateral, y+.46, z)
+        anchors["Moor"+end] = anchors["Mooring"+end+"Port"]
     for name,p in anchors.items(): empty("ANCHOR_"+name,root,p)
     return root
 
@@ -1339,6 +1352,36 @@ def validate_holds(roots):
                 hit,_,_,_=tree.ray_cast(Vector(source((x+dx,2,z+dz))),Vector(source((0,-1,0))),3)
                 if hit is None or abs(source(hit)[1]+.5)>.005:
                     raise RuntimeError(f"Cargo extraction shaft intersects deck or misses hold floor: {x+dx},{z+dz} -> {hit}")
+
+
+def validate_mooring_feet(roots):
+    """Measure both sides of the contact on the rendered deck and cast-iron foot."""
+    bpy.context.view_layer.update()
+    for host, visible, deck_role, anchors in (
+            ("Dock", "DockVisible", "Concrete", ("BollardWest", "BollardEast")),
+            ("Trawler", "TrawlerVisible", "Deck", tuple("Mooring"+e+s for e in SHIP_BOLLARDS
+                                                        for s in ("Port", "Starboard")))):
+        root = next(r for r in roots if r.name.split('.')[0] == host)
+        parts = {o.name.split('.')[0]: o for o in root.children_recursive}
+
+        def surface(role):
+            part = parts[visible+"__"+role]
+            pose = root.matrix_world.inverted() @ part.matrix_world
+            return BVHTree.FromPolygons([pose @ v.co for v in part.data.vertices],
+                                        [tuple(f.vertices) for f in part.data.polygons])
+
+        deck, iron = surface(deck_role), surface("SteelDark")
+        for anchor in anchors:
+            x, pin, z = source(root.matrix_world.inverted() @ parts["ANCHOR_"+anchor].matrix_world.translation)
+            for dx in (-.29, .29):
+                for dz in (-.26, .26):
+                    origin = Vector(source((x+dx, pin-.24, z+dz)))
+                    top = deck.ray_cast(origin, Vector((0,0,-1)), .36)[0]
+                    if top is None:
+                        raise ValueError(anchor+" overhangs the water")
+                    sole = iron.ray_cast(top-Vector((0,0,.04)), Vector((0,0,1)), .09)[0]
+                    if sole is None or abs(sole.z-top.z) > .002:
+                        raise ValueError(anchor+" is not seated on its supporting surface")
 
 
 def validate_landing(roots):
@@ -1596,7 +1639,7 @@ def main():
     p.add_argument("--only-part",action="append",choices=("Dock","Trawler","CraneBase","CraneBoom","Hook","Cargo","Trolley","RopeSegment","AccessRoad"))
     args=p.parse_args(sys.argv[sys.argv.index("--")+1:] if "--" in sys.argv else [])
     base.reset();mat=base.material("PortVertexPaint")
-    roots=build(mat);validate_holds(roots);validate_landing(roots);validate_surfaces(roots);validate_controls_and_light(roots);validate_warehouse_interior(roots);entries=[describe(r) for r in roots]
+    roots=build(mat);validate_holds(roots);validate_mooring_feet(roots);validate_landing(roots);validate_surfaces(roots);validate_controls_and_light(roots);validate_warehouse_interior(roots);entries=[describe(r) for r in roots]
     manifest={"design_id":"city_working_fishing_port_v1","generator":Path(__file__).name,
               "coordinate_system":"Unity +Y up / +Z bow; fixed metres; waterline origin",
               "parts":entries,"cargo_attachment_height":1.7,"crane_boom_length":8,"crane_pivot_height":4,
@@ -1626,7 +1669,7 @@ def main():
         bpy.context.preferences.filepaths.save_version=0
         bpy.ops.wm.save_as_mainfile(filepath=str(args.source_dir/"CityPort3D.blend"),check_existing=False)
         if not args.no_preview:preview(roots,args.source_dir/"CityPort3D.png")
-    base.reset();rebuilt=build(mat);validate_holds(rebuilt);validate_landing(rebuilt);validate_surfaces(rebuilt);validate_controls_and_light(rebuilt);validate_warehouse_interior(rebuilt);repeated=[describe(r) for r in rebuilt]
+    base.reset();rebuilt=build(mat);validate_holds(rebuilt);validate_mooring_feet(rebuilt);validate_landing(rebuilt);validate_surfaces(rebuilt);validate_controls_and_light(rebuilt);validate_warehouse_interior(rebuilt);repeated=[describe(r) for r in rebuilt]
     if entries!=repeated:raise RuntimeError("Port deterministic rebuild mismatch")
     print("CITY PORT ART CONTRACT OK: fixed metre parts, real holds, semantic UVs, yard wear, moving controls, warehouse fittings/clearances/lamps, forward searchlight and deterministic geometry")
     print(json.dumps([{k:v for k,v in e.items() if k in ("name","triangles","bounds_min","bounds_max")} for e in entries]))

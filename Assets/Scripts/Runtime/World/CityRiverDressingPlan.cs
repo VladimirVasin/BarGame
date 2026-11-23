@@ -143,7 +143,7 @@ namespace BarPromenade
         {
             float minimum = bridge.SpanBounds.xMin + RailThickness * 0.5f;
             float maximum = bridge.SpanBounds.xMax - RailThickness * 0.5f;
-            float deckY = bridge.AverageY + CityStreetSurfacePlanner.RoadTop;
+            if (bridge.Definition.Style == CityBridgeStyle.Works) return;
             for (int side = -1; side <= 1; side += 2)
             {
                 bool timber = bridge.Definition.Role == CityBridgeRole.ParkFootbridge;
@@ -167,9 +167,6 @@ namespace BarPromenade
                             span.Max - span.Min);
                         continue;
                     }
-                    // A Works post sits on the deck edge; a 380 mm sole
-                    // would overhang it. Keep its supported girder fittings
-                    // below instead of adding a cosmetic floating footplate.
                     if (!timber) continue;
                     // Imported rail posts and their iron sleeves share the same six bays.
                     float scale = bridge.SpanBounds.width / CityRiverDefinition.TimberReferenceSpan;
@@ -183,13 +180,7 @@ namespace BarPromenade
                             new Vector3(x, bridge.AverageY + 0.002f, z));
                     }
                 }
-                if (bridge.Definition.Style == CityBridgeStyle.Works)
-                    for (int pier = -1; pier <= 1; pier += 2)
-                        Add(target, $"{bridge.Definition.Id}-bearing-{side}-{pier}",
-                            CityMiscKind.RiverWorksFitting,
-                            new Vector3(bridge.SpanBounds.center.x + pier * bridge.SpanBounds.width * 0.30f,
-                                deckY - 0.68f, z - side * 0.048f),
-                            Quaternion.Euler(side * 90f, 0f, 0f));
+
             }
         }
 
@@ -200,7 +191,8 @@ namespace BarPromenade
             float upperEdge = landing.StairBounds.center.y - direction * landing.StairBounds.height * 0.5f;
             float tread = landing.StairBounds.height / landing.StepCount;
             Quaternion rotation = Quaternion.Euler(0f, direction > 0f ? 0f : 180f, 0f);
-            for (int step = 0; step < landing.StepCount; step++)
+            int appliedNoses = landing.BridgeStyle == CityBridgeStyle.Works ? 0 : landing.StepCount;
+            for (int step = 0; step < appliedNoses; step++)
             {
                 float y = Mathf.Lerp(landing.UpperY, landing.LowerY, (step + 1f) / landing.StepCount);
                 // The existing tread extends 12.5 mm past its nominal end;
@@ -231,15 +223,12 @@ namespace BarPromenade
                     landing.PlatformBounds.yMin),
                 new Vector3(waterX + landwardSign * 0.205f, landing.LowerY + TreadClearanceMeters,
                     landing.PlatformBounds.yMax), 1f);
+            // Keep every stair axis free and the entire casting on its platform beside the coping.
+            float bollardX = waterX + landwardSign * .78f;
             for (int side = -1; side <= 1; side += 2)
-            {
-                // Existing stair posts straddle the flight/platform edge or
-                // its retaining wall. They keep their original continuous
-                // rail; optional wide sole plates have no full support here.
                 Add(target, $"{landing.Id}-bollard-{side}", CityMiscKind.RiverMooringBollard,
-                    new Vector3(landing.PlatformBounds.center.x, landing.LowerY,
+                    new Vector3(bollardX, landing.LowerY,
                         landing.PlatformBounds.center.y + side * landing.PlatformBounds.height * 0.30f));
-            }
         }
 
         private static void AddLanterns(CityLayout layout, List<CityRiverDressingPlacement> target)

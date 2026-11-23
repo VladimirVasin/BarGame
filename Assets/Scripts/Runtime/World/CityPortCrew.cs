@@ -276,7 +276,7 @@ namespace BarPromenade
         private Vector3 ShipCleatDock(Transform cleat, bool bow)
         {
             Vector3 local = port.Vessel.InverseTransformPoint(cleat.position);
-            local.z -= .48f;
+            local.z += bow ? -.55f : .55f;
             // The forward work deck rises from 1.7 m at z=6 to 2 m at z=8.
             local.y = bow ? Mathf.Lerp(1.7f, 2f, (local.z - 6f) / 2f) : 1.6f;
             return port.Vessel.TransformPoint(local);

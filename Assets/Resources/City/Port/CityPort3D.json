@@ -20,16 +20,16 @@
           "name": "ANCHOR_BollardEast",
           "position": [
             11.0,
-            2.0,
-            -0.3
+            1.96,
+            -0.78
           ]
         },
         {
           "name": "ANCHOR_BollardWest",
           "position": [
             -11.0,
-            2.0,
-            -0.3
+            1.96,
+            -0.78
           ]
         },
         {
@@ -44,16 +44,16 @@
           "name": "ANCHOR_MoorBow",
           "position": [
             -11.0,
-            2.0,
-            -0.3
+            1.96,
+            -0.78
           ]
         },
         {
           "name": "ANCHOR_MoorStern",
           "position": [
             11.0,
-            2.0,
-            -0.3
+            1.96,
+            -0.78
           ]
         },
         {
@@ -425,8 +425,8 @@
           ]
         }
       ],
-      "triangles": 51816,
-      "geometry_signature": "0eaa61951890053a4337c14ebbcb46f117fd53b81146ac1b903244b607873cc4"
+      "triangles": 51984,
+      "geometry_signature": "2be662093eafa51c9cfb351ff0328099a2e083f05a24eb17242ce0acea5ab884"
     },
     {
       "name": "Trawler",
@@ -508,49 +508,49 @@
         {
           "name": "ANCHOR_MoorBow",
           "position": [
-            -1.4,
-            2.5,
-            8.0
+            -1.62,
+            2.2875,
+            6.85
           ]
         },
         {
           "name": "ANCHOR_MooringBowPort",
           "position": [
-            -1.4,
-            2.5,
-            8.0
+            -1.62,
+            2.2875,
+            6.85
           ]
         },
         {
           "name": "ANCHOR_MooringBowStarboard",
           "position": [
-            1.4,
-            2.5,
-            8.0
+            1.62,
+            2.2875,
+            6.85
           ]
         },
         {
           "name": "ANCHOR_MooringSternPort",
           "position": [
-            -1.5,
-            2.13,
-            -8.8
+            -2.0,
+            2.06,
+            -8.45
           ]
         },
         {
           "name": "ANCHOR_MooringSternStarboard",
           "position": [
-            1.5,
-            2.13,
-            -8.8
+            2.0,
+            2.06,
+            -8.45
           ]
         },
         {
           "name": "ANCHOR_MoorStern",
           "position": [
-            -1.5,
-            2.13,
-            -8.8
+            -2.0,
+            2.06,
+            -8.45
           ]
         },
         {
@@ -611,7 +611,7 @@
         }
       ],
       "triangles": 13600,
-      "geometry_signature": "91e9564dd468e3809c2fb41fa241920ff396bf489bffb088ad3a44264680d462"
+      "geometry_signature": "528066bc9357d9117cba162be6742574a29e969d8ac8a8fb18dabc720af479e2"
     },
     {
       "name": "CraneBase",

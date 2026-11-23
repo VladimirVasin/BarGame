@@ -74,6 +74,7 @@ namespace BarPromenade.Tests.PlayMode
                     Transform river = city.World.RiverRoot.transform;
                     AssertRiverConstructionKit(city, river);
                     AssertRiverRoutes(city, river);
+                    AssertWorksContacts(city);
                     AssertRiverLanterns(city, river);
                     grayscaleOwner = new GameObject("River Acceptance Grayscale");
                     Volume volume = grayscaleOwner.AddComponent<Volume>();
@@ -88,6 +89,16 @@ namespace BarPromenade.Tests.PlayMode
                 CityRiverBridgeDescriptor footbridge = city.Layout.River.Bridges.Single(
                     span => span.Definition.Role == CityBridgeRole.ParkFootbridge);
                 yield return WalkTimberFootbridge(city, footbridge);
+                GameSessionState.UpdateDrinkingProgress(0, DrinkId.LightBeer, 1);
+                GameSessionState.AdvanceGameTime((float)(Mathf.Repeat(12 * 60f - (float)GameSessionState.GameTimeOfDayMinutes, 1440f)
+                    / GameTimeState.GameMinutesPerRealSecond));
+                city.DayNight.ApplyCurrentTime(true);
+                city.Rain.SetIntensity(0f);
+                CityWaterResources.SetRainIntensity(0f);
+                CityWetSurfaceRegistry.SetImmediate(0f);
+                yield return WalkWorksBridgeAndRiverLandings(city);
+                yield return RideWorksBridge(city);
+                yield return CheckWatersideMoorings(city);
                 yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
                 AssertCityLightingGlobalsCleared();
                 Debug.Log("RIVER EMBANKMENTS ACCEPTANCE OK: placed imported details, supported clear banks/bridges/steps, constant lanterns, bounded effects and weather/state views.");
@@ -142,6 +153,13 @@ namespace BarPromenade.Tests.PlayMode
                     Assert.That(physical, Is.Not.Null, placement.Id);
                     BoxCollider box = physical.GetComponent<BoxCollider>();
                     Assert.That(box, Is.Not.Null, placement.Id);
+                    Rect floor = city.Layout.River.Landings.Single(l => l.PlatformBounds.Contains(
+                        new Vector2(placement.Position.x, placement.Position.z))).PlatformBounds;
+                    float waterSide = placement.Position.x < city.Layout.River.Segments[0].WaterBounds.center.x
+                        ? floor.xMax - box.bounds.max.x : box.bounds.min.x - floor.xMin;
+                    Assert.That(waterSide, Is.InRange(.45f, .62f), placement.Id + " set back from the coping");
+                    Assert.That(Mathf.Abs(box.bounds.center.x - floor.center.x) - box.bounds.extents.x,
+                        Is.GreaterThan(.42f), placement.Id + " clears the walking lane");
                     Assert.That(Vector3.Distance(box.bounds.center, placement.Position + Vector3.up * .26f), Is.LessThan(.002f));
                     Assert.That(Vector3.Distance(box.bounds.size, new Vector3(.44f, .52f, .44f)), Is.LessThan(.002f));
                 }
@@ -536,6 +554,12 @@ namespace BarPromenade.Tests.PlayMode
                 centre + new Vector3(-1.4f, -1.05f, -4.0f), west + new Vector3(2.0f, -.53f, -.78f), 62f), false);
             Add("day-river-timber-bearing", Shot.At("quay and bearing",
                 west + new Vector3(.15f, EyeHeight, -4f), west + new Vector3(1.95f, -.25f, -1.2f), 52f), false);
+            CityRiverBridgeDescriptor industrial = WorksBridge(city);
+            Rect worksSpan = industrial.SpanBounds;
+            float steelLevel = industrial.AverageY + CityStreetSurfacePlanner.RoadTop;
+            Vector3 joint = new Vector3(worksSpan.center.x + worksSpan.width*.30f, steelLevel-.86f, worksSpan.yMax-.32f);
+            Shot girder = Shot.At("steel and bearing", joint + new Vector3(-3.15f,-.47f,3.3f), joint, 60f);
+            Add("day-river-works-bearings", girder, false);
             foreach (Shot bank in banks) Add("night-river-" + bank.Name, bank, true);
             CityRiverBridgeDescriptor works = city.Layout.River.Bridges[0];
             Add("night-river-bridge-structure", Shot.At("bridge-structure",
@@ -548,9 +572,16 @@ namespace BarPromenade.Tests.PlayMode
             Add("night-river-timber-dry", westEye, true);
             Add("night-river-timber-rain", westEye, true, rain: true);
             Add("night-river-heavy-rain", banks[0], true, rain: true);
+            Add("night-river-works-bearings-wet", girder, true, rain:true);
+            foreach (CityRiverLandingDescriptor landing in city.Layout.River.Landings.Where(l => l.BridgeId == industrial.Definition.Id))
+            {
+                Vector3 floor = new Vector3(landing.PlatformBounds.center.x, landing.LowerY, landing.PlatformBounds.center.y);
+                Add("night-river-" + landing.Id + "-wet", Shot.At(landing.Id, floor + Vector3.up * EyeHeight,
+                    new Vector3(landing.StairBounds.center.x, landing.UpperY-.1f, landing.StairBounds.center.y), 66f), true, rain:true);
+            }
             Add("night-river-grayscale", banks[1], true, gray: true);
             Add("night-river-intoxication", banks[0], true, intoxicated: true);
-            Assert.That(shots.Count, Is.EqualTo(25), "Keep this acceptance bounded to the affected river.");
+            Assert.That(shots.Count, Is.EqualTo(29), "Keep this acceptance bounded to the affected river.");
             return shots.ToArray();
 
             void Add(string name, Shot pose, bool night, bool rain = false, bool gray = false, bool intoxicated = false)

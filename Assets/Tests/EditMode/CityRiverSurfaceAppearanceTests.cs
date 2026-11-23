@@ -346,6 +346,13 @@ namespace BarPromenade.Tests.EditMode
                     var properties = new MaterialPropertyBlock();
                     renderer.GetPropertyBlock(properties);
                     Texture texture = properties.GetTexture(BaseMapId);
+                    if (HasAncestor(renderer, "works-bridge Road Bridge") ||
+                        ((HasAncestor(renderer, "works-bridge-west-landing") || HasAncestor(renderer, "works-bridge-east-landing"))
+                         && renderer.name != CityRiverWorldBuilder.LandingCutRetainingWallsName))
+                    {
+                        Assert.That(renderer.sharedMaterial, Is.SameAs(Resources.Load<Material>(CityWorksBridgeArt.FinishPath)), renderer.name);
+                        continue;
+                    }
                     if (IsParkTimber(renderer))
                     {
                         Assert.That(renderer.sharedMaterial, Is.SameAs(Resources.Load<Material>("City/Surfaces/ParkFootbridge")));

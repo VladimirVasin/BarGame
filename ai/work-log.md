@@ -5,7 +5,7 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-23
 
-CityRiverEmbankments checks both crossings of the rebuilt park footbridge, its barriers, stone bearings and dry/wet timber.
+CityRiverEmbankments checks bridge walks, all stairs, bearings, rain, seated line 03 and working moorings. validate_mooring_feet measures casting/deck contact.
 CityParkBandstand checks seat transfers, corner clicks, both boards under one lamp and the default residents’ wardrobe. The old bodies are retired.
 
 CityCanneryFinishes checks the rebuilt bay, work surfaces, dispatch and the equipped apron panels in pose.

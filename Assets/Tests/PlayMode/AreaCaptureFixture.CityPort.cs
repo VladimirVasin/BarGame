@@ -831,6 +831,46 @@ namespace BarPromenade.Tests.PlayMode
             return new Bounds((low + high) * .5f, high - low);
         }
 
+        private static IEnumerator CheckWatersideMoorings(CityGameRoot city)
+        {
+            var port = Object.FindAnyObjectByType<CityPortController>();
+            var crew = port.GetComponentInChildren<CityPortCrew>(true);
+            bool auto = port.AutoAdvance, forced = port.ForcePresentation;
+            bool supplyAuto = city.Cannery != null && city.Cannery.AutoAdvance;
+            try
+            {
+                if (city.Cannery != null) city.Cannery.AutoAdvance = false;
+                port.AutoAdvance = false;
+                port.ForcePresentation = true;
+                foreach (bool bow in new[] { true, false })
+                {
+                    string end = bow ? "Bow" : "Stern";
+                    float x = bow ? -11f : 11f;
+                    double seconds = CityPortCycle.ApproachDurationSeconds + (bow ? 4d : 25d);
+                    yield return CapturePort(city.Camera, city, port, crew, seconds, "day-river-port-mooring-" + end,
+                        new Vector3(x * 1.16f, 4.8f, -4f), new Vector3(x * .85f, 1.85f, 1.15f), 60f);
+                    var shipPin = CityPortAssetProvider.FindPart(port.Vessel.gameObject, "ANCHOR_Moor" + end);
+                    var shorePin = CityPortAssetProvider.FindPart(port.Dock.gameObject, "ANCHOR_Moor" + end);
+                    Assert.That(port.MooringProgress(bow ? 0 : 1), Is.EqualTo(1f).Within(.01f));
+                    CheckDock(crew.Deckhand.transform, shipPin);
+                    CheckDock(crew.ShoreWorker.transform, shorePin);
+                }
+            }
+            finally
+            {
+                port.ForcePresentation = forced;
+                port.AutoAdvance = auto;
+                if (city.Cannery != null) city.Cannery.AutoAdvance = supplyAuto;
+            }
+
+            static void CheckDock(Transform worker, Transform fitting)
+            {
+                Vector3 delta = worker.position - fitting.position;
+                float reach = Vector3.ProjectOnPlane(delta, Vector3.up).magnitude;
+                Assert.That(reach, Is.InRange(.47f, .82f), fitting.name + " working clearance");
+            }
+        }
+
         private static IEnumerator CapturePort(Camera camera, CityGameRoot city, CityPortController port,
             CityPortCrew crew, double seconds, string name, Vector3 fromLocal, Vector3 targetLocal, float fieldOfView = 68f)
         {

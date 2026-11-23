@@ -2355,14 +2355,13 @@ namespace BarPromenade
                               to,
                               (index + 0.5f) / stations) +
                           ((hash & 0xFFu) / 255f - 0.5f) * 4f;
-                // The band still starts at the old quay line north of
-                // the shore lane, so what the port dropped never blocks
-                // the walk the pedestrians take along the esplanade
-                // axis — but it now reaches `10.6 m` back instead of
-                // `5.2 m`, because a working yard scattered inland and
-                // a decorative row does not.
-                float z = frame.WaterlineZ -
-                          (2.2f + (((hash >> 8) & 0xFFu) / 255f) * 8.4f);
+                uint kind = (hash >> 4) % 4u;
+                float variation = ((hash >> 8) & 0xFFu) / 255f;
+                // Surviving mooring posts follow the old water edge. Loose cargo and
+                // fallen beams may lie farther inland, outside the public approaches.
+                float setback = kind == 0u ? Mathf.Lerp(1.35f, 2.45f, variation)
+                    : Mathf.Lerp(2.2f, 10.6f, variation);
+                float z = frame.WaterlineZ - setback;
                 Rect footprint = Rect.MinMaxRect(
                     x - 1.2f, z - 1.2f, x + 1.2f, z + 1.2f);
                 if (OverlapsAny(footprint, reserved, 0f) ||
@@ -2373,14 +2372,20 @@ namespace BarPromenade
 
                 float ground = SampleSandTop(layout, x, z);
                 float yaw = (hash >> 16) % 360u;
-                switch ((hash >> 4) % 4u)
+                switch (kind)
                 {
                     case 0u:
+                        // Bury the foot to the lowest sand under the rotated 30 cm casting.
+                        const float radius = .213f;
+                        float foot = Mathf.Min(SampleSandTop(layout, x - radius, z - radius),
+                            SampleSandTop(layout, x + radius, z - radius));
+                        foot = Mathf.Min(foot, Mathf.Min(SampleSandTop(layout, x - radius, z + radius),
+                            SampleSandTop(layout, x + radius, z + radius)));
                         parts.Add(Part(
                             $"seacoast-port-bollard-{bollard:D2}",
                             CitySeacoastPartKind.PortRuin,
                             CitySeacoastStyle.Iron,
-                            new Vector3(x, ground + 0.28f, z),
+                            new Vector3(x, foot + .275f, z),
                             Quaternion.Euler(0f, yaw, 0f),
                             new Vector3(0.30f, 0.56f, 0.30f)));
                         bollard++;

@@ -11,7 +11,8 @@ namespace BarPromenade
         Sidewalk = 2,
         RoadMarking = 3,
         Puddle = 4,
-        WeatheredTimber = 5
+        WeatheredTimber = 5,
+        PaintedSteel = 6
     }
 
     internal readonly struct CityWetSurfaceSample
@@ -97,6 +98,11 @@ namespace BarPromenade
                         CityExteriorAppearance.RoadMarkingSmoothness;
                     wetSmoothness = 0.56f;
                     wetTint = new Color(0.75f, 0.80f, 0.78f, 1f);
+                    return;
+                case CityWetSurfaceKind.PaintedSteel:
+                    drySmoothness = .64f;
+                    wetSmoothness = .98f;
+                    wetTint = new Color(.80f, .83f, .80f, 1f);
                     return;
                 case CityWetSurfaceKind.WeatheredTimber:
                     // The bridge's smoothness map keeps hand-rubbed and sawn faces distinct.

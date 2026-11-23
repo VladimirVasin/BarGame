@@ -299,6 +299,7 @@ namespace BarPromenade
         internal CityRiverLandingDescriptor(
             string id,
             string bridgeId,
+            CityBridgeStyle bridgeStyle,
             bool westBank,
             Rect stairBounds,
             Rect platformBounds,
@@ -309,6 +310,7 @@ namespace BarPromenade
         {
             Id = id ?? string.Empty;
             BridgeId = bridgeId ?? string.Empty;
+            BridgeStyle = bridgeStyle;
             WestBank = westBank;
             StairBounds = stairBounds;
             PlatformBounds = platformBounds;
@@ -320,6 +322,7 @@ namespace BarPromenade
 
         public string Id { get; }
         public string BridgeId { get; }
+        public CityBridgeStyle BridgeStyle { get; }
         public bool WestBank { get; }
         public Rect StairBounds { get; }
         public Rect PlatformBounds { get; }
@@ -653,6 +656,7 @@ namespace BarPromenade
             target.Add(new CityRiverLandingDescriptor(
                 $"{bridge.Id}-{(westBank ? "west" : "east")}-landing",
                 bridge.Id,
+                bridge.Style,
                 westBank,
                 new Rect(
                     centerX - LandingWidth * 0.5f,
