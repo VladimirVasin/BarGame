@@ -73,6 +73,8 @@ namespace BarPromenade
             {
                 var properties = new MaterialPropertyBlock();
                 renderer.GetPropertyBlock(properties);
+                if (part.HasFurnitureFinish)
+                    HomeFurnitureSurface.Apply(renderer, properties, part);
                 properties.SetVector("_BaseMap_ST", new Vector4(1f, 1f, 0f, 0f));
                 renderer.SetPropertyBlock(properties);
             }

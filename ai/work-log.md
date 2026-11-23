@@ -5,7 +5,7 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-23
 
-SupermarketFinishes checks fridge, decks, shelf prices, checkout and welded floor along the purchase route. CityCheckpointFinishes covers door/road light, boom, gravel and E replies. CitySouthTunnel covers masonry, drain, rain and return. CityTrawlerVisit checks hull/cargo. CityPort's road assertion expects an enabled source mesh. CityBoatRentalStation covers sign UVs, rests and return. ImageGenCityMap_PreservesPlanAndLivePlaces checks the redraw. CityRiverEmbankments covers walks/03. validate_mooring_feet checks contact.
+HomeFurnitureFinishes checks sofa, kitchen, balcony, wear and clutter through wake, seal and reversal. HomeBedDeformableSurfaceTests checks support. SupermarketFinishes checks the fitted shop and purchase route. CityCheckpointFinishes covers door/road light, boom, gravel and E replies. CitySouthTunnel covers masonry, drain, rain and return. CityTrawlerVisit checks hull/cargo. CityPort's road assertion expects an enabled source mesh. CityBoatRentalStation covers sign UVs, rests and return. ImageGenCityMap_PreservesPlanAndLivePlaces checks the redraw. CityRiverEmbankments covers walks/03. validate_mooring_feet checks contact.
 CityParkBandstand checks seats, corner clicks, one lamp and resident outfits.
 
 CityCanneryFinishes checks the rebuilt bay, work surfaces, dispatch and the equipped apron panels in pose.
@@ -24,9 +24,7 @@ BuildingOldTownFacadePrimary dimension mismatch remains.
 Exterior mains link City and Ridge façades, courtyard tees and stair flights to the works.
 `CityWaterNetworkReachesEveryBuildingAndTheSea` traces services, checks both arrival sightlines and the grated muddy outfall.
 
-Split the Debug City and Ridge starts at the supermarket and home sidewalks.
-`DebugWorldStart_SelectedLocationUsesItsNormalArrivalWithoutTheHomeOpening`
-checks the selected district and the hero's position after loading.
+`DebugWorldStart_SelectedLocationUsesItsNormalArrivalWithoutTheHomeOpening` checks City/shop and Ridge/home arrivals.
 
 Build the arrival district first. Near either approach, prepare adjacent
 terrain and joints off-thread and publish scene objects in steps. Release

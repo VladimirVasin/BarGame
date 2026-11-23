@@ -210,7 +210,10 @@ namespace BarPromenade.Editor
                     (column / (float)part.grid_columns - 0.5f) * part.Size.x,
                     part.grid_top_heights[sample],
                     (row / (float)part.grid_rows - 0.5f) * part.Size.z);
-                if (normals[index].y > 0.01f && (point - expected).sqrMagnitude < 0.000001f)
+                // The lip and its vertical return share the contact sample at the top.
+                // Bottom vertices are separated from it by the measured shell thickness.
+                if ((normals[index].y > .01f || part.name == "Home Bed Mattress") &&
+                    (point - expected).sqrMagnitude < 0.000001f)
                 {
                     samples[index] = sample;
                     seen[sample] = true;

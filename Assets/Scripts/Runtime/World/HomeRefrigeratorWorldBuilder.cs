@@ -427,6 +427,13 @@ namespace BarPromenade
             for (int index = 0; index < heights.Count; index++)
             {
                 float y = heights[index];
+                // The shelf ends sit on paired ribs pressed into the cavity sides.
+                for (int side = -1; side <= 1; side += 2)
+                {
+                    CreateEnamelBox("Home Refrigerator Shelf Support", parent,
+                        new Vector3(side * (cavity.x * .5f - .031f), y - .0125f, .025f),
+                        new Vector3(.064f, .029f, .36f), Interior, SurfaceProjection.BoxXZ);
+                }
                 CreateEnamelBox(
                     $"Home Refrigerator Shelf {index + 1}",
                     parent,

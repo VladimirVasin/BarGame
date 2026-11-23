@@ -25,8 +25,10 @@ sys.path.insert(0, str(ROOT / "tools"))
 import interior_kit as kit
 import bar_parts as bp
 import home_interior_remodel as remodel
+import home_furniture_geometry as furniture
+import home_furniture_charts as charts
 
-VERSION = "2.2.0"
+VERSION = "2.3.0"
 SOURCE = ROOT / "ArtSource/Home/Interior"
 MODEL = ROOT / "Assets/Home/Interior/Models/HomeInterior3D.fbx"
 SHOWER_CURTAIN_FRONT_Z = 2.384
@@ -168,7 +170,9 @@ def pillow_grid(size,cols,rows):
     for row in range(rows+1):
         for col in range(cols+1):
             dome=max(0,math.sin(math.pi*col/cols)*math.sin(math.pi*row/rows))**.65
-            top.append(seam_top+(y*.5-seam_top)*dome)
+            # The pillowcase gathers near the seam; its support crown stays at the authored height.
+            gather = math.sin(math.pi*col/cols*4 + row*.78) * dome*(1-dome)*.012
+            top.append(seam_top+(y*.5-seam_top)*dome + gather)
             bottom.append(seam_bottom+(-y*.5-seam_bottom)*dome)
     vertices=[]; faces=[]
     for heights,upper in ((top,True),(bottom,False)):
@@ -296,22 +300,53 @@ class Build:
         mesh=bpy.data.meshes.new(name+"_Mesh")
         mesh.from_pydata(geometry[0],[],geometry[1]);mesh.update(calc_edges=True)
         uv=mesh.uv_layers.new(name="UVMap")
+        cell=charts.finish_for(name)
+        if cell is not None:
+            uv_mode="household" if cell>=16 else "furniture_metal" if cell in (charts.SINK,charts.HARDWARE) else "furniture"
+            if cell==charts.BOTTLE: sheet="Enamel"
+            elif cell==charts.SPILL: sheet="RoomLaminate"
+            bounds=kit.solid_bounds(*geometry)
+            whole=kit.bounds(geometry)
         for poly in mesh.polygons:
             poly.use_smooth=False
             axis=max(range(3),key=lambda i:abs(poly.normal[i]))
             for loop in poly.loop_indices:
                 p=mesh.vertices[mesh.loops[loop].vertex_index].co
-                if uv_mode=="full_image_xy":
+                if cell is not None:
+                    vertex=mesh.loops[loop].vertex_index
+                    # The pillow and folded strips duplicate vertices for faceted shading.
+                    surface=whole if cell>=16 or cell in (charts.PILLOW,charts.COVER,charts.THRESHOLD) else bounds[vertex]
+                    uv.data[loop].uv=charts.uv(cell,p,axis,surface)
+                elif uv_mode=="full_image_xy":
                     uv.data[loop].uv=((p.y/size[2]+.5,p.z/size[1]+.5) if axis==0 else
                                       (p.x/size[0]+.5,p.z/size[1]+.5) if axis==1 else
                                       (p.x/size[0]+.5,p.y/size[2]+.5))
                 else:
                     uv.data[loop].uv=((p.y,p.z) if axis==0 else (p.x,p.z) if axis==1 else (p.x,p.y))
                     uv.data[loop].uv/=PITCH[sheet]
-        if sheet not in self.materials:
+        key=("Furniture",cell) if cell is not None else sheet
+        if key not in self.materials:
             mat=bpy.data.materials.new("PREVIEW_Home_"+sheet)
-            mat.diffuse_color=COLORS[sheet];self.materials[sheet]=mat
-        mesh.materials.append(self.materials[sheet])
+            mat.diffuse_color=COLORS[sheet]
+            if cell is not None:
+                mat.name="PREVIEW_HomeFurniture"
+                mat.use_nodes=True
+                pigment=mat.node_tree.nodes.new("ShaderNodeTexImage")
+                file="HomeHouseholdFinishes.png" if cell>=16 else "HomeFurnitureFinishes.png"
+                atlas=ROOT/"Assets/Resources/Home/Textures"/file
+                pigment.image=bpy.data.images.load(str(atlas),check_existing=True)
+                pigment.image.alpha_mode="CHANNEL_PACKED"
+                if not pigment.image.packed_file: pigment.image.pack()
+                shader=mat.node_tree.nodes.get("Principled BSDF")
+                mat.node_tree.links.new(pigment.outputs["Color"],shader.inputs["Base Color"])
+                invert=mat.node_tree.nodes.new("ShaderNodeMath")
+                invert.operation="SUBTRACT"
+                invert.inputs[0].default_value=1
+                mat.node_tree.links.new(pigment.outputs["Alpha"],invert.inputs[1])
+                mat.node_tree.links.new(invert.outputs[0],shader.inputs["Roughness"])
+                shader.inputs["Metallic"].default_value=.56 if uv_mode=="furniture_metal" else 0
+            self.materials[key]=mat
+        mesh.materials.append(self.materials[key])
         obj=bpy.data.objects.new(name,mesh);bpy.context.scene.collection.objects.link(obj)
         obj.parent=self.root
         # Mesh origins stay zero; placement is metadata. This avoids importer
@@ -327,6 +362,7 @@ class Build:
               "grid_columns":grid_columns,"grid_rows":grid_rows,"max_depth":max_depth,
               "grid_top_heights":list(grid_top_heights),"grid_bottom_heights":list(grid_bottom_heights)}
         if uv_mode!="metres":item["uv_mode"]=uv_mode
+        if cell is not None:item["finish_tile"]=cell
         for key in ("role","group","sheet","fit","min_day","max_day"):
             obj["bp_"+key]=item[key]
         self.parts.append(item);self.geometry[name]=geometry
@@ -455,6 +491,13 @@ def add_balcony_folding_door(b):
         pieces.append(kit.translated(box((depth,rail,width-2*stile),.004),swap((0,y,0))))
     pieces.append(kit.translated(box((depth-.014,.72,width-2*stile),.004),
         swap((0,.44-height*.5,0))))
+    # Raised glazing beads and a fielded lower panel sit within each leaf's folding envelope.
+    for side in (-1, 1):
+        for edge in (-1, 1):
+            pieces.append(furniture.block((side*.012,.38,edge*.109),(.009,1.19,.010),.002))
+        for y in (-.211,.972):
+            pieces.append(furniture.block((side*.012,y,0),(.009,.012,.212),.002))
+        pieces.append(furniture.block((side*.016,-.675,0),(.006,.59,.185),.003))
     b.add("Home Balcony Folding Wood",(depth,height,width),"RoomWood",geometry=kit.merge_all(pieces))
     b.add("Home Balcony Folding Glass",(.014,1.20,width-2*stile),"Plain",geometry=box((.014,1.20,width-2*stile),.002))
     handle = kit.merge_all([box((.028,.15,.028),.004),
@@ -555,9 +598,38 @@ def add_bindings(b):
             geom=cylinder(size,((1,-.5),(1,-.46),(.62,-.42),(.52,.38),(.70,.45),(1,.5)))
         if name=="Home Bathroom Shower Basin":geom=rectangular_drain_surface(size,.060,.012)
         if name=="Home Kitchen Top Left":geom=remodel.sink_countertop(size)
-        if name=="Home Balcony Threshold":geom=kit.rotated_z(kit.threshold(size[2],size[0],size[1]),90)
+        if name=="Home Bed Frame":geom=furniture.sofa_base(size)
+        if name=="Home Bed Crooked Blanket":geom=furniture.hemmed_blanket(size,cloth)
+        if name=="Home Balcony Threshold":geom=furniture.threshold(size)
+        if name.startswith("Home Balcony ") and name.endswith("Rail Cap"):geom=furniture.rail_cap(size)
+        if name=="Home Refrigerator Door Enamel":
+            geom=kit.merge_all([furniture.block((0,0,.032),(size[0]-.012,size[1]-.016,.036),.012),
+                furniture.block((0,0,-.013),(size[0],size[1],.074),.031)])
+        if name=="Home Refrigerator Door Inner Liner":
+            pieces=[furniture.block((0,0,-.006),(size[0],size[1],.013),.006)]
+            for side in (-1,1):
+                pieces.append(furniture.block((side*.411,0,.002),(.049,size[1]-.055,.021),.010))
+            for y in (-.83,-.22,.43,.85):
+                pieces.append(furniture.block((0,y,.003),(.806,.035,.019),.008))
+            geom=kit.merge_all(pieces)
         b.add(name,size,sheet,geometry=geom)
     remodel.add_bindings(b)
+    for side in ("Left","Right","Top","Bottom"):
+        vertical = side in ("Left","Right")
+        size = (.035,2.08*.91,.045) if vertical else (.86,2.08*.018,.045)
+        b.add("Home Refrigerator Door Gasket "+side,size,"PaintedMetal",geometry=furniture.seal(size,vertical))
+    b.add("Home Refrigerator Shelf Support",(.064,.029,.36),"Enamel",
+          geometry=furniture.block((0,0,0),(.064,.029,.36),.008))
+    for i in range(1,4):
+        size=(.82*.91,.032,.50*.88)
+        deck=kit.merge_all([furniture.block((0,.009,0),(size[0],.014,size[2]),.005),
+            furniture.block((0,-.007,-size[2]/2+.013),(size[0]-.012,.018,.026),.006)])
+        b.add(f"Home Refrigerator Shelf {i}",size,"Enamel",geometry=deck)
+        size=(.82*.94,.050,.034)
+        b.add(f"Home Refrigerator Shelf {i} Front Rail",size,"PaintedMetal",geometry=furniture.rail_cap(size))
+    for side in ("North","South","Outer"):
+        size=(.10,1.05,.10)
+        b.add("Home Balcony "+side+" Post",size,"PaintedMetal",geometry=furniture.rail_post(size))
     b.add("Home Sink",(.85,.18,.55),"Enamel",geometry=remodel.sink_bowl())
     add_entry_door(b)
     add_balcony_folding_door(b)
@@ -573,10 +645,10 @@ def add_bindings(b):
         b.add(f"Home Bathroom Shower Curtain Side {i + 1}",
               (.03,1.82,SHOWER_CURTAIN_SIDE_WIDTH), "BedLinen",
               position=shower_side_position(i))
-    for name,size,cols,rows,depth in (
-            ("Home Bed Mattress",(2.39,.18,1.57*remodel.SOFA_DEPTH_SCALE),17,11,.10),):
-        b.add(name,size,"BedLinen",role="grid",semantic=name,
-              geometry=grid(size,cols,rows),grid_columns=cols,grid_rows=rows,max_depth=depth)
+    size=(2.39,.18,1.57*remodel.SOFA_DEPTH_SCALE)
+    geometry,top,bottom=furniture.seat_cushions(size,17,11)
+    b.add("Home Bed Mattress",size,"BedLinen",role="grid",geometry=geometry,
+          grid_columns=17,grid_rows=11,max_depth=.10,grid_top_heights=top,grid_bottom_heights=bottom)
     size=(.62,.14,1.05*remodel.SOFA_DEPTH_SCALE); cols,rows=8,14
     geometry,top,bottom=pillow_grid(size,cols,rows)
     b.add("Home Pillow",size,"BedLinen",role="grid",semantic="Home Pillow",
@@ -849,7 +921,7 @@ def validate(b):
             cols,rows=p["grid_columns"],p["grid_rows"]
             if len(top)!=(cols+1)*(rows+1) or len(bottom)!=len(top):
                 errors.append(p["name"]+": incomplete cloth profiles")
-            if max(top)-min(top)<.075 or min(t-b for t,b in zip(top,bottom))<.0029:
+            if (p["name"]=="Home Pillow" and max(top)-min(top)<.075) or min(t-b for t,b in zip(top,bottom))<.0029:
                 errors.append(p["name"]+": pillow lacks filled crown or seam thickness")
             # Weld only for validation: the exported duplicate corners keep
             # the cloth's per-facet lighting, while every shell edge is closed.
@@ -1008,6 +1080,9 @@ def compose_source_preview(b,render=False):
             texture.image=bpy.data.images.load(str(ROOT/remodel.PAINTING_TEXTURE),check_existing=True)
             texture.image.pack()
             material.node_tree.links.new(texture.outputs["Color"],bsdf.inputs["Base Color"])
+        if "finish_tile" in part:
+            bpy.data.materials.remove(material)
+            material=original.data.materials[0]
         obj.data.materials.clear();obj.data.materials.append(material)
         for day in range(1,8):
             obj.hide_render=not part["min_day"]<=day<=part["max_day"]
@@ -1047,6 +1122,8 @@ def main():
     SOURCE=args.source_dir.resolve();MODEL=args.model_dir.resolve()/"HomeInterior3D.fbx"
     b=Build();add_bindings(b);add_decor(b);report=validate(b)
     canonical={"parts":b.parts,"geometry":b.geometry,"uv_pitch":PITCH}
+    canonical["finish_uv"]={p["name"]:[tuple(v.uv) for v in bpy.data.objects[p["name"]].data.uv_layers[0].data]
+                            for p in b.parts if "finish_tile" in p}
     signature=hashlib.sha256(json.dumps(canonical,sort_keys=True,separators=(",",":"),ensure_ascii=True).encode()).hexdigest()
     print("HOME_INTERIOR_VALIDATED "+json.dumps(report)+" sha256="+signature,flush=True)
     if args.validate_only:return
@@ -1076,7 +1153,7 @@ def main():
                                   "painting_image_uv":"full image, U eastward, V upward; south-facing front",
                                   "painting_frame_center":list(remodel.PAINTING_FRAME_CENTER),
                                   "painting_image_center":list(remodel.PAINTING_IMAGE_CENTER),
-                                  "bathroom_and_balcony_retained":True},
+                                  "bathroom_retained":True,"balcony_passage_and_hinges_retained":True},
              "import_contract":{"fixed_mesh_scale":1,"parametric_size":"full metre envelope; cylinder caller Y is half-height",
                                 "external_bindings":EXTERNAL_BINDINGS,
                                 "entry_door":{"parts":list(ENTRY_DOOR_PARTS),
@@ -1091,7 +1168,7 @@ def main():
                                                 "basin_hole_radius":.060,"water_hole_radius":.075,
                                                 "water_uv":"Unity local XZ metres, centred on the mesh origin",
                                                 "water_visibility":"runtime water effect; hidden at construction"},
-                                "grid":"flat mattress: independent top quads and five rest faces; profiled pillow: top/bottom height samples and imported top vertex-to-sample mapping",
+                                "grid":"three closed seat cushions and a filled pillow: measured rest profiles and imported upper vertex-to-contact mapping",
                                 "dynamic_hierarchy":"runtime-owned; binding changes meshes only"}}
     (SOURCE/"home-interior-3d-model.json").write_text(json.dumps(payload,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
     MODEL.with_suffix(".json").write_text(json.dumps(payload,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")

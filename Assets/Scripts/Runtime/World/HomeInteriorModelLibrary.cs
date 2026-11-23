@@ -15,6 +15,8 @@ namespace BarPromenade
         public string role;
         public string group;
         public string sheet;
+        public string uv_mode;
+        public bool HasFurnitureFinish => uv_mode == "furniture" || uv_mode == "furniture_metal" || uv_mode == "household";
         public string fit;
         public string primitive_kind;
         public float[] tint;

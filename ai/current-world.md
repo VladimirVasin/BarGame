@@ -2274,7 +2274,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   door colliders. Finite glass debris pauses/clears. Consumables/equipment only;
   temporarily blocked actions disabled;
 - Home window/four-section glazed folding door/walkable balcony at4.7m in one
-  scene; rails retain safety colliders. E uses shared hero actions/hand contacts;
+  scene; bolted rails/stepped sill retain guards. E uses shared hero actions/hand contacts;
   wood-mounted free-edge pulls and solid panels fold apartment-side, clear of
   the deck. Casings clear structural reveals/header31mm and sit31mm proud of
   facade skin. Initially open; ordinary collision rejects obstructed movement.
@@ -2367,10 +2367,8 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   Pelvis alignment keeps the longitudinal coordinate; the approach clears the
   south-west bookcase and the head rests south. The1.15m sofa/manifest share
   .415m travel; baked hands retain support and clear the mattress/back.
-  The measured supine pose includes clearance for the sleepwear. The pillow
-  and hip rise together to keep head and body contact with the bedding.
-  The mattress and the closed, domed pillow use deformable vertex grids:
-  they dent under actual contact with their local rest surface, his hip
+  Sleepwear clears the sofa. Head/hips rise together. Three closed seat cushions
+  and the filled pillow deform under contact. Cloth wear grows across Home1–7. His hip
   target descends by the same sink depth so he lies in the dent rather than
   hovering over it, and the dent visibly refills over about a second and a
   half once he is up. The pillow retains thickness and connected shoulders

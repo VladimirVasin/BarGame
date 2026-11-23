@@ -1,4 +1,5 @@
 ﻿using NUnit.Framework;
+using System.Linq;
 using UnityEngine;
 
 namespace BarPromenade.Tests.EditMode
@@ -43,24 +44,21 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(surface, Is.Not.Null);
                 Assert.That(surface.Columns, Is.EqualTo(17));
                 Assert.That(surface.Rows, Is.EqualTo(11));
-                Assert.That(
-                    surface.TopVertexCount,
-                    Is.EqualTo(surface.Columns * surface.Rows * 4),
-                    "Per-cell quads: faceted shading is what makes the " +
-                    "dent readable on this project's noisy albedos.");
-                Assert.That(
-                    surface.VertexCount,
-                    Is.EqualTo(surface.TopVertexCount + 20),
-                    "The top cells plus five flat quad faces.");
+                Assert.That(surface.HasRestProfile, Is.True);
+                Assert.That(surface.TopVertexCount, Is.GreaterThan(surface.Columns * surface.Rows));
+                Assert.That(surface.VertexCount, Is.GreaterThan(surface.TopVertexCount),
+                    "The three compressible seats retain independent supported undersides.");
+                float middle = surface.SampleRestHeight(0, 0);
+                float front = surface.SampleRestHeight(0, -MattressSize.z * .5f);
+                Assert.That(front, Is.LessThan(middle - .008f));
 
                 Renderer renderer =
                     surfaceObject.GetComponent<Renderer>();
                 Assert.That(
                     renderer.sharedMaterial,
                     Is.SameAs(
-                        RuntimePrimitiveFactory.DefaultMaterial),
-                    "The surface must ride the shared home material so " +
-                    "the appearance and occlusion passes accept it.");
+                        HomeFurnitureSurface.Shared),
+                    "All upholstered parts use the same fitted finish material.");
                 Assert.That(
                     renderer.bounds.max.y,
                     Is.EqualTo(
@@ -92,9 +90,8 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(
                     properties.GetTexture(
                         Shader.PropertyToID("_BaseMap")),
-                    Is.Not.Null,
-                    "The surface must carry the packaged BedLinen " +
-                    "texture like every ordinary home renderer.");
+                    Is.SameAs(HomeFurnitureSurface.Shared.GetTexture("_BaseMap")),
+                    "The deformed seats retain their authored upholstery.");
                 Vector4 tiling = properties.GetVector(
                     Shader.PropertyToID("_BaseMap_ST"));
                 Assert.That(tiling.x, Is.GreaterThan(0f));
@@ -128,7 +125,7 @@ namespace BarPromenade.Tests.EditMode
                         .GetComponent<HomeBedDeformableSurface>();
                 Mesh mesh = surface.Mesh;
                 Vector2[] uvs = mesh.uv;
-                HomeAuthoredPart authored = HomeInteriorModelLibrary.Load().Binding("Home Bed Mattress");
+                HomeAuthoredPart authored = HomeInteriorModelLibrary.Load().Parts.Single(part => part.name == "Home Bed Mattress");
                 CollectionAssert.AreEqual(authored.mesh.uv, uvs);
                 for (int index = 0;
                      index < surface.TopVertexCount;
@@ -197,8 +194,12 @@ namespace BarPromenade.Tests.EditMode
                 support.SetSources(new[] { new HomeBedDepressionSource(0f, 0f, 0.7f, 0.6f, 0.10f) }, 1);
                 support.SetBodyWeight(1f);
                 support.SnapToTarget();
-                Assert.That(support.SampleDepth(0f, 0f), Is.InRange(0.018f, 0.03f),
-                    "The crown may embed deeper than the thin seam.");
+                float supportedY = HomeInteriorWorldBuilder.BedMattressSurfaceHeight - support.SampleDepth(0f, 0f);
+                float pillowBottomY = HomeInteriorWorldBuilder.BedPillowCenterHeight + surface.SampleRestBottomHeight(0f, 0f);
+                Assert.That(supportedY - pillowBottomY, Is.EqualTo(.003f).Within(Tolerance),
+                    "The cushion supports the filled pillow with three millimetres of contact.");
+                Assert.That(support.SampleDepth(0f, 0f), Is.GreaterThan(support.SampleDepth(size.x * .35f, 0f)),
+                    "The crown embeds deeper than the thinner shoulder.");
                 Assert.That(support.SampleDepth(0.5f, 0f), Is.GreaterThan(0.095f),
                     "The pillow must not cap the torso dent outside its physical footprint.");
                 var model = new HomeBedSurfaceDepressionModel(

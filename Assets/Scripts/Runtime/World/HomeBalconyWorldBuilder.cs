@@ -515,6 +515,7 @@ namespace BarPromenade
         private static void ApplyProjectedExterior(Renderer renderer,
             PlayerHomeExteriorSurfaceKind surface, SurfaceProjection projection)
         {
+            if (HomeFurnitureSurface.IsMaterial(renderer.sharedMaterial)) return;
             PlayerHomeExteriorSurfaceAppearance.ApplyProjected(renderer, surface, projection);
             renderer.GetComponentInParent<HomeApartmentDressing>()?.RefreshRegisteredSurface(renderer);
         }

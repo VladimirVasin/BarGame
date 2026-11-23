@@ -4,6 +4,7 @@ from __future__ import annotations
 import math
 import interior_kit as kit
 import bar_parts as bp
+import home_furniture_geometry as furniture
 
 ROOM_HEIGHT = 2.9
 CEILING_UNDERSIDE = ROOM_HEIGHT - .04
@@ -66,15 +67,17 @@ def sink_countertop(size):
 
 def sink_bowl():
     rings=[]
-    for width,depth,y,cut in ((.64,.36,-.09,.06),(.85,.55,.07,.045),
-                              (.85,.55,.09,.045),(.77,.47,.09,.035),
-                              (.57,.27,-.065,.055)):
+    for width,depth,y,cut in ((.60,.32,-.09,.06),(.82,.52,.058,.054),
+                              (.844,.544,.065,.045),(.85,.55,.078,.045),
+                              (.844,.544,.089,.045),(.805,.505,.09,.040),
+                              (.782,.482,.085,.040),(.764,.464,.065,.043),
+                              (.64,.34,-.038,.054),(.57,.27,-.065,.060)):
         rings.append([(x,y,z) for x,z in kit.profile_chamfered(width,depth,cut)])
     vertices=[p for ring in rings for p in ring];faces=[]
     for j in range(len(rings)-1):
         for i in range(8):
             n=(i+1)%8;faces.append((j*8+i,j*8+n,(j+1)*8+n,(j+1)*8+i))
-    faces += [tuple(reversed(range(8))),tuple(range(32,40))]
+    faces += [tuple(reversed(range(8))),tuple(range(len(vertices)-8,len(vertices)))]
     geom=bp.to_source((vertices,faces))
     if bp.signed_volume(geom)<0:geom=(geom[0],[tuple(reversed(f)) for f in geom[1]])
     return geom
@@ -192,9 +195,15 @@ def configure_fixed(fixed):
 
 
 def add_bindings(b):
-    b.add("Home Sleeping Sofa Back", (2.55,.56,.16*SOFA_DEPTH_SCALE), "RoomUpholstery")
+    size=(2.55,.56,.16*SOFA_DEPTH_SCALE)
+    back=[]
+    for bay in range(3):
+        back.append(kit.translated(furniture.padded((size[0]/3-.004,size[1],size[2])),
+                                   ((bay-1)*size[0]/3,0,0)))
+    b.add("Home Sleeping Sofa Back",size,"RoomUpholstery",geometry=fit(kit.merge_all(back),size))
     for side in ("Left", "Right"):
-        b.add("Home Sleeping Sofa Arm " + side, (.08,.60,SOFA_DEPTH), "RoomUpholstery")
+        size=(.08,.60,SOFA_DEPTH)
+        b.add("Home Sleeping Sofa Arm " + side,size,"RoomUpholstery",geometry=furniture.padded(size))
     b.add("Home Dining Table Base", (1.27,.73,1.02), "RoomWood", geometry=table_base())
     b.add("Dining Chair", (.54,1.02,.57), "RoomWood", geometry=chair())
     b.add("Home Weaver Painting Frame", PAINTING_FRAME_SIZE, "RoomWood",
@@ -236,6 +245,12 @@ def add_decor(b, cloth, dish, cylinder, irregular_patch):
                             "Home Kitchen Shelf Bracket ", "Home Kitchen Unmarked Cup ",
                             "Home Kitchen Kettle ", "Home Kitchen Stored Pot", "Home Kitchen Pot Lid")):
             position=(position[0],position[1]-UPPER_KITCHEN_DROP,position[2])
+        if name.startswith(("Home Kitchen Cabinet Door","Home Kitchen Drawer Front")):
+            geometry=furniture.cabinet_front(size)
+        if name.startswith(("Home Kitchen Drawer Pull","Home Kitchen Cabinet Pull")):
+            geometry=furniture.pull(size)
+        if name.startswith("Home Kitchen Upper") and name.endswith("Handle"):
+            geometry=furniture.pull(size,vertical=True)
         return b.add(name,size,sheet,role="decor",position=position,rotation=rotation,
                      min_day=day,max_day=last,geometry=geometry,tint=tint,
                      group=group,collider=collider)
@@ -352,25 +367,50 @@ def add_decor(b, cloth, dish, cylinder, irregular_patch):
         add(f"Home Radio Speaker Slot {i}",(.014,.105,.004),(-6.65+i*.025,2.41,1.509),"Plain",group="home.furniture.bookcase",tint=(.08,.09,.075,1))
 
     def rag(name,pos,day,size,group="shell",tint=(.38,.39,.32,1),rotation=0,last=7):
-        return add(name,size,pos,"BedLinen",day=day,last=last,geometry=cloth(size),group=group,tint=tint,rotation=(0,rotation,0))
-    def bottle(name,pos,day,group="home.furniture.table"):
-        size=(.105,.34,.105)
-        return add(name,size,pos,"Plain",day=day,geometry=cylinder(size,((.86,-.5),(1,-.46),(1,.13),(.77,.27),(.32,.33),(.32,.47),(.40,.5))),tint=(.16,.22,.135,1),group=group)
+        if day==1:
+            geometry=furniture.hemmed_blanket(size,cloth)
+        elif "Bathroom" in name:
+            geometry=cloth(size)
+        else:
+            style="paper" if "Paper" in name else "shirt" if day==3 else "linen"
+            geometry=furniture.household_cloth(size,day,style)
+        return add(name,size,pos,"BedLinen",day=day,last=last,geometry=geometry,group=group,tint=tint,rotation=(0,rotation,0))
+    def bottle(name,x,z,slot,day):
+        width,height=((.104,.32),(.096,.285),(.108,.35),(.102,.305))[slot%4]
+        size=(width,height,width)
+        pos=(x,.83+height/2,z)
+        return add(name,size,pos,"Plain",day=day,geometry=cylinder(size,((.68,-.5),(.90,-.49),(1,-.44),(.985,-.28),(.985,.10),(.94,.19),(.70,.26),(.35,.31),(.30,.34),(.30,.44),(.40,.45),(.40,.49),(.33,.50),(.23,.50),(.23,.44))),tint=(.16,.22,.135,1),group="home.furniture.table",rotation=(0,(slot*43)%120,0))
     def stain(name,pos,day,size,group="shell",overlay=False):
         p=add(name,size,pos,"Plain",day=day,geometry=irregular_patch(size,sum(map(ord,name))%41),tint=(.16,.13,.095,1),group=group)
         if overlay:p["surface_overlay"]=True
         return p
     add("Home Table Ashtray",(.26,.045,.26),(-3.03,.856,.34),"Enamel",geometry=dish((.26,.045,.26),True),group="home.furniture.table")
     for i in range(2):
-        add(f"Home Day1 Stacked Plate {i}",(.25,.025,.25),(-2.30,.843+i*.026,.34),"Enamel",geometry=dish((.25,.025,.25)),last=2,group="home.furniture.table")
-    rag("Home Day1 Folded Towel",(-6.1,1.053,3.08),1,(.48,.045,.28),"home.furniture.kitchen.left",last=2)
+        add(f"Home Day1 Stacked Plate {i}",(.25,.025,.25),(-2.30,.843+i*.026,.34),"Enamel",geometry=furniture.household_plate((.25,.025,.25)),last=2,group="home.furniture.table")
+    rag("Home Day1 Folded Towel",(-5.435,1.0525,3.08),1,(.29,.045,.28),"home.furniture.kitchen.left",last=2)
+    # Each new group occupies a different patch of the tabletop. Keep the
+    # ashtray at the rear left and the breakfast plates at the rear right free.
+    bottle_positions=(
+        (-2.73,-.16), (-2.89,-.22), (-2.20,.03), (-2.62,-.24), (-2.30,-.08),
+        (-2.95,-.04), (-3.20,.01), (-2.14,-.14), (-2.81,-.02), (-2.08,.40),
+        (-3.18,-.22), (-2.01,-.06), (-2.42,-.17), (-2.59,.03), (-2.88,.48),
+        (-3.06,-.31), (-2.16,.52), (-2.76,.44), (-2.05,.22), (-2.58,.48),
+        (-2.69,.17))
+    plate_count=0
     for day in range(2,8):
         for i in range(day-1):
             slot=(day-2)*(day-1)//2+i
-            bottle(f"Day{day} Table Bottle {i}",(-3.20+(slot%6)*.18,.83+.17+(slot//6)*.035,-.34+(slot//6)*.22),day)
+            x,z=bottle_positions[slot]
+            bottle(f"Day{day} Table Bottle {i}",x,z,slot,day)
         for i in range(max(1,day-2)):
             size=(.25,.035,.25)
-            add(f"Day{day} Kitchen Plate {i}",size,(-6.30+(i%3)*.23,1.05+.035*(day-2),2.68+((day+i)%2)*.29),"Enamel",day=day,geometry=dish(size),group="home.furniture.kitchen.left")
+            # Two stable stacks on the landing to the right of the rim.
+            # Leave the towel's rear dock free through day two.
+            pile=plate_count%2
+            center=(-5.435,1.0475+(plate_count//2)*.011,2.64+pile*.44)
+            add(f"Day{day} Kitchen Plate {i}",size,center,"Enamel",day=day,
+                geometry=furniture.household_plate(size),group="home.furniture.kitchen.left")
+            plate_count+=1
         for i in range(day*2):
             angle=day*1.3+i*2.399
             add(f"Day{day} Ashtray End {i}",(.013,.013,.064),(-3.03+math.cos(angle)*.07,.89+(day-2)*.006,.34+math.sin(angle)*.07),"Plain",day=day,geometry=cylinder((.013,.013,.064)),rotation=(0,math.degrees(angle),0),group="home.furniture.table",tint=(.42,.35,.24,1))
@@ -378,7 +418,7 @@ def add_decor(b, cloth, dish, cylinder, irregular_patch):
             rag(f"Day{day} Sofa Foot Linen",(-4.57,.62+(day-3)*.025,.12),day,(.40,.075,.46),"home.bed.surface-clutter",rotation=day*13)
         if day>=4:
             stain(f"Day{day} Table Spill",(-2.41,.836+(day-4)*.002,.25),day,(.35,.004,.31),"home.furniture.table")
-            stain(f"Day{day} Kitchen Spill",(-6.0,1.084+(day-4)*.001,2.84),day,(.57,.006,.41),"home.furniture.kitchen.left")
+            stain(f"Day{day} Kitchen Spill",(-5.44,1.033+(day-4)*.001,2.86),day,(.30,.004,.25),"home.furniture.kitchen.left")
         if day>=5:
             # These bathroom calendar parts keep their original placement, mesh and tint.
             rag(f"Day{day} Bathroom Towel",(2.94+(day-5)*.025,.05+(day-5)*.065,3.44+(day-5)*.035),day,(.39,.08,.46),tint=(.28,.29,.23,1))

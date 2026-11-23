@@ -9,20 +9,23 @@ namespace BarPromenade.Editor
         private void OnPreprocessTexture()
         {
             bool painting = assetPath == "Assets/Resources/Home/Textures/HomeWeaverPaintingAlbedo.png";
-            if (!painting && (!assetPath.StartsWith("Assets/Resources/Home/Textures/HomeRoom",
+            bool household = assetPath == "Assets/Resources/Home/Textures/HomeHouseholdFinishes.png";
+            bool furniture = household || assetPath == "Assets/Resources/Home/Textures/HomeFurnitureFinishes.png";
+            if (!painting && !furniture && (!assetPath.StartsWith("Assets/Resources/Home/Textures/HomeRoom",
                     System.StringComparison.Ordinal) || !assetPath.EndsWith("Albedo.png",
                     System.StringComparison.Ordinal))) return;
             var texture = (TextureImporter)assetImporter;
             texture.textureType = TextureImporterType.Default;
             texture.textureShape = TextureImporterShape.Texture2D;
             texture.sRGBTexture = true;
-            texture.alphaSource = TextureImporterAlphaSource.None;
+            texture.alphaSource = furniture ? TextureImporterAlphaSource.FromInput : TextureImporterAlphaSource.None;
+            texture.alphaIsTransparency = false;
             texture.mipmapEnabled = true;
             texture.isReadable = false;
-            texture.wrapMode = painting ? TextureWrapMode.Clamp : TextureWrapMode.Repeat;
+            texture.wrapMode = (painting || furniture) ? TextureWrapMode.Clamp : TextureWrapMode.Repeat;
             texture.filterMode = FilterMode.Trilinear;
             texture.anisoLevel = 4;
-            texture.maxTextureSize = painting ? 2048 : 1024;
+            texture.maxTextureSize = (painting || (furniture && !household)) ? 2048 : 1024;
             texture.textureCompression = TextureImporterCompression.CompressedHQ;
             texture.SetPlatformTextureSettings(new TextureImporterPlatformSettings
             {

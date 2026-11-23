@@ -119,6 +119,11 @@ namespace BarPromenade
                 if (entry.Key != null) ApplySurfaceDay(entry.Key, entry.Value);
         }
 
+        internal void ReapplyRegisteredSurface(Renderer renderer)
+        {
+            if (surfaces.TryGetValue(renderer, out SurfaceState source)) ApplySurfaceDay(renderer, source);
+        }
+
         private void ApplySurfaceDay(Renderer renderer, SurfaceState source)
         {
             HomeSurfaceKind kind = source.Kind;
@@ -151,7 +156,10 @@ namespace BarPromenade
             surfaceProperties.SetColor(ColorId, tint);
             surfaceProperties.SetTexture(BaseMapId, source.Texture);
             surfaceProperties.SetFloat(SmoothnessId, source.Smoothness);
-            SurfaceDamageLibrary.Apply(renderer, surfaceProperties, source.Damage, transform, final ? 1f : 0f, source.Material);
+            // Newly visible household props have their own authored finish. Permanent
+            // surfaces accumulate their local contact marks with the room appearance.
+            float wear = amount * (.45f + .55f * amount);
+            SurfaceDamageLibrary.Apply(renderer, surfaceProperties, source.Damage, transform, wear, source.Material);
             renderer.SetPropertyBlock(surfaceProperties);
         }
 

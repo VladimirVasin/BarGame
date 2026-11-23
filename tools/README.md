@@ -1,8 +1,8 @@
 # Art/native tools
 
 `build-stairwell-labyrinth-3d-model.py`:`--validate-only`;puzzles/gates/abyss/metres.
-Home:`build-home-{interior-3d-model,textures,corruption-textures}.py`;
-macro shader:`build-surface-damage-shader.py --check`.
+Home:`build-home-{interior-3d-model,textures,corruption-textures,furniture-finishes}.py`;
+`build-surface-damage-shader.py --check`.
 Bar:`build-bar-3d-model.py`/`bar_interior_unique_surfaces.py`: `--validate-only`;
 `check-bar-interior-surfaces.py --validate-only`:FBX UV0/1.
 Church:`build-church-3d-model.py`+`church_metric_geometry.py`/kit:

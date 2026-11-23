@@ -20,6 +20,7 @@ Shader "Bar Promenade/Home Occluder Dither"
         [HideInInspector] _Color("Legacy Color", Color) = (1, 1, 1, 1)
         _Smoothness("Smoothness", Range(0, 1)) = 0.5
         _Metallic("Metallic", Range(0, 1)) = 0
+        _HomeFinishGloss("Use fitted finish smoothness", Float) = 0
         [PerRendererData] _HomeOcclusionVisibility(
             "Home Occlusion Visibility",
             Range(0, 1)) = 1
@@ -43,6 +44,7 @@ Shader "Bar Promenade/Home Occluder Dither"
             float4 _Color;
             float _Smoothness;
             float _Metallic;
+            float _HomeFinishGloss;
             float _HomeOcclusionVisibility;
             #include "SurfaceDamageFields.hlsl"
         CBUFFER_END
@@ -180,15 +182,15 @@ Shader "Bar Promenade/Home Occluder Dither"
                 inputData.shadowMask = half4(1.0h, 1.0h, 1.0h, 1.0h);
 
                 half4 baseColor = ResolveHomeOccluderColor();
-                half3 baseMap = SAMPLE_TEXTURE2D(
+                half4 baseMap = SAMPLE_TEXTURE2D(
                     _BaseMap,
                     sampler_BaseMap,
-                    input.uv).rgb;
+                    input.uv);
                 SurfaceData surfaceData = (SurfaceData)0;
-                surfaceData.albedo = baseColor.rgb * baseMap;
+                surfaceData.albedo = baseColor.rgb * baseMap.rgb;
                 surfaceData.specular = half3(0.2h, 0.2h, 0.2h);
                 surfaceData.metallic = half(_Metallic);
-                surfaceData.smoothness = half(_Smoothness);
+                surfaceData.smoothness = half(_Smoothness) * lerp(1.0h, baseMap.a, half(_HomeFinishGloss));
                 surfaceData.normalTS = half3(0.0h, 0.0h, 1.0h);
                 surfaceData.emission = half3(0.0h, 0.0h, 0.0h);
                 surfaceData.occlusion = 1.0h;

@@ -19,6 +19,7 @@ namespace BarPromenade
         private static readonly int SmoothnessId = Shader.PropertyToID("_Smoothness");
         private static readonly int MetallicId = Shader.PropertyToID("_Metallic");
         private Transform pivot, room, player;
+        private HomeApartmentDressing dressing;
         private HomeBalconyFoldingDoorInteraction door;
         private Vector3 originalPosition;
         private CharacterController capsule;
@@ -54,6 +55,7 @@ namespace BarPromenade
             pivot = door.transform;
             scratch = new MaterialPropertyBlock();
             room = transform.parent;
+            dressing = room.GetComponentInParent<HomeApartmentDressing>();
             originalPosition = pivot.localPosition;
             originalRotation = pivot.localRotation;
             originalScale = pivot.localScale;
@@ -157,11 +159,13 @@ namespace BarPromenade
                     HomeSurfaceRecipe recipe = HomeSurfaceAppearance.GetRecipe(surface.Kind);
                     Color tint = HomeSurfaceAppearance.CreateDisplayTint(surface.Kind == HomeSurfaceKind.RoomWood
                         ? new Color(.22f, .235f, .17f) : new Color(.18f, .14f, .085f), surface.Kind);
-                    scratch.SetTexture(BaseMapId, HomeSurfaceAppearance.GetTexture(surface.Kind));
+                    bool fitted = HomeFurnitureSurface.IsMaterial(surface.Material);
+                    Texture pigment = fitted ? surface.Original.GetTexture(BaseMapId) : HomeSurfaceAppearance.GetTexture(surface.Kind);
+                    scratch.SetTexture(BaseMapId, pigment);
                     scratch.SetColor(BaseColorId, tint);
                     scratch.SetColor(ColorId, tint);
-                    scratch.SetFloat(SmoothnessId, recipe.Smoothness);
-                    scratch.SetFloat(MetallicId, recipe.Metallic);
+                    scratch.SetFloat(SmoothnessId, fitted ? .48f : recipe.Smoothness);
+                    scratch.SetFloat(MetallicId, fitted ? surface.Original.GetFloat(MetallicId) : recipe.Metallic);
                     SurfaceDamageLibrary.Apply(surface.Renderer, scratch, surface.Damage, room, 1f, surface.Material);
                 }
                 surface.Renderer.SetPropertyBlock(scratch);
@@ -197,6 +201,7 @@ namespace BarPromenade
                         SurfaceDamageLibrary.Apply(surface.Renderer, scratch, surface.Damage, room, 0f, surface.Material);
                     }
                     surface.Renderer.SetPropertyBlock(scratch);
+                    if (!surface.Glass && dressing != null) dressing.ReapplyRegisteredSurface(surface.Renderer);
                 }
             IsSealed = false;
             IsSealPending = false;

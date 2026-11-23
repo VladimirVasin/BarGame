@@ -234,9 +234,9 @@ Source-preservation: review owners/coverage без повтора действи
 - [x] `AuthoredHome_PreviewsAllDaysAndKeepsLockedRoomClosed` Passed: комнаты/диван/
   кухня/стул/шкаф/картина/западный объём, дни 1–7/ночь; закрытая дверь,
   сон/обед/картина, контакты/state restore.
-- [x] Source-preservation: материалы/тени/быт/одежда/зеркало/пороги,
-  балкон/курение/City cut/изоляция внешних эффектов прежние.
-  Review `HomeBathroomMirrorPlayModeTests`, `HomeBalconySmokingInteractionPlayModeTests`.
+- [x] `HomeFurnitureFinishes` — диван, мойка, холодильник, порог и перила.
+  Подъём, холодильник, выход/возврат. Обстановка и износ 1→7→4→1, запирание в 7.
+  Зеркало/курение/City cut — `HomeBathroomMirrorPlayModeTests`, `HomeBalconySmokingInteractionPlayModeTests`.
 
 ### 32. Бар — Current: сохранение
 

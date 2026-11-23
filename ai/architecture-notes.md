@@ -568,7 +568,8 @@
   pages: `Resources/SurfaceDamage`; no macro frac/repeat. Both use Lit/dither
   full-URP routes, cached MPB/material bindings and exact earlier-state restore;
   original Lit pass targets; chart/matrix uniforms disable GPU instancing.
-  days1–6 stay. No per-renderer image/material. Geometry/UV0/lights/contacts/
+  Home1–7 ramps local wear on permanent surfaces; household props enter by day.
+  No per-renderer image/material. Lights/contacts/
   routes/all24 effect providers stay; no scene/text/lore/occult/blood. Surfaces:
   damp/peeling plaster, ceiling water damage, floor soil/abrasion, stained/frayed
   textiles, furniture edge wear/bathroom grime. Source-derived/no runtime paint;
