@@ -55,7 +55,7 @@ required parity/coverage need explicit requests.
 
 ## Current baseline
 
-- Unity `6000.6.8f1`, URP `17.6.0`, Input System `1.20.1`, AI Navigation `2.0.16`.
+- Unity `6000.6.10f1`, URP `17.6.0`, Input System `1.20.1`, AI Navigation `2.0.16`.
 - Runtime composition builds near-empty scenes from validated pure plans.
 - Fifteen `.unity` build scenes under `Assets/Scenes/`, in order:
   `MainMenu` (index `0`), `City`, `DoorTransition`, `BarInterior`,

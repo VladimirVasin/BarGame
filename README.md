@@ -7,7 +7,7 @@
 ## Запуск
 
 ZIP 0.1.1 → `BarPromenade.exe`/`.app`.
-Unity `6000.6.9f1`: **Play**.
+Unity `6000.6.10f1`: **Play**.
 Hub (macOS): `-gfx-ring-buffer-size 268435456`.
 
 Меню готовит City в фоне. «Новая игра» → сон в 12:00.
