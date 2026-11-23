@@ -103,6 +103,8 @@ namespace BarPromenade
         public const float DefaultChannelWidth = 10f;
         public const float DefaultPromenadeWidth = 3f;
         public const float ParkFootbridgeWidth = 2.8f;
+        internal const float TimberReferenceSpan = DefaultChannelWidth + 2f * CityRiverPlanner.QuayEdgeOffset;
+        internal const int TimberRailingBays = 6;
 
         private readonly ReadOnlyCollection<CityBridgeDefinition> bridges;
         private readonly Dictionary<RoadEdge, CityBridgeDefinition>

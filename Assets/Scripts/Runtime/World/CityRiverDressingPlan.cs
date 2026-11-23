@@ -148,7 +148,7 @@ namespace BarPromenade
             {
                 bool timber = bridge.Definition.Role == CityBridgeRole.ParkFootbridge;
                 float z = timber ? bridge.SpanBounds.center.y + side *
-                    (bridge.SpanBounds.height * 0.5f - 0.10f)
+                    (bridge.SpanBounds.height * (1.30f / CityRiverDefinition.ParkFootbridgeWidth))
                     : side < 0 ? bridge.SpanBounds.yMin : bridge.SpanBounds.yMax;
                 var spans = new List<Range> { new Range(minimum, maximum) };
                 if (!timber && side == bridge.Definition.InteriorDirection.y)
@@ -171,10 +171,13 @@ namespace BarPromenade
                     // would overhang it. Keep its supported girder fittings
                     // below instead of adding a cosmetic floating footplate.
                     if (!timber) continue;
-                    int posts = Mathf.Max(1, Mathf.CeilToInt((span.Max - span.Min) / 2.1f));
-                    for (int post = 0; post <= posts; post++)
+                    // Imported rail posts and their iron sleeves share the same six bays.
+                    float scale = bridge.SpanBounds.width / CityRiverDefinition.TimberReferenceSpan;
+                    float inset = RailThickness * .5f * scale;
+                    int bays = CityRiverDefinition.TimberRailingBays;
+                    for (int post = 0; post <= bays; post++)
                     {
-                        float x = Mathf.Lerp(span.Min, span.Max, post / (float)posts);
+                        float x = Mathf.Lerp(bridge.SpanBounds.xMin + inset, bridge.SpanBounds.xMax - inset, post / (float)bays);
                         Add(target, id + "-foot-" + post,
                             CityMiscKind.RiverTimberJoint,
                             new Vector3(x, bridge.AverageY + 0.002f, z));

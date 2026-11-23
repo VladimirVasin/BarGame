@@ -1,0 +1,26 @@
+{
+  "span_m": 10.96,
+  "deck_width_m": 2.8,
+  "deck_top_m": 0.03,
+  "railing_bays": 6,
+  "meshes": [
+    {
+      "name": "Timber Deck Planks",
+      "solids": 47,
+      "triangles": 3196,
+      "sha256": "80af5f05042f7c59a2a6eb7e75ffda2c84bc4cd8cb2f441d7b0254a4858d0995"
+    },
+    {
+      "name": "Timber Bridge Structure",
+      "solids": 54,
+      "triangles": 3672,
+      "sha256": "fdeb030516ce95e4dafd0e770b75f7ef44a8ac94c566c2520343b50f74146ca0"
+    },
+    {
+      "name": "Stone Bearings",
+      "solids": 12,
+      "triangles": 816,
+      "sha256": "b69a68eb936c1f273d30ae9a839747f101f27a643f65d3c1f95eb0965b774fa8"
+    }
+  ]
+}

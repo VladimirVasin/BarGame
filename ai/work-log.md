@@ -5,7 +5,8 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-23
 
-CityParkBandstand checks both seats, first-person corner clicks, planked floor, day/night board contrast under one central lamp and the default residents’ wardrobe. The staged bodies and their build paths are retired.
+CityRiverEmbankments checks both crossings of the rebuilt park footbridge, its barriers, stone bearings and dry/wet timber.
+CityParkBandstand checks seat transfers, corner clicks, both boards under one lamp and the default residents’ wardrobe. The old bodies are retired.
 
 CityCanneryFinishes checks the rebuilt bay, work surfaces, dispatch and the equipped apron panels in pose.
 

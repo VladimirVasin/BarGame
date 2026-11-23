@@ -348,13 +348,8 @@ namespace BarPromenade.Tests.EditMode
                     Texture texture = properties.GetTexture(BaseMapId);
                     if (IsParkTimber(renderer))
                     {
-                        Assert.That(
-                            texture,
-                            Is.SameAs(
-                                CityParkSurfaceAppearance.GetTexture(
-                                    CityParkSurfaceKind.Timber)),
-                            $"'{renderer.name}' is footbridge timber and " +
-                            "must carry the park's timber sheet.");
+                        Assert.That(renderer.sharedMaterial, Is.SameAs(Resources.Load<Material>("City/Surfaces/ParkFootbridge")));
+                        Assert.That(renderer.sharedMaterial.GetTexture(BaseMapId), Is.Not.Null, renderer.name);
                         continue;
                     }
 

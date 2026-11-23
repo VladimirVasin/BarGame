@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -84,6 +85,9 @@ namespace BarPromenade.Tests.PlayMode
                     volume.sharedProfile = grayscale;
                     return RiverEmbankmentShots(city, volume);
                 });
+                CityRiverBridgeDescriptor footbridge = city.Layout.River.Bridges.Single(
+                    span => span.Definition.Role == CityBridgeRole.ParkFootbridge);
+                yield return WalkTimberFootbridge(city, footbridge);
                 yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
                 AssertCityLightingGlobalsCleared();
                 Debug.Log("RIVER EMBANKMENTS ACCEPTANCE OK: placed imported details, supported clear banks/bridges/steps, constant lanterns, bounded effects and weather/state views.");
@@ -512,6 +516,26 @@ namespace BarPromenade.Tests.PlayMode
                     new Vector3(landing.StairBounds.center.x, landing.UpperY + EyeHeight, upperZ - descent.z * 1.1f),
                     new Vector3(landing.PlatformBounds.center.x, landing.LowerY + .3f, landing.PlatformBounds.center.y), 70f), false);
             }
+            CityRiverBridgeDescriptor timber = city.Layout.River.Bridges.Single(b => b.Definition.Role == CityBridgeRole.ParkFootbridge);
+            Rect span = timber.SpanBounds;
+            Vector3 centre = new Vector3(span.center.x, timber.AverageY + CityStreetSurfacePlanner.RoadTop, span.center.y);
+            Vector3 west = centre + Vector3.left * (span.width * .5f + 1.05f);
+            Vector3 east = centre + Vector3.right * (span.width * .5f + 1.05f);
+            Shot westEye = Shot.At("west threshold", west + Vector3.up * EyeHeight, west + Vector3.right * 3.6f, 65f);
+            Shot eastEye = Shot.At("east threshold", east + Vector3.up * EyeHeight, east + Vector3.left * 3.6f, 65f);
+            Add("day-river-timber-west", westEye, false);
+            Add("day-river-timber-east", eastEye, false);
+            CityRiverLandingDescriptor lower = city.Layout.River.Landings.OrderBy(l =>
+                (l.PlatformBounds.center - span.center).sqrMagnitude).First();
+            Add("day-river-timber-lower-bank", Shot.At("lower bank",
+                new Vector3(lower.PlatformBounds.center.x, lower.LowerY + EyeHeight, lower.PlatformBounds.center.y),
+                centre - Vector3.up * .25f, 48f), false);
+            // At the lower landing the parapet and river fog can hide the far crossing.
+            // Also inspect its real construction at the same low eye height beside the bank seat.
+            Add("day-river-timber-underframe", Shot.At("beneath the bank seat",
+                centre + new Vector3(-1.4f, -1.05f, -4.0f), west + new Vector3(2.0f, -.53f, -.78f), 62f), false);
+            Add("day-river-timber-bearing", Shot.At("quay and bearing",
+                west + new Vector3(.15f, EyeHeight, -4f), west + new Vector3(1.95f, -.25f, -1.2f), 52f), false);
             foreach (Shot bank in banks) Add("night-river-" + bank.Name, bank, true);
             CityRiverBridgeDescriptor works = city.Layout.River.Bridges[0];
             Add("night-river-bridge-structure", Shot.At("bridge-structure",
@@ -521,10 +545,12 @@ namespace BarPromenade.Tests.PlayMode
             float towardWater = lowLamp.position.x < city.Layout.River.Segments[0].WaterBounds.center.x ? 1f : -1f;
             Add("night-river-lantern-close", Shot.At("lantern-close",
                 lowLamp.position + new Vector3(towardWater * 1.25f, .55f, -1.7f), lowLamp.position, 56f), true);
+            Add("night-river-timber-dry", westEye, true);
+            Add("night-river-timber-rain", westEye, true, rain: true);
             Add("night-river-heavy-rain", banks[0], true, rain: true);
             Add("night-river-grayscale", banks[1], true, gray: true);
             Add("night-river-intoxication", banks[0], true, intoxicated: true);
-            Assert.That(shots.Count, Is.EqualTo(18), "Keep this acceptance bounded to the affected river.");
+            Assert.That(shots.Count, Is.EqualTo(25), "Keep this acceptance bounded to the affected river.");
             return shots.ToArray();
 
             void Add(string name, Shot pose, bool night, bool rain = false, bool gray = false, bool intoxicated = false)
@@ -541,21 +567,82 @@ namespace BarPromenade.Tests.PlayMode
                             city.DayNight.ApplyCurrentTime(true);
                         }
                         grayscale.weight = gray ? 1f : 0f;
-                        if (rain)
-                        {
-                            city.Rain.SetIntensity(1f);
-                            CityWaterResources.SetRainIntensity(1f);
-                            CityWetSurfaceRegistry.SetImmediate(1f);
-                        }
+                        city.Rain.SetIntensity(rain ? 1f : 0f);
+                        CityWaterResources.SetRainIntensity(rain ? 1f : 0f);
+                        CityWetSurfaceRegistry.SetImmediate(rain ? 1f : 0f);
+                        if (name.Contains("timber"))
+                            AssertTimberFinish(city, rain);
                         if (intoxicated) GameSessionState.UpdateDrinkingProgress(100, DrinkId.LightBeer, 1);
                         MoveCityLightingObserver(city, pose);
                     }
-                    Assert.That(city.Night.Atmosphere.RealtimeLightCount, Is.LessThanOrEqualTo(12));
-                    Assert.That(city.Lighting.HalationSourceCount, Is.LessThanOrEqualTo(24));
-                    Assert.That(city.Lighting.VolumeSourceCount, Is.LessThanOrEqualTo(4));
-                    Assert.That(city.Lighting.BounceRegionCount, Is.LessThanOrEqualTo(4));
+                    Assert.That(city.Night.Atmosphere.RealtimeLightCount, Is.LessThanOrEqualTo(CityNightAtmosphere.MaximumRealtimeLights));
+                    Assert.That(city.Lighting.HalationSourceCount, Is.LessThanOrEqualTo(CityLightingPresentation.MaximumHalationSources));
+                    Assert.That(city.Lighting.VolumeSourceCount, Is.LessThanOrEqualTo(CityLightingPresentation.MaximumVolumeSources));
+                    Assert.That(city.Lighting.BounceRegionCount, Is.LessThanOrEqualTo(CityLightingPresentation.MaximumBounceRegions));
                     return frames > (intoxicated ? 90 : rain ? 30 : SettleFrames);
                 }));
+            }
+        }
+
+        private static void AssertTimberFinish(CityGameRoot city, bool rain)
+        {
+            CityRiverBridgeDescriptor bridge = city.Layout.River.Bridges.Single(b => b.Definition.Role == CityBridgeRole.ParkFootbridge);
+            Transform root = city.World.RiverRoot.transform.Find("River Bridges/Central Park Timber Footbridge");
+            MeshRenderer[] meshes = root.GetComponentsInChildren<MeshRenderer>();
+            Assert.That(meshes, Has.Length.EqualTo(3));
+            MeshRenderer deck = meshes.Single(r => r.name == "Timber Deck Planks");
+            MeshRenderer rail = meshes.Single(r => r.name == "Timber Bridge Structure");
+            MeshRenderer stone = meshes.Single(r => r.name == "Stone Bearings");
+            float datum = bridge.AverageY + CityStreetSurfacePlanner.RoadTop;
+            Assert.That(deck.bounds.max.y, Is.EqualTo(datum + .03f).Within(.004f));
+            Assert.That(deck.bounds.size.x, Is.EqualTo(bridge.SpanBounds.width - .606f).Within(.02f));
+            Assert.That(rail.bounds.max.y, Is.EqualTo(datum + 1.11f).Within(.015f));
+            Assert.That(stone.bounds.max.y, Is.EqualTo(datum + .024f).Within(.004f));
+            Assert.That(stone.bounds.min.y, Is.LessThan(datum - .95f));
+            Material finish = deck.sharedMaterial;
+            Assert.That(finish.GetTexture("_BaseMap").name, Is.EqualTo("ParkFootbridgeAlbedo"));
+            Assert.That(finish.GetTexture("_BumpMap").name, Is.EqualTo("ParkFootbridgeNormal"));
+            Assert.That(finish.GetTexture("_MetallicGlossMap").name, Is.EqualTo("ParkFootbridgeMask"));
+            var block = new MaterialPropertyBlock();
+            foreach (Renderer wood in new[] { deck, rail })
+            {
+                Assert.That(wood.sharedMaterial, Is.SameAs(finish));
+                wood.GetPropertyBlock(block);
+                CityWetSurfaceSample expected = CityWetSurfaceRules.Evaluate(CityWetSurfaceKind.WeatheredTimber, rain ? 1f : 0f);
+                Assert.That(block.GetColor("_BaseColor"), Is.EqualTo(expected.Tint));
+                Assert.That(block.GetFloat("_Smoothness"), Is.EqualTo(expected.Smoothness).Within(.001f));
+            }
+            // Test the same side barriers the player's capsule meets, from inside the lane.
+            foreach (float side in new[] { -1f, 1f })
+            {
+                Vector3 inside = new Vector3(bridge.SpanBounds.center.x, datum + .8f, bridge.SpanBounds.center.y);
+                Assert.That(Physics.RaycastAll(inside, Vector3.forward * side, bridge.SpanBounds.height/2f,
+                    Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore).Any(hit => hit.collider.transform == root), Is.True);
+            }
+        }
+
+        private static IEnumerator WalkTimberFootbridge(CityGameRoot city, CityRiverBridgeDescriptor bridge)
+        {
+            Rect span = bridge.SpanBounds;
+            float floor = bridge.AverageY + CityStreetSurfacePlanner.RoadTop;
+            Vector3 west = new Vector3(span.xMin - .65f, floor, span.center.y);
+            Vector3 east = new Vector3(span.xMax + .65f, floor, span.center.y);
+            PlayerMotor motor = city.Player.Motor;
+            motor.Teleport(west + Vector3.up * PlayerFactory.GroundedRootOffset);
+            Physics.SyncTransforms();
+            foreach (Vector3 end in new[] { east, west })
+            {
+                Vector3 target = end + Vector3.up * PlayerFactory.GroundedRootOffset;
+                bool arrived = false;
+                for (int frame = 0; frame < 240 && !arrived; frame++)
+                {
+                    arrived = motor.MoveTowardsApproachWaypoint(target, .05f, .05f);
+                    Assert.That(motor.InteractionPoseMoveStalled, Is.False, $"Timber bridge blocked at {motor.transform.position}");
+                    yield return null;
+                }
+                motor.CancelInteractionPoseMove();
+                Assert.That(arrived, Is.True, $"Cross to {end} from {motor.transform.position}");
+                Assert.That(motor.transform.position.y, Is.EqualTo(target.y).Within(.12f), "Level bank threshold");
             }
         }
 

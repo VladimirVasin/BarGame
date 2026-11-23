@@ -752,8 +752,7 @@ namespace BarPromenade.Tests.EditMode
                         CityBridgeRole.ParkFootbridge);
                 Transform timberRoot = bridges.Find(
                     "Central Park Timber Footbridge");
-                Renderer timber = timberRoot.Find("Timber Deck Planks")
-                    .GetComponent<Renderer>();
+                Renderer timber = timberRoot.GetComponentsInChildren<MeshRenderer>().Single(r => r.name == "Timber Deck Planks");
                 Assert.That(
                     timber.bounds.max.y,
                     Is.EqualTo(
@@ -767,25 +766,11 @@ namespace BarPromenade.Tests.EditMode
                     timber.bounds.size.z,
                     Is.GreaterThan(footbridge.Definition.DeckWidth),
                     "The timber deck must overhang the park path sides.");
-                MeshFilter timberStructure = timberRoot.Find(
-                        "Timber Bridge Structure")
-                    .GetComponent<MeshFilter>();
-                float timberDeckY = footbridge.AverageY +
-                                    CityStreetSurfacePlanner.RoadTop;
-                Vector3[] elevatedTimberVertices = timberStructure
-                    .sharedMesh.vertices
-                    .Select(timberStructure.transform.TransformPoint)
-                    .Where(vertex => vertex.y > timberDeckY + 0.20f)
-                    .ToArray();
-                Assert.That(elevatedTimberVertices, Is.Not.Empty);
-                Assert.That(
-                    elevatedTimberVertices.Min(vertex => vertex.x),
-                    Is.GreaterThanOrEqualTo(
-                        footbridge.SpanBounds.xMin - 0.001f));
-                Assert.That(
-                    elevatedTimberVertices.Max(vertex => vertex.x),
-                    Is.LessThanOrEqualTo(
-                        footbridge.SpanBounds.xMax + 0.001f));
+                Bounds structure = timberRoot.GetComponentsInChildren<MeshRenderer>()
+                    .Single(r => r.name == "Timber Bridge Structure").bounds;
+                Assert.That(structure.max.y, Is.GreaterThan(timber.bounds.max.y + 1f));
+                Assert.That(structure.min.x, Is.GreaterThanOrEqualTo(footbridge.SpanBounds.xMin - .001f));
+                Assert.That(structure.max.x, Is.LessThanOrEqualTo(footbridge.SpanBounds.xMax + .001f));
                 Assert.That(rails, Is.Not.Null);
                 Assert.That(
                     rails.Find("West Quay South End Rail"),

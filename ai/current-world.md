@@ -1089,8 +1089,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   dead-ending between `[9;4]` and `[10;4]`;
 - four readable built areas—Old Town, Residential, Industrial and
   Nightlife—plus a fixed 16-cell central park split into two `2 x 4` regions
-  with lawn, plazas, trees, benches and hedges. A dedicated timber footbridge
-  joins their ParkPath graph across the river. `CityParkBenchPlanner` derives
+  with lawn, plazas, trees, benches and hedges. A plank bridge on stone seats joins their paths. Its worn timber darkens in rain. `CityParkBenchPlanner` derives
   four ordinary benches per region from real non-bridge path runs; one
   descriptor keeps the oriented timber, collider and path-facing sit dock in
   agreement;

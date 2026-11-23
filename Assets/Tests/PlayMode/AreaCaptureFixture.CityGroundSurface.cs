@@ -1260,15 +1260,11 @@ namespace BarPromenade.Tests.PlayMode
             shots.Add(Shot.At("ground-joints-audit-river", quayGround + new Vector3(0f, EyeHeight, -3f),
                 quayGround + Vector3.forward * 4f, 68f));
             CityRiverBridgeDescriptor timber = city.Layout.River.Bridges.Single(bridge => bridge.Definition.Role == CityBridgeRole.ParkFootbridge);
-            var timberDeck = city.World.RiverRoot.transform.Find("River Bridges/Central Park Timber Footbridge/Timber Deck Planks");
-            Assert.That(timberDeck.GetComponent<MeshFilter>().sharedMesh.name, Does.EndWith("Profiled Mesh"));
-            var timberProperties = new MaterialPropertyBlock();
-            timberDeck.GetComponent<Renderer>().GetPropertyBlock(timberProperties);
-            Texture timberAlbedo = timberProperties.GetTexture("_BaseMap");
-            Assert.That(timberAlbedo, Is.Not.Null);
-            Assert.That(timberAlbedo.name, Is.EqualTo(CityParkSurfaceAppearance.GetTexture(CityParkSurfaceKind.Timber).name));
-            Assert.That(timberProperties.GetTexture("_GroundSubstrateMap"), Is.Null,
-                "The final board must be timber right through its rounded edge.");
+            Transform bridgeRoot = city.World.RiverRoot.transform.Find("River Bridges/Central Park Timber Footbridge");
+            Renderer timberDeck = bridgeRoot.GetComponentsInChildren<MeshRenderer>().Single(r => r.name == "Timber Deck Planks");
+            Assert.That(timberDeck.sharedMaterial.GetTexture("_BaseMap"),
+                Is.SameAs(Resources.Load<Texture2D>("City/Surfaces/ParkFootbridgeAlbedo")));
+            Assert.That(timberDeck.sharedMaterial.GetTexture("_BumpMap"), Is.Not.Null);
             Rect span = timber.SpanBounds;
             float timberY = timber.AverageY + CityStreetSurfacePlanner.RoadTop;
             var timberEntry = new Vector3(span.xMin, timberY, span.center.y);

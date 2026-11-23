@@ -73,10 +73,6 @@ namespace BarPromenade
             new Color(0.40f, 0.25f, 0.16f);
         private static readonly Color MouthStone =
             new Color(0.42f, 0.43f, 0.39f);
-        private static readonly Color Timber =
-            new Color(0.36f, 0.24f, 0.13f);
-        private static readonly Color TimberEdge =
-            new Color(0.18f, 0.13f, 0.09f);
         private static readonly Color LampGlow =
             new Color(1.30f, 0.72f, 0.31f);
 
@@ -963,7 +959,7 @@ namespace BarPromenade
         /// <summary>
         /// A bridge is textured as what it is made of: the works crossing
         /// takes the bank's iron, the mouth crossing its quay stone. The
-        /// park footbridge is timber and takes the park's own sheet.
+        /// park footbridge has its own joinery atlas.
         /// </summary>
         private static CityRiverSurfaceKind ResolveBridgeSurface(
             CityBridgeStyle style)
@@ -1050,104 +1046,37 @@ namespace BarPromenade
             Transform parent,
             CityRiverBridgeDescriptor bridge)
         {
-            Transform root = new GameObject(
-                "Central Park Timber Footbridge").transform;
-            root.SetParent(parent, false);
-            FootstepGround.Stamp(root, FootstepGroundKind.Wood);
             Rect span = bridge.SpanBounds;
-            float deckY = bridge.AverageY +
-                          CityStreetSurfacePlanner.RoadTop;
-            float plankTopY = deckY + SurfaceClearance;
-            int plankCount = Mathf.CeilToInt(span.width / 0.78f);
-            float plankWidth = span.width / plankCount;
-            var planks = new List<Bounds>(plankCount);
-            for (int index = 0; index < plankCount; index++)
+            Transform root = new GameObject("Central Park Timber Footbridge").transform;
+            root.SetParent(parent, false);
+            root.position = new Vector3(span.center.x, bridge.AverageY + CityStreetSurfacePlanner.RoadTop, span.center.y);
+            root.localScale = new Vector3(span.width / CityRiverDefinition.TimberReferenceSpan, 1f,
+                span.height / CityRiverDefinition.ParkFootbridgeWidth);
+            FootstepGround.Stamp(root, FootstepGroundKind.Wood);
+
+            GameObject source = Resources.Load<GameObject>("City/ParkFootbridge");
+            Material finish = Resources.Load<Material>("City/Surfaces/ParkFootbridge");
+            if (!source || !finish) throw new InvalidOperationException("Missing park footbridge model or finish.");
+            GameObject model = UnityEngine.Object.Instantiate(source, root, false);
+            foreach (MeshRenderer renderer in model.GetComponentsInChildren<MeshRenderer>())
             {
-                planks.Add(new Bounds(
-                    new Vector3(
-                        span.xMin + (index + 0.5f) * plankWidth,
-                        plankTopY - 0.055f,
-                        span.center.y),
-                    new Vector3(
-                        Mathf.Max(0.08f, plankWidth - 0.045f),
-                        0.11f,
-                        span.height + SurfaceClearance * 2f)));
+                renderer.sharedMaterial = finish;
+                CityWetSurfaceRegistry.Register(renderer, renderer.name == "Stone Bearings"
+                    ? CityWetSurfaceKind.Sidewalk : CityWetSurfaceKind.WeatheredTimber, Color.white);
             }
 
-            CreateTimberBatch(
-                "Timber Deck Planks",
-                root,
-                planks,
-                Timber,
-                false,
-                .018f);
-            var structure = new List<Bounds>
-            {
-                new Bounds(
-                    new Vector3(
-                        span.center.x,
-                        deckY - 0.30f,
-                        span.center.y - span.height * 0.30f),
-                    new Vector3(span.width, 0.38f, 0.22f)),
-                new Bounds(
-                    new Vector3(
-                        span.center.x,
-                        deckY - 0.30f,
-                        span.center.y + span.height * 0.30f),
-                    new Vector3(span.width, 0.38f, 0.22f))
-            };
-            AxisRange guardRange = CreateBridgeGuardRange(bridge);
-            float guardCenter =
-                (guardRange.Minimum + guardRange.Maximum) * 0.5f;
-            float guardLength =
-                guardRange.Maximum - guardRange.Minimum;
+            // A single walking plane spans the 6 mm board joints. The same
+            // wood marker supplies footsteps while crossing in either direction.
+            AddCollider(new Vector3(0f, -.027f, 0f), new Vector3(CityRiverDefinition.TimberReferenceSpan, .114f, 2.86f));
             for (int side = -1; side <= 1; side += 2)
+                AddCollider(new Vector3(0f, .55f, side * 1.30f), new Vector3(CityRiverDefinition.TimberReferenceSpan, 1.10f, .15f));
+
+            void AddCollider(Vector3 centre, Vector3 size)
             {
-                float z = span.center.y + side * (span.height * 0.5f - 0.10f);
-                structure.Add(new Bounds(
-                    new Vector3(guardCenter, deckY + RailHeight, z),
-                    new Vector3(guardLength, 0.13f, 0.13f)));
-                AddRailPostsAlongX(
-                    structure,
-                    guardRange,
-                    z,
-                    bridge.AverageY,
-                    2.1f);
+                BoxCollider box = root.gameObject.AddComponent<BoxCollider>();
+                box.center = centre;
+                box.size = size;
             }
-
-            CreateTimberBatch(
-                "Timber Bridge Structure",
-                root,
-                structure,
-                TimberEdge,
-                true,
-                .016f);
-        }
-
-        /// <summary>
-        /// One combined footbridge batch on the park's timber sheet, baked
-        /// at its pitch and box projected: the deck is read from above and
-        /// the handrail from the side, so no single plane serves both.
-        /// </summary>
-        private static void CreateTimberBatch(
-            string name,
-            Transform parent,
-            IReadOnlyList<Bounds> boxes,
-            Color color,
-            bool collider,
-            float edgeRadius)
-        {
-            const CityParkSurfaceKind timber = CityParkSurfaceKind.Timber;
-            GameObject batch = RuntimePrimitiveFactory.CreateStructuralBoxes(
-                name,
-                parent,
-                boxes,
-                color,
-                collider,
-                CityParkSurfaceAppearance.GetRecipe(timber).MetersPerTile,
-                CityParkSurfaceAppearance.GetUvMode(timber),
-                edgeRadius);
-            CityParkSurfaceAppearance.ApplyCombined(batch.GetComponent<Renderer>(), timber, color);
         }
 
         private static AxisRange CreateBridgeGuardRange(
