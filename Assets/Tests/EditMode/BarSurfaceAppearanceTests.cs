@@ -362,43 +362,17 @@ namespace BarPromenade.Tests.EditMode
                     CountTexturedRenderers(room),
                     Is.GreaterThanOrEqualTo(12),
                     $"The {district} identity must retain authored sheets.");
-                Texture2D cafeSeat = Resources.Load<Texture2D>(
-                    MountainRoadCafeSurfaceAppearance
-                        .CounterTextureResourcePath);
-                Texture2D cafeMetal = Resources.Load<Texture2D>(
-                    MountainRoadCafeSurfaceAppearance
-                        .MetalTextureResourcePath);
-                foreach (string stoolName in new[]
-                         {
-                             "Bar Stool 2",
-                             "Bar Stool 4",
-                             "Bar Stool 5",
-                             "Bar Stool 6",
-                             "Bar Drink Service Stool"
-                         })
-                {
-                    AssertTransformTexture(
-                        room.Find(stoolName),
-                        cafeSeat);
-                }
-
-                foreach (string stoolName in new[]
-                         {
-                             "Bar Stool 2 Leg",
-                             "Bar Stool 4 Leg",
-                             "Bar Stool 5 Leg",
-                             "Bar Stool 6 Leg",
-                             "Bar Drink Service Stool Legs",
-                             "Bar Drink Service Stool Footring"
-                         })
-                {
-                    AssertTransformTexture(
-                        room.Find(stoolName),
-                        cafeMetal);
-                }
-
                 Texture2D roomAtlas = Resources.Load<Texture2D>(BarInteriorSurfaceAppearance.AlbedoResourcePath);
                 Assert.That(roomAtlas, Is.Not.Null);
+                foreach (string furnishing in new[]
+                         {
+                             "Bar Stool 2", "Bar Stool 4", "Bar Stool 5", "Bar Stool 6",
+                             "Bar Drink Service Stool", "Bar Drink Service Stool Legs", "Bar Drink Service Stool Footring",
+                             "Bar Stool 2 Leg", "Bar Stool 4 Leg", "Bar Stool 5 Leg", "Bar Stool 6 Leg",
+                             "Tap Slotted Grate", "Backbar Shelf Brackets", "Booth Cushion 1 Near", "Booth Back 2 Far"
+                         })
+                    AssertTransformTexture(room.Find(furnishing), roomAtlas);
+
                 for (int lightIndex = 0;
                      lightIndex < plan.LightAnchors.Count;
                      lightIndex++)

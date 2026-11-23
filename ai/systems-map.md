@@ -209,7 +209,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Continuous balance and falling | Stair falls;unsupported pose releases;combat caps;seated/all-fours rise. | `PlayerBalance{Model,Controller}`, `StairWalkableSurface`, `PlayerRiseModel` | Current |
 | Hero drunk muttering | A seeded stage-dependent clock drives short authored mutters, slurring and an owned speech bubble. | `HeroMutterModel`, `HeroMutterLines` | Current |
 | Hero nausea bouts | High intoxication drives the walking gauge, cancellation gates, vomiting relief and session mouth-soiling. | `HeroNauseaClock`, `HeroNauseaGaugeModel` | Current |
-| Bar interior and exterior | Hall/worn WC; solid shared door, exclusive hero/guest access and masked broken mirror. | `BarInteriorLayout*`, `BarWashroom*`, `InteriorHingedDoorInteraction` | Current |
+| Bar interior and exterior | Fitted counter, taps, booths. Worn WC, shared door, exclusive access and broken mirror. | `BarInteriorLayout*`, `BarWashroom*`, `InteriorHingedDoorInteraction` | Current |
 | Player home interior | 12×8×2.9m; fitted sofa, sink, fridge and balcony; locked room/shared sit. | `HomeInteriorModelLibrary`, `HomeDiningSeatPlan` | Current |
 | Apartment calendar appearance | Days1–7 neglect; heavier7/exact debug restore; sleep view7+hero7. | `HomeApartmentDressing`, `HomeApartmentDay{Rules,Controller}` | Current |
 | Player-home stairwell | Three puzzles/pickup shots/equip;crowbar wakes crowd after return.Safe room3/retry. | `StairwellLabyrinth*`, `StairwellPickup*`, `StairwellEncounter*` | Current |

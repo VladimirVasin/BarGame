@@ -2832,9 +2832,9 @@
   restored chase-camera lens inside the closed door plane after entry.
 - **Accepted by explicit user decision, 2026-09-03 — bar patrons are bound to
   concrete furniture, and the hero stool has no visual affordance:** regular
-  and hero stools share cafe geometry (`0.8175 m` top, `0.48 m` diameter,
-  `0.055 m` thick), `CafeMetalDetail`/`CafeCounterDetail` and authored approach,
-  at hero `z=.91`, without floor marker/special stool signal. Current cast is eight:
+  and hero stools share the cafe envelope (top .8175 m, Ø .48 m, thickness .055 m),
+  turned seats and fitted atlas. Hero at z=.91, no marker. Bar, shop, church,
+  pawnshop and mother's furnished interiors allow 40,000 triangles each. Cast:
   four booth sitters on `0.48 m` cushions, two counter sitters and two standing
   table patrons. Shared seeded Rest/Raise/Sip/Lower cadence; entry shuffles
   Bottle/Pint/WineGlass/ShotGlass/Snifter independently of cast. Counter patrons

@@ -35,6 +35,9 @@ from __future__ import annotations
 import math
 from typing import Iterable, Sequence
 
+# Mirrors DetailedInteriorModelBudget for standalone Blender authoring.
+DETAILED_INTERIOR_TRIANGLES = 40_000
+
 Vec3 = tuple[float, float, float]
 Face = tuple[int, ...]
 Geometry = tuple[list[Vec3], list[Face]]

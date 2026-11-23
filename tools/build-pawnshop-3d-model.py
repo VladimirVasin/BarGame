@@ -359,7 +359,11 @@ def export(model, model_dir, source_dir):
     name="Pawnshop"+model.kind+"3D"
     vertices=sum(len(p["vertices"]) for p in model.parts)
     triangles=sum(sum(len(face)-2 for face in p["faces"]) for p in model.parts)
-    assert triangles<55000 and len(model.parts)<90
+    assert len(model.parts)<90
+    if model.kind == "Interior":
+        assert triangles <= kit.DETAILED_INTERIOR_TRIANGLES
+    else:
+        assert triangles < 55000
     bounds=model.bounds()
     payload={"schema_version":1,"design_id":"pawnshop_"+model.kind.lower()+"_v1",
              "generator_version":VERSION,"build_signature":model.signature(),

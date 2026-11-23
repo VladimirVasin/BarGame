@@ -58,7 +58,8 @@ namespace BarPromenade.Editor
             if (!File.Exists(manifestPath)) throw new InvalidOperationException("Missing pawnshop manifest " + manifestPath);
             Manifest manifest = JsonUtility.FromJson<Manifest>(File.ReadAllText(manifestPath));
             if (manifest == null || manifest.design_id != "pawnshop_" + kind.ToLowerInvariant() + "_v1" ||
-                manifest.parts == null || manifest.anchors == null || manifest.triangle_count > 55000 ||
+                manifest.parts == null || manifest.anchors == null || manifest.triangle_count >
+                    (kind == "Interior" ? DetailedInteriorModelBudget.MaximumTriangles : 55000) ||
                 manifest.parts.Length > 90 || manifest.build_signature?.Length != 64)
                 throw new InvalidOperationException("Invalid pawnshop model contract " + manifestPath);
             string stamp = SetupVersion + ":" + manifest.build_signature;

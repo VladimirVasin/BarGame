@@ -5,7 +5,7 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-23
 
-HomeFurnitureFinishes checks sofa, kitchen, balcony, wear and clutter through wake, seal and reversal. HomeBedDeformableSurfaceTests checks support. SupermarketFinishes checks the fitted shop and purchase route. CityCheckpointFinishes covers door/road light, boom, gravel and E replies. CitySouthTunnel covers masonry, drain, rain and return. CityTrawlerVisit checks hull/cargo. CityPort's road assertion expects an enabled source mesh. CityBoatRentalStation covers sign UVs, rests and return. ImageGenCityMap_PreservesPlanAndLivePlaces checks the redraw. CityRiverEmbankments covers walks/03. validate_mooring_feet checks contact.
+BarFurnitureFinishes checks seats and shelf bottles. VodkaBottle_NeckClearsPouringPalm and CounterLip_ClearsCuffDuringPickup cover hand clearance. BarFullRoomFrameTime covers a full bar. HomeFurnitureFinishes checks wear and seal reversal. HomeBedDeformableSurfaceTests checks support. SupermarketFinishes covers purchases. CityCheckpointFinishes covers entry/road light, boom, gravel and E. CitySouthTunnel covers masonry, drain, rain and return. CityTrawlerVisit checks hull/cargo. CityPort's road assertion expects an enabled source mesh. CityBoatRentalStation covers sign UVs, rests and return. ImageGenCityMap_PreservesPlanAndLivePlaces checks the redraw. CityRiverEmbankments covers walks/03. validate_mooring_feet checks contact.
 CityParkBandstand checks seats, corner clicks, one lamp and resident outfits.
 
 CityCanneryFinishes checks the rebuilt bay, work surfaces, dispatch and the equipped apron panels in pose.
@@ -16,7 +16,7 @@ CityAsphaltPaving checks runs, joints and lamp-lit aggregate.
 CityGroceryStreetFinishes checks the surveyed curb and running bond. BeerCanFinishFollowsTheHeldParts checks sleeve fibres, grip polish and lid marks in hand.
 CityGrocerySignFromStreet checks both approaches and overlapping night lights.
 CityWaterworksPaving checks stone, trough, spout and caged lamp.
-Column, bypass, wheel and drains share an atlas. The City misc Blender generator checks the catalogue against its previous revision.
+Column, bypass, wheel and drains share an atlas. The City misc generator compares catalogue revisions.
 CityClosedCinema checks the prints on both mirrored facades. CityLastRouteIsland checks the raised stone against the common ground, sit dock and bin clearance. Both approaches show the roof, chipped mast and empty tracks.
 The focused City publisher checks the new sheets. The older
 BuildingOldTownFacadePrimary dimension mismatch remains.
@@ -33,9 +33,7 @@ distant district objects, keep shared clocks, hero and Line 03 seats.
 samples and drives the seated hero across both seams. `CityTerracePilotPlayModeTests`
 covers boarding and transfers.
 
-Placed bins by service yards and phones by public approaches. The hero opens
-the lid, inspects wet cardboard and dials with the extended right index.
-Esc/Q exit any view. Lid, door, cradle and keys play mechanical world sounds.
+Service-yard bins open onto wet cardboard. At street phones the hero dials with his right index. Esc/Q exits. Lid, door, cradle and keys have world audio.
 `LiveCity_StreetUtilitiesWalkOpenCallAndLeave` verified public approaches,
 rendered index contact, physical key travel, both keyboard exits and audible cues. The Blender FBX check reads
 the keys from the caller's side and measures the cardboard against all walls.

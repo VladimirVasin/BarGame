@@ -239,40 +239,13 @@ namespace BarPromenade
                 // including before mirror initialization or after its teardown.
                 if (binding.Role == "washroom_mirror_source") renderer.forceRenderingOff = true;
 
-                if (TryApplyCafeStoolSurface(binding))
-                {
-                    continue;
-                }
-
                 ApplyTint(
                     renderer,
                     properties,
                     binding.Tint.Resolve(identity),
                     binding.Sheet,
-                    !binding.Emissive);
-            }
-        }
-
-        private static bool TryApplyCafeStoolSurface(
-            BarPartBinding binding)
-        {
-            switch (binding.Role)
-            {
-                case "stool_leg":
-                case "hero_stool_legs":
-                case "hero_stool_footring":
-                    MountainRoadCafeSurfaceAppearance.Apply(
-                        binding.Renderer,
-                        MountainRoadCafeSurfaceKind.MetalDetail);
-                    return true;
-                case "stool_seat":
-                case "hero_stool_seat":
-                    MountainRoadCafeSurfaceAppearance.Apply(
-                        binding.Renderer,
-                        MountainRoadCafeSurfaceKind.CounterDetail);
-                    return true;
-                default:
-                    return false;
+                    !binding.Emissive,
+                    binding.Role.StartsWith("shelf_bottle_", StringComparison.Ordinal));
             }
         }
 
@@ -281,7 +254,8 @@ namespace BarPromenade
             MaterialPropertyBlock properties,
             Color tint,
             string sheet,
-            bool sheeted)
+            bool sheeted,
+            bool bottle = false)
         {
             properties.Clear();
             if (sheeted &&
@@ -289,7 +263,7 @@ namespace BarPromenade
                     sheet,
                     out BarSurfaceKind kind))
             {
-                BarSurfaceAppearance.ApplyAuthored(renderer, kind, tint);
+                BarSurfaceAppearance.ApplyAuthored(renderer, kind, tint, bottle);
                 return;
             }
 

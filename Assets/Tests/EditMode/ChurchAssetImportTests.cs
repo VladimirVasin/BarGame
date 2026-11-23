@@ -45,7 +45,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(exterior.renderer_count, Is.LessThanOrEqualTo(18));
             Assert.That(exterior.triangle_count, Is.LessThanOrEqualTo(12000));
             Assert.That(interior.renderer_count, Is.LessThanOrEqualTo(24));
-            Assert.That(interior.triangle_count, Is.LessThanOrEqualTo(22000));
+            Assert.That(interior.triangle_count, Is.LessThanOrEqualTo(DetailedInteriorModelBudget.MaximumTriangles));
             Assert.That(exterior.runtime_wrapper_yaw_degrees, Is.EqualTo(180f));
             Assert.That(interior.runtime_wrapper_yaw_degrees, Is.Zero);
 

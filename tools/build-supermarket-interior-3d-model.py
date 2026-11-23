@@ -1051,9 +1051,9 @@ def validate(asset: AssetBuild) -> dict:
     triangles = kit.triangle_count(merged)
     if len(asset.parts) > 90:
         problems.append(f"the interior fragments into {len(asset.parts)} meshes")
-    if triangles > 30000:
+    if triangles > kit.DETAILED_INTERIOR_TRIANGLES:
         problems.append(
-            f"the interior costs {triangles} triangles against its 30000 cap"
+            f"the interior costs {triangles} triangles against its {kit.DETAILED_INTERIOR_TRIANGLES} cap"
         )
     source_types = {obj.type for obj in asset.collection.objects}
     if source_types - {"EMPTY", "MESH"}:
@@ -1201,7 +1201,7 @@ def manifest_for(asset: AssetBuild, report: dict, signature: str) -> dict:
         "triangle_count": report["triangle_count"],
         "budgets": {
             "maximum_renderers": 90,
-            "maximum_triangles": 30000,
+            "maximum_triangles": kit.DETAILED_INTERIOR_TRIANGLES,
             "imported_colliders": 0,
             "imported_lights": 0,
             "imported_cameras": 0,

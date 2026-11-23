@@ -74,7 +74,7 @@
   "triangle_count": 24244,
   "budgets": {
     "maximum_renderers": 90,
-    "maximum_triangles": 30000,
+    "maximum_triangles": 40000,
     "imported_colliders": 0,
     "imported_lights": 0,
     "imported_cameras": 0,

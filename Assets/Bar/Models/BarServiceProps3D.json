@@ -1,7 +1,7 @@
 {
   "generator": "tools/build-bar-3d-model.py",
-  "generator_version": "1.4.1",
-  "blender_version": "5.0.1",
+  "generator_version": "1.5.0",
+  "blender_version": "5.2.3 LTS",
   "design_id": "bar_service_props_v1",
   "display_name": "Bar Promenade Authored Service Props",
   "dimensions_m": {
@@ -34,7 +34,7 @@
     1.0
   ],
   "mesh_count": 34,
-  "triangle_count": 4136,
+  "triangle_count": 5812,
   "anchors": [
     {
       "name": "BarMenu.Origin",
@@ -1056,9 +1056,9 @@
       "tint": {
         "field": "",
         "rgb": [
-          0.28,
-          0.2,
-          0.11
+          0.59,
+          0.72,
+          0.74
         ],
         "scale": 1.0,
         "lerp_field": "",
@@ -1070,8 +1070,8 @@
         "lerp_t": 0.0
       },
       "colliders": [],
-      "vertices": 72,
-      "triangles": 132
+      "vertices": 160,
+      "triangles": 316
     },
     {
       "name": "Service WaterBottle Closure",
@@ -1084,224 +1084,8 @@
         "field": "",
         "rgb": [
           0.52,
-          0.48,
+          0.47,
           0.36
-        ],
-        "scale": 1.0,
-        "lerp_field": "",
-        "lerp_rgb": [
-          0.0,
-          0.0,
-          0.0
-        ],
-        "lerp_t": 0.0
-      },
-      "colliders": [],
-      "vertices": 24,
-      "triangles": 44
-    },
-    {
-      "name": "Service WaterBottle Blank Label",
-      "role": "service_bottle_label",
-      "group": "service:bottle:WaterBottle",
-      "sheet": "Paper",
-      "emissive": false,
-      "shadows": false,
-      "tint": {
-        "field": "",
-        "rgb": [
-          0.72,
-          0.66,
-          0.48
-        ],
-        "scale": 1.0,
-        "lerp_field": "",
-        "lerp_rgb": [
-          0.0,
-          0.0,
-          0.0
-        ],
-        "lerp_t": 0.0
-      },
-      "colliders": [],
-      "vertices": 32,
-      "triangles": 56
-    },
-    {
-      "name": "Service BeerLongneck Body",
-      "role": "service_bottle_body",
-      "group": "service:bottle:BeerLongneck",
-      "sheet": "BottleGlass",
-      "emissive": false,
-      "shadows": false,
-      "tint": {
-        "field": "",
-        "rgb": [
-          0.28,
-          0.2,
-          0.11
-        ],
-        "scale": 1.0,
-        "lerp_field": "",
-        "lerp_rgb": [
-          0.0,
-          0.0,
-          0.0
-        ],
-        "lerp_t": 0.0
-      },
-      "colliders": [],
-      "vertices": 72,
-      "triangles": 132
-    },
-    {
-      "name": "Service BeerLongneck Closure",
-      "role": "service_bottle_closure",
-      "group": "service:bottle:BeerLongneck",
-      "sheet": "PaintedMetal",
-      "emissive": false,
-      "shadows": false,
-      "tint": {
-        "field": "",
-        "rgb": [
-          0.52,
-          0.48,
-          0.36
-        ],
-        "scale": 1.0,
-        "lerp_field": "",
-        "lerp_rgb": [
-          0.0,
-          0.0,
-          0.0
-        ],
-        "lerp_t": 0.0
-      },
-      "colliders": [],
-      "vertices": 24,
-      "triangles": 44
-    },
-    {
-      "name": "Service BeerLongneck Blank Label",
-      "role": "service_bottle_label",
-      "group": "service:bottle:BeerLongneck",
-      "sheet": "Paper",
-      "emissive": false,
-      "shadows": false,
-      "tint": {
-        "field": "",
-        "rgb": [
-          0.72,
-          0.66,
-          0.48
-        ],
-        "scale": 1.0,
-        "lerp_field": "",
-        "lerp_rgb": [
-          0.0,
-          0.0,
-          0.0
-        ],
-        "lerp_t": 0.0
-      },
-      "colliders": [],
-      "vertices": 32,
-      "triangles": 56
-    },
-    {
-      "name": "Service WineBottle Body",
-      "role": "service_bottle_body",
-      "group": "service:bottle:WineBottle",
-      "sheet": "BottleGlass",
-      "emissive": false,
-      "shadows": false,
-      "tint": {
-        "field": "",
-        "rgb": [
-          0.28,
-          0.2,
-          0.11
-        ],
-        "scale": 1.0,
-        "lerp_field": "",
-        "lerp_rgb": [
-          0.0,
-          0.0,
-          0.0
-        ],
-        "lerp_t": 0.0
-      },
-      "colliders": [],
-      "vertices": 72,
-      "triangles": 132
-    },
-    {
-      "name": "Service WineBottle Closure",
-      "role": "service_bottle_closure",
-      "group": "service:bottle:WineBottle",
-      "sheet": "PaintedMetal",
-      "emissive": false,
-      "shadows": false,
-      "tint": {
-        "field": "",
-        "rgb": [
-          0.48,
-          0.3,
-          0.16
-        ],
-        "scale": 1.0,
-        "lerp_field": "",
-        "lerp_rgb": [
-          0.0,
-          0.0,
-          0.0
-        ],
-        "lerp_t": 0.0
-      },
-      "colliders": [],
-      "vertices": 24,
-      "triangles": 44
-    },
-    {
-      "name": "Service WineBottle Blank Label",
-      "role": "service_bottle_label",
-      "group": "service:bottle:WineBottle",
-      "sheet": "Paper",
-      "emissive": false,
-      "shadows": false,
-      "tint": {
-        "field": "",
-        "rgb": [
-          0.72,
-          0.66,
-          0.48
-        ],
-        "scale": 1.0,
-        "lerp_field": "",
-        "lerp_rgb": [
-          0.0,
-          0.0,
-          0.0
-        ],
-        "lerp_t": 0.0
-      },
-      "colliders": [],
-      "vertices": 32,
-      "triangles": 56
-    },
-    {
-      "name": "Service VodkaBottle Body",
-      "role": "service_bottle_body",
-      "group": "service:bottle:VodkaBottle",
-      "sheet": "BottleGlass",
-      "emissive": false,
-      "shadows": false,
-      "tint": {
-        "field": "",
-        "rgb": [
-          0.62,
-          0.76,
-          0.78
         ],
         "scale": 1.0,
         "lerp_field": "",
@@ -1314,12 +1098,66 @@
       },
       "colliders": [],
       "vertices": 64,
-      "triangles": 116
+      "triangles": 124
     },
     {
-      "name": "Service VodkaBottle Closure",
+      "name": "Service WaterBottle Label",
+      "role": "service_bottle_label",
+      "group": "service:bottle:WaterBottle",
+      "sheet": "Paper",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.79,
+          0.72,
+          0.58
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 64,
+      "triangles": 124
+    },
+    {
+      "name": "Service BeerLongneck Body",
+      "role": "service_bottle_body",
+      "group": "service:bottle:BeerLongneck",
+      "sheet": "BottleGlass",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.28,
+          0.21,
+          0.12
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 160,
+      "triangles": 316
+    },
+    {
+      "name": "Service BeerLongneck Closure",
       "role": "service_bottle_closure",
-      "group": "service:bottle:VodkaBottle",
+      "group": "service:bottle:BeerLongneck",
       "sheet": "PaintedMetal",
       "emissive": false,
       "shadows": false,
@@ -1327,7 +1165,7 @@
         "field": "",
         "rgb": [
           0.52,
-          0.48,
+          0.47,
           0.36
         ],
         "scale": 1.0,
@@ -1340,22 +1178,22 @@
         "lerp_t": 0.0
       },
       "colliders": [],
-      "vertices": 24,
-      "triangles": 44
+      "vertices": 64,
+      "triangles": 124
     },
     {
-      "name": "Service VodkaBottle Blank Label",
+      "name": "Service BeerLongneck Label",
       "role": "service_bottle_label",
-      "group": "service:bottle:VodkaBottle",
+      "group": "service:bottle:BeerLongneck",
       "sheet": "Paper",
       "emissive": false,
       "shadows": false,
       "tint": {
         "field": "",
         "rgb": [
+          0.79,
           0.72,
-          0.66,
-          0.48
+          0.58
         ],
         "scale": 1.0,
         "lerp_field": "",
@@ -1367,8 +1205,170 @@
         "lerp_t": 0.0
       },
       "colliders": [],
-      "vertices": 32,
-      "triangles": 56
+      "vertices": 64,
+      "triangles": 124
+    },
+    {
+      "name": "Service WineBottle Body",
+      "role": "service_bottle_body",
+      "group": "service:bottle:WineBottle",
+      "sheet": "BottleGlass",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.28,
+          0.21,
+          0.12
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 160,
+      "triangles": 316
+    },
+    {
+      "name": "Service WineBottle Closure",
+      "role": "service_bottle_closure",
+      "group": "service:bottle:WineBottle",
+      "sheet": "PaintedMetal",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.52,
+          0.47,
+          0.36
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 64,
+      "triangles": 124
+    },
+    {
+      "name": "Service WineBottle Label",
+      "role": "service_bottle_label",
+      "group": "service:bottle:WineBottle",
+      "sheet": "Paper",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.79,
+          0.72,
+          0.58
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 64,
+      "triangles": 124
+    },
+    {
+      "name": "Service VodkaBottle Body",
+      "role": "service_bottle_body",
+      "group": "service:bottle:VodkaBottle",
+      "sheet": "BottleGlass",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.59,
+          0.72,
+          0.74
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 160,
+      "triangles": 316
+    },
+    {
+      "name": "Service VodkaBottle Closure",
+      "role": "service_bottle_closure",
+      "group": "service:bottle:VodkaBottle",
+      "sheet": "PaintedMetal",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.52,
+          0.47,
+          0.36
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 64,
+      "triangles": 124
+    },
+    {
+      "name": "Service VodkaBottle Label",
+      "role": "service_bottle_label",
+      "group": "service:bottle:VodkaBottle",
+      "sheet": "Paper",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.79,
+          0.72,
+          0.58
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 64,
+      "triangles": 124
     },
     {
       "name": "Service CognacBottle Body",
@@ -1381,8 +1381,8 @@
         "field": "",
         "rgb": [
           0.28,
-          0.2,
-          0.11
+          0.21,
+          0.12
         ],
         "scale": 1.0,
         "lerp_field": "",
@@ -1394,8 +1394,8 @@
         "lerp_t": 0.0
       },
       "colliders": [],
-      "vertices": 72,
-      "triangles": 132
+      "vertices": 160,
+      "triangles": 316
     },
     {
       "name": "Service CognacBottle Closure",
@@ -1407,9 +1407,9 @@
       "tint": {
         "field": "",
         "rgb": [
-          0.38,
-          0.19,
-          0.08
+          0.52,
+          0.47,
+          0.36
         ],
         "scale": 1.0,
         "lerp_field": "",
@@ -1421,11 +1421,11 @@
         "lerp_t": 0.0
       },
       "colliders": [],
-      "vertices": 24,
-      "triangles": 44
+      "vertices": 64,
+      "triangles": 124
     },
     {
-      "name": "Service CognacBottle Blank Label",
+      "name": "Service CognacBottle Label",
       "role": "service_bottle_label",
       "group": "service:bottle:CognacBottle",
       "sheet": "Paper",
@@ -1434,9 +1434,9 @@
       "tint": {
         "field": "",
         "rgb": [
+          0.79,
           0.72,
-          0.66,
-          0.48
+          0.58
         ],
         "scale": 1.0,
         "lerp_field": "",
@@ -1448,8 +1448,8 @@
         "lerp_t": 0.0
       },
       "colliders": [],
-      "vertices": 32,
-      "triangles": 56
+      "vertices": 64,
+      "triangles": 124
     },
     {
       "name": "Service Tumbler Shell",
@@ -1965,5 +1965,5 @@
       "triangles": 28
     }
   ],
-  "build_signature": "77511cdfd9b212dafb5d30bae2060a085a10ccbfee2171966e48d164782ba627"
+  "build_signature": "085c44b3b05d35378ca1e2a488ad957ad023e4bf0d1b46a74378ee5ca917f727"
 }

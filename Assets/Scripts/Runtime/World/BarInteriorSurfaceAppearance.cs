@@ -12,6 +12,8 @@ namespace BarPromenade
         private const int MaximumUniqueMeshes = 512;
         internal const string AlbedoResourcePath = "Bar/Textures/BarInteriorAlbedo";
         internal const string ResponseResourcePath = "Bar/Textures/BarInteriorResponse";
+        internal const string BottleAlbedoPath = "Bar/Textures/BarBottleFinishesAlbedo";
+        internal const string BottleResponsePath = "Bar/Textures/BarBottleFinishesResponse";
         internal const float ReliefStrength = .65f;
         private static readonly int ResponseId = Shader.PropertyToID("_SceneMaterialResponse");
         private static readonly int ResponseStrengthId = Shader.PropertyToID("_SceneResponseStrength");
@@ -19,7 +21,7 @@ namespace BarPromenade
         private static readonly int MetalDirectionId = Shader.PropertyToID("_ClearCoatMask");
         private static readonly MaterialPropertyBlock properties = new MaterialPropertyBlock();
         private static Material material;
-        private static Texture2D albedo, response;
+        private static Texture2D albedo, response, bottleAlbedo, bottleResponse;
         private static HashSet<string> uniqueMeshes;
         [Serializable] private sealed class SurfaceContract
         {
@@ -55,23 +57,33 @@ namespace BarPromenade
             return true;
         }
 
-        internal static bool TryApply(Renderer renderer, BarSurfaceKind kind, Color tint)
+        internal static bool TryApply(Renderer renderer, BarSurfaceKind kind, Color tint, bool bottle)
         {
-            if (!IsUnique(renderer)) return false;
+            if (!bottle && !IsUnique(renderer)) return false;
+            if (bottle)
+            {
+                if (bottleAlbedo == null) bottleAlbedo = Load(BottleAlbedoPath);
+                if (bottleResponse == null) bottleResponse = Load(BottleResponsePath);
+            }
+            else
+            {
+                if (albedo == null) albedo = Load(AlbedoResourcePath);
+                if (response == null) response = Load(ResponseResourcePath);
+            }
+            Texture2D colourMap = bottle ? bottleAlbedo : albedo;
+            Texture2D physicalMap = bottle ? bottleResponse : response;
             if (material == null)
             {
                 Shader shader = Resources.Load<Shader>("Shaders/CitySurfaceLit");
                 if (shader == null || !shader.isSupported)
                     throw new InvalidOperationException("The bar requires the shared physical-surface shader.");
-                albedo = Load(AlbedoResourcePath);
-                response = Load(ResponseResourcePath);
                 material = new Material(RuntimePrimitiveFactory.DefaultMaterial)
                 {
                     shader = shader, name = "Compact Bar Physical Surfaces Shared",
                     hideFlags = HideFlags.HideAndDontSave, enableInstancing = true
                 };
-                material.SetTexture("_BaseMap", albedo);
-                material.SetTexture(ResponseId, response);
+                material.SetTexture("_BaseMap", colourMap);
+                material.SetTexture(ResponseId, physicalMap);
                 material.SetFloat(ResponseStrengthId, 1f);
                 material.SetFloat(NormalStrengthId, ReliefStrength);
             }
@@ -80,14 +92,14 @@ namespace BarPromenade
             renderer.GetPropertyBlock(properties);
             HomeSurfaceRecipe recipe = BarSurfaceAppearance.GetRecipe(kind);
             Color displayed = BarSurfaceAppearance.CreateDisplayTint(tint, kind);
-            properties.SetTexture("_BaseMap", albedo);
+            properties.SetTexture("_BaseMap", colourMap);
             properties.SetVector("_BaseMap_ST", new Vector4(1f, 1f, 0f, 0f));
             properties.SetColor("_BaseColor", displayed);
             properties.SetColor("_Color", displayed);
             properties.SetFloat("_SurfaceAlbedoCompensation", recipe.AlbedoCompensation);
             properties.SetFloat("_Smoothness", recipe.Smoothness);
             properties.SetFloat("_Metallic", recipe.Metallic);
-            properties.SetTexture(ResponseId, response);
+            properties.SetTexture(ResponseId, physicalMap);
             properties.SetFloat(ResponseStrengthId, 1f);
             properties.SetFloat(NormalStrengthId, ReliefStrength);
             properties.SetFloat(MetalDirectionId, kind == BarSurfaceKind.AgedBrass ? .22f : 0f);
@@ -112,7 +124,7 @@ namespace BarPromenade
                 if (Application.isPlaying) UnityEngine.Object.Destroy(material);
                 else UnityEngine.Object.DestroyImmediate(material);
             }
-            material = null; albedo = response = null; uniqueMeshes = null; properties.Clear();
+            material = null; albedo = response = bottleAlbedo = bottleResponse = null; uniqueMeshes = null; properties.Clear();
         }
     }
 }

@@ -82,13 +82,15 @@ namespace BarPromenade.Editor
 
             bool uniqueColour = assetPath.EndsWith("/BarInteriorAlbedo.png", StringComparison.OrdinalIgnoreCase);
             bool uniqueResponse = assetPath.EndsWith("/BarInteriorResponse.png", StringComparison.OrdinalIgnoreCase);
-            if (uniqueColour || uniqueResponse)
+            bool bottleColour = assetPath.EndsWith("/BarBottleFinishesAlbedo.png", StringComparison.OrdinalIgnoreCase);
+            bool bottleResponse = assetPath.EndsWith("/BarBottleFinishesResponse.png", StringComparison.OrdinalIgnoreCase);
+            if (uniqueColour || uniqueResponse || bottleColour || bottleResponse)
             {
-                importer.sRGBTexture = !uniqueResponse;
-                importer.alphaSource = uniqueResponse ? TextureImporterAlphaSource.FromInput : TextureImporterAlphaSource.None;
+                importer.sRGBTexture = !(uniqueResponse || bottleResponse);
+                importer.alphaSource = uniqueResponse || bottleResponse ? TextureImporterAlphaSource.FromInput : TextureImporterAlphaSource.None;
                 importer.wrapMode = UnityEngine.TextureWrapMode.Clamp;
                 importer.filterMode = UnityEngine.FilterMode.Trilinear;
-                importer.maxTextureSize = uniqueColour ? 4096 : 2048;
+                importer.maxTextureSize = bottleColour || bottleResponse ? 1024 : uniqueColour ? 4096 : 2048;
                 importer.textureCompression = TextureImporterCompression.CompressedHQ;
                 importer.SetPlatformTextureSettings(new TextureImporterPlatformSettings
                 {

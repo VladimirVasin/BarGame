@@ -83,7 +83,7 @@ namespace BarPromenade
             MountainRoadCafeWorldBuilder.StoolSeatTopAboveFloor;
         public const float PubTableTopHeight = 0.82f;
         public const float PubTableHandInset = 0.40f;
-        public const float PubTableBottleRestInset = 0.50f;
+        public const float PubTableBottleRestInset = 0.46f;
         public const float CounterTopBuildUp = 0.16f;
         public const float CounterBottleRestInset = 0.68f;
         public const float CounterSurfaceHandInset = 0.68f;

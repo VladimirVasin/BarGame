@@ -28,7 +28,7 @@ namespace BarPromenade.Editor
         private const string ExpectedGeneratorVersion = "1.12.0";
         private const int ExpectedAnchorCount = 15;
         private const int MaximumRenderers = 160;
-        private const int MaximumTriangles = 22000;
+        private const int MaximumTriangles = DetailedInteriorModelBudget.MaximumTriangles;
         private const float MeasureTolerance = 0.02f;
         private const float RotationToleranceDegrees = 0.1f;
         private const float UvTolerance = 0.00001f;

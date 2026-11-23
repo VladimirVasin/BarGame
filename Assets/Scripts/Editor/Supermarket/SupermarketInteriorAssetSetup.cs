@@ -39,7 +39,7 @@ namespace BarPromenade.Editor
         private const float ExpectedEntranceHeight = 2.94f;
         private const float MeasureTolerance = 0.05f;
         private const int MaximumRenderers = 180;
-        private const int MaximumTriangles = 30000;
+        private const int MaximumTriangles = DetailedInteriorModelBudget.MaximumTriangles;
 
         private static readonly string[] RequiredAnchorRoles =
         {

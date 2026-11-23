@@ -53,12 +53,14 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 
 import interior_kit as kit  # noqa: E402  (after the sys.path fix)
+import bar_bottles
 import bar_parts as bp  # noqa: E402
 import bar_exterior as exterior  # noqa: E402
+import bar_furniture as furniture
 import bar_compact_interior as compact  # noqa: E402
 import bar_washroom as washroom  # noqa: E402
 
-INTERIOR_GENERATOR_VERSION = "4.1.1"
+INTERIOR_GENERATOR_VERSION = "4.2.0"
 DESIGN_ID = "bar_interior_v3"
 DISPLAY_NAME = "Bar Promenade Bar Interior"
 
@@ -169,7 +171,7 @@ DEFAULT_MANIFEST = ROOT / "Assets" / "Bar" / "Models" / "Bar3D.json"
 SERVICE_FBX = ROOT / "Assets" / "Bar" / "Models" / "BarServiceProps3D.fbx"
 SERVICE_MANIFEST = (
     ROOT / "Assets" / "Bar" / "Models" / "BarServiceProps3D.json")
-SERVICE_GENERATOR_VERSION = "1.4.1"
+SERVICE_GENERATOR_VERSION = "1.5.0"
 SERVICE_DESIGN_ID = "bar_service_props_v1"
 SERVICE_DISPLAY_NAME = "Bar Promenade Authored Service Props"
 FACADE_FBX = ROOT / "Assets" / "Bar" / "Models" / "BarFacade3D.fbx"
@@ -261,31 +263,10 @@ def cafe_stool_geometry(
     z: float,
     seat_top_y: float,
 ) -> tuple[kit.Geometry, kit.Geometry, kit.Geometry]:
-    """Return the cafe's pedestal, disk foot and seat at a Bar seat height."""
-    seat_center_y = seat_top_y - CAFE_STOOL_SEAT_HALF_HEIGHT
-    seat_bottom_y = seat_top_y - CAFE_STOOL_SEAT_HALF_HEIGHT * 2.0
-    stem_top_y = seat_bottom_y + CAFE_STOOL_STEM_SEAT_OVERLAP
-    stem_half_height = stem_top_y * 0.5
-    return (
-        bp.u_cylinder(
-            (x, stem_half_height, z),
-            (CAFE_STOOL_STEM_DIAMETER,
-             stem_half_height,
-             CAFE_STOOL_STEM_DIAMETER),
-            sides=10),
-        bp.u_cylinder(
-            (x, CAFE_STOOL_FOOT_HALF_HEIGHT, z),
-            (CAFE_STOOL_FOOT_DIAMETER,
-             CAFE_STOOL_FOOT_HALF_HEIGHT,
-             CAFE_STOOL_FOOT_DIAMETER),
-            sides=12),
-        bp.u_cylinder(
-            (x, seat_center_y, z),
-            (CAFE_STOOL_SEAT_DIAMETER,
-             CAFE_STOOL_SEAT_HALF_HEIGHT,
-             CAFE_STOOL_SEAT_DIAMETER),
-            sides=14),
-    )
+    """Keep the cafe seat and foot envelope, with the pub's turned timber and socket."""
+    return furniture.stool(x, z, seat_top_y, CAFE_STOOL_SEAT_DIAMETER,
+                           CAFE_STOOL_SEAT_HALF_HEIGHT * 2, CAFE_STOOL_FOOT_DIAMETER,
+                           CAFE_STOOL_STEM_DIAMETER)
 
 
 @dataclass
@@ -874,48 +855,35 @@ def build_counter(asset: AssetBuild, materials: dict) -> None:
         bp.u_box((rx, ry, rz), (rsx, rsy, rsz), 0.026),
         "counter_return", bp.ident("CounterWoodTint"), sheet="DarkWood",
         colliders=[((rx, ry, rz), (rsx, rsy, rsz))])
-    add_part(
-        asset, materials, "Counter Top",
-        bp.u_box((cx, cy + sy * 0.5 + 0.08, cz),
-                 (sx + 0.45, 0.16, sz + 0.32), 0.02),
-        "counter_top", bp.ident("MetalTint"))
-    add_part(
-        asset, materials, "Counter Return Top",
-        bp.u_box((rx, ry + rsy * 0.5 + 0.08, rz - 0.08),
-                 (rsx + 0.32, 0.16, rsz + 0.16), 0.02),
-        "counter_top", bp.ident("MetalTint"))
+    # Two boards meet along a mitre from the inside corner to the back.
+    # The former intersecting rectangles put two coplanar tops beneath the taps.
+    left, right = cx-(sx+.45)/2, cx+(sx+.45)/2
+    front, back = cz-(sz+.32)/2, cz+(sz+.32)/2
+    inner, outer = rx-(rsx+.32)/2, rx+(rsx+.32)/2
+    ret_front, ret_back = rz-.08-(rsz+.16)/2, rz-.08+(rsz+.16)/2
+    inside, outside = (inner,front), (right,ret_back)
+    main_outline = [(left,front),inside,outside,(right,back),(left,back)]
+    return_outline = [(inner,ret_front),(outer,ret_front),(outer,ret_back),outside,inside]
+    for name,outline,joint in (("Counter Top",main_outline,1),("Counter Return Top",return_outline,3)):
+        add_part(asset, materials, name, furniture.edged_slab(outline, COUNTER_SURFACE_Y-.16, .16, joint),
+                 "counter_top", bp.ident("MetalTint"))
 
-    main_rail = kit.translated(
-        bp.u_rotated(
-            bp.u_cylinder(
-                (0.0, 0.0, 0.0),
-                (0.10, (sx - 0.45) * 0.5, 0.10),
-                sides=12),
-            (0.0, 0.0, 90.0)),
-        (cx, cy - sy * 0.29, cz - sz * 0.62))
-    add_part(
-        asset, materials, "Counter Foot Rail", main_rail,
-        "counter_rail", bp.ident("MetalTint"))
-    return_rail = kit.translated(
-        bp.u_rotated(
-            bp.u_cylinder(
-                (0.0, 0.0, 0.0),
-                (0.10, (rsz - 0.38) * 0.5, 0.10),
-                sides=12),
-            (90.0, 0.0, 0.0)),
-        (rx - rsx * 0.62, ry - rsy * 0.29, rz - 0.12))
-    add_part(
-        asset, materials, "Counter Return Foot Rail", return_rail,
-        "counter_rail", bp.ident("MetalTint"))
+    rail_left = cx-(sx-.45)/2
+    rail_corner = rx-rsx*.62
+    add_part(asset, materials, "Counter Foot Rail",
+             furniture.rail(rail_left,rail_corner,(.17,1.36,2.76,4.12)),
+             "counter_rail", bp.ident("MetalTint"))
+    add_part(asset, materials, "Counter Return Foot Rail",
+             furniture.rail(1.33,1.91,(.12,.49),return_run=True),
+             "counter_rail", bp.ident("MetalTint"))
 
     panels = []
     panel_count = len(STOOL_XS) + 1
     panel_width = (sx - 0.65) / panel_count
     for index in range(panel_count):
         x = -sx * 0.5 + 0.33 + panel_width * (index + 0.5)
-        panels.append(bp.u_box(
-            (cx + x, cy, cz - sz * 0.51),
-            (panel_width - 0.11, sy - 0.20, 0.08), 0.006))
+        panels.append(kit.translated(furniture.panel(panel_width-.055, sy-.15),
+                                     (cx+x,cy,cz-sz*.51)))
     add_part(
         asset, materials, "Counter Front Panels", kit.merge_all(panels),
         "counter_panel", bp.ident("WoodTint"), sheet="DarkWood",
@@ -924,9 +892,8 @@ def build_counter(asset: AssetBuild, materials: dict) -> None:
     return_panels = []
     for index in range(2):
         panel_z = rz - rsz * 0.5 + 0.43 + index * 0.82
-        return_panels.append(bp.u_box(
-            (rx - rsx * 0.51, ry, panel_z),
-            (0.08, rsy - 0.20, 0.72), 0.006))
+        return_panels.append(kit.translated(bp.u_rotated(furniture.panel(.78,rsy-.15),(0,90,0)),
+                                            (rx-rsx*.51,ry,panel_z)))
     add_part(
         asset, materials, "Counter Return Panels",
         kit.merge_all(return_panels), "counter_panel",
@@ -985,57 +952,25 @@ def build_counter(asset: AssetBuild, materials: dict) -> None:
                      CAFE_STOOL_SEAT_HALF_HEIGHT * 2.0,
                      CAFE_STOOL_SEAT_DIAMETER))])
 
-    for index, x in enumerate(BEER_TAP_XS):
-        stem_center_y = (
-            COUNTER_SURFACE_Y + BEER_TAP_STEM_TOP_Y) * 0.5
-        add_part(
-            asset, materials, f"Beer Tap Stem {index + 1}",
-            bp.u_cylinder(
-                (x, stem_center_y, BEER_TAP_Z),
-                (0.08,
-                 (BEER_TAP_STEM_TOP_Y - COUNTER_SURFACE_Y) * 0.5,
-                 0.08),
-                sides=12),
-            "tap_stem", bp.ident("MetalTint"))
-        spout_run = BEER_TAP_SPOUT_Z - BEER_TAP_Z
-        spout = kit.merge_all([
-            kit.translated(
-                bp.u_rotated(
-                    bp.u_cylinder(
-                        (0.0, 0.0, 0.0),
-                        (0.062, spout_run * 0.5, 0.062),
-                        sides=12),
-                    (90.0, 0.0, 0.0)),
-                (x, BEER_TAP_BRANCH_Y,
-                 BEER_TAP_Z + spout_run * 0.5)),
-            bp.u_cylinder(
-                (x,
-                 (BEER_TAP_BRANCH_Y + BEER_TAP_SPOUT_Y) * 0.5,
-                 BEER_TAP_SPOUT_Z),
-                (0.050,
-                 (BEER_TAP_BRANCH_Y - BEER_TAP_SPOUT_Y) * 0.5,
-                 0.050),
-                sides=12),
-        ])
-        add_part(
-            asset, materials, f"Beer Tap Spout {index + 1}", spout,
-            "tap_spout", bp.ident("MetalTint"), shadows=False)
-        handle_pivot = (x, BEER_TAP_STEM_TOP_Y, BEER_TAP_Z)
-        add_pivoted_part(
-            asset, materials, f"Beer Tap Handle {index + 1}",
-            bp.u_tapered_cylinder(
-                (x,
-                 (BEER_TAP_STEM_TOP_Y + BEER_TAP_HANDLE_TOP_Y) * 0.5,
-                 BEER_TAP_Z),
-                (0.13,
-                 (BEER_TAP_HANDLE_TOP_Y - BEER_TAP_STEM_TOP_Y) * 0.5,
-                 0.13),
-                0.72,
-                sides=12),
-            handle_pivot,
-            "tap_handle",
-            bp.ident("UpholsteryTint") if index % 2 == 0
-            else bp.ident("GlassTint"))
+    pan, grate = furniture.drip_tray(BEER_TAP_CLUSTER_CENTER_X, COUNTER_SURFACE_Y, BEER_TAP_SPOUT_Z)
+    add_part(asset, materials, "Tap Drip Pan", pan, "tap_pan", bp.rgb(.19,.17,.14), sheet="PaintedMetal")
+    add_part(asset, materials, "Tap Slotted Grate", grate, "tap_grate", bp.ident("MetalTint"), sheet="AgedBrass")
+    for index,x in enumerate(BEER_TAP_XS,1):
+        height = BEER_TAP_STEM_TOP_Y-COUNTER_SURFACE_Y
+        stem = furniture.turned((x,COUNTER_SURFACE_Y,BEER_TAP_Z),
+            [(.078,0),(.081,.006),(.081,.015),(.073,.024),(.055,.029),(.051,.045),
+             (.045,.051),(.039,.091),(.033,height-.155),(.045,height-.14),
+             (.045,height-.124),(.036,height-.115),(.039,height-.089),
+             (.057,height-.079),(.057,height-.035),(.044,height-.021),(.036,height)])
+        add_part(asset,materials,f"Beer Tap Stem {index}",stem,"tap_stem",bp.ident("MetalTint"))
+        spout = furniture.tap_spout(x,BEER_TAP_Z,BEER_TAP_BRANCH_Y,BEER_TAP_SPOUT_Z,BEER_TAP_SPOUT_Y)
+        add_part(asset,materials,f"Beer Tap Spout {index}",spout,"tap_spout",bp.ident("MetalTint"),shadows=False)
+        pivot = (x,BEER_TAP_STEM_TOP_Y,BEER_TAP_Z)
+        handle = furniture.turned(pivot,[(.023,0),(.030,.008),(.030,.023),(.019,.031),
+            (.018,.072),(.029,.085),(.031,.10),(.049,.145),(.053,.19),(.052,.233),
+            (.045,.269),(.027,.294),(.019,.300)],16)
+        add_pivoted_part(asset,materials,f"Beer Tap Handle {index}",handle,pivot,"tap_handle",
+                         bp.ident("UpholsteryTint") if index%2 else bp.ident("GlassTint"))
 
 
 def build_ceiling_fan(asset: AssetBuild, materials: dict) -> None:
@@ -1365,96 +1300,15 @@ def add_service_bottle(
     style: str,
 ) -> None:
     group = f"service:bottle:{style}"
-    bottle = bp.rgb(0.28, 0.20, 0.11)
-    closure = bp.rgb(0.52, 0.48, 0.36)
-    label = bp.rgb(0.72, 0.66, 0.48)
-    body: list[kit.Geometry]
-    total_height: float
-    width: float
-    depth: float
-
-    if style == "WaterBottle":
-        width, depth, total_height = 0.21, 0.21, 0.68
-        body = [
-            bp.u_cylinder((0.0, 0.24, 0.0), (0.21, 0.24, 0.21), sides=12),
-            bp.u_tapered_cylinder(
-                (0.0, 0.52, 0.0), (0.18, 0.04, 0.18), 0.48, sides=12),
-            bp.u_cylinder((0.0, 0.61, 0.0), (0.085, 0.05, 0.085), sides=12),
-        ]
-        cap = bp.u_cylinder(
-            (0.0, 0.66, 0.0), (0.098, 0.02, 0.098), sides=12)
-    elif style == "BeerLongneck":
-        width, depth, total_height = 0.21, 0.21, 0.72
-        body = [
-            bp.u_cylinder((0.0, 0.22, 0.0), (0.21, 0.22, 0.21), sides=12),
-            bp.u_tapered_cylinder(
-                (0.0, 0.475, 0.0), (0.17, 0.035, 0.17),
-                0.49, sides=12),
-            bp.u_cylinder((0.0, 0.61, 0.0), (0.083, 0.10, 0.083), sides=12),
-        ]
-        cap = bp.u_cylinder(
-            (0.0, 0.7025, 0.0), (0.098, 0.0175, 0.098), sides=12)
-    elif style == "WineBottle":
-        width, depth, total_height = 0.23, 0.23, 0.82
-        body = [
-            bp.u_cylinder((0.0, 0.25, 0.0), (0.23, 0.25, 0.23), sides=12),
-            bp.u_tapered_cylinder(
-                (0.0, 0.535, 0.0), (0.18, 0.035, 0.18),
-                0.45, sides=12),
-            bp.u_cylinder((0.0, 0.685, 0.0), (0.08, 0.115, 0.08), sides=12),
-        ]
-        cap = bp.u_cylinder(
-            (0.0, 0.8025, 0.0), (0.088, 0.0175, 0.088), sides=12)
-        closure = bp.rgb(0.48, 0.30, 0.16)
-    elif style == "VodkaBottle":
-        width, depth, total_height = 0.25, 0.18, 0.67
-        body = [
-            bp.u_box((0.0, 0.22, 0.0), (0.25, 0.44, 0.18), 0.018),
-            bp.u_tapered_cylinder(
-                (0.0, 0.475, 0.0), (0.18, 0.035, 0.15),
-                0.58, sides=12),
-            bp.u_cylinder((0.0, 0.58, 0.0), (0.105, 0.07, 0.105), sides=12),
-        ]
-        cap = bp.u_cylinder(
-            (0.0, 0.645, 0.0), (0.12, 0.025, 0.12), sides=12)
-        bottle = bp.rgb(0.62, 0.76, 0.78)
-    elif style == "CognacBottle":
-        width, depth, total_height = 0.30, 0.24, 0.61
-        body = [
-            bp.u_tapered_cylinder(
-                (0.0, 0.18, 0.0), (0.30, 0.18, 0.24), 0.80, sides=12),
-            bp.u_tapered_cylinder(
-                (0.0, 0.40, 0.0), (0.24, 0.04, 0.20), 0.50, sides=12),
-            bp.u_cylinder((0.0, 0.505, 0.0), (0.10, 0.065, 0.10), sides=12),
-        ]
-        cap = bp.u_cylinder(
-            (0.0, 0.59, 0.0), (0.125, 0.02, 0.125), sides=12)
-        closure = bp.rgb(0.38, 0.19, 0.08)
-    else:
-        raise ValueError(f"unsupported service bottle style '{style}'")
-
-    add_part(
-        asset, materials, f"Service {style} Body", kit.merge_all(body),
-        "service_bottle_body", bottle, group=group, shadows=False)
-    add_part(
-        asset, materials, f"Service {style} Closure", cap,
-        "service_bottle_closure", closure, group=group, shadows=False)
-    label_y = min(0.18, total_height * 0.27)
-    label_z = -depth * 0.5 - 0.011
-    label_geometry = kit.merge_all([
-        bp.u_box(
-            (0.0, label_y, label_z),
-            (width * 0.76, min(0.18, total_height * 0.27), 0.018), 0.004),
-        bp.u_box(
-            (0.0, label_y + 0.035, label_z - 0.002),
-            (width * 0.52, 0.026, 0.021), 0.004),
-    ])
-    add_part(
-        asset, materials, f"Service {style} Blank Label", label_geometry,
-        "service_bottle_label", label, group=group, shadows=False)
-    add_anchor(
-        asset, f"{style}Mouth", f"service_bottle_mouth:{style}",
-        (0.0, total_height, 0.0))
+    glass = bp.rgb(.59,.72,.74) if style in ("VodkaBottle", "WaterBottle") else bp.rgb(.28,.21,.12)
+    finishes = (("Body","body",glass), ("Closure","closure",bp.rgb(.52,.47,.36)),
+                ("Label","label",bp.rgb(.79,.72,.58)))
+    for (name, role, tint), piece in zip(finishes, bar_bottles.components(style, detailed=True), strict=True):
+        obj = add_part(asset, materials, f"Service {style} {name}", piece[0],
+                       "service_bottle_" + role, tint, group=group, shadows=False)
+        bar_bottles.assign_uv(obj, [piece])
+    add_anchor(asset, f"{style}Mouth", f"service_bottle_mouth:{style}",
+               (0., bar_bottles.STYLES[style][2], 0.))
 
 
 def service_menu_leaf_geometry(
@@ -2214,6 +2068,8 @@ def build_interior(materials: dict) -> AssetBuild:
 
 def validate(asset: AssetBuild) -> None:
     problems: list[str] = []
+    if sum(kit.triangle_count(part.geometry) for part in asset.parts) > kit.DETAILED_INTERIOR_TRIANGLES:
+        problems.append("Bar exceeds the detailed interior triangle budget.")
     names: set[str] = set()
 
     for part in asset.parts:
@@ -2430,6 +2286,7 @@ def validate(asset: AssetBuild) -> None:
             problems.append(
                 "the closed menu and pint have less than 0.08 m clearance")
 
+    furniture.validate(asset.parts, COUNTER_SURFACE_Y, HERO_SEAT, BEER_TAP_VESSEL_DOCK, problems)
     asset.ceiling_fan_contract = validate_ceiling_fan(asset, problems)
     washroom.validate(asset, problems)
     if problems:
@@ -2660,6 +2517,7 @@ def parse_args(argv: Sequence[str]) -> argparse.Namespace:
     parser.add_argument("--fbx", type=Path, default=DEFAULT_FBX)
     parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
     parser.add_argument("--validate-only", action="store_true")
+    parser.add_argument("--geometry-only", action="store_true", help="Check furniture before baking its atlas")
     parser.add_argument("--city-facade-surfaces", action="store_true",
                         help="Author only the City/Home facade's guarded UVs; protect interior/service outputs")
     parser.add_argument("--layout-only", action="store_true",
@@ -2713,10 +2571,17 @@ def main() -> None:
         return
     if args.layout_only:
         raise RuntimeError("--layout-only requires --city-facade-surfaces")
+    if args.geometry_only and not args.validate_only:
+        raise ValueError("--geometry-only requires --validate-only")
     interior, service_props, facade = build()
     validate(interior)
     validate_service_props(service_props)
     validate_facade(facade)
+    if args.geometry_only:
+        print(f"BAR GEOMETRY OK: {len(interior.parts)} parts with validated furniture contacts.")
+        return
+    subprocess.run(["python", str(ROOT / "tools/bar_bottle_finishes.py"),
+                    *(["--validate-only"] if args.validate_only else [])], check=True)
     facade_signature = signature_for(facade, exterior.DESIGN_ID, exterior.GENERATOR_VERSION)
     preserve_facade = False
     if FACADE_MANIFEST.exists() and FACADE_FBX.exists():

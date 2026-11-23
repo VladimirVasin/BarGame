@@ -311,14 +311,15 @@ namespace BarPromenade
         public static void ApplyAuthored(
             Renderer renderer,
             BarSurfaceKind kind,
-            Color sourceTint)
+            Color sourceTint,
+            bool bottle = false)
         {
             if (renderer == null)
             {
                 return;
             }
 
-            if (BarInteriorSurfaceAppearance.TryApply(renderer, kind, sourceTint))
+            if (BarInteriorSurfaceAppearance.TryApply(renderer, kind, sourceTint, bottle))
             {
                 return;
             }

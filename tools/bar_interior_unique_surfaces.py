@@ -2,7 +2,7 @@
 
 The existing pigment sheets remain source material. Runtime samples one unique
 colour and one aligned slopes/roughness/cavity sheet; no live painting or mesh
-editing is needed. Glass, emission, paper and the cafe stool donor stay intact.
+editing is needed. Glass, paper and emission retain their own finishes.
 """
 from __future__ import annotations
 
@@ -19,6 +19,7 @@ import uuid
 
 sys.dont_write_bytecode = True
 import bar_washroom_surfaces as washroom_surfaces
+import bar_furniture_finishes as furniture_finishes
 
 import numpy as np
 try:
@@ -43,7 +44,6 @@ SHEETS = {
     "WornFabric": (.68, .98, .10), "PaintedMetal": (.82, .80, .12),
     "Ceramic": (.42, .52, .07),
 }
-STOOL_ROLES = {"stool_leg", "hero_stool_legs", "hero_stool_footring", "stool_seat", "hero_stool_seat"}
 
 
 def digest(value):
@@ -55,7 +55,7 @@ def rounded(value):
 
 
 def selected(part):
-    return not part.emissive and part.sheet in SHEETS and part.role not in STOOL_ROLES
+    return not part.emissive and part.sheet in SHEETS and not part.role.startswith("shelf_bottle_")
 
 
 def describe(part):
@@ -163,6 +163,7 @@ def prepare(asset, *, write=False, apply=True):
         "uv1_contract": "exact original metre UV0; geometry/anchors/collision/special sheets preserved",
         "channels": ["signed_physical_slope_u", "signed_physical_slope_v", "roughness", "cavity"],
         "recipe_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+        "furniture_recipe_sha256": hashlib.sha256(Path(furniture_finishes.__file__).read_bytes()).hexdigest(),
         "washroom_recipe_sha256": hashlib.sha256(Path(washroom_surfaces.__file__).read_bytes()).hexdigest(),
         "source_sha256": {sheet: hashlib.sha256((OUTPUT / f"Bar{sheet}Albedo.png").read_bytes()).hexdigest()
             for sheet in sorted({part["sheet"] for part in parts if part["unique_surface"]})}}
@@ -225,6 +226,8 @@ def fields(sheet, u, v, chart):
     cavity = np.clip(.98 - amplitude * (1 - broad) * .10 - handling * .025, .86, 1.)
     pigment = 1. + broad * .035 - handling * .06
     result = height, roughness, cavity, pigment
+    if furniture_finishes.applies(chart["mesh"]):
+        return furniture_finishes.fields(u,v,chart,result)
     return washroom_surfaces.fields(u, v, chart, result) if washroom_surfaces.applies(chart) else result
 
 
@@ -310,6 +313,8 @@ def publish(contract, *, validate_only):
         raise RuntimeError("Bar surface recipe changed; regenerate its chart contract")
     if contract["washroom_recipe_sha256"] != hashlib.sha256(Path(washroom_surfaces.__file__).read_bytes()).hexdigest():
         raise RuntimeError("Bar washroom physical recipe changed; regenerate its chart contract")
+    if contract["furniture_recipe_sha256"] != hashlib.sha256(Path(furniture_finishes.__file__).read_bytes()).hexdigest():
+        raise RuntimeError("Stale pub furniture finish recipe")
     unique_meshes = sorted(part["mesh"] for part in contract["parts"] if part["unique_surface"])
     if len(unique_meshes) != contract["unique_part_count"] or len(set(unique_meshes)) != len(unique_meshes):
         raise RuntimeError("Bar unique mesh registry must contain every authored opaque node exactly once")
@@ -418,6 +423,7 @@ if __name__ == "__main__":
     contract=json.loads(MANIFEST.read_text(encoding="utf8"))
     if args.repaint:
         contract["recipe_sha256"]=hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
+        contract["furniture_recipe_sha256"]=hashlib.sha256(Path(furniture_finishes.__file__).read_bytes()).hexdigest()
         contract["washroom_recipe_sha256"]=hashlib.sha256(Path(washroom_surfaces.__file__).read_bytes()).hexdigest()
         publish(contract,validate_only=False)
         MANIFEST.write_text(json.dumps(contract,indent=2)+"\n",encoding="utf8")

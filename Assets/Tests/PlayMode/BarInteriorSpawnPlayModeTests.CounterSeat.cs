@@ -12,6 +12,83 @@ namespace BarPromenade.Tests.PlayMode
     public sealed partial class BarInteriorSpawnPlayModeTests
     {
         [UnityTest]
+        public IEnumerator VodkaBottle_NeckClearsPouringPalm()
+        {
+            BarInteriorRoot bar = null;
+            yield return LoadBar(result => bar = result);
+            using var skins = new BarServiceCaptureSkinScope(bar);
+            yield return OrderAtRightStool(bar, DrinkId.Vodka);
+            var shop = bar.DrinkShop;
+            var service = bar.DrinkServiceView;
+            var probe = bar.gameObject.AddComponent<WarehouseRefrigeratorPresentationProbe>();
+            foreach (float progress in new[] { .32f, .45f, .60f })
+            {
+                yield return WaitForContactPhase(() => shop.Phase == BarDrinkServicePhase.Pouring &&
+                    shop.Timeline.PhaseProgress >= progress, "vodka pour");
+                yield return AtFinalBarPose(probe, () =>
+                {
+                    Assert.That(service.IsStreamVisible, Is.True);
+                    var hand = bar.Bartender.Registry.HandPose;
+                    AssertHandWrap(hand, false, service.CarriedBottleGripCenterWorldPosition,
+                        shop.ActiveBottleWorldRotation * Vector3.up, "Vodka neck");
+                    BarDrinkServiceWorldBuilderPlayModeTests.AssertBottleDoesNotIntersectHand(
+                        hand, false, service.CarriedBottleRoot, "Vodka neck");
+                });
+            }
+        }
+
+        private static readonly DrinkId[] CuffContactDrinks = { DrinkId.LightBeer, DrinkId.CognacVs };
+
+        [UnityTest]
+        public IEnumerator CounterLip_ClearsCuffDuringPickup([ValueSource(nameof(CuffContactDrinks))] DrinkId drink)
+        {
+            BarInteriorRoot bar = null;
+            yield return LoadBar(result => bar = result);
+            using var skins = new BarServiceCaptureSkinScope(bar);
+            yield return OrderAtRightStool(bar, drink);
+            var shop = bar.DrinkShop;
+            yield return WaitForContactPhase(() => shop.CanDrinkServedVessel, "served vessel");
+            Camera camera = Camera.main;
+            camera.transform.LookAt(shop.HeroServiceVessel.GlassRenderer.bounds.center, Vector3.up);
+            shop.RefreshServedDrinkAffordance();
+            Assert.That(shop.BeginServedDrink(), Is.True);
+            var probe = bar.gameObject.AddComponent<WarehouseRefrigeratorPresentationProbe>();
+            using var clearance = new CounterSeatSkinClearance(bar);
+            yield return WaitForContactPhase(() => shop.Phase == BarDrinkServicePhase.PlayerPickup &&
+                shop.Timeline.PhaseProgress >= .40f, "hand crossing counter lip");
+            int sampled = 0;
+            while (shop.Phase == BarDrinkServicePhase.PlayerPickup && shop.Timeline.PhaseProgress < .64f)
+            {
+                yield return AtFinalBarPose(probe, () =>
+                {
+                    clearance.AssertClear("Counter lip " + drink);
+                    sampled++;
+                });
+            }
+            Assert.That(sampled, Is.Positive, "No pickup frame sampled at the counter edge.");
+        }
+
+        private static IEnumerator OrderAtRightStool(BarInteriorRoot bar, DrinkId drink)
+        {
+            bar.ArrivalPresentation.Skip();
+            var station = bar.CounterStations[bar.CounterStations.Count - 1];
+            var entry = station.Seat.Plan.EntryPose;
+            bar.Player.Motor.Teleport(entry.RootPosition);
+            bar.Player.GameObject.transform.rotation = entry.RootRotation;
+            Physics.SyncTransforms();
+            station.Interact(bar.Player.Interactor);
+            yield return WaitForContactPhase(() => station.Seat.IsSeated && bar.DrinkShop.IsBrowsing, "seated menu");
+            Assert.That(bar.DrinkShop.Select(FindOfferIndex(bar.DrinkShop, drink)), Is.True);
+            Assert.That(bar.DrinkShop.ConfirmSelection(), Is.True);
+        }
+
+        private static IEnumerator WaitForContactPhase(Func<bool> ready, string phase)
+        {
+            for (int frame = 0; frame < 2400 && !ready(); frame++) yield return null;
+            Assert.That(ready(), Is.True, phase);
+        }
+
+        [UnityTest]
         public IEnumerator BeerService_ThreeSeparateSipsPreserveRemainderAndOnePayment()
             => VerifyThreeSipService(DrinkId.LightBeer);
 
@@ -532,6 +609,7 @@ namespace BarPromenade.Tests.PlayMode
 
             internal CounterSeatSkinClearance(BarInteriorRoot bar)
             {
+                var measuredParts = new HashSet<string>(StringComparer.Ordinal);
                 foreach (MeshFilter mesh in bar.Room.GetComponentsInChildren<MeshFilter>(true))
                 {
                     string name = mesh.name;
@@ -545,7 +623,10 @@ namespace BarPromenade.Tests.PlayMode
                         out Vector3[] points, out int[] triangles);
                     for (int vertex = 0; vertex < points.Length; vertex++)
                         points[vertex] = mesh.transform.TransformPoint(points[vertex]);
+                    int previousCount = furniture.Count;
                     BarDrinkServiceWorldBuilderPlayModeTests.AddClosedPropPieces(furniture, name, points, triangles);
+                    Assert.That(furniture.Count, Is.GreaterThan(previousCount), name);
+                    measuredParts.Add(name);
                     bool stool = name.StartsWith("Bar Stool ") || name.StartsWith("Bar Drink Service Stool");
                     if (stool || name == "Counter Top")
                     {
@@ -560,8 +641,15 @@ namespace BarPromenade.Tests.PlayMode
                         }
                     }
                 }
-                Assert.That(furniture.Count, Is.EqualTo(28),
-                    "All five real stools, their feet/stems, counter tops, panels, rails and return must participate.");
+                var required = new List<string> { "Counter Top", "Counter Return Top", "Counter Front Panels",
+                    "Counter Return Panels", "Counter Foot Rail", "Counter Return Foot Rail", "Bar Counter Return",
+                    "Bar Drink Service Stool", "Bar Drink Service Stool Legs", "Bar Drink Service Stool Footring" };
+                foreach (int index in new[] { 2, 4, 5, 6 })
+                {
+                    required.Add("Bar Stool " + index);
+                    required.Add("Bar Stool " + index + " Leg");
+                }
+                Assert.That(measuredParts, Is.SupersetOf(required), "All functional furniture must participate.");
                 foreach (Renderer renderer in bar.Player.Visual.Renderers)
                 {
                     SkinnedMeshRenderer skin = renderer as SkinnedMeshRenderer;

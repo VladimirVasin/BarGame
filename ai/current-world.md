@@ -2087,11 +2087,10 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   Closing/exit/cancel/disable/unload restore owners. No score/lyrics/judgement.
   BeerPong table at
   `(3.85,-1.75,.76,1.83)`. Effect providers/bounds follow.
-  Five stools remain: two occupied and
-  three independent hero stations, with safe approach/exit and selected-stool
+  Five turned stools share the cafe seat envelope. Two are occupied, three have safe approach/exit and
   menu/drink docks. Counter top `1.02 m`, stool tops `0.8175 m`; the rightmost
-  stool is at `x = 1.95, z = 0.91`. Unique UV0 albedo/response preserves metre UV1/
-  source wear; shared opaque/glass/emission/service paths stay. Residential
+  stool is at `x = 1.95, z = 0.91`. Mitred top, tap grate, bracketed shelves and welted booths share UV0 colour/response and metre UV1/
+  source wear. Shelf and carried bottles share moulded flasks and printed paper. Residential
   identity, `SplitTheG`, menu and gameplay stay. Direct bar loads also select
   Residential; explicit legacy district layouts retain their own profiles;
 - 8lights:6hall+WCspot+soft WCsign;3shadowspots.
@@ -2629,7 +2628,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   body/face/hair/wardrobe allocator anew, without permanent IDs or changes to
   permanent characters. Appearances do not repeat within the visit.
   Four sit on opposed booth `0.48 m` seats, two at counter X-1.65/1.05 on
-  cafe `0.8175 m` stools, and two stand at pub-table edges. Placement and
+  turned `0.8175 m` stools, and two stand at pub-table edges. Placement and
   actions stay local; the default body adapter owns shared rig compatibility.
   Present guests drink. Each entry independently shuffles a balanced
   Bottle/Pint/WineGlass/ShotGlass/Snifter bag from shared service assets.
@@ -2719,7 +2718,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   `CounterSeatLoop` holds pelvis; upper body breathes. Bar drinks keep its legs;
   cafe/bus stay.
   Body/garments must clear actual furniture. The bartender then carries a
-  `bar_service_props_v1` `1.4.1` booklet to the selected stool's axis before him.
+  `bar_service_props_v1` `1.5.0` booklet to the selected stool's axis before him.
   The shared model/input/page/focus/hint/prop-motion layer focuses
   the larger bar spread over `0.45 s` at `0.45 m` and FOV `72`, using a
   near-overhead solve centred over the booklet. Its bar-only cinematic DOF is

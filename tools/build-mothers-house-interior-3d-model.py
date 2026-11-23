@@ -4038,8 +4038,8 @@ def validate(asset: AssetBuild) -> dict:
     triangles = kit.triangle_count(merged)
     if len(asset.parts) > 160:
         problems.append(f"{len(asset.parts)} meshes exceed the 160-mesh cap")
-    if triangles > 22000:
-        problems.append(f"{triangles} triangles exceed the 22000 cap")
+    if triangles > kit.DETAILED_INTERIOR_TRIANGLES:
+        problems.append(f"{triangles} triangles exceed the {kit.DETAILED_INTERIOR_TRIANGLES} cap")
 
     if problems:
         raise SystemExit(

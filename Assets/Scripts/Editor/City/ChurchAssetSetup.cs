@@ -41,7 +41,7 @@ namespace BarPromenade.Editor
         private const float ExpectedDoorHeight = 2.6f / CityChurchPlanner.ExteriorModelScale;
         private const int ExteriorMaximumTriangles = 12000;
         private const int ExteriorMaximumRenderers = 18;
-        private const int InteriorMaximumTriangles = 22000;
+        private const int InteriorMaximumTriangles = DetailedInteriorModelBudget.MaximumTriangles;
         private const int InteriorMaximumRenderers = 24;
         private const int RequiredInteriorLayoutContractCount = 12;
 

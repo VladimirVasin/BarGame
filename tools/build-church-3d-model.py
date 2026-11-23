@@ -1203,8 +1203,8 @@ def validate_asset(asset: AssetBuild) -> AssetReport:
         if len(asset.parts) > 18:
             problems.append(f"exterior renderer budget is {len(asset.parts)}, maximum 18")
     else:
-        if not 7000 <= triangle_count <= 22000:
-            problems.append(f"interior triangle budget is {triangle_count}, expected 7000-22000")
+        if not 7000 <= triangle_count <= kit.DETAILED_INTERIOR_TRIANGLES:
+            problems.append(f"interior triangle budget is {triangle_count}, expected 7000-{kit.DETAILED_INTERIOR_TRIANGLES}")
         if len(asset.parts) > 24:
             problems.append(f"interior renderer budget is {len(asset.parts)}, maximum 24")
         if bounds_min.y > -12.0 or bounds_max.y < 11.6 or bounds_min.x > -5.9 or bounds_max.x < 5.9:
@@ -1827,7 +1827,7 @@ def main() -> int:
     print("CHURCH 3D BUILD OK")
     print(f"  Blender: {bpy.app.version_string}")
     print(f"  Exterior: {reports['Exterior'].mesh_count} meshes, {reports['Exterior'].triangle_count}/12000 triangles")
-    print(f"  Interior: {reports['Interior'].mesh_count} meshes, {reports['Interior'].triangle_count}/22000 triangles")
+    print(f"  Interior: {reports['Interior'].mesh_count} meshes, {reports['Interior'].triangle_count}/{kit.DETAILED_INTERIOR_TRIANGLES} triangles")
     print(f"  Signature: {signature}")
     print(f"  Blend: {config.blend}")
     print(f"  Exterior FBX: {config.exterior_fbx}")

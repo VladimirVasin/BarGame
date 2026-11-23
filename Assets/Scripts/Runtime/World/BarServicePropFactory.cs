@@ -271,7 +271,8 @@ namespace BarPromenade
                     ApplySurface(
                         renderer,
                         binding.Sheet,
-                        binding.Tint.Resolve(default(BarDistrictIdentity)));
+                        binding.Tint.Resolve(default(BarDistrictIdentity)),
+                        binding.Role.StartsWith("service_bottle_", StringComparison.Ordinal));
                     roleRenderers.Add(
                         new KeyValuePair<string, Renderer>(
                             binding.Role,
@@ -356,13 +357,14 @@ namespace BarPromenade
         private static void ApplySurface(
             Renderer renderer,
             string sheet,
-            Color tint)
+            Color tint,
+            bool bottle)
         {
             if (BarSurfaceAppearance.TryResolveSheet(
                 sheet,
                 out BarSurfaceKind kind))
             {
-                BarSurfaceAppearance.ApplyAuthored(renderer, kind, tint);
+                BarSurfaceAppearance.ApplyAuthored(renderer, kind, tint, bottle);
                 return;
             }
 

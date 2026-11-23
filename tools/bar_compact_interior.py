@@ -6,7 +6,9 @@ service height, with fewer repeated joinery bays and a small music corner.
 """
 from __future__ import annotations
 
+import bar_bottles
 import bar_parts as bp
+import bar_furniture as furniture
 import interior_kit as kit
 
 
@@ -39,9 +41,11 @@ def build(g, asset, materials):
     for x in (-2.25, -.9, .45, 1.8, 3.15):
         mirror_panels.append(bp.u_box((x, 2.02, 3.635), (1.19, 1.30, .045), .006))
         for dx in (-.63, .63):
-            mirror_frames.append(bp.u_box((x + dx, 2.02, 3.59), (.065, 1.4, .075), .004))
+            mirror_frames.append(bp.u_box((x+dx, 2.02, 3.59), (.071,1.40,.078),.009))
+            mirror_frames.append(bp.u_box((x+dx*.94,2.02,3.583),(.017,1.285,.059),.006))
         for y in (1.35, 2.69):
-            mirror_frames.append(bp.u_box((x, y, 3.59), (1.32, .065, .075), .004))
+            mirror_frames.append(bp.u_box((x,y,3.59),(1.188,.071,.078),.009))
+            mirror_frames.append(bp.u_box((x,y+(.04 if y<2 else -.04),3.583),(1.178,.017,.059),.006))
         for pitch in (-34, 34):
             lattice.append(kit.translated(bp.u_rotated(
                 bp.u_box((0, 0, 0), (.88, .022, .026), .003),
@@ -49,10 +53,18 @@ def build(g, asset, materials):
     part("Backbar Mirror Panels", kit.merge_all(mirror_panels), "backbar_mirror", bp.ident("GlassTint"), shadows=False)
     part("Backbar Mirror Frames", kit.merge_all(mirror_frames), "backbar_mirror_frame", sheet="DarkWood")
     part("Backbar Patterned Glass Lattice", kit.merge_all(lattice), "backbar_patterned_glass", bp.ident("MetalTint"), shadows=False)
-    shelves = [bp.u_box((.425, y, 3.495), (6.5, .10, .36), .008) for y in (1.48, 2.10)]
-    for x in (-2.86, -1.5, -.14, 1.22, 2.58, 3.66):
-        shelves.append(bp.u_box((x, 2.0, 3.52), (.065, 1.35, .30), .004))
-    part("Backbar Shelves", kit.merge_all(shelves), "backbar_shelf", bp.ident("MetalTint"), shadows=False)
+    shelves, brackets = [], []
+    for surface_y in (1.55, 2.17):
+        for x0,x1 in zip((-2.825,-.14,1.22),(-.142,1.218,3.675)):
+            shelves.append(bp.u_box(((x0+x1)/2,surface_y-.042,3.495),(x1-x0,.084,.36),.009))
+            shelves.append(bp.u_box(((x0+x1)/2,surface_y-.067,3.314),(x1-x0-.008,.036,.026),.006))
+        for x in (-2.68,-1.50,-.14,1.22,2.58,3.51):
+            brackets.append(bp.u_box((x,surface_y-.165,3.628),(.048,.21,.024),.004))
+            brackets.append(bp.u_box((x,surface_y-.096,3.485),(.048,.024,.30),.004))
+            brackets.append(kit.translated(bp.u_rotated(bp.u_box((0,0,0),(.028,.026,.288),.004),
+                            (30,0,0)),(x,surface_y-.169,3.492)))
+    part("Backbar Shelves",kit.merge_all(shelves),"backbar_shelf",bp.ident("MetalTint"),shadows=False)
+    part("Backbar Shelf Brackets",kit.merge_all(brackets),"backbar_brackets",bp.ident("MetalTint"),sheet="AgedBrass",shadows=False)
     handles, panels = [], []
     for index in range(9):
         x = -2.65 + index * .76
@@ -65,27 +77,29 @@ def build(g, asset, materials):
     part("Backbar Hanging Glass Rack", kit.merge_all(rack), "backbar_glass_rack", bp.ident("MetalTint"), shadows=False)
     box("Backbar Crown", (.425, 2.81, 3.53), (6.85, .18, .35), "backbar_crown", sheet="DarkWood")
     box("Backbar Amber Sign", (.425, 2.80, 3.33), (2.2, .07, .035), "sign_glow", bp.ident("SignGlowColor"), emissive=True, shadows=False)
-    bottles = [[], [], [], []]
-    for row, shelf in enumerate((1.55, 2.17)):
-        for index in range(18):
-            x = -2.74 + index * .37
-            if row == 0 and -1.9 < x < .55:
-                continue  # The four service bottles own this shelf opening.
-            height = .23 + ((index * 7 + row * 3) % 4) * .025
-            bottles[(index + row) % 4].append(kit.merge(
-                bp.u_box((x, shelf + height * .34, 3.395), (.12, height * .68, .12), .006),
-                bp.u_tapered_cylinder((x, shelf + height * .84, 3.395), (.055, height * .16, .055), .66)))
-    for index, batch in enumerate(bottles):
-        part(f"Bottle Silhouettes {index + 1}", kit.merge_all(batch), "bottle", bp.rgb(.18 + index * .07, .22, .12), shadows=False)
+    bar_bottles.shelf_stock(part)
 
     dividers, glass = [], []
     for index, z in enumerate(g.BOOTH_ZS, 1):
         for side, sign in (("Near", -1), ("Far", 1)):
-            box(f"Booth Base {index} {side}", (-4.38, .20, z + sign * .97), (1.72, .40, .62), "booth_base", bp.ident("CounterWoodTint"), solid=True, sheet="DarkWood")
-            box(f"Booth Cushion {index} {side}", (-4.38, .435, z + sign * .95), (1.64, .09, .60), "booth_cushion", bp.ident("UpholsteryTint"), sheet="WornLeather")
-            box(f"Booth Back {index} {side}", (-4.38, .90, z + sign * 1.31), (1.80, .95, .12), "booth_back", bp.ident("UpholsteryTint"), solid=True, sheet="WornLeather")
-        box(f"Booth Table Top {index}", (-4.38, .79, z), (1.05, .08, .85), "booth_table", bp.ident("MetalTint"), solid=True, sheet="PolishedWood")
-        part(f"Booth Table Leg {index}", bp.u_cylinder((-4.38, .375, z), (.12, .375, .12)), "booth_table_leg", colliders=[((-4.38, .375, z), (.12, .75, .12))], sheet="DarkWood")
+            x,seat_z,back_z = -4.38,z+sign*.95,z+sign*1.31
+            base_center=(-4.38,.20,z+sign*.97)
+            base=kit.merge(bp.u_box((x,.065,base_center[2]),(1.61,.13,.54),.012),
+                           bp.u_box((x,.245,base_center[2]),(1.72,.31,.62),.016))
+            part(f"Booth Base {index} {side}",base,"booth_base",bp.ident("CounterWoodTint"),sheet="DarkWood",
+                 colliders=[(base_center,(1.72,.40,.62))])
+            # Each pair meets at a welt; both contact plateaus keep the patrons at .48 m.
+            seats=[furniture.upholstery(x+offset,seat_z,.395,.817,.60,.085,.042) for offset in (-.41,.41)]
+            part(f"Booth Cushion {index} {side}",kit.merge_all(seats),"booth_cushion",bp.ident("UpholsteryTint"),sheet="WornLeather")
+            backing=bp.u_box((x,.882,back_z+sign*.055),(1.80,.985,.023),.007)
+            part(f"Snug Backing {index} {side}",backing,"booth_frame",bp.ident("CounterWoodTint"),sheet="DarkWood")
+            part(f"Booth Back {index} {side}",furniture.booth_back(x,back_z,sign),"booth_back",
+                 bp.ident("UpholsteryTint"),sheet="WornLeather",colliders=[((x,.90,back_z),(1.80,.95,.12))])
+        outline=[(-4.38+x,z+v) for x,v in kit.profile_chamfered(1.05,.85,.046)]
+        part(f"Booth Table Top {index}",furniture.edged_slab(outline,.75,.08),"booth_table",bp.ident("MetalTint"),
+             sheet="PolishedWood",colliders=[((-4.38,.79,z),(1.05,.08,.85))])
+        part(f"Booth Table Leg {index}",furniture.table_pedestal(-4.38,z,.75),"booth_table_leg",
+             colliders=[((-4.38,.375,z),(.12,.75,.12))],sheet="DarkWood")
     for z in (-3.55, -.75, 2.05):
         for x in (-5.36, -3.4):
             dividers.append(bp.u_box((x, .90, z), (.065, 1.8, .07), .004))
@@ -123,8 +137,8 @@ def build(g, asset, materials):
     edges = [bp.u_box((x, .04, -.65), (.04, .012, 2.4), .003) for x in (3.62, 5.38)] + [bp.u_box((4.5, .04, z), (1.8, .012, .04), .003) for z in (-1.83, .53)]
     part("Activity Bay Border", kit.merge_all(edges), "bay_border", bp.rgb(.36, .27, .10), shadows=False)
     for index, (x, z) in enumerate(g.PUB_TABLES, 1):
-        part(f"Social Pub Table {index} Leg", kit.merge(bp.u_cylinder((x, .35, z), (.10, .35, .10)), bp.u_cylinder((x, .04, z), (.38, .04, .38))), "table_leg", sheet="DarkWood", colliders=[((x, .35, z), (.1, .7, .1))])
-        part(f"Social Pub Table {index}", bp.u_cylinder((x, .78, z), (.65, .04, .65), sides=16), "table_top", bp.ident("WoodTint"), sheet="PolishedWood", colliders=[((x, .78, z), (.65, .08, .65))])
+        part(f"Social Pub Table {index} Leg", furniture.table_pedestal(x,z,.74), "table_leg", sheet="DarkWood", colliders=[((x, .35, z), (.1, .7, .1))])
+        part(f"Social Pub Table {index}", furniture.turned((x,.74,z),[(.29,0),(.301,.006),(.302,.018),(.314,.022),(.322,.029),(.325,.037),(.325,.065),(.322,.074),(.314,.080)],24), "table_top", bp.ident("WoodTint"), sheet="PolishedWood", colliders=[((x, .78, z), (.65, .08, .65))])
         # Modest ordinary tableware adds use, without new clues or text.
         part(f"Pub Table {index} Coaster", bp.u_cylinder((x + .15, .825, z + .10), (.11, .003, .11), sides=12), "table_coaster", bp.rgb(.42, .31, .18), sheet="Paper", shadows=False)
 

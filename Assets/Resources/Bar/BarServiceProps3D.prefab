@@ -174,21 +174,6 @@ MonoBehaviour:
     role: service_vessel_target:WineGlass
     anchor: {fileID: 1634223974312664262}
   parts:
-  - sourceName: Service BeerLongneck Blank Label
-    role: service_bottle_label
-    group: service:bottle:BeerLongneck
-    sheet: Paper
-    emissive: 0
-    castsShadows: 0
-    tint:
-      field: 
-      rgb: {r: 0.72, g: 0.66, b: 0.48, a: 1}
-      scale: 1
-      lerpField: 
-      lerpRgb: {r: 0, g: 0, b: 0, a: 1}
-      lerpT: 0
-    colliders: []
-    renderer: {fileID: 3580889974644914340}
   - sourceName: Service BeerLongneck Body
     role: service_bottle_body
     group: service:bottle:BeerLongneck
@@ -197,7 +182,7 @@ MonoBehaviour:
     castsShadows: 0
     tint:
       field: 
-      rgb: {r: 0.28, g: 0.2, b: 0.11, a: 1}
+      rgb: {r: 0.28, g: 0.21, b: 0.12, a: 1}
       scale: 1
       lerpField: 
       lerpRgb: {r: 0, g: 0, b: 0, a: 1}
@@ -212,28 +197,28 @@ MonoBehaviour:
     castsShadows: 0
     tint:
       field: 
-      rgb: {r: 0.52, g: 0.48, b: 0.36, a: 1}
+      rgb: {r: 0.52, g: 0.47, b: 0.36, a: 1}
       scale: 1
       lerpField: 
       lerpRgb: {r: 0, g: 0, b: 0, a: 1}
       lerpT: 0
     colliders: []
     renderer: {fileID: 6604745002978946888}
-  - sourceName: Service CognacBottle Blank Label
+  - sourceName: Service BeerLongneck Label
     role: service_bottle_label
-    group: service:bottle:CognacBottle
+    group: service:bottle:BeerLongneck
     sheet: Paper
     emissive: 0
     castsShadows: 0
     tint:
       field: 
-      rgb: {r: 0.72, g: 0.66, b: 0.48, a: 1}
+      rgb: {r: 0.79, g: 0.72, b: 0.58, a: 1}
       scale: 1
       lerpField: 
       lerpRgb: {r: 0, g: 0, b: 0, a: 1}
       lerpT: 0
     colliders: []
-    renderer: {fileID: 4058185875014329382}
+    renderer: {fileID: 8641289480013846079}
   - sourceName: Service CognacBottle Body
     role: service_bottle_body
     group: service:bottle:CognacBottle
@@ -242,7 +227,7 @@ MonoBehaviour:
     castsShadows: 0
     tint:
       field: 
-      rgb: {r: 0.28, g: 0.2, b: 0.11, a: 1}
+      rgb: {r: 0.28, g: 0.21, b: 0.12, a: 1}
       scale: 1
       lerpField: 
       lerpRgb: {r: 0, g: 0, b: 0, a: 1}
@@ -257,13 +242,28 @@ MonoBehaviour:
     castsShadows: 0
     tint:
       field: 
-      rgb: {r: 0.38, g: 0.19, b: 0.08, a: 1}
+      rgb: {r: 0.52, g: 0.47, b: 0.36, a: 1}
       scale: 1
       lerpField: 
       lerpRgb: {r: 0, g: 0, b: 0, a: 1}
       lerpT: 0
     colliders: []
     renderer: {fileID: 4773366632378132679}
+  - sourceName: Service CognacBottle Label
+    role: service_bottle_label
+    group: service:bottle:CognacBottle
+    sheet: Paper
+    emissive: 0
+    castsShadows: 0
+    tint:
+      field:
+      rgb: {r: 0.79, g: 0.72, b: 0.58, a: 1}
+      scale: 1
+      lerpField:
+      lerpRgb: {r: 0, g: 0, b: 0, a: 1}
+      lerpT: 0
+    colliders: []
+    renderer: {fileID: 530788479825101888}
   - sourceName: Service Menu Blank Relief
     role: service_menu_relief
     group: service:menu
@@ -504,21 +504,6 @@ MonoBehaviour:
       lerpT: 0
     colliders: []
     renderer: {fileID: 1550062985932743674}
-  - sourceName: Service VodkaBottle Blank Label
-    role: service_bottle_label
-    group: service:bottle:VodkaBottle
-    sheet: Paper
-    emissive: 0
-    castsShadows: 0
-    tint:
-      field: 
-      rgb: {r: 0.72, g: 0.66, b: 0.48, a: 1}
-      scale: 1
-      lerpField: 
-      lerpRgb: {r: 0, g: 0, b: 0, a: 1}
-      lerpT: 0
-    colliders: []
-    renderer: {fileID: 2899742629833942758}
   - sourceName: Service VodkaBottle Body
     role: service_bottle_body
     group: service:bottle:VodkaBottle
@@ -527,7 +512,7 @@ MonoBehaviour:
     castsShadows: 0
     tint:
       field: 
-      rgb: {r: 0.62, g: 0.76, b: 0.78, a: 1}
+      rgb: {r: 0.59, g: 0.72, b: 0.74, a: 1}
       scale: 1
       lerpField: 
       lerpRgb: {r: 0, g: 0, b: 0, a: 1}
@@ -542,28 +527,28 @@ MonoBehaviour:
     castsShadows: 0
     tint:
       field: 
-      rgb: {r: 0.52, g: 0.48, b: 0.36, a: 1}
+      rgb: {r: 0.52, g: 0.47, b: 0.36, a: 1}
       scale: 1
       lerpField: 
       lerpRgb: {r: 0, g: 0, b: 0, a: 1}
       lerpT: 0
     colliders: []
     renderer: {fileID: 1717607206215861075}
-  - sourceName: Service WaterBottle Blank Label
+  - sourceName: Service VodkaBottle Label
     role: service_bottle_label
-    group: service:bottle:WaterBottle
+    group: service:bottle:VodkaBottle
     sheet: Paper
     emissive: 0
     castsShadows: 0
     tint:
       field: 
-      rgb: {r: 0.72, g: 0.66, b: 0.48, a: 1}
+      rgb: {r: 0.79, g: 0.72, b: 0.58, a: 1}
       scale: 1
       lerpField: 
       lerpRgb: {r: 0, g: 0, b: 0, a: 1}
       lerpT: 0
     colliders: []
-    renderer: {fileID: 3235770322899150126}
+    renderer: {fileID: 4784727739367924203}
   - sourceName: Service WaterBottle Body
     role: service_bottle_body
     group: service:bottle:WaterBottle
@@ -572,7 +557,7 @@ MonoBehaviour:
     castsShadows: 0
     tint:
       field: 
-      rgb: {r: 0.28, g: 0.2, b: 0.11, a: 1}
+      rgb: {r: 0.59, g: 0.72, b: 0.74, a: 1}
       scale: 1
       lerpField: 
       lerpRgb: {r: 0, g: 0, b: 0, a: 1}
@@ -587,28 +572,28 @@ MonoBehaviour:
     castsShadows: 0
     tint:
       field: 
-      rgb: {r: 0.52, g: 0.48, b: 0.36, a: 1}
+      rgb: {r: 0.52, g: 0.47, b: 0.36, a: 1}
       scale: 1
       lerpField: 
       lerpRgb: {r: 0, g: 0, b: 0, a: 1}
       lerpT: 0
     colliders: []
     renderer: {fileID: 1892426581899567088}
-  - sourceName: Service WineBottle Blank Label
+  - sourceName: Service WaterBottle Label
     role: service_bottle_label
-    group: service:bottle:WineBottle
+    group: service:bottle:WaterBottle
     sheet: Paper
     emissive: 0
     castsShadows: 0
     tint:
       field: 
-      rgb: {r: 0.72, g: 0.66, b: 0.48, a: 1}
+      rgb: {r: 0.79, g: 0.72, b: 0.58, a: 1}
       scale: 1
       lerpField: 
       lerpRgb: {r: 0, g: 0, b: 0, a: 1}
       lerpT: 0
     colliders: []
-    renderer: {fileID: 40015915349810211}
+    renderer: {fileID: 4391168320848128956}
   - sourceName: Service WineBottle Body
     role: service_bottle_body
     group: service:bottle:WineBottle
@@ -617,7 +602,7 @@ MonoBehaviour:
     castsShadows: 0
     tint:
       field: 
-      rgb: {r: 0.28, g: 0.2, b: 0.11, a: 1}
+      rgb: {r: 0.28, g: 0.21, b: 0.12, a: 1}
       scale: 1
       lerpField: 
       lerpRgb: {r: 0, g: 0, b: 0, a: 1}
@@ -632,13 +617,28 @@ MonoBehaviour:
     castsShadows: 0
     tint:
       field: 
-      rgb: {r: 0.48, g: 0.3, b: 0.16, a: 1}
+      rgb: {r: 0.52, g: 0.47, b: 0.36, a: 1}
       scale: 1
       lerpField: 
       lerpRgb: {r: 0, g: 0, b: 0, a: 1}
       lerpT: 0
     colliders: []
     renderer: {fileID: 3402901616968852354}
+  - sourceName: Service WineBottle Label
+    role: service_bottle_label
+    group: service:bottle:WineBottle
+    sheet: Paper
+    emissive: 0
+    castsShadows: 0
+    tint:
+      field:
+      rgb: {r: 0.79, g: 0.72, b: 0.58, a: 1}
+      scale: 1
+      lerpField:
+      lerpRgb: {r: 0, g: 0, b: 0, a: 1}
+      lerpT: 0
+    colliders: []
+    renderer: {fileID: 7078687257765651264}
   - sourceName: Service WineGlass Highlight
     role: service_vessel_highlight
     group: service:vessel:WineGlass
@@ -694,10 +694,10 @@ MonoBehaviour:
     wallThickness: 0
     doorWidth: 0
     doorHeight: 0
-  sourceTriangleCount: 4136
-  sourceGeneratorVersion: 1.4.1
+  sourceTriangleCount: 5812
+  sourceGeneratorVersion: 1.5.0
   designId: bar_service_props_v1
-  buildSignature: 77511cdfd9b212dafb5d30bae2060a085a10ccbfee2171966e48d164782ba627
+  buildSignature: 085c44b3b05d35378ca1e2a488ad957ad023e4bf0d1b46a74378ee5ca917f727
 --- !u!1001 &3838405881583726865
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -878,18 +878,6 @@ PrefabInstance:
       propertyPath: m_LocalRotation.z
       value: -0
       objectReference: {fileID: 0}
-    - target: {fileID: -8280620679423994569, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
-      propertyPath: m_CastShadows
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: -8280620679423994569, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
-      propertyPath: m_ReceiveShadows
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: -8280620679423994569, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
-      value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
     - target: {fileID: -8091348500862223820, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
       propertyPath: m_CastShadows
       value: 0
@@ -914,18 +902,6 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 7099587ab09c75d4284cccb7fc96843f, type: 2}
-    - target: {fileID: -7376049398230887361, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
-      propertyPath: m_CastShadows
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: -7376049398230887361, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
-      propertyPath: m_ReceiveShadows
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: -7376049398230887361, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
-      value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
     - target: {fileID: -7316294935371676387, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
       propertyPath: m_LocalRotation.w
       value: 0.9988484
@@ -1098,18 +1074,6 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 7099587ab09c75d4284cccb7fc96843f, type: 2}
-    - target: {fileID: -5347202589608317646, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
-      propertyPath: m_CastShadows
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: -5347202589608317646, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
-      propertyPath: m_ReceiveShadows
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: -5347202589608317646, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
-      value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
     - target: {fileID: -5045097677493095558, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
       propertyPath: m_LocalRotation.w
       value: 0.7071067
@@ -1218,6 +1182,18 @@ PrefabInstance:
       propertyPath: m_LocalRotation.z
       value: -0
       objectReference: {fileID: 0}
+    - target: {fileID: -2920499290337586607, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
+      propertyPath: m_CastShadows
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -2920499290337586607, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
+      propertyPath: m_ReceiveShadows
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -2920499290337586607, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value:
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
     - target: {fileID: -2196558070479963896, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
       propertyPath: m_LocalRotation.w
       value: 0.7071067
@@ -1266,6 +1242,18 @@ PrefabInstance:
       propertyPath: m_LocalRotation.z
       value: -0
       objectReference: {fileID: 0}
+    - target: {fileID: -638942324832153350, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
+      propertyPath: m_CastShadows
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -638942324832153350, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
+      propertyPath: m_ReceiveShadows
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -638942324832153350, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value:
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
     - target: {fileID: -581409888066460206, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
       propertyPath: m_LocalRotation.w
       value: 0.9988484
@@ -1310,18 +1298,6 @@ PrefabInstance:
       propertyPath: m_LocalRotation.z
       value: 0.0000000037252903
       objectReference: {fileID: 0}
-    - target: {fileID: 357228740782508469, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
-      propertyPath: m_CastShadows
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 357228740782508469, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
-      propertyPath: m_ReceiveShadows
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 357228740782508469, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
-      value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
     - target: {fileID: 485549088757956435, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
       propertyPath: m_LocalRotation.w
       value: 0.9988484
@@ -1338,6 +1314,18 @@ PrefabInstance:
       propertyPath: m_LocalRotation.z
       value: -0.0000000037252903
       objectReference: {fileID: 0}
+    - target: {fileID: 699273463261076141, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
+      propertyPath: m_CastShadows
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 699273463261076141, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
+      propertyPath: m_ReceiveShadows
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 699273463261076141, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value:
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
     - target: {fileID: 919132149155446097, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
       propertyPath: m_Name
       value: Model
@@ -1410,18 +1398,6 @@ PrefabInstance:
       propertyPath: m_LocalRotation.z
       value: -0.0000000037252903
       objectReference: {fileID: 0}
-    - target: {fileID: 2123787381099091959, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
-      propertyPath: m_CastShadows
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2123787381099091959, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
-      propertyPath: m_ReceiveShadows
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2123787381099091959, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
-      value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
     - target: {fileID: 2147037521927467429, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
       propertyPath: m_CastShadows
       value: 0
@@ -1450,6 +1426,18 @@ PrefabInstance:
       propertyPath: m_LocalRotation.z
       value: -0
       objectReference: {fileID: 0}
+    - target: {fileID: 3610053600355104081, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
+      propertyPath: m_CastShadows
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3610053600355104081, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
+      propertyPath: m_ReceiveShadows
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3610053600355104081, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value:
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
     - target: {fileID: 3635295031779163017, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
       propertyPath: m_CastShadows
       value: 0
@@ -1538,6 +1526,18 @@ PrefabInstance:
       propertyPath: m_LocalRotation.z
       value: -0
       objectReference: {fileID: 0}
+    - target: {fileID: 4803308009987696430, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
+      propertyPath: m_CastShadows
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4803308009987696430, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
+      propertyPath: m_ReceiveShadows
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4803308009987696430, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value:
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
     - target: {fileID: 5009700557126261160, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
       propertyPath: m_CastShadows
       value: 0
@@ -1835,11 +1835,6 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
---- !u!23 &40015915349810211 stripped
-MeshRenderer:
-  m_CorrespondingSourceObject: {fileID: -5347202589608317646, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
-  m_PrefabInstance: {fileID: 3838405881583726865}
-  m_PrefabAsset: {fileID: 0}
 --- !u!4 &323873997129750563 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -5676118280872990414, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
@@ -1853,6 +1848,11 @@ Transform:
 --- !u!23 &520139652642966168 stripped
 MeshRenderer:
   m_CorrespondingSourceObject: {fileID: 3635295031779163017, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
+  m_PrefabInstance: {fileID: 3838405881583726865}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &530788479825101888 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 3610053600355104081, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
   m_PrefabInstance: {fileID: 3838405881583726865}
   m_PrefabAsset: {fileID: 0}
 --- !u!23 &538340953395740198 stripped
@@ -1955,11 +1955,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 1258483940792636222, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
   m_PrefabInstance: {fileID: 3838405881583726865}
   m_PrefabAsset: {fileID: 0}
---- !u!23 &2899742629833942758 stripped
-MeshRenderer:
-  m_CorrespondingSourceObject: {fileID: 2123787381099091959, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
-  m_PrefabInstance: {fileID: 3838405881583726865}
-  m_PrefabAsset: {fileID: 0}
 --- !u!23 &2922570695604601012 stripped
 MeshRenderer:
   m_CorrespondingSourceObject: {fileID: 2147037521927467429, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
@@ -1968,11 +1963,6 @@ MeshRenderer:
 --- !u!23 &3208888111159401724 stripped
 MeshRenderer:
   m_CorrespondingSourceObject: {fileID: 1859005247522876909, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
-  m_PrefabInstance: {fileID: 3838405881583726865}
-  m_PrefabAsset: {fileID: 0}
---- !u!23 &3235770322899150126 stripped
-MeshRenderer:
-  m_CorrespondingSourceObject: {fileID: -7376049398230887361, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
   m_PrefabInstance: {fileID: 3838405881583726865}
   m_PrefabAsset: {fileID: 0}
 --- !u!4 &3339764741415628562 stripped
@@ -1993,11 +1983,6 @@ MeshRenderer:
 --- !u!23 &3477720677144063519 stripped
 MeshRenderer:
   m_CorrespondingSourceObject: {fileID: -8860945139822846194, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
-  m_PrefabInstance: {fileID: 3838405881583726865}
-  m_PrefabAsset: {fileID: 0}
---- !u!23 &3580889974644914340 stripped
-MeshRenderer:
-  m_CorrespondingSourceObject: {fileID: 357228740782508469, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
   m_PrefabInstance: {fileID: 3838405881583726865}
   m_PrefabAsset: {fileID: 0}
 --- !u!23 &3595081389074147899 stripped
@@ -2025,11 +2010,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8956084800495067250, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
   m_PrefabInstance: {fileID: 3838405881583726865}
   m_PrefabAsset: {fileID: 0}
---- !u!23 &4058185875014329382 stripped
-MeshRenderer:
-  m_CorrespondingSourceObject: {fileID: -8280620679423994569, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
-  m_PrefabInstance: {fileID: 3838405881583726865}
-  m_PrefabAsset: {fileID: 0}
 --- !u!4 &4133272826405116777 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8351762314928084360, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
@@ -2043,6 +2023,11 @@ MeshRenderer:
 --- !u!23 &4324640712983214314 stripped
 MeshRenderer:
   m_CorrespondingSourceObject: {fileID: -8556571007859619333, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
+  m_PrefabInstance: {fileID: 3838405881583726865}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &4391168320848128956 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 699273463261076141, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
   m_PrefabInstance: {fileID: 3838405881583726865}
   m_PrefabAsset: {fileID: 0}
 --- !u!4 &4458482698671089496 stripped
@@ -2068,6 +2053,11 @@ Transform:
 --- !u!23 &4773366632378132679 stripped
 MeshRenderer:
   m_CorrespondingSourceObject: {fileID: 8609376678072326614, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
+  m_PrefabInstance: {fileID: 3838405881583726865}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &4784727739367924203 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -638942324832153350, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
   m_PrefabInstance: {fileID: 3838405881583726865}
   m_PrefabAsset: {fileID: 0}
 --- !u!4 &4803840078746440899 stripped
@@ -2145,6 +2135,11 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -1458267306354375061, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
   m_PrefabInstance: {fileID: 3838405881583726865}
   m_PrefabAsset: {fileID: 0}
+--- !u!23 &7078687257765651264 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -2920499290337586607, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
+  m_PrefabInstance: {fileID: 3838405881583726865}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &7188803146009450415 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -2988415912512854338, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
@@ -2203,6 +2198,11 @@ Transform:
 --- !u!4 &8443578195994085414 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4641342536196520247, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
+  m_PrefabInstance: {fileID: 3838405881583726865}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &8641289480013846079 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 4803308009987696430, guid: 6abb7d7fa92e18844898378c483ccd18, type: 3}
   m_PrefabInstance: {fileID: 3838405881583726865}
   m_PrefabAsset: {fileID: 0}
 --- !u!4 &8655704013561306307 stripped

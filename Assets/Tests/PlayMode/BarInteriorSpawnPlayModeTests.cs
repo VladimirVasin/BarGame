@@ -800,7 +800,8 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(GameSessionState.CashBalance,
                 Is.EqualTo(cashBefore - shop.SelectedOffer.Price));
             Assert.That(GameSessionState.IntoxicationLevel,
-                Is.EqualTo(intoxicationBefore));
+                Is.LessThanOrEqualTo(intoxicationBefore),
+                "Ordering cannot add alcohol. Normal recovery continues while the bartender takes payment.");
             Assert.That(GameSessionState.DrinksConsumed, Is.EqualTo(drinksBefore));
 
             var travel = new BartenderTravelProbe(

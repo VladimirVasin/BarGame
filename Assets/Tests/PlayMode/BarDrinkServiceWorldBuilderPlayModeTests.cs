@@ -176,14 +176,14 @@ namespace BarPromenade.Tests.PlayMode
 
                 bottle.SetSelectionHighlight(1f);
                 bottle.SetSelectionHighlight(0f);
-                AssertUsesOpaqueSheet(
+                AssertUsesBottleFinish(
                     bottle.Renderers[0],
                     BarSurfaceKind.BottleGlass,
                     presentation.BottleColor);
-                AssertUsesOpaqueSheet(
+                AssertUsesBottleFinish(
                     bottle.Renderers[1],
                     BarSurfaceKind.PaintedMetal);
-                AssertUsesOpaqueSheet(
+                AssertUsesBottleFinish(
                     bottle.Renderers[2],
                     BarSurfaceKind.Paper,
                     presentation.LabelColor);
@@ -554,7 +554,7 @@ namespace BarPromenade.Tests.PlayMode
                         BarSurfaceKind.BottleGlass).AlbedoCompensation));
         }
 
-        private static void AssertUsesOpaqueSheet(
+        private static void AssertUsesBottleFinish(
             Renderer renderer,
             BarSurfaceKind kind,
             Color? sourceTint = null)
@@ -563,7 +563,9 @@ namespace BarPromenade.Tests.PlayMode
             renderer.GetPropertyBlock(properties);
             Assert.That(
                 properties.GetTexture(BaseMapId),
-                Is.SameAs(BarSurfaceAppearance.GetTexture(kind)));
+                Is.SameAs(Resources.Load<Texture2D>(BarInteriorSurfaceAppearance.BottleAlbedoPath)));
+            Assert.That(properties.GetTexture("_SceneMaterialResponse"),
+                Is.SameAs(Resources.Load<Texture2D>(BarInteriorSurfaceAppearance.BottleResponsePath)));
             Assert.That(
                 properties.GetVector(BaseMapTransformId),
                 Is.EqualTo(new Vector4(1f, 1f, 0f, 0f)));
@@ -704,6 +706,7 @@ namespace BarPromenade.Tests.PlayMode
 
             float deepest = 0f;
             string deepestPart = string.Empty;
+            Vector3 deepestLocal = default;
             int inspected = 0;
             foreach (SkinnedMeshRenderer renderer in binding.Renderers)
             {
@@ -724,7 +727,7 @@ namespace BarPromenade.Tests.PlayMode
             }
             Assert.That(inspected, Is.EqualTo(6), label + " must inspect the visible palm and five digits");
             Assert.That(deepest, Is.LessThanOrEqualTo(maximumPenetration),
-                $"{label}: visible hand penetrates bottle solid by {deepest:F5} m at {deepestPart}");
+                $"{label}: visible hand penetrates bottle solid by {deepest:F5} m at {deepestPart}, local {deepestLocal:F4}");
 
             void Inspect(Vector3 point, string handPart)
             {
@@ -734,6 +737,7 @@ namespace BarPromenade.Tests.PlayMode
                     if (depth <= deepest) continue;
                     deepest = depth;
                     deepestPart = handPart + " / " + solid.Name;
+                    deepestLocal = bottleRoot.InverseTransformPoint(point);
                 }
             }
         }

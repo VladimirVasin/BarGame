@@ -552,7 +552,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 manifest.design_id,
                 Is.EqualTo("bar_service_props_v1"));
-            Assert.That(manifest.generator_version, Is.EqualTo("1.4.1"));
+            Assert.That(manifest.generator_version, Is.EqualTo("1.5.0"));
             Assert.That(manifest.colliders, Is.False);
             Assert.That(manifest.lights, Is.False);
             Assert.That(manifest.cameras, Is.False);

@@ -51,7 +51,7 @@ namespace BarPromenade.Editor
         private const string ExpectedServicePropsDesignId =
             "bar_service_props_v1";
         private const string ExpectedFacadeDesignId = "bar_exterior_v2";
-        private const int MaximumTriangles = 24000;
+        private const int MaximumOtherTriangles = 24000;
         private const int MaximumRenderers = 200;
 
         //  Mirrors `BarInteriorLayoutPlanner`. Duplicated deliberately:
@@ -294,11 +294,12 @@ namespace BarPromenade.Editor
                     $"{MaximumRenderers} allowed");
             }
 
-            if (registry.SourceTriangleCount > MaximumTriangles)
+            int maximumTriangles = checkRoomDimensions ? DetailedInteriorModelBudget.MaximumTriangles : MaximumOtherTriangles;
+            if (registry.SourceTriangleCount > maximumTriangles)
             {
                 problems.Add(
                     $"{registry.SourceTriangleCount} triangles exceed " +
-                    $"the {MaximumTriangles} allowed");
+                    $"the {maximumTriangles} allowed");
             }
 
             foreach (Renderer renderer in renderers)

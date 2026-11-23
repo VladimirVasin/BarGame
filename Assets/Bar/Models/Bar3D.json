@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-bar-3d-model.py",
-  "generator_version": "4.1.1",
+  "generator_version": "4.2.0",
   "blender_version": "5.2.3 LTS",
   "design_id": "bar_interior_v3",
   "display_name": "Bar Promenade Bar Interior",
@@ -43,8 +43,8 @@
     7.33,
     3.2
   ],
-  "mesh_count": 182,
-  "triangle_count": 15892,
+  "mesh_count": 191,
+  "triangle_count": 39516,
   "anchors": [
     {
       "name": "ActivityStation",
@@ -1585,8 +1585,8 @@
         "lerp_t": 0.0
       },
       "colliders": [],
-      "vertices": 16,
-      "triangles": 28
+      "vertices": 40,
+      "triangles": 76
     },
     {
       "name": "Counter Return Top",
@@ -1612,8 +1612,8 @@
         "lerp_t": 0.0
       },
       "colliders": [],
-      "vertices": 16,
-      "triangles": 28
+      "vertices": 40,
+      "triangles": 76
     },
     {
       "name": "Counter Foot Rail",
@@ -1639,8 +1639,8 @@
         "lerp_t": 0.0
       },
       "colliders": [],
-      "vertices": 24,
-      "triangles": 44
+      "vertices": 480,
+      "triangles": 924
     },
     {
       "name": "Counter Return Foot Rail",
@@ -1666,8 +1666,8 @@
         "lerp_t": 0.0
       },
       "colliders": [],
-      "vertices": 24,
-      "triangles": 44
+      "vertices": 264,
+      "triangles": 508
     },
     {
       "name": "Counter Front Panels",
@@ -1693,8 +1693,8 @@
         "lerp_t": 0.0
       },
       "colliders": [],
-      "vertices": 96,
-      "triangles": 168
+      "vertices": 576,
+      "triangles": 1008
     },
     {
       "name": "Counter Return Panels",
@@ -1720,8 +1720,8 @@
         "lerp_t": 0.0
       },
       "colliders": [],
-      "vertices": 32,
-      "triangles": 56
+      "vertices": 192,
+      "triangles": 336
     },
     {
       "name": "Bar Stool 2 Leg",
@@ -1747,8 +1747,8 @@
         "lerp_t": 0.0
       },
       "colliders": [],
-      "vertices": 44,
-      "triangles": 80
+      "vertices": 352,
+      "triangles": 696
     },
     {
       "name": "Bar Stool 2",
@@ -1787,8 +1787,8 @@
           ]
         }
       ],
-      "vertices": 28,
-      "triangles": 52
+      "vertices": 240,
+      "triangles": 476
     },
     {
       "name": "Bar Stool 4 Leg",
@@ -1814,8 +1814,8 @@
         "lerp_t": 0.0
       },
       "colliders": [],
-      "vertices": 44,
-      "triangles": 80
+      "vertices": 352,
+      "triangles": 696
     },
     {
       "name": "Bar Stool 4",
@@ -1854,8 +1854,8 @@
           ]
         }
       ],
-      "vertices": 28,
-      "triangles": 52
+      "vertices": 240,
+      "triangles": 476
     },
     {
       "name": "Bar Stool 5 Leg",
@@ -1881,8 +1881,8 @@
         "lerp_t": 0.0
       },
       "colliders": [],
-      "vertices": 44,
-      "triangles": 80
+      "vertices": 352,
+      "triangles": 696
     },
     {
       "name": "Bar Stool 5",
@@ -1921,8 +1921,8 @@
           ]
         }
       ],
-      "vertices": 28,
-      "triangles": 52
+      "vertices": 240,
+      "triangles": 476
     },
     {
       "name": "Bar Stool 6 Leg",
@@ -1948,8 +1948,8 @@
         "lerp_t": 0.0
       },
       "colliders": [],
-      "vertices": 44,
-      "triangles": 80
+      "vertices": 352,
+      "triangles": 696
     },
     {
       "name": "Bar Stool 6",
@@ -1988,8 +1988,8 @@
           ]
         }
       ],
-      "vertices": 28,
-      "triangles": 52
+      "vertices": 240,
+      "triangles": 476
     },
     {
       "name": "Bar Drink Service Stool Legs",
@@ -2015,8 +2015,8 @@
         "lerp_t": 0.0
       },
       "colliders": [],
-      "vertices": 20,
-      "triangles": 36
+      "vertices": 192,
+      "triangles": 380
     },
     {
       "name": "Bar Drink Service Stool Footring",
@@ -2042,8 +2042,8 @@
         "lerp_t": 0.0
       },
       "colliders": [],
-      "vertices": 24,
-      "triangles": 44
+      "vertices": 160,
+      "triangles": 316
     },
     {
       "name": "Bar Drink Service Stool",
@@ -2082,8 +2082,62 @@
           ]
         }
       ],
-      "vertices": 28,
-      "triangles": 52
+      "vertices": 240,
+      "triangles": 476
+    },
+    {
+      "name": "Tap Drip Pan",
+      "role": "tap_pan",
+      "group": "fixed",
+      "sheet": "PaintedMetal",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.19,
+          0.17,
+          0.14
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Tap Slotted Grate",
+      "role": "tap_grate",
+      "group": "fixed",
+      "sheet": "AgedBrass",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "MetalTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 560,
+      "triangles": 980
     },
     {
       "name": "Beer Tap Stem 1",
@@ -2109,8 +2163,8 @@
         "lerp_t": 0.0
       },
       "colliders": [],
-      "vertices": 24,
-      "triangles": 44
+      "vertices": 272,
+      "triangles": 540
     },
     {
       "name": "Beer Tap Spout 1",
@@ -2136,8 +2190,8 @@
         "lerp_t": 0.0
       },
       "colliders": [],
-      "vertices": 48,
-      "triangles": 88
+      "vertices": 180,
+      "triangles": 352
     },
     {
       "name": "Beer Tap Handle 1",
@@ -2163,8 +2217,8 @@
         "lerp_t": 0.0
       },
       "colliders": [],
-      "vertices": 24,
-      "triangles": 44
+      "vertices": 208,
+      "triangles": 412
     },
     {
       "name": "Beer Tap Stem 2",
@@ -2190,8 +2244,8 @@
         "lerp_t": 0.0
       },
       "colliders": [],
-      "vertices": 24,
-      "triangles": 44
+      "vertices": 272,
+      "triangles": 540
     },
     {
       "name": "Beer Tap Spout 2",
@@ -2217,8 +2271,8 @@
         "lerp_t": 0.0
       },
       "colliders": [],
-      "vertices": 48,
-      "triangles": 88
+      "vertices": 180,
+      "triangles": 352
     },
     {
       "name": "Beer Tap Handle 2",
@@ -2244,8 +2298,8 @@
         "lerp_t": 0.0
       },
       "colliders": [],
-      "vertices": 24,
-      "triangles": 44
+      "vertices": 208,
+      "triangles": 412
     },
     {
       "name": "Beer Tap Stem 3",
@@ -2271,8 +2325,8 @@
         "lerp_t": 0.0
       },
       "colliders": [],
-      "vertices": 24,
-      "triangles": 44
+      "vertices": 272,
+      "triangles": 540
     },
     {
       "name": "Beer Tap Spout 3",
@@ -2298,8 +2352,8 @@
         "lerp_t": 0.0
       },
       "colliders": [],
-      "vertices": 48,
-      "triangles": 88
+      "vertices": 180,
+      "triangles": 352
     },
     {
       "name": "Beer Tap Handle 3",
@@ -2325,8 +2379,8 @@
         "lerp_t": 0.0
       },
       "colliders": [],
-      "vertices": 24,
-      "triangles": 44
+      "vertices": 208,
+      "triangles": 412
     },
     {
       "name": "Backbar Cabinet",
@@ -2419,8 +2473,8 @@
         "lerp_t": 0.0
       },
       "colliders": [],
-      "vertices": 320,
-      "triangles": 560
+      "vertices": 640,
+      "triangles": 1120
     },
     {
       "name": "Backbar Patterned Glass Lattice",
@@ -2473,8 +2527,35 @@
         "lerp_t": 0.0
       },
       "colliders": [],
-      "vertices": 128,
-      "triangles": 224
+      "vertices": 192,
+      "triangles": 336
+    },
+    {
+      "name": "Backbar Shelf Brackets",
+      "role": "backbar_brackets",
+      "group": "fixed",
+      "sheet": "AgedBrass",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "MetalTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 576,
+      "triangles": 1008
     },
     {
       "name": "Backbar Cabinet Panels",
@@ -2612,8 +2693,8 @@
       "triangles": 28
     },
     {
-      "name": "Bottle Silhouettes 1",
-      "role": "bottle",
+      "name": "Shelf Bottle BeerLongneck",
+      "role": "shelf_bottle_body",
       "group": "fixed",
       "sheet": "BottleGlass",
       "emissive": false,
@@ -2621,9 +2702,9 @@
       "tint": {
         "field": "",
         "rgb": [
-          0.18,
+          0.34,
           0.22,
-          0.12
+          0.105
         ],
         "scale": 1.0,
         "lerp_field": "",
@@ -2635,12 +2716,12 @@
         "lerp_t": 0.0
       },
       "colliders": [],
-      "vertices": 224,
-      "triangles": 392
+      "vertices": 448,
+      "triangles": 868
     },
     {
-      "name": "Bottle Silhouettes 2",
-      "role": "bottle",
+      "name": "Shelf Bottle WineBottle",
+      "role": "shelf_bottle_body",
       "group": "fixed",
       "sheet": "BottleGlass",
       "emissive": false,
@@ -2648,9 +2729,9 @@
       "tint": {
         "field": "",
         "rgb": [
-          0.25,
-          0.22,
-          0.12
+          0.19,
+          0.3,
+          0.205
         ],
         "scale": 1.0,
         "lerp_field": "",
@@ -2662,12 +2743,12 @@
         "lerp_t": 0.0
       },
       "colliders": [],
-      "vertices": 288,
-      "triangles": 504
+      "vertices": 576,
+      "triangles": 1116
     },
     {
-      "name": "Bottle Silhouettes 3",
-      "role": "bottle",
+      "name": "Shelf Bottle VodkaBottle",
+      "role": "shelf_bottle_body",
       "group": "fixed",
       "sheet": "BottleGlass",
       "emissive": false,
@@ -2675,9 +2756,9 @@
       "tint": {
         "field": "",
         "rgb": [
-          0.32,
-          0.22,
-          0.12
+          0.5,
+          0.61,
+          0.61
         ],
         "scale": 1.0,
         "lerp_field": "",
@@ -2689,12 +2770,12 @@
         "lerp_t": 0.0
       },
       "colliders": [],
-      "vertices": 256,
-      "triangles": 448
+      "vertices": 512,
+      "triangles": 992
     },
     {
-      "name": "Bottle Silhouettes 4",
-      "role": "bottle",
+      "name": "Shelf Bottle CognacBottle",
+      "role": "shelf_bottle_body",
       "group": "fixed",
       "sheet": "BottleGlass",
       "emissive": false,
@@ -2702,8 +2783,8 @@
       "tint": {
         "field": "",
         "rgb": [
-          0.39,
-          0.22,
+          0.41,
+          0.245,
           0.12
         ],
         "scale": 1.0,
@@ -2716,8 +2797,62 @@
         "lerp_t": 0.0
       },
       "colliders": [],
-      "vertices": 192,
-      "triangles": 336
+      "vertices": 384,
+      "triangles": 744
+    },
+    {
+      "name": "Shelf Bottle Caps",
+      "role": "shelf_bottle_closure",
+      "group": "fixed",
+      "sheet": "PaintedMetal",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.53,
+          0.47,
+          0.38
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 720,
+      "triangles": 1320
+    },
+    {
+      "name": "Shelf Bottle Labels",
+      "role": "shelf_bottle_label",
+      "group": "fixed",
+      "sheet": "Paper",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.83,
+          0.77,
+          0.64
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 480,
+      "triangles": 840
     },
     {
       "name": "Booth Base 1 Near",
@@ -2756,8 +2891,8 @@
           ]
         }
       ],
-      "vertices": 16,
-      "triangles": 28
+      "vertices": 32,
+      "triangles": 56
     },
     {
       "name": "Booth Cushion 1 Near",
@@ -2768,6 +2903,33 @@
       "shadows": true,
       "tint": {
         "field": "UpholsteryTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 144,
+      "triangles": 280
+    },
+    {
+      "name": "Snug Backing 1 Near",
+      "role": "booth_frame",
+      "group": "fixed",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "CounterWoodTint",
         "rgb": [
           0.0,
           0.0,
@@ -2823,8 +2985,8 @@
           ]
         }
       ],
-      "vertices": 16,
-      "triangles": 28
+      "vertices": 216,
+      "triangles": 420
     },
     {
       "name": "Booth Base 1 Far",
@@ -2863,8 +3025,8 @@
           ]
         }
       ],
-      "vertices": 16,
-      "triangles": 28
+      "vertices": 32,
+      "triangles": 56
     },
     {
       "name": "Booth Cushion 1 Far",
@@ -2875,6 +3037,33 @@
       "shadows": true,
       "tint": {
         "field": "UpholsteryTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 144,
+      "triangles": 280
+    },
+    {
+      "name": "Snug Backing 1 Far",
+      "role": "booth_frame",
+      "group": "fixed",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "CounterWoodTint",
         "rgb": [
           0.0,
           0.0,
@@ -2930,8 +3119,8 @@
           ]
         }
       ],
-      "vertices": 16,
-      "triangles": 28
+      "vertices": 216,
+      "triangles": 420
     },
     {
       "name": "Booth Table Top 1",
@@ -2970,8 +3159,8 @@
           ]
         }
       ],
-      "vertices": 16,
-      "triangles": 28
+      "vertices": 64,
+      "triangles": 124
     },
     {
       "name": "Booth Table Leg 1",
@@ -3010,8 +3199,8 @@
           ]
         }
       ],
-      "vertices": 16,
-      "triangles": 28
+      "vertices": 256,
+      "triangles": 508
     },
     {
       "name": "Booth Base 2 Near",
@@ -3050,8 +3239,8 @@
           ]
         }
       ],
-      "vertices": 16,
-      "triangles": 28
+      "vertices": 32,
+      "triangles": 56
     },
     {
       "name": "Booth Cushion 2 Near",
@@ -3062,6 +3251,33 @@
       "shadows": true,
       "tint": {
         "field": "UpholsteryTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 144,
+      "triangles": 280
+    },
+    {
+      "name": "Snug Backing 2 Near",
+      "role": "booth_frame",
+      "group": "fixed",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "CounterWoodTint",
         "rgb": [
           0.0,
           0.0,
@@ -3117,8 +3333,8 @@
           ]
         }
       ],
-      "vertices": 16,
-      "triangles": 28
+      "vertices": 216,
+      "triangles": 420
     },
     {
       "name": "Booth Base 2 Far",
@@ -3157,8 +3373,8 @@
           ]
         }
       ],
-      "vertices": 16,
-      "triangles": 28
+      "vertices": 32,
+      "triangles": 56
     },
     {
       "name": "Booth Cushion 2 Far",
@@ -3169,6 +3385,33 @@
       "shadows": true,
       "tint": {
         "field": "UpholsteryTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 144,
+      "triangles": 280
+    },
+    {
+      "name": "Snug Backing 2 Far",
+      "role": "booth_frame",
+      "group": "fixed",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "CounterWoodTint",
         "rgb": [
           0.0,
           0.0,
@@ -3224,8 +3467,8 @@
           ]
         }
       ],
-      "vertices": 16,
-      "triangles": 28
+      "vertices": 216,
+      "triangles": 420
     },
     {
       "name": "Booth Table Top 2",
@@ -3264,8 +3507,8 @@
           ]
         }
       ],
-      "vertices": 16,
-      "triangles": 28
+      "vertices": 64,
+      "triangles": 124
     },
     {
       "name": "Booth Table Leg 2",
@@ -3304,8 +3547,8 @@
           ]
         }
       ],
-      "vertices": 16,
-      "triangles": 28
+      "vertices": 256,
+      "triangles": 508
     },
     {
       "name": "Snug Divider Timber",
@@ -3788,8 +4031,8 @@
           ]
         }
       ],
-      "vertices": 32,
-      "triangles": 56
+      "vertices": 256,
+      "triangles": 508
     },
     {
       "name": "Social Pub Table 1",
@@ -3828,8 +4071,8 @@
           ]
         }
       ],
-      "vertices": 32,
-      "triangles": 60
+      "vertices": 216,
+      "triangles": 428
     },
     {
       "name": "Pub Table 1 Coaster",
@@ -3895,8 +4138,8 @@
           ]
         }
       ],
-      "vertices": 32,
-      "triangles": 56
+      "vertices": 256,
+      "triangles": 508
     },
     {
       "name": "Social Pub Table 2",
@@ -3935,8 +4178,8 @@
           ]
         }
       ],
-      "vertices": 32,
-      "triangles": 60
+      "vertices": 216,
+      "triangles": 428
     },
     {
       "name": "Pub Table 2 Coaster",
@@ -6470,15 +6713,15 @@
       "triangles": 28
     }
   ],
-  "build_signature": "7a67998cb3ad970037c3e5d54da6fb69129877baa11c97391dc081c3e658dc2c",
+  "build_signature": "4f3c5b27732decf1e7d72ec48c6c7ef60fa7b3e1251de9bb198f394c617be9ba",
   "interior_surface_contract": {
     "design_id": "compact_bar_unique_surfaces_v1",
     "albedo": "Bar/Textures/BarInteriorAlbedo",
     "response": "Bar/Textures/BarInteriorResponse",
     "albedo_size": 4096,
     "response_size": 2048,
-    "unique_part_count": 151,
-    "uv_signature": "410473691bd31197ac11dc39293a288f15e18f180d69fb68ed8b7bbebdc2d425"
+    "unique_part_count": 169,
+    "uv_signature": "ce41ac6f3b5c6c740fdd1be57e916d85f772c6ff03a21feda6e7c899155e76b8"
   },
   "containment_contract": {
     "exterior_door_m": [

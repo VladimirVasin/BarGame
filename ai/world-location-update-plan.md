@@ -238,13 +238,12 @@ Source-preservation: review owners/coverage без повтора действи
   Подъём, холодильник, выход/возврат. Обстановка и износ 1→7→4→1, запирание в 7.
   Зеркало/курение/City cut — `HomeBathroomMirrorPlayModeTests`, `HomeBalconySmokingInteractionPlayModeTests`.
 
-### 32. Бар — Current: сохранение
+### 32. Бар — Current
 
 - [x] `Bar` Passed: вход/стойка/табуреты/booths, лица/руки/посудa/опоры,
   питьё и герой у караоке просмотрены. Actual WC envelope/2 стола и допустимая
   counter-замена Bottle→ShotGlass учтены в fixture, runtime не менялся.
-- [x] Source-preservation: посещаемость/подача/уборка, взгляды/камеры/WC/порог/
-  свет, часы/речь/service ownership прежние.
+- [x] `BarFurnitureFinishes` — стык стойки, табуреты, краны, кабинки и бутылки. Посадка/подача/уборка/микрофон.
 
 ### 33. Горное кафе — Current: сохранение
 
