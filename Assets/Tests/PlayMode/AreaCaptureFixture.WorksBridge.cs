@@ -26,17 +26,21 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
-        private static IEnumerator WalkWorksBridgeAndRiverLandings(CityGameRoot city)
+        private static IEnumerator WalkRoadBridgesAndRiverLandings(CityGameRoot city)
         {
-            CityRiverBridgeDescriptor bridge = WorksBridge(city);
-            Rect span = bridge.SpanBounds;
             PlayerMotor motor = city.Player.Motor;
-            float top = bridge.AverageY + CityStreetSurfacePlanner.RoadTop;
-            var west = new Vector3(span.xMin - .6f, top, span.yMin + .63f);
-            var east = new Vector3(span.xMax + .6f, top, west.z);
-            motor.Teleport(west + Vector3.up * PlayerFactory.GroundedRootOffset);
-            Physics.SyncTransforms();
-            yield return WalkTo(east, "bridge deck");
+            foreach (CityRiverBridgeDescriptor bridge in city.Layout.River.Bridges.Where(b => b.Definition.CarriesRoadTraffic))
+            {
+                Rect span = bridge.SpanBounds;
+                bool mouth = bridge.Definition.Style == CityBridgeStyle.Mouth;
+                float top = bridge.AverageY + CityStreetSurfacePlanner.RoadTop;
+                var west = new Vector3(span.xMin - .6f, top, mouth ? span.yMax - 1.05f : span.yMin + .63f);
+                var east = new Vector3(span.xMax + .6f, top, west.z);
+                motor.Teleport(west + Vector3.up * PlayerFactory.GroundedRootOffset);
+                Physics.SyncTransforms();
+                yield return WalkTo(east, bridge.Definition.Id + " eastbound");
+                if (mouth) yield return WalkTo(west, bridge.Definition.Id + " westbound");
+            }
             foreach (CityRiverLandingDescriptor landing in city.Layout.River.Landings)
             {
                 float d = Mathf.Sign(landing.DescentDirection.z);
@@ -104,17 +108,22 @@ namespace BarPromenade.Tests.PlayMode
                 service.enabled = false;
                 service.Actor.ReleasePresentation(service.transform);
             }
-            float along = Mathf.Max(0f, stop.DistanceAlongLink - 8f);
+            // The crossing starts with a scheduled stop. Restore its dwell through the
+            // same path as a background service returning to view after district streaming.
+            int platform = plan.Stops.ToList().IndexOf(stop);
+            float along = stop.DistanceAlongLink;
             CityBusActor.EvaluateLink(plan.Links[stop.LinkIndex], along, out Vector3 spawn, out Vector3 heading);
             actor.PrepareSpawn(plan, new CityBusSpawnAnchor("works acceptance", stop.LinkIndex, along,
                 spawn, heading, stop.RoadEdge), plan.StableSeed);
-            for (int frame = 0; frame < 300 && !(actor.CurrentStop == stop && actor.DoorsFullyOpen); frame++)
+            actor.ApplyDetachedPhase(new CityBusTimetable.Sample(stop.LinkIndex, along, 0f, platform, 0f, platform), 1);
+            actor.BindPresentation(bus.GetOrCreatePresentation());
+            for (int frame = 0; frame < 180 && !actor.DoorsFullyOpen; frame++)
             {
-                bus.Advance(.08f);
+                actor.Advance(.04f, CityBusObstacleState.Clear, 0f);
                 yield return null;
             }
-            Assert.That(actor.CurrentStop, Is.EqualTo(stop), "03 at " + stop.Id);
-            Assert.That(actor.DoorsFullyOpen, Is.True);
+            Assert.That(actor.CurrentStop, Is.EqualTo(stop), $"03 at {stop.Id}, {actor.MotionState}, {actor.Position}");
+            Assert.That(actor.DoorsFullyOpen, Is.True, $"03 at {stop.Id}, spawned {actor.IsSpawned}, dwell {actor.DwellElapsed:F2}");
             var capsule = hero.GameObject.GetComponent<CharacterController>();
             var rig = (Player3DCharacterPresentation)hero.Visual;
             Vector3 hips = hero.GameObject.transform.InverseTransformPoint(rig.Registry.Anchors.Pelvis.position);
@@ -131,7 +140,9 @@ namespace BarPromenade.Tests.PlayMode
             float direction = 0f, clearance = float.MaxValue;
             for (int tick = 0; tick < 6500 && !crossed; tick++)
             {
-                bus.Advance(.10f);
+                // Measure the moving hull against the parapets on an unobstructed run.
+                // An unrelated delivery on the approach can otherwise hold the bus outside the span.
+                actor.Advance(.10f, CityBusObstacleState.Clear, 0f);
                 ride.RefreshPassengerPose();
                 Assert.That(actor.HasPlayerPassenger && ride.ActivePlan.SeatAnchor == seat, Is.True);
                 Vector3 pos = actor.Position;

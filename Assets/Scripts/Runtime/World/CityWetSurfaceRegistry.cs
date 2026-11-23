@@ -12,7 +12,8 @@ namespace BarPromenade
         RoadMarking = 3,
         Puddle = 4,
         WeatheredTimber = 5,
-        PaintedSteel = 6
+        PaintedSteel = 6,
+        DressedGranite = 7
     }
 
     internal readonly struct CityWetSurfaceSample
@@ -98,6 +99,11 @@ namespace BarPromenade
                         CityExteriorAppearance.RoadMarkingSmoothness;
                     wetSmoothness = 0.56f;
                     wetTint = new Color(0.75f, 0.80f, 0.78f, 1f);
+                    return;
+                case CityWetSurfaceKind.DressedGranite:
+                    drySmoothness = .46f;
+                    wetSmoothness = .87f;
+                    wetTint = new Color(.73f, .77f, .76f, 1f);
                     return;
                 case CityWetSurfaceKind.PaintedSteel:
                     drySmoothness = .64f;

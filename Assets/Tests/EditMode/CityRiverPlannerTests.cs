@@ -484,12 +484,16 @@ namespace BarPromenade.Tests.EditMode
                     layout);
             Rect waterBounds = layout.River.Segments[0].WaterBounds;
 
+            CityRiverBridgeDescriptor mouth = layout.River.Bridges.Single(b => b.Definition.Style == CityBridgeStyle.Mouth);
+            var abutmentPlates = new[] { CityMouthBridgeArt.AbutmentLampPlate(mouth, -1), CityMouthBridgeArt.AbutmentLampPlate(mouth, 1) };
+            foreach (Vector3 plate in abutmentPlates) Assert.That(lamps, Does.Contain(plate));
+
             foreach (bool west in new[] { true, false })
             {
                 float faceX = west
                     ? waterBounds.xMin
                     : waterBounds.xMax;
-                List<Vector3> bank = lamps
+                List<Vector3> bank = lamps.Except(abutmentPlates)
                     .Where(lamp => west
                         ? lamp.x < waterBounds.center.x
                         : lamp.x > waterBounds.center.x)

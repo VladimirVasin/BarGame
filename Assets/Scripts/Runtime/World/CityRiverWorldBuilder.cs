@@ -67,8 +67,6 @@ namespace BarPromenade
             new Color(0.075f, 0.10f, 0.105f);
         private static readonly Color Riverbed =
             new Color(0.185f, 0.19f, 0.155f);
-        private static readonly Color MouthStone =
-            new Color(0.42f, 0.43f, 0.39f);
         private static readonly Color LampGlow =
             new Color(1.30f, 0.72f, 0.31f);
 
@@ -163,8 +161,9 @@ namespace BarPromenade
                     mountainPlan.RiverCave);
             }
             var worksArt = new CityWorksBridgeArt();
-            BuildBridges(root, layout, worksArt);
-            BuildLandings(root, layout, worksArt);
+            var mouthArt = new CityMouthBridgeArt();
+            BuildBridges(root, layout, worksArt, mouthArt);
+            BuildLandings(root, layout, worksArt, mouthArt);
             BuildPromenadeLights(root, layout, anchors);
             CityRiverDressingWorldBuilder.Build(root, layout);
             return root.gameObject;
@@ -829,7 +828,7 @@ namespace BarPromenade
 
         private static void BuildBridges(
             Transform parent,
-            CityLayout layout, CityWorksBridgeArt worksArt)
+            CityLayout layout, CityWorksBridgeArt worksArt, CityMouthBridgeArt mouthArt)
         {
             Transform bridges = new GameObject("River Bridges").transform;
             bridges.SetParent(parent, false);
@@ -844,7 +843,7 @@ namespace BarPromenade
                 }
                 else
                 {
-                    BuildRoadBridge(bridges, layout, bridge, worksArt);
+                    BuildRoadBridge(bridges, layout, bridge, worksArt, mouthArt);
                 }
             }
         }
@@ -852,7 +851,7 @@ namespace BarPromenade
         private static void BuildRoadBridge(
             Transform parent,
             CityLayout layout,
-            CityRiverBridgeDescriptor bridge, CityWorksBridgeArt worksArt)
+            CityRiverBridgeDescriptor bridge, CityWorksBridgeArt worksArt, CityMouthBridgeArt mouthArt)
         {
             Transform root = new GameObject(
                 $"{bridge.Definition.Id} Road Bridge").transform;
@@ -863,155 +862,26 @@ namespace BarPromenade
             FootstepGround.Stamp(
                 root,
                 works ? FootstepGroundKind.Concrete : FootstepGroundKind.Stone);
-            if (works)
+            float waterY = ResolveBridgeWaterY(layout, bridge) + CitySurfaceDescriptor.WaterTopOffset;
+            float bedY = waterY - RiverBedDepth;
+            if (works) worksArt.Span(root, span, deckY, bedY);
+            else mouthArt.Span(root, span, deckY, waterY, bedY);
+
+            AxisRange range = CreateBridgeGuardRange(bridge);
+            bool northEntry = bridge.Definition.InteriorDirection.y > 0;
+            AddGuard("Outer Parapet", range, northEntry ? span.yMin : span.yMax);
+            var gaps = CreateBridgeLandingGaps(layout.River, bridge.Definition.Id, range.Minimum, range.Maximum);
+            List<AxisRange> segments = SubtractRanges(range.Minimum, range.Maximum, gaps);
+            for (int i = 0; i < segments.Count; i++)
+                AddGuard(i == 0 ? "Landing Parapet" : $"Landing Parapet {i + 1}", segments[i], northEntry ? span.yMax : span.yMin);
+
+            void AddGuard(string label, AxisRange run, float edgeZ)
             {
-                float bedY = ResolveBridgeWaterY(layout, bridge) + CitySurfaceDescriptor.WaterTopOffset - RiverBedDepth;
-                worksArt.Span(root, span, deckY, bedY);
-                AxisRange range = CreateBridgeGuardRange(bridge);
-                bool northEntry = bridge.Definition.InteriorDirection.y > 0;
-                AddRail("Outer Parapet", range, northEntry ? span.yMin : span.yMax);
-                var gaps = CreateBridgeLandingGaps(layout.River, bridge.Definition.Id, range.Minimum, range.Maximum);
-                List<AxisRange> segments = SubtractRanges(range.Minimum, range.Maximum, gaps);
-                for (int i = 0; i < segments.Count; i++)
-                    AddRail(i == 0 ? "Landing Parapet" : $"Landing Parapet {i + 1}", segments[i], northEntry ? span.yMax : span.yMin);
-                return;
-
-                void AddRail(string label, AxisRange part, float z) => worksArt.Rail(label, root,
-                    new Vector3(part.Minimum, deckY, Mathf.MoveTowards(z, span.center.y, .12f)),
-                    new Vector3(part.Maximum, deckY, Mathf.MoveTowards(z, span.center.y, .12f)));
-            }
-            Color structure = MouthStone;
-            Color accent = GraniteEdge;
-            const CityRiverSurfaceKind surface = CityRiverSurfaceKind.Quay;
-
-            CreateBox(
-                "Bridge Underside",
-                root,
-                new Vector3(span.center.x, deckY - 0.34f, span.center.y),
-                new Vector3(
-                    span.width - SurfaceClearance * 2f,
-                    0.52f,
-                    span.height - SurfaceClearance * 2f),
-                structure,
-                true,
-                surface);
-            CreateBox(
-                "North Girder",
-                root,
-                new Vector3(span.center.x, deckY - 0.68f, span.yMax - 0.22f),
-                new Vector3(span.width, 0.72f, 0.34f),
-                accent,
-                false,
-                surface);
-            CreateBox(
-                "South Girder",
-                root,
-                new Vector3(span.center.x, deckY - 0.68f, span.yMin + 0.22f),
-                new Vector3(span.width, 0.72f, 0.34f),
-                accent,
-                false,
-                surface);
-
-            // A pier stops on the channel floor, not on the waterline.
-            // It used to end at the datum, which is 12 cm clear of the
-            // water top - hidden while the surface was opaque, and a pier
-            // hanging in mid-air the moment it stopped being.
-            float waterY = ResolveBridgeWaterY(layout, bridge);
-            float pierBottomY = waterY +
-                                CitySurfaceDescriptor.WaterTopOffset -
-                                RiverBedDepth;
-            float pierHeight = Mathf.Max(
-                0.5f,
-                deckY - 0.42f - pierBottomY);
-            for (int pier = -1; pier <= 1; pier += 2)
-            {
-                CreateBox(
-                    $"Bridge Pier {(pier < 0 ? "West" : "East")}",
-                    root,
-                    new Vector3(
-                        span.center.x + pier * span.width * 0.30f,
-                        pierBottomY + pierHeight * 0.5f,
-                        span.center.y),
-                    new Vector3(0.82f, pierHeight, span.height - 1.2f),
-                    structure,
-                    true,
-                    surface);
-            }
-
-            bool innerNorth = bridge.Definition.InteriorDirection.y > 0;
-            float innerZ = innerNorth ? span.yMax : span.yMin;
-            float outerZ = innerNorth ? span.yMin : span.yMax;
-            AxisRange guardRange = CreateBridgeGuardRange(bridge);
-            List<AxisRange> landingGaps = CreateBridgeLandingGaps(
-                layout.River,
-                bridge.Definition.Id,
-                guardRange.Minimum,
-                guardRange.Maximum);
-            BuildStoneParapet(
-                root,
-                "Outer Parapet",
-                bridge,
-                outerZ,
-                guardRange.Minimum,
-                guardRange.Maximum,
-                Array.Empty<AxisRange>(),
-                structure,
-                surface);
-            BuildStoneParapet(
-                root,
-                "Landing Parapet",
-                bridge,
-                innerZ,
-                guardRange.Minimum,
-                guardRange.Maximum,
-                landingGaps,
-                structure,
-                surface);
-        }
-
-        private static void BuildStoneParapet(
-            Transform parent,
-            string name,
-            CityRiverBridgeDescriptor bridge,
-            float z,
-            float minimum,
-            float maximum,
-            IReadOnlyList<AxisRange> gaps,
-            Color color,
-            CityRiverSurfaceKind surface)
-        {
-            List<AxisRange> spans = SubtractRanges(
-                minimum,
-                maximum,
-                gaps);
-            var boxes = new List<Bounds>();
-            for (int index = 0; index < spans.Count; index++)
-            {
-                AxisRange span = spans[index];
-                float length = span.Maximum - span.Minimum;
-                boxes.Add(new Bounds(
-                    new Vector3((span.Minimum + span.Maximum) * .5f, bridge.AverageY + .58f, z),
-                    new Vector3(length, 1.05f, .32f)));
-            }
-
-            if (boxes.Count > 0)
-            {
-                GameObject rail =
-                    RuntimePrimitiveFactory.CreateStructuralBoxes(
-                        name,
-                        parent,
-                        boxes,
-                        color,
-                        true,
-                        CityRiverSurfaceAppearance
-                            .GetRecipe(surface)
-                            .MetersPerTile,
-                        RuntimeWorldUvMode.BoxProjected,
-                        .009f);
-                CityRiverSurfaceAppearance.ApplyCombined(
-                    rail.GetComponent<Renderer>(),
-                    surface,
-                    color);
+                float inset = works ? .12f : CityMouthBridgeArt.GuardWidth * .5f;
+                float z = Mathf.MoveTowards(edgeZ, span.center.y, inset);
+                Vector3 from = new(run.Minimum, deckY, z), to = new(run.Maximum, deckY, z);
+                if (works) worksArt.Rail(label, root, from, to);
+                else mouthArt.Parapet(label, root, from, to);
             }
         }
 
@@ -1063,7 +933,7 @@ namespace BarPromenade
 
         private static void BuildLandings(
             Transform parent,
-            CityLayout layout, CityWorksBridgeArt worksArt)
+            CityLayout layout, CityWorksBridgeArt worksArt, CityMouthBridgeArt mouthArt)
         {
             Transform root = new GameObject(
                 "Lower River Landings").transform;
@@ -1073,13 +943,13 @@ namespace BarPromenade
             {
                 CityRiverLandingDescriptor landing =
                     layout.River.Landings[index];
-                BuildLanding(root, landing, landing.BridgeStyle == CityBridgeStyle.Works ? worksArt : null);
+                BuildLanding(root, landing, worksArt, mouthArt);
             }
         }
 
         private static void BuildLanding(
             Transform parent,
-            CityRiverLandingDescriptor landing, CityWorksBridgeArt worksArt)
+            CityRiverLandingDescriptor landing, CityWorksBridgeArt worksArt, CityMouthBridgeArt mouthArt)
         {
             Transform root = new GameObject(landing.Id).transform;
             root.SetParent(parent, false);
@@ -1108,9 +978,11 @@ namespace BarPromenade
                         tread + 0.025f)));
             }
 
-            if (worksArt != null)
+            bool works = landing.BridgeStyle == CityBridgeStyle.Works;
+            CityRiverBridgeArt masonry = works ? worksArt : mouthArt;
+            masonry.Stairs(root, landing, steps);
+            if (works)
             {
-                worksArt.Stairs(root, landing, steps);
                 Rect floor = landing.PlatformBounds;
                 float waterX = landing.WestBank ? floor.xMax : floor.xMin;
                 float landX = landing.WestBank ? floor.xMin : floor.xMax;
@@ -1138,50 +1010,6 @@ namespace BarPromenade
                 worksArt.Rail("Upper Terminal Top Rail", guards, new(upperRailX, landing.UpperY, upperEndZ), new(waterX, landing.UpperY, upperEndZ));
                 return;
             }
-
-            GameObject flight = RuntimePrimitiveFactory.CreateStructuralBoxes(
-                "Granite Stair Flight",
-                root,
-                steps,
-                Granite,
-                true,
-                CityRiverSurfaceAppearance
-                    .GetRecipe(CityRiverSurfaceKind.Paving)
-                    .MetersPerTile,
-                RuntimeWorldUvMode.BoxProjected,
-                .014f);
-            CityRiverSurfaceAppearance.ApplyCombined(
-                flight.GetComponent<Renderer>(),
-                CityRiverSurfaceKind.Paving,
-                Granite);
-
-            GameObject platform =
-                RuntimePrimitiveFactory.CreateStructuralBoxes(
-                    "Lower Waterside Platform",
-                    root,
-                    new[]
-                    {
-                        new Bounds(
-                            new Vector3(
-                                landing.PlatformBounds.center.x,
-                                landing.LowerY - 0.12f,
-                                landing.PlatformBounds.center.y),
-                            new Vector3(
-                                landing.PlatformBounds.width,
-                                0.24f,
-                                landing.PlatformBounds.height))
-                    },
-                    Granite,
-                    true,
-                    CityRiverSurfaceAppearance
-                        .GetRecipe(CityRiverSurfaceKind.Paving)
-                        .MetersPerTile,
-                    RuntimeWorldUvMode.BoxProjected,
-                    .018f);
-            CityRiverSurfaceAppearance.ApplyCombined(
-                platform.GetComponent<Renderer>(),
-                CityRiverSurfaceKind.Paving,
-                Granite);
 
             float lowerEdgeZ = landing.StairBounds.center.y +
                                direction * landing.StairBounds.height * 0.5f;
@@ -1679,6 +1507,13 @@ namespace BarPromenade
                 }
             }
 
+            // These two plates attach to masonry rather than spanning a stair or a bridge opening.
+            foreach (CityRiverBridgeDescriptor bridge in plan.Bridges)
+            {
+                if (bridge.Definition.Style != CityBridgeStyle.Mouth) continue;
+                result.Add(CityMouthBridgeArt.AbutmentLampPlate(bridge, -1));
+                result.Add(CityMouthBridgeArt.AbutmentLampPlate(bridge, 1));
+            }
             return result.AsReadOnly();
         }
 

@@ -353,6 +353,13 @@ namespace BarPromenade.Tests.EditMode
                         Assert.That(renderer.sharedMaterial, Is.SameAs(Resources.Load<Material>(CityWorksBridgeArt.FinishPath)), renderer.name);
                         continue;
                     }
+                    if (HasAncestor(renderer, "mouth-bridge Road Bridge") ||
+                        ((renderer.name == "Granite Stair Flight" || renderer.name == "Lower Waterside Platform") &&
+                         (HasAncestor(renderer, "mouth-bridge-west-landing") || HasAncestor(renderer, "mouth-bridge-east-landing"))))
+                    {
+                        Assert.That(renderer.sharedMaterial, Is.SameAs(Resources.Load<Material>(CityMouthBridgeArt.FinishPath)), renderer.name);
+                        continue;
+                    }
                     if (IsParkTimber(renderer))
                     {
                         Assert.That(renderer.sharedMaterial, Is.SameAs(Resources.Load<Material>("City/Surfaces/ParkFootbridge")));

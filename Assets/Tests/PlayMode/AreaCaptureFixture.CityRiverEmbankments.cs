@@ -96,7 +96,7 @@ namespace BarPromenade.Tests.PlayMode
                 city.Rain.SetIntensity(0f);
                 CityWaterResources.SetRainIntensity(0f);
                 CityWetSurfaceRegistry.SetImmediate(0f);
-                yield return WalkWorksBridgeAndRiverLandings(city);
+                yield return WalkRoadBridgesAndRiverLandings(city);
                 yield return RideWorksBridge(city);
                 yield return CheckWatersideMoorings(city);
                 yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
@@ -183,8 +183,7 @@ namespace BarPromenade.Tests.PlayMode
                 }
             }
             Assert.That(kinds, Is.EquivalentTo(new[] { CityMiscKind.RiverQuayRepair, CityMiscKind.RiverWorksFitting,
-                CityMiscKind.RiverMouthCap, CityMiscKind.RiverTimberJoint, CityMiscKind.RiverMooringBollard,
-                CityMiscKind.RiverLanternShell, CityMiscKind.RiverStairNosing }));
+                CityMiscKind.RiverTimberJoint, CityMiscKind.RiverMooringBollard, CityMiscKind.RiverLanternShell }));
             Renderer[] renderers = root.GetComponentsInChildren<Renderer>(true);
             Assert.That(renderers.Length, Is.EqualTo(expected.Count).And.LessThanOrEqualTo(CityRiverDressingWorldBuilder.MaximumBatchCount));
             foreach (Renderer renderer in renderers)
@@ -488,6 +487,7 @@ namespace BarPromenade.Tests.PlayMode
 
         private static Shot[] RiverEmbankmentShots(CityGameRoot city, Volume grayscale)
         {
+            CityRiverBridgeDescriptor mouth = city.Layout.River.Bridges.Single(b => b.Definition.Style == CityBridgeStyle.Mouth);
             var shots = new List<Shot>();
             var banks = new List<Shot>();
             CityRiverDressingPlan construction = CityRiverDressingPlan.Create(city.Layout);
@@ -560,6 +560,21 @@ namespace BarPromenade.Tests.PlayMode
             Vector3 joint = new Vector3(worksSpan.center.x + worksSpan.width*.30f, steelLevel-.86f, worksSpan.yMax-.32f);
             Shot girder = Shot.At("steel and bearing", joint + new Vector3(-3.15f,-.47f,3.3f), joint, 60f);
             Add("day-river-works-bearings", girder, false);
+            Rect channel = mouth.SpanBounds;
+            Vector3 road = new(channel.center.x, mouth.AverageY + CityStreetSurfacePlanner.RoadTop, channel.center.y);
+            Shot seaward = Shot.At("sea from the deck", road + new Vector3(0, EyeHeight, channel.height*.5f-.95f),
+                road + new Vector3(0, -.15f, 24f), 70f);
+            var pierViews = new List<Shot>();
+            foreach (CityRiverLandingDescriptor landing in city.Layout.River.Landings.Where(l => l.BridgeId == mouth.Definition.Id))
+            {
+                float side = landing.WestBank ? -1f : 1f;
+                Rect platform = landing.PlatformBounds;
+                Vector3 eye = new(platform.center.x - side*.83f, landing.LowerY + EyeHeight, platform.center.y);
+                Vector3 pier = new(channel.center.x - side*channel.width*.30f, landing.LowerY + .45f, channel.yMin);
+                pierViews.Add(Shot.At(landing.WestBank ? "west-pier-view" : "east-pier-view", eye, pier, 53f));
+            }
+            foreach (Shot view in pierViews) Add("day-river-mouth-" + view.Name, view, false);
+            Add("day-river-mouth-seaward", seaward, false);
             foreach (Shot bank in banks) Add("night-river-" + bank.Name, bank, true);
             CityRiverBridgeDescriptor works = city.Layout.River.Bridges[0];
             Add("night-river-bridge-structure", Shot.At("bridge-structure",
@@ -579,9 +594,11 @@ namespace BarPromenade.Tests.PlayMode
                 Add("night-river-" + landing.Id + "-wet", Shot.At(landing.Id, floor + Vector3.up * EyeHeight,
                     new Vector3(landing.StairBounds.center.x, landing.UpperY-.1f, landing.StairBounds.center.y), 66f), true, rain:true);
             }
+            foreach (Shot view in pierViews) Add("night-river-mouth-" + view.Name, view, true, rain: true);
+            Add("night-river-mouth-seaward", seaward, true, rain: true);
             Add("night-river-grayscale", banks[1], true, gray: true);
             Add("night-river-intoxication", banks[0], true, intoxicated: true);
-            Assert.That(shots.Count, Is.EqualTo(29), "Keep this acceptance bounded to the affected river.");
+            Assert.That(shots.Count, Is.EqualTo(35), "Keep this acceptance bounded to the affected river.");
             return shots.ToArray();
 
             void Add(string name, Shot pose, bool night, bool rain = false, bool gray = false, bool intoxicated = false)
@@ -601,6 +618,8 @@ namespace BarPromenade.Tests.PlayMode
                         city.Rain.SetIntensity(rain ? 1f : 0f);
                         CityWaterResources.SetRainIntensity(rain ? 1f : 0f);
                         CityWetSurfaceRegistry.SetImmediate(rain ? 1f : 0f);
+                        if (name.EndsWith("mouth-seaward", StringComparison.Ordinal))
+                            AssertMouthConstruction(city, mouth, rain);
                         if (name.Contains("timber"))
                             AssertTimberFinish(city, rain);
                         if (intoxicated) GameSessionState.UpdateDrinkingProgress(100, DrinkId.LightBeer, 1);
@@ -613,6 +632,36 @@ namespace BarPromenade.Tests.PlayMode
                     return frames > (intoxicated ? 90 : rain ? 30 : SettleFrames);
                 }));
             }
+        }
+
+        private static void AssertMouthConstruction(CityGameRoot city, CityRiverBridgeDescriptor bridge, bool rain)
+        {
+            Transform root = city.World.RiverRoot.transform.Find("River Bridges/" + bridge.Definition.Id + " Road Bridge");
+            Renderer span = root.Find("Bridge Underside").GetComponent<Renderer>();
+            var finish = span.sharedMaterial;
+            Assert.That(finish.GetTexture("_BaseMap").name, Is.EqualTo("MouthBridgeAlbedo"));
+            Assert.That(finish.GetTexture("_BumpMap").name, Is.EqualTo("MouthBridgeNormal"));
+            Assert.That(finish.GetTexture("_MetallicGlossMap").name, Is.EqualTo("MouthBridgeMask"));
+            var expected = CityWetSurfaceRules.Evaluate(CityWetSurfaceKind.DressedGranite, rain ? 1f : 0f);
+            var block = new MaterialPropertyBlock();
+            foreach (string end in new[] { "West", "East" })
+            {
+                Transform pier = root.Find("Bridge Pier " + end);
+                Renderer body = pier.GetComponent<Renderer>();
+                Assert.That(body.bounds.max.y, Is.EqualTo(span.bounds.min.y).Within(.008f));
+                BoxCollider[] courses = pier.GetComponents<BoxCollider>();
+                Assert.That(courses, Has.Length.EqualTo(4));
+                Assert.That(courses[0].bounds.size.x, Is.GreaterThan(courses[2].bounds.size.x + .35f));
+                Assert.That(root.Find(end + " Bank Abutment").GetComponent<Renderer>().bounds.max.y,
+                    Is.EqualTo(span.bounds.min.y).Within(.008f));
+                body.GetPropertyBlock(block);
+                Assert.That(block.GetFloat("_Smoothness"), Is.EqualTo(expected.Smoothness).Within(.001f));
+            }
+            Bounds outer = root.Find("Outer Parapet").GetComponent<Collider>().bounds;
+            Bounds inner = root.Find("Landing Parapet").GetComponent<Collider>().bounds;
+            float clear = Mathf.Max(outer.min.z, inner.min.z) - Mathf.Min(outer.max.z, inner.max.z);
+            Assert.That(clear, Is.GreaterThanOrEqualTo(bridge.Definition.DeckWidth - 2f*CityMouthBridgeArt.GuardWidth - .005f));
+            if (!rain) TestContext.WriteLine($"Mouth bridge clear between parapets: {clear:F2} m.");
         }
 
         private static void AssertTimberFinish(CityGameRoot city, bool rain)

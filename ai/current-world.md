@@ -566,9 +566,9 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   rock stops at `Z=-208`; cave water/space behind them remain outside nav.
   Low lanterns at `13 m` pitch keep emissive lenses/halos; pooled spill and
   sparse upper lamps always burn, at least two thirds by day (§20).
-  Works has plate girders, bearing shoes, stone stairs and jointed landing slabs on both banks.
-  `CityRiverDressingPlan` batches coping under rail feet, repair stones, lamp housings,
-  Mouth tread noses and cast bollards beside the waterside coping, clear of every stair axis;
+  Works has plate girders on shoes. Mouth has coursed granite and broad pier feet. Low wall lamps on its abutments light the waterline.
+  Both have stone flights and jointed landing slabs. `CityRiverDressingPlan` batches coping under rail feet,
+  repair stones, lamp housings and cast bollards clear of every stair axis;
 - one immutable `CityElevationPlan` produced after 2D topology and before any
   lot, surface or access is materialized. The original grid spans
   about `8.1 m` below the two 40m upper streets and gives

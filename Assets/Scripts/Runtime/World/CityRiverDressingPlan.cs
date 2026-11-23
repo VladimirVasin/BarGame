@@ -54,7 +54,7 @@ namespace BarPromenade
             foreach (CityRiverPromenadeDescriptor promenade in layout.River.Promenades)
                 AddBank(layout, promenade, placements);
             foreach (CityRiverBridgeDescriptor bridge in layout.River.Bridges)
-                AddBridge(layout.River, bridge, placements);
+                AddBridge(bridge, placements);
             foreach (CityRiverLandingDescriptor landing in layout.River.Landings)
                 AddLanding(landing, placements);
             AddLanterns(layout, placements);
@@ -138,49 +138,22 @@ namespace BarPromenade
             Vector3 Point(float z) => new Vector3(x, Sample(promenade, z) + CopingTopAboveBank, z);
         }
 
-        private static void AddBridge(CityRiverPlan river, CityRiverBridgeDescriptor bridge,
-            List<CityRiverDressingPlacement> target)
+        private static void AddBridge(CityRiverBridgeDescriptor bridge, List<CityRiverDressingPlacement> target)
         {
-            float minimum = bridge.SpanBounds.xMin + RailThickness * 0.5f;
-            float maximum = bridge.SpanBounds.xMax - RailThickness * 0.5f;
-            if (bridge.Definition.Style == CityBridgeStyle.Works) return;
+            if (bridge.Definition.Role != CityBridgeRole.ParkFootbridge) return;
+            float scale = bridge.SpanBounds.width / CityRiverDefinition.TimberReferenceSpan;
+            float inset = RailThickness * .5f * scale;
+            int bays = CityRiverDefinition.TimberRailingBays;
             for (int side = -1; side <= 1; side += 2)
             {
-                bool timber = bridge.Definition.Role == CityBridgeRole.ParkFootbridge;
-                float z = timber ? bridge.SpanBounds.center.y + side *
-                    (bridge.SpanBounds.height * (1.30f / CityRiverDefinition.ParkFootbridgeWidth))
-                    : side < 0 ? bridge.SpanBounds.yMin : bridge.SpanBounds.yMax;
-                var spans = new List<Range> { new Range(minimum, maximum) };
-                if (!timber && side == bridge.Definition.InteriorDirection.y)
-                    foreach (CityRiverLandingDescriptor landing in river.Landings)
-                        if (string.Equals(landing.BridgeId, bridge.Definition.Id, StringComparison.Ordinal))
-                            Subtract(spans, landing.StairBounds.xMin - 0.12f,
-                                landing.StairBounds.xMax + 0.12f);
-                for (int index = 0; index < spans.Count; index++)
+                float z = bridge.SpanBounds.center.y + side * bridge.SpanBounds.height *
+                    (1.30f / CityRiverDefinition.ParkFootbridgeWidth);
+                for (int post = 0; post <= bays; post++)
                 {
-                    Range span = spans[index];
-                    string id = $"{bridge.Definition.Id}-{side}-{index}";
-                    if (bridge.Definition.Style == CityBridgeStyle.Mouth)
-                    {
-                        AddMouthCaps(target, id,
-                            new Vector3(span.Min, bridge.AverageY + 1.105f + SkinClearanceMeters, z),
-                            span.Max - span.Min);
-                        continue;
-                    }
-                    if (!timber) continue;
-                    // Imported rail posts and their iron sleeves share the same six bays.
-                    float scale = bridge.SpanBounds.width / CityRiverDefinition.TimberReferenceSpan;
-                    float inset = RailThickness * .5f * scale;
-                    int bays = CityRiverDefinition.TimberRailingBays;
-                    for (int post = 0; post <= bays; post++)
-                    {
-                        float x = Mathf.Lerp(bridge.SpanBounds.xMin + inset, bridge.SpanBounds.xMax - inset, post / (float)bays);
-                        Add(target, id + "-foot-" + post,
-                            CityMiscKind.RiverTimberJoint,
-                            new Vector3(x, bridge.AverageY + 0.002f, z));
-                    }
+                    float x = Mathf.Lerp(bridge.SpanBounds.xMin + inset, bridge.SpanBounds.xMax - inset, post / (float)bays);
+                    Add(target, $"{bridge.Definition.Id}-{side}-0-foot-{post}", CityMiscKind.RiverTimberJoint,
+                        new Vector3(x, bridge.AverageY + .002f, z));
                 }
-
             }
         }
 
@@ -188,20 +161,6 @@ namespace BarPromenade
             List<CityRiverDressingPlacement> target)
         {
             float direction = Mathf.Sign(landing.DescentDirection.z);
-            float upperEdge = landing.StairBounds.center.y - direction * landing.StairBounds.height * 0.5f;
-            float tread = landing.StairBounds.height / landing.StepCount;
-            Quaternion rotation = Quaternion.Euler(0f, direction > 0f ? 0f : 180f, 0f);
-            int appliedNoses = landing.BridgeStyle == CityBridgeStyle.Works ? 0 : landing.StepCount;
-            for (int step = 0; step < appliedNoses; step++)
-            {
-                float y = Mathf.Lerp(landing.UpperY, landing.LowerY, (step + 1f) / landing.StepCount);
-                // The existing tread extends 12.5 mm past its nominal end;
-                // the front of the imported 80 mm nose meets that same edge.
-                float z = upperEdge + direction * ((step + 1f) * tread + 0.0125f - 0.04f);
-                Add(target, $"{landing.Id}-tread-{step}", CityMiscKind.RiverStairNosing,
-                    new Vector3(landing.StairBounds.center.x, y + TreadClearanceMeters, z),
-                    rotation, new Vector3(landing.StairBounds.width, 1f, 1f));
-            }
             float landwardSign = landing.WestBank ? -1f : 1f;
             float landwardX = landing.WestBank ? landing.PlatformBounds.xMin : landing.PlatformBounds.xMax;
             float waterX = landing.WestBank ? landing.PlatformBounds.xMax : landing.PlatformBounds.xMin;
@@ -262,18 +221,6 @@ namespace BarPromenade
                 Add(target, id + "-" + index, CityMiscKind.RiverQuayRepair,
                     start + delta * ((index + 0.5f) / count), rotation,
                     new Vector3(widthScale, 1f, (pitch - CopingJointMeters) / 1.20f));
-        }
-
-        private static void AddMouthCaps(List<CityRiverDressingPlacement> target,
-            string id, Vector3 start, float length)
-        {
-            if (length < 0.15f) return;
-            int count = Mathf.Max(1, Mathf.CeilToInt(length / 1.20f));
-            float pitch = length / count;
-            for (int index = 0; index < count; index++)
-                Add(target, id + "-cap-" + index, CityMiscKind.RiverMouthCap,
-                    start + Vector3.right * ((index + 0.5f) * pitch), Quaternion.identity,
-                    new Vector3((pitch - CopingJointMeters) / 1.20f, 1f, 1f));
         }
 
         private static List<Range> QuaySpans(CityRiverPlan river, CityRiverPromenadeDescriptor promenade)

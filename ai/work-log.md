@@ -5,7 +5,7 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-23
 
-CityRiverEmbankments checks bridge walks, all stairs, bearings, rain, seated line 03 and working moorings. validate_mooring_feet measures casting/deck contact.
+CityRiverEmbankments checks Mouth bearings, sea views, stairs, rain, walks, moorings and line 03 hull clearance on an empty lane. validate_mooring_feet checks deck contact.
 CityParkBandstand checks seat transfers, corner clicks, both boards under one lamp and the default residents’ wardrobe. The old bodies are retired.
 
 CityCanneryFinishes checks the rebuilt bay, work surfaces, dispatch and the equipped apron panels in pose.
