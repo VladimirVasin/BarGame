@@ -24,9 +24,7 @@ namespace BarPromenade.Tests.PlayMode
                 .GetMethod("EnsureAssetsReady", Type.EmptyTypes).Invoke(null, null);
             Type.GetType("BarPromenade.Editor.ProjectSceneSetup, BarPromenade.Editor", true)
                 .GetMethod("ConfigurePawnshopScene", Type.EmptyTypes).Invoke(null, null);
-            Type.GetType("BarPromenade.Editor.CityMapArtReferenceExport, BarPromenade.Editor", true)
-                .GetMethod("ExportCurrent", Type.EmptyTypes).Invoke(null, null);
-            if (Environment.GetEnvironmentVariable("BAR_PROMENADE_CAPTURE_PAWNSHOP") == "1")
+            if (!Application.isBatchMode && Environment.GetEnvironmentVariable("BAR_PROMENADE_CAPTURE_PAWNSHOP") == "1")
                 Type.GetType("BarPromenade.Editor.CityMapArtReferenceExport, BarPromenade.Editor", true)
                     .GetMethod("FocusGameViewForCapture", Type.EmptyTypes).Invoke(null, null);
 #endif
@@ -62,6 +60,7 @@ namespace BarPromenade.Tests.PlayMode
                 Time.captureDeltaTime = Step;
                 Time.timeScale = 1f;
                 GameSessionState.BeginNewGame();
+                GameSessionState.PreparePawnshopReturn(); // Stream the district containing the tested doorway first.
                 yield return SceneManager.LoadSceneAsync(SceneIds.City, LoadSceneMode.Single);
                 CityGameRoot city = null;
                 yield return WaitFor(() =>
@@ -133,6 +132,7 @@ namespace BarPromenade.Tests.PlayMode
                 }
                 if (capture)
                 {
+                    player.Motor.Teleport(site.ReturnWorld + site.DoorOutward*5f);
                     Vector3 eye = new Vector3(-45.5f, site.Origin.y + 1.72f, -301.3f);
                     follow.SetFixedPose(eye, Quaternion.LookRotation(site.Origin + Vector3.up * 1.65f - eye), 65f);
                     yield return null;
@@ -142,6 +142,25 @@ namespace BarPromenade.Tests.PlayMode
                     yield return null;
                     yield return CaptureExteriorGameView(city, 0, "02-facade-and-street-night");
                     yield return CaptureExteriorGameView(city, 12 * 60, "02-facade-and-street-day", CheckDayLights);
+                    foreach (float side in new[] { -1f, 1f })
+                    {
+                        Vector3 window = site.Origin + site.Rotation * new Vector3(side*2.25f,1.66f,-4.5f);
+                        eye = site.Origin + site.Rotation * new Vector3(side*3.32f,1.68f,-7.05f);
+                        follow.SetFixedPose(eye,Quaternion.LookRotation(window-eye),60f);
+                        yield return null;
+                        yield return CaptureExteriorGameView(city, 12*60, side<0 ? "07-left-window" : "08-right-window");
+                        eye = site.Origin + site.Rotation * new Vector3(side*3.20f,1.67f,-11.3f);
+                        Vector3 sign = site.Origin + site.Rotation * new Vector3(0,2.06f,-4.52f);
+                        follow.SetFixedPose(eye,Quaternion.LookRotation(sign-eye),57f);
+                        yield return null;
+                        yield return CaptureExteriorGameView(city, 0, side<0 ? "09-left-sign" : "10-right-sign");
+                    }
+                    eye = site.Origin + site.Rotation * new Vector3(.48f,1.61f,-6.84f);
+                    follow.SetFixedPose(eye,Quaternion.LookRotation(site.DoorWorld+Vector3.up*1.24f-eye),63f);
+                    yield return null;
+                    yield return CaptureExteriorGameView(city, 12*60, "11-door-threshold");
+                    player.Motor.Teleport(site.ReturnWorld);
+                    Physics.SyncTransforms();
                 }
                 else
                 {
@@ -178,8 +197,30 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(interior.Lights.Any(light => light != null && light.enabled && light.intensity > 0f), Is.True);
                 Assert.That(interior.LightingPresentation.BounceRegionCount, Is.EqualTo(2));
                 if (capture && GraphicsEffectsSettings.CleanReflectionsEnabled)
-                    yield return WaitFor(() => interior.LightingPresentation.Reflection.IsReady,
-                        "The bounded room reflection must be ready before reviewing its glass and metal.");
+                {
+                    // Batch Game views have no repaint loop. Drive the ordinary
+                    // camera presentation and give the probe real rendered frames.
+                    var camera = interior.Camera;
+                    var previousTarget = camera.targetTexture;
+                    var target = Application.isBatchMode ? RenderTexture.GetTemporary(320,180,24) : null;
+                    try
+                    {
+                        if (target != null) camera.targetTexture = target;
+                        yield return WaitFor(() => {
+                            if (target != null)
+                            {
+                                interior.LightingPresentation.PrepareForCamera(camera);
+                                camera.Render();
+                            }
+                            return interior.LightingPresentation.Reflection.IsReady;
+                        }, "The bounded room reflection must be ready before reviewing its glass and metal.");
+                    }
+                    finally
+                    {
+                        camera.targetTexture = previousTarget;
+                        if (target != null) RenderTexture.ReleaseTemporary(target);
+                    }
+                }
                 Physics.SyncTransforms();
                 BoxCollider barrier = interior.World.SolidColliders.Single(collider =>
                     collider.name.EndsWith("Secure staff barrier", StringComparison.Ordinal));
@@ -203,6 +244,33 @@ namespace BarPromenade.Tests.PlayMode
                     yield return CaptureGameView("04-clerk-behind-grille");
                 }
 
+                var furnishings = interior.Model.GetComponentsInChildren<Renderer>().ToDictionary(r => r.name);
+                foreach (var (part, finish) in new[] {
+                    ("PART_Floor","Floor"), ("PART_CounterTop","Counter"), ("PART_TransferTray","Tray"),
+                    ("PART_Case0Glass","Glass"), ("PART_Case1Glass","Glass"), ("PART_RadioDialAndGrille","Zinc") })
+                {
+                    var material = furnishings[part].sharedMaterial;
+                    Assert.That(material.GetTexture("_BaseMap").name, Is.EqualTo("Pawnshop"+finish+"Albedo"),part);
+                    if (finish != "Glass") Assert.That(material.GetTexture("_SceneMaterialResponse").name,
+                        Is.EqualTo("Pawnshop"+finish+"Response"),part);
+                }
+                Bounds tray = furnishings["PART_TransferTray"].bounds;
+                Bounds grille = furnishings["PART_SecurityGrille"].bounds;
+                Assert.That(tray.min.z,Is.LessThan(grille.min.z-.40f));
+                Assert.That(tray.max.z,Is.GreaterThan(grille.max.z+.10f));
+                Assert.That(tray.min.y,Is.EqualTo(furnishings["PART_CounterTop"].bounds.max.y).Within(.004f));
+                if (capture)
+                {
+                    IEnumerator Inspect(Vector3 eye, Vector3 target, float fov, string name)
+                    {
+                        follow.SetFixedPose(eye,Quaternion.LookRotation(target-eye),fov);
+                        yield return null;
+                        yield return CaptureGameView(name);
+                    }
+                    yield return Inspect(new Vector3(.13f,1.58f,-.76f),new Vector3(0,1.17f,.48f),53f,"12-tray");
+                    yield return Inspect(new Vector3(-2.35f,1.43f,-2.63f),new Vector3(-2.64f,.84f,-1.9f),46f,"13-radio");
+                    yield return Inspect(new Vector3(2.16f,1.48f,-2.75f),new Vector3(2.55f,.83f,-1.90f),48f,"14-appliance");
+                }
                 Vector3 tradePosition = interior.Trade.InteractionPosition;
                 tradePosition.y = player.GameObject.transform.position.y;
                 yield return WalkTo(player, tradePosition);
@@ -332,6 +400,33 @@ namespace BarPromenade.Tests.PlayMode
         {
             string path = Path.GetFullPath(Path.Combine("Captures", "Pawnshop", shot + ".png"));
             Directory.CreateDirectory(Path.GetDirectoryName(path));
+            if (Application.isBatchMode)
+            {
+                // The editor Game view may never repaint in batch. Render the active
+                // scene camera for world frames; overlay menu shots require the Game view.
+                if (shot.EndsWith("-placeholder",StringComparison.Ordinal)) yield break;
+                Camera camera = Camera.main;
+                var target = RenderTexture.GetTemporary(1280,720,24);
+                var frame = new Texture2D(1280,720,TextureFormat.RGB24,false);
+                RenderTexture oldTarget = camera.targetTexture, oldActive = RenderTexture.active;
+                try
+                {
+                    camera.targetTexture = target;
+                    camera.Render();
+                    RenderTexture.active = target;
+                    frame.ReadPixels(new Rect(0,0,1280,720),0,0);
+                    frame.Apply();
+                    File.WriteAllBytes(path,frame.EncodeToPNG());
+                }
+                finally
+                {
+                    camera.targetTexture = oldTarget;
+                    RenderTexture.active = oldActive;
+                    RenderTexture.ReleaseTemporary(target);
+                    Object.Destroy(frame);
+                }
+                yield break;
+            }
             DateTime previous = File.Exists(path) ? File.GetLastWriteTimeUtc(path) : DateTime.MinValue;
             ScreenCapture.CaptureScreenshot(path);
             yield return WaitFor(() => File.Exists(path) && File.GetLastWriteTimeUtc(path) > previous,

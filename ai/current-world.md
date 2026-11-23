@@ -2117,15 +2117,12 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   deterministic previous/next,selected bounds/projected muted arrows. Scoped
   leases hide hero/cashier renderers,not roots;all exits restore rendering/input/camera/HUD.
 - `PawnshopInterior`:island pavilion8×9m at west turn(-54,-307),door faces the
-  reference hero(-45.5,-301.3);zebras from both roads/direct2.4m paved door path,
-  road contour unchanged. Shared DoorUse retains
-  dormant City/safe return. Kit room7.4×8.4×3m:counter/grille/locked staff door,
-  two display cases;silent permanent `city.pawnshop.clerk` stands in secure rear room.
+  hero(-45.5,-301.3); two zebras, 2.4m paved entry. DoorUse retains City for return. Kit room7.4×8.4×3m:counter/grille/locked staff door,
+  folded tray, radio/tools and appliance under glass;silent `city.pawnshop.clerk` stands in secure rear room.
   E opens shared-style Buy/Sell stubs;Escape/disable/unload restore input/cursor,
   no cash/item mutation. Six pooled exterior tasks:paired shielded projectors/
   matte sign,entry/side/rear washes. Hall3visible HDRdiffusers/local24/24/18
-  lights/one256shadow;ambient/exposure/bloom unchanged. Shared textures/finite
-  bounce/bounded reflection;art§7.
+  lights/one256shadow;ambient/exposure/bloom unchanged. Fitted finishes on tray, glazing, laminate and lino; finite bounce/bounded reflection;art§7.
 - `supermarket_product_pack_v1`:eight generic text/brand-free bottom-pivot models,
   shared by shop/inventory/Home/cat via one Resources prefab per item. Seven repeatable
   offers:egg2,vodka28,closed stew11,noodles3,loaf4,BeerCan500ml/6,WineBottle750ml/22;

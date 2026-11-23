@@ -10,7 +10,7 @@ Church:`build-church-3d-model.py`+`church_metric_geometry.py`/kit:
 Garden:`build-church-garden-3d-model.py`:geometry/contacts/response/determinism;
 staged `--model-dir`/`--source-dir`/`--texture-dir`, `--no-preview`.
 `Church{,Garden}AssetSetup.BuildOrThrow`:import/bounds/materials.
-`build-pawnshop-3d-model.py`/`--validate-only`:anchors/HDRdiffusers.
+`build-pawnshop-{3d-model,finishes}.py --validate-only`:models/fitted sheets.
 `PawnshopAssetSetup.EnsureAssetsReady`:import/bounds/materials.
 Bench:`build-city-bench-{access-stair,pigeon-statue,flowerbed}-3d-model.py`
 

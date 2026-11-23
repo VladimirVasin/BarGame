@@ -21,17 +21,19 @@ sys.path.insert(0, str(ROOT / "tools"))
 import bar_parts as bp
 import interior_kit as kit
 
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 PALETTE = {
     "Plaster": ((.48, .54, .49, 1), "SupermarketWallPaint", .1, 0),
     "Cream": ((.76, .75, .63, 1), "SupermarketWallPaint", .1, 0),
     "Concrete": ((.32, .35, .33, 1), "CityFringeConcrete", .1, 0),
     "Metal": ((.18, .23, .21, 1), "SupermarketShelfMetal", .23, .4),
-    "PaleMetal": ((.56, .59, .52, 1), "SupermarketShelfMetal", .3, .5),
-    "Floor": ((.60, .64, .58, 1), "SupermarketLinoleum", .16, 0),
+    "PaleMetal": ((.56, .59, .52, 1), "PawnshopZinc", .3, .5),
+    "Floor": ((.62, .66, .59, 1), "PawnshopFloor", .16, 0),
     "Wood": ((.33, .25, .19, 1), "SupermarketCounter", .28, 0),
     "Cardboard": ((.65, .56, .41, 1), "SupermarketCardboard", .06, 0),
-    "Glass": ((.32, .43, .39, .2), "", .64, 0),
+    "Glass": ((.46, .53, .49, .34), "PawnshopGlass", .38, 0),
+    "Tray": ((.69, .72, .69, 1), "PawnshopTray", .32, .38),
+    "CounterLaminate": ((.90, .88, .80, 1), "PawnshopCounter", .28, 0),
     "Dark": ((.07, .09, .085, 1), "", .13, 0),
     "Letters": ((.83, .81, .65, 1), "", .16, 0),
     "Light": ((.88, .91, .79, 1), "", .1, 0),
@@ -91,14 +93,29 @@ class Model:
         uv = mesh.uv_layers.new(name="UVMap")
         # Metric triplanar-style box projection authored into UV0. Existing
         # texture/response sheets retain their own consistent physical scale.
-        pitch = 2.4 if material in ("Floor", "Plaster", "Cream") else 1.2
+        pitch = .53 if material == "PaleMetal" else 2.4 if material in ("Plaster", "Cream") else 1.2
         for face in mesh.polygons:
             n = face.normal
             axis = max(range(3), key=lambda i: abs(n[i]))
-            for loop in face.loop_indices:
-                v = mesh.vertices[mesh.loops[loop].vertex_index].co
-                uv.data[loop].uv = ((v[1] if axis == 0 else v[0]) / pitch,
-                                    (v[1] if axis == 2 else v[2]) / pitch)
+            # Blender's Z axis is height. Glass panels each have their own
+            # protected edges, including the top and the ends of a case.
+            axes = ((1,2),(0,2),(0,1))[axis]
+            corners = [mesh.vertices[mesh.loops[i].vertex_index].co for i in face.loop_indices]
+            if material == "Glass":
+                ranges = [(min(v[k] for v in corners),max(v[k] for v in corners)) for k in axes]
+            for loop,v in zip(face.loop_indices,corners):
+                x,z,y = v
+                if material == "Glass":
+                    coord = tuple((v[k]-lo)/max(hi-lo,.00001) for k,(lo,hi) in zip(axes,ranges))
+                elif material == "Floor":
+                    coord = ((x+3.85)/7.7,(z+4.35)/8.7)
+                elif material == "Tray":
+                    coord = ((x+.376)/.752,(z-.065)/.845)
+                elif material == "CounterLaminate":
+                    coord = ((x+2.76)/5.12,z/1.30)
+                else:
+                    coord = tuple(v[k]/pitch for k in axes)
+                uv.data[loop].uv = coord
         obj = bpy.data.objects.new(name, mesh)
         bpy.context.collection.objects.link(obj)
         obj.parent = parent or self.root
@@ -112,12 +129,27 @@ class Model:
                 "max": [round(max(v[i] for v in vertices), 6) for i in range(3)]}
 
     def signature(self):
-        return hashlib.sha256(json.dumps({"parts": self.parts, "anchors": self.anchors},
+        return hashlib.sha256(json.dumps({"version": VERSION, "parts": self.parts, "anchors": self.anchors, "palette": PALETTE},
                                          sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 
 
 def frame(width, height, thick, center):
     return translated(kit_unity(kit.door_frame(width, height, thick, jamb=.065, architrave=.018)), center)
+
+
+def rail(start, end, diameter, sides=12):
+    from mathutils import Vector
+    delta = Vector(end) - Vector(start)
+    rotation = Vector((0,1,0)).rotation_difference(delta.normalized())
+    vertices, faces = bp.u_cylinder((0,0,0),(diameter,delta.length/2,diameter),sides)
+    centre = (Vector(start) + Vector(end)) / 2
+    return [tuple(centre + rotation @ Vector(v)) for v in vertices], faces
+
+
+def folded_section(profile, z0, z1):
+    area = sum(a*d-c*b for (a,b),(c,d) in zip(profile,profile[1:]+profile[:1]))
+    section = kit.prism(profile if area > 0 else profile[::-1], z1-z0)
+    return translated(kit_unity(section),(0,0,(z0+z1)/2))
 
 
 def door(model, z, width=1.4, height=2.35):
@@ -130,12 +162,18 @@ def door(model, z, width=1.4, height=2.35):
     model.add("PART_DoorKickPlate", box((0, .24, z - .046), (1.1, .26, .018)),
               "PaleMetal", pivot, pivot_position)
     for suffix,side in (("Outside",-1),("Inside",1)):
-        model.add("PART_DoorPull"+suffix,
-                  union([box((.56,1.05,z+side*.065),(.033,.23,.03)),
-                         box((.56,.94,z+side*.035),(.07,.03,.06)),
-                         box((.56,1.16,z+side*.035),(.07,.03,.06))]),
-                  "PaleMetal",pivot,pivot_position)
+        def point(y, reach):
+            return (.56,y,z+side*reach)
+        path = [point(.932,.033),point(.932,.072),point(.948,.089),
+                point(1.152,.089),point(1.168,.072),point(1.168,.033)]
+        handle = [rail(a,b,.024) for a,b in zip(path,path[1:])]
+        for y in (.932,1.168):
+            handle.append(rail(point(y,.027),point(y,.045),.056))
+        model.add("PART_DoorPull"+suffix,union(handle),"PaleMetal",pivot,pivot_position)
     model.add("PART_EntranceFrame", frame(width, height, .2, (0, 0, z)), "Metal")
+    # The foot crosses a shallow folded saddle. Ribs stay below step clearance.
+    model.add("PART_Threshold", union([box((0,.006,z),(1.39,.012,.26),.003)] +
+        [box((0,.014,z+offset),(1.33,.005,.009),.002) for offset in (-.09,-.055,.055,.09)]),"PaleMetal")
 
 
 def glyph(letter, cx, cy, z, w=.45, h=.63):
@@ -246,8 +284,23 @@ def exterior():
                                            box((x+.32,1.25,-4.31),(.40,.22,.18))]),"Wood")
     m.add("PART_SignField",box((0,3.12,-4.55),(5.2,.9,.12),.025),"MatteSign")
     m.add("PART_SignLetters",union([glyph(ch,(i-3)*.62,3.15,-4.63) for i,ch in enumerate("ЛОМБАРД")]),"MatteLetters")
-    m.add("PART_Canopy",union([box((0,2.59,-4.91),(2.1,.10,1.02)),box((-.8,2.40,-4.7),(.055,.35,.055)),
-                               box((.8,2.40,-4.7),(.055,.35,.055))]),"Metal")
+    # Both gussets bolt into the masonry piers outside the moving door leaf.
+    canopy = [box((0,2.595,-4.94),(2.30,.052,1.02)),
+              box((0,2.56,-5.438),(2.31,.079,.032))]
+    for x in (-.99,.99):
+        canopy += [box((x,2.395,-4.514),(.109,.39,.04)),
+                   box((x,2.55,-4.91),(.067,.059,.82)),
+                   rail((x,2.23,-4.54),(x,2.53,-5.29),.044)]
+        for y in (2.27,2.48):
+            canopy.append(rail((x,y,-4.53),(x,y,-4.552),.033,6))
+    m.add("PART_Canopy",union(canopy),"Metal")
+    sills=[]
+    for x in (-2.25,2.25):
+        sills += [bp.u_rotated_about(box((x,.835,-4.55),(1.96,.034,.26)),(-7,0,0),(x,.835,-4.55)),
+                  box((x,.81,-4.677),(1.96,.040,.019),.003)]
+        for side in (-1,1):
+            sills.append(box((x+side*.96,.847,-4.54),(.023,.054,.24),.004))
+    m.add("PART_FoldedWindowSills",union(sills),"PaleMetal")
     m.add("PART_EntrancePractical",box((0,2.52,-4.95),(.62,.035,.22)),"WarmLight",shadow=False)
     m.add("PART_Drainpipe",union([bp.u_cylinder((3.78,1.78,4.55),(.085,1.78,.085)),
                                   box((3.78,.17,4.6),(.13,.22,.18))]),"Metal")
@@ -266,27 +319,84 @@ def exterior():
 
 
 def display_case(m,index,x,z):
-    m.add(f"PART_Case{index}Base",union([box((x,.10,z),(1.8,.2,.74)),box((x,.41,z),(1.72,.45,.67)),
-                                       box((x,.70,z),(1.86,.055,.78))]),"Wood")
-    frameparts=[box((x,.97,z-.37),(1.86,.045,.035)),box((x,.97,z+.37),(1.86,.045,.035))]
-    for dx in (-.9,.9):
-        for dz in (-.36,.36):frameparts.append(box((x+dx,.84,z+dz),(.035,.29,.035)))
-    m.add(f"PART_Case{index}Frame",union(frameparts),"PaleMetal")
-    m.add(f"PART_Case{index}Glass",union([box((x,.99,z),(1.8,.015,.72)),
-                                         box((x,.84,z-.365),(1.8,.27,.012))]),"Glass",shadow=False)
-    # Ordinary text-free objects, passive until inventory/economy has a contract.
+    def piece(dx,y,dz,w,h,d,r=.006):
+        return box((x+dx,y,z+dz),(w,h,d),r)
+    base = [piece(0,.077,0,1.73,.154,.665),piece(0,.411,0,1.79,.515,.70),
+            piece(0,.696,0,1.86,.063,.78)]
+    for dx in (-.455,.455):
+        base.append(piece(dx,.405,-.357,.86,.42,.021))
+    m.add(f"PART_Case{index}Base",union(base),"Wood")
+    supports=[]
+    for dx in (-.907,.907):
+        for dz in (-.36,.36):
+            supports += [piece(dx,.869,dz,.032,.306,.032),piece(dx,.743,dz,.062,.036,.064)]
+    for y in (.740,1.014):
+        for dz in (-.36,.36):
+            supports.append(piece(0,y,dz,1.838,.022,.032))
+        for dx in (-.906,.906):
+            supports.append(piece(dx,y,0,.030,.022,.70))
+    m.add(f"PART_Case{index}Frame",union(supports),"PaleMetal")
+    panels = [piece(0,1.015,0,1.795,.008,.692,.002)]
+    panels += [piece(0,.878,dz,1.79,.243,.008,.002) for dz in (-.36,.36)]
+    panels += [piece(dx,.878,0,.008,.243,.683,.002) for dx in (-.907,.907)]
+    m.add(f"PART_Case{index}Glass",union(panels),"Glass",shadow=False)
     if index==0:
-        m.add("PART_DisplayRadio",union([box((x-.35,.82,z),(.48,.20,.22)),box((x-.35,.84,z-.125),(.31,.12,.018)),
-                                         box((x-.12,.84,z-.14),(.04,.04,.025))]),"Metal")
-        m.add("PART_DisplayTools",union([box((x+.35,.77,z),(.42,.06,.11)),box((x+.52,.80,z),(.12,.12,.23))]),"PaleMetal")
+        # A portable radio stands on two feet and looks into the aisle.
+        rx=-.27
+        radio=[piece(rx,.842,0,.498,.204,.181,.017)]
+        for off in (-.165,.165):
+            radio.append(piece(rx+off,.734,0,.072,.014,.12,.003))
+        radio += [piece(rx+off,.956,0,.019,.042,.021) for off in (-.14,.14)]
+        radio.append(piece(rx,.979,0,.296,.021,.023))
+        m.add("PART_DisplayRadio",union(radio),"Wood")
+        m.add("PART_RadioFace",union([piece(rx-.064,.855,-.097,.288,.132,.014),
+                                     piece(rx+.158,.891,-.098,.115,.045,.018,.004)]),"Dark")
+        face=[]
+        for row in range(10):
+            face.append(piece(rx-.064,.801+row*.012,-.108,.270,.006,.010,.002))
+        for i in range(8):
+            face.append(piece(rx+.111+i*.013,.892,-.109,.003,.011 if i%2 else .019,.002,.0005))
+        for dx in (.124,.195):
+            face.append(rail((x+rx+dx,.816,z-.088),(x+rx+dx,.816,z-.119),.043,16))
+        m.add("PART_RadioDialAndGrille",union(face),"PaleMetal")
+        # Two drop-forged plier jaws share a pin. The screwdriver has a turned grip.
+        tool = [bp.u_rotated_about(piece(.34,.7395,0,.27,.024,.038), (0,a,0), (x+.42,.7395,z)) for a in (-15,15)]
+        for sign in (-1,1):
+            tool.append(bp.u_rotated_about(piece(.47,.740,sign*.009,.095,.025,.026),(0,sign*17,0),(x+.42,.7395,z)))
+        tool.append(rail((x+.42,.749,z),(x+.42,.765,z),.032))
+        tool.append(rail((x+.12,.744,z+.114),(x+.41,.744,z+.114),.012))
+        m.add("PART_DisplayTools",union(tool),"Metal")
+        m.add("PART_ScrewdriverGrip",rail((x+.40,.748,z+.114),(x+.52,.748,z+.114),.041),"Dark")
     else:
-        m.add("PART_DisplayAppliance",union([box((x,.80,z),(.52,.15,.29)),box((x,.89,z+.03),(.43,.035,.22)),
-                                             box((x-.2,.86,z-.17),(.05,.05,.025)),box((x+.2,.86,z-.17),(.05,.05,.025))]),"PaleMetal")
+        # A single cast hotplate sits in a raised enamel rim. Its working face
+        # has concentric grooves turned into one solid radial section.
+        body=[piece(0,.807,0,.50,.125,.278,.023),piece(0,.879,0,.472,.032,.248,.013)]
+        for dx in (-.18,.18):
+            for dz in (-.082,.082):
+                body.append(piece(dx,.737,dz,.058,.019,.040))
+        m.add("PART_DisplayAppliance",union(body),"PaleMetal")
+        profile=[(.109,.893),(.111,.899),(.107,.912)]
+        for radius in (.095,.075,.055,.035):
+            profile.extend([(radius+.003,.913),(radius,.909),(radius-.003,.913)])
+        profile.append((.014,.913))
+        burner=translated(kit_unity(kit.lathe(profile,32)),(x-.076,0,z))
+        hardware=[burner,rail((x+.15,.806,z-.129),(x+.15,.806,z-.170),.055,16)]
+        for row in range(6):
+            hardware.append(piece(.143,.896,-.036+row*.015,.083,.004,.004,.001))
+        hardware.append(piece(.150,.815,-.170,.004,.022,.005,.001))
+        m.add("PART_ApplianceHardware",union(hardware),"Dark")
 
 
 def interior():
     m=Model("Interior")
-    m.add("PART_Floor",box((0,-.07,0),(7.7,.14,8.7),.01),"Floor")
+    # Four laid rolls share a supporting bed. Two staggered end cuts cross the room.
+    rolls=[box((0,-.074,0),(7.70,.132,8.70))]
+    for left,right,cut in ((-3.85,-1.83,-.62),(-1.83,.12,None),(.12,2.05,1.14),(2.05,3.85,None)):
+        stops=[-4.35,4.35] if cut is None else [-4.35,cut,4.35]
+        for near,far in zip(stops,stops[1:]):
+            rolls.append(box(((left+right)/2,-.004,(far+near)/2),
+                             (right-left-.002,.008,far-near-.002),.001))
+    m.add("PART_Floor",union(rolls),"Floor")
     m.add("PART_Ceiling",box((0,3.06,0),(7.7,.12,8.7),.01),"Cream")
     m.add("PART_Walls",union([box((-3.775,1.5,0),(.15,3,8.4)),box((3.775,1.5,0),(.15,3,8.4)),
                               box((0,1.5,4.275),(7.7,3,.15)),
@@ -295,7 +405,7 @@ def interior():
                                                                                  kit.Opening(2.25,1.8,2.55,.85)])),(0,0,-4.275))]),"Cream")
     m.add("PART_LowerWallPaint",union([box((-3.688,.52,0),(.022,1.04,8.4)),box((3.688,.52,0),(.022,1.04,8.4)),
                                         box((0,.52,4.188),(7.4,1.04,.022)),
-                                        box((-2.235,.52,-4.188),(2.93,1.04,.022)),box((2.235,.52,-4.188),(2.93,1.04,.022))]),"Plaster")
+                                        box((-2.235,.423,-4.188),(2.93,.846,.022)),box((2.235,.423,-4.188),(2.93,.846,.022))]),"Plaster")
     trim=[kit.joint_box(center,size,.010) for center,size in (
         ((-3.67,.07,0),(.045,.14,8.4)), ((3.67,.07,0),(.045,.14,8.4)),
         ((0,.07,4.17),(7.34,.14,.045)), ((-2.23,.07,-4.17),(2.9,.14,.045)),
@@ -313,7 +423,13 @@ def interior():
     m.add("PART_CounterBody",union([box((-.2,.10,.46),(4.94,.2,.58)),
                                     box((-.2,.55,.46),(5,.80,.68)),
                                     box((-1.65,.55,.105),(1.4,.63,.03)),box((.2,.55,.105),(1.4,.63,.03)),box((1.75,.55,.105),(1.2,.63,.03))]),"Plaster")
-    m.add("PART_CounterTop",kit.joint_box((-.2,1.02,.425),(5.12,.06,.84),.019),"Wood")
+    # Three fitted laminate sections above a continuous substrate and bullnose edging.
+    top = [box((-.2,.986,.425),(5.12,.072,.84),.009)]
+    for x,w in ((-1.83,1.86),(-.1,1.596),(1.53,1.656)):
+        top.append(box((x,1.036,.425),(w,.028,.826),.005))
+    top.append(box((-.2,1.021,.015),(5.12,.055,.032),.009))
+    top.append(box((-.2,1.022,1.073),(5.12,.056,.46),.006))
+    m.add("PART_CounterTop",union(top),"CounterLaminate")
     # Staff door is a real opaque leaf at the right, with a visible lock.
     m.add("PART_PartitionSides",union([box((-3.25,1.5,.70),(.9,3,.20)),box((3.53,1.5,.70),(.34,3,.20)),
                                        box((2.98,2.69,.70),(.77,.62,.20)),box((-.2,2.91,.70),(5.2,.18,.20))]),"Plaster")
@@ -326,11 +442,28 @@ def interior():
         x=-2.65+i*.14
         low=1.43 if abs(x)<.4 else 1.06
         bars.append(bp.u_cylinder((x,(low+2.85)/2,.69),(.015,(2.85-low)/2,.015),8))
-    bars.extend([box((-.13,2.84,.69),(5.35,.045,.065)),box((-.13,1.70,.69),(5.35,.025,.035)),
-                 box((-.13,1.08,.69),(5.35,.035,.065)),box((0,1.43,.69),(.84,.035,.065))])
+    # A channel frame returns round the opening. The bottom rail stops at the tray.
+    for x in (-2.76,2.47):
+        bars.append(box((x,1.95,.69),(.064,1.80,.072),.009))
+    bars += [box((-.145,y,.69),(5.29,.045,.072),.007) for y in (1.70,2.84)]
+    for left,right in ((-2.78,-.41),(.41,2.50)):
+        bars.append(box(((left+right)/2,1.075,.69),(right-left,.048,.066),.008))
+    bars.append(box((0,1.43,.69),(.86,.045,.072),.008))
+    for x in (-.419,.419):
+        bars.append(box((x,1.25,.69),(.031,.39,.072),.006))
     m.add("PART_SecurityGrille",union(bars),"Metal")
-    m.add("PART_TransferTray",union([box((0,1.06,.35),(.73,.018,.47)),box((-.36,1.10,.35),(.018,.08,.47)),
-                                    box((.36,1.10,.35),(.018,.08,.47))]),"PaleMetal")
+    clamps=[]
+    for x in (-2.70,-1.52,-.48,.48,1.62,2.42):
+        clamps.append(box((x,1.059,.69),(.115,.018,.145),.003))
+        for z in (.64,.74):
+            clamps.append(rail((x,1.065,z),(x,1.077,z),.025,6))
+    m.add("PART_GrilleFeet",union(clamps),"PaleMetal")
+    # One folded steel trough runs through the grille. Both edges turn out and back.
+    side=[(.320,1.055),(.335,1.063),(.350,1.124),(.355,1.133),
+          (.366,1.136),(.375,1.130),(.376,1.121),(.371,1.120),
+          (.370,1.126),(.363,1.130),(.357,1.125),(.342,1.060),(.323,1.050)]
+    profile=[(-x,y) for x,y in reversed(side)] + side
+    m.add("PART_TransferTray",folded_section(profile,.065,.91),"Tray")
     display_case(m,0,-2.55,-1.9);display_case(m,1,2.55,-1.9)
     # Back room: restrained working objects; no provenance, labels or clutter.
     m.add("PART_BackShelving",union([box((-2.55,.98,3.75),(1.65,.06,.62)),box((-2.55,.25,3.75),(1.65,.06,.62)),
@@ -344,7 +477,7 @@ def interior():
                                   [box((-1.6,1.97+j*.06,4.10),(.53,.023,.025)) for j in range(5)]),"Metal")
     m.add("PART_CashRegister",union([box((1.25,1.14,.85),(.43,.19,.33)),box((1.25,1.28,.96),(.34,.12,.08)),
                                     box((1.25,1.25,.72),(.32,.025,.13))]),"Metal")
-    m.add("PART_WorkMat",box((0,1.059,.92),(.90,.012,.28)),"Dark")
+    m.add("PART_WorkMat",box((0,1.056,1.07),(.90,.012,.28)),"Dark")
     for name,x,z in (("PublicLeft",-1.9,-1.4),("PublicRight",1.9,-1.4),("Clerk",0,1.65)):
         m.add("PART_LightHousing"+name,box((x,2.91,z),(1.15,.12,.29)),"Metal")
         m.add("PART_LightDiffuser"+name,box((x,2.84,z),(1.05,.025,.23)),"Light",shadow=False)
@@ -409,7 +542,7 @@ def preview(model, directory):
                 bsdf.inputs["Emission Color"].default_value=color
                 bsdf.inputs["Emission Strength"].default_value=2
             if texture:
-                folder="Textures" if texture.startswith("City") else "Supermarket/Textures"
+                folder="Pawnshop/Textures" if texture.startswith("Pawnshop") else "Textures" if texture.startswith("City") else "Supermarket/Textures"
                 path=ROOT/"Assets/Resources"/folder/(texture+"Albedo.png")
                 image=mat.node_tree.nodes.new("ShaderNodeTexImage");image.image=bpy.data.images.load(str(path))
                 mix=mat.node_tree.nodes.new("ShaderNodeMixRGB");mix.blend_type="MULTIPLY"

@@ -15,7 +15,7 @@ namespace BarPromenade.Editor
     {
         public const string ModelDirectory = "Assets/Pawnshop/Models/";
         public const string ResourceDirectory = "Assets/Resources/Pawnshop/";
-        private const string SetupVersion = "pawnshop-2";
+        private const string SetupVersion = "pawnshop-3";
         private static bool building;
 
         static PawnshopAssetSetup() { EditorApplication.delayCall += EnsureWhenReady; }
@@ -145,11 +145,16 @@ namespace BarPromenade.Editor
             if (!string.IsNullOrEmpty(spec.texture))
             {
                 bool city = spec.texture.StartsWith("City", StringComparison.Ordinal);
-                string folder = city ? "Assets/Resources/Textures/" : "Assets/Resources/Supermarket/Textures/";
+                bool fitted = spec.texture.StartsWith("Pawnshop", StringComparison.Ordinal);
+                string folder = fitted ? ResourceDirectory + "Textures/" :
+                    city ? "Assets/Resources/Textures/" : "Assets/Resources/Supermarket/Textures/";
                 Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>(folder + spec.texture + "Albedo.png");
                 if (texture == null) throw new InvalidOperationException("Missing shared pawnshop texture " + spec.texture);
                 material.SetTexture("_BaseMap", texture);
-                Texture2D response = city ? null : AssetDatabase.LoadAssetAtPath<Texture2D>(folder + spec.texture + "Response.png");
+                Texture2D response = city || spec.name == "Glass" ? null :
+                    AssetDatabase.LoadAssetAtPath<Texture2D>(folder + spec.texture + "Response.png");
+                if (fitted && spec.name != "Glass" && response == null)
+                    throw new InvalidOperationException("Missing pawnshop response for " + spec.texture);
                 if (material.HasProperty("_SceneMaterialResponse"))
                 {
                     material.SetTexture("_SceneMaterialResponse", response);
@@ -167,11 +172,11 @@ namespace BarPromenade.Editor
             }
             if (spec.name == "Glass")
             {
-                material.EnableKeyword("_EMISSION");
-                material.SetColor("_EmissionColor", new Color(spec.color[0], spec.color[1], spec.color[2]) * .08f);
-            }
-            if (spec.name == "Glass")
-            {
+                // Display glass takes its colour from the room. Direct specular
+                // on both the top and front panes obscures the objects behind them.
+                material.SetColor("_EmissionColor", Color.black);
+                material.SetFloat("_SpecularHighlights", 0f);
+                material.EnableKeyword("_SPECULARHIGHLIGHTS_OFF");
                 material.SetFloat("_Surface", 1f);
                 material.SetFloat("_Blend", 0f);
                 material.SetFloat("_SrcBlend", (float)BlendMode.SrcAlpha);

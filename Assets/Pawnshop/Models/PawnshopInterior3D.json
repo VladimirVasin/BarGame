@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "design_id": "pawnshop_interior_v1",
-  "generator_version": "1.0.0",
-  "build_signature": "b7a5a1410973f5f877d11960dd0351a3fdbc6d62bb7319e81ce0851cb870fa40",
+  "generator_version": "1.1.0",
+  "build_signature": "acd103212b31804847f2b2a805614736643e9b71ff06250271cbc374bce2a4f1",
   "bounds_m": {
     "min": [
       -3.85,
@@ -15,8 +15,8 @@
       4.35
     ]
   },
-  "triangle_count": 5560,
-  "vertex_count": 3088,
+  "triangle_count": 10104,
+  "vertex_count": 5604,
   "parts": [
     {
       "name": "PART_Floor",
@@ -69,6 +69,11 @@
       "shadows": true
     },
     {
+      "name": "PART_Threshold",
+      "material": "PaleMetal",
+      "shadows": true
+    },
+    {
       "name": "PART_InsideWindowFrame0",
       "material": "Metal",
       "shadows": true
@@ -105,7 +110,7 @@
     },
     {
       "name": "PART_CounterTop",
-      "material": "Wood",
+      "material": "CounterLaminate",
       "shadows": true
     },
     {
@@ -134,8 +139,13 @@
       "shadows": true
     },
     {
-      "name": "PART_TransferTray",
+      "name": "PART_GrilleFeet",
       "material": "PaleMetal",
+      "shadows": true
+    },
+    {
+      "name": "PART_TransferTray",
+      "material": "Tray",
       "shadows": true
     },
     {
@@ -155,12 +165,27 @@
     },
     {
       "name": "PART_DisplayRadio",
-      "material": "Metal",
+      "material": "Wood",
+      "shadows": true
+    },
+    {
+      "name": "PART_RadioFace",
+      "material": "Dark",
+      "shadows": true
+    },
+    {
+      "name": "PART_RadioDialAndGrille",
+      "material": "PaleMetal",
       "shadows": true
     },
     {
       "name": "PART_DisplayTools",
-      "material": "PaleMetal",
+      "material": "Metal",
+      "shadows": true
+    },
+    {
+      "name": "PART_ScrewdriverGrip",
+      "material": "Dark",
       "shadows": true
     },
     {
@@ -181,6 +206,11 @@
     {
       "name": "PART_DisplayAppliance",
       "material": "PaleMetal",
+      "shadows": true
+    },
+    {
+      "name": "PART_ApplianceHardware",
+      "material": "Dark",
       "shadows": true
     },
     {
@@ -380,19 +410,19 @@
         0.52,
         1
       ],
-      "texture": "SupermarketShelfMetal",
+      "texture": "PawnshopZinc",
       "smoothness": 0.3,
       "metallic": 0.5
     },
     {
       "name": "Floor",
       "color": [
-        0.6,
-        0.64,
-        0.58,
+        0.62,
+        0.66,
+        0.59,
         1
       ],
-      "texture": "SupermarketLinoleum",
+      "texture": "PawnshopFloor",
       "smoothness": 0.16,
       "metallic": 0
     },
@@ -423,13 +453,37 @@
     {
       "name": "Glass",
       "color": [
-        0.32,
-        0.43,
-        0.39,
-        0.2
+        0.46,
+        0.53,
+        0.49,
+        0.34
       ],
-      "texture": "",
-      "smoothness": 0.64,
+      "texture": "PawnshopGlass",
+      "smoothness": 0.38,
+      "metallic": 0
+    },
+    {
+      "name": "Tray",
+      "color": [
+        0.69,
+        0.72,
+        0.69,
+        1
+      ],
+      "texture": "PawnshopTray",
+      "smoothness": 0.32,
+      "metallic": 0.38
+    },
+    {
+      "name": "CounterLaminate",
+      "color": [
+        0.9,
+        0.88,
+        0.8,
+        1
+      ],
+      "texture": "PawnshopCounter",
+      "smoothness": 0.28,
       "metallic": 0
     },
     {

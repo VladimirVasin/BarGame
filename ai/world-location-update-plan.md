@@ -124,12 +124,9 @@ Source-preservation: review owners/coverage без повтора действи
 
 ### 13. Жилые улицы, балконы, дворовые карманы — Current
 
-- [x] `City`: нижние этажи/входы/балконы/четыре кармана осмотрены;
-  плотность/опоры/проходы сохранены.
-- [x] Прачечная: L-kit/боковой вход/машины/сортировка/корзина;
-  `CITY LAUNDRY ART CONTRACT OK`/`CityLaundry` passed.
-- [x] Вывеска/свет/материалы: `CityLaundry` passed;
-  day/night/rain/gray/intox приняты.
+- [x] `City`: входы, балконы, опоры и проходы четырёх карманов.
+- [x] Прачечная: L-kit, машины, сортировка, корзина, боковой вход и вывеска. `CITY LAUNDRY ART CONTRACT OK`/`CityLaundry`: day/night/rain/gray/intox.
+- [x] Ломбард: окна, дверь, лоток, радио, меню и возврат — `CityPawnshop_EnterOpenBothStubsAndReturn`.
 
 Сохранение в 13–29: кадры/source-контракты действий/коллизии/owners,
 без нового runtime Pass сценок. Свежие проверки названы отдельно.
