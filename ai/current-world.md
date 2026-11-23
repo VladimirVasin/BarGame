@@ -470,9 +470,9 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   toes. Upper/south tongues reach 1.6–3.6 m. West utility gaps rise 0.09 m within
   0.35 m, with full-width material/boulders. Terrain sampling matches physics.
   Doors/courts/routes stay clear. The crest spans
-  `10 m` river mouth; rock stops both banks. A gate-free `8 x 5.5 m` portal at `yard-south-west-access` has a raised,
-  terrain-overlapping floor and closed non-coplanar lining joints. Its `72 m`
-  shell stays straight/physical for `12 m`, then bends west to hide its end
+  `10 m` river mouth; rock stops both banks. The open `8 x 5.5 m` south portal has cut voussoirs and damp plinths.
+  A staggered barrel covers the first `12 m` above the terrain-overlapping floor.
+  The `72 m` shell then bends west to hide its end
   and the backdrop. Navigation reaches `11 m`; crossing `8 m` shows the
   unavailable-travel thought and walks the ordinary rig back to `6.5 m`.
   No tunnel transition handler or cave interaction. North remains sea;
@@ -490,8 +490,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   road cap beside lot `[12,11]` as an ordinary physical `4 m + 4 m` L. It does
   not add ground or extend a boundary along the yards/waterfront, so their
   authored approaches remain open.
-  Portal, physical entry and visual continuation pieces retain
-  `RuntimePrimitiveLit`;
+  The portal and fittings share the SouthTunnel stone, concrete and iron atlas;
 - The default-only `CityFringeYardPlan` fits five yards to their bounds, access
   and terrain. West/south yards hold drains, retaining walls, poles, cables
   and repair pockets. Dense boulder belts rise to the cliff, clear of routes and
@@ -500,8 +499,8 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   seeded anchors (`4–14 m`, gaps ≤`40 m`), then paired traces or flood drainage
   and retaining works (`14–22 m`). No broad track overlays.
   Macro anchors: stepped culvert terrace, industrial repair frame, `6.9 m`
-  tunnel forecourt (`>6 m` clear lane, embedded marks, two grounded concrete
-  return wings, two-post frame/crown floodlight), caged floodworks/gauge.
+  tunnel forecourt (`>6 m` clear lane, pressed ruts, slotted cross drain,
+  stepped formwork wings, two-post cantilever/crown floodlight), caged floodworks/gauge.
   Four measured sheets: compacted forefield, aggregate, board-formed concrete,
   old masonry. Four emissive practicals stay outside the combined geometry;
   `CityNightAtmosphere` gives each supported anchor a permanent Light. The tunnel

@@ -7,10 +7,8 @@ namespace BarPromenade
     /// <summary>Authored, UV-mapped assets placed on the coastal plan's original anchors.</summary>
     internal sealed class CityBoatRentalArt
     {
-        private readonly Dictionary<string, MeshFilter> meshes = new(StringComparer.Ordinal);
+        private readonly CityImportedMeshKit kit = new("City/BoatRental", "Hut");
         private readonly Material finish;
-        private readonly Quaternion inverseBasis;
-        private readonly float unit;
         private readonly List<RuntimeMeshPlacement> pier = new();
         private readonly List<RuntimeMeshPlacement> slip = new();
         private readonly Transform parent;
@@ -18,26 +16,8 @@ namespace BarPromenade
         internal CityBoatRentalArt(Transform parent)
         {
             this.parent = parent;
-            var kit = Resources.Load<GameObject>("City/BoatRental");
             finish = Resources.Load<Material>("City/Surfaces/BoatRental");
-            if (!kit || !finish) throw new InvalidOperationException("Missing boat rental station assets.");
-            foreach (MeshFilter part in kit.GetComponentsInChildren<MeshFilter>(true))
-                meshes.Add(part.name, part);
-            Transform owner = meshes["Hut"].transform.parent;
-            Vector3 forward = owner.Find("AxisForward").position - owner.position;
-            Vector3 up = owner.Find("AxisUp").position - owner.position;
-            inverseBasis = Quaternion.Inverse(Quaternion.LookRotation(forward, up));
-            unit = up.magnitude;
-        }
-
-        private RuntimeMeshPlacement Place(string name, Vector3 at, Quaternion rotation, Vector3 size)
-        {
-            MeshFilter part = meshes[name];
-            Quaternion axes = inverseBasis * part.transform.rotation;
-            Vector3 local = Quaternion.Inverse(axes) * size;
-            Vector3 scale = Vector3.Scale(part.transform.lossyScale / unit,
-                new Vector3(Mathf.Abs(local.x), Mathf.Abs(local.y), Mathf.Abs(local.z)));
-            return new RuntimeMeshPlacement(part.sharedMesh, at, rotation * axes, scale);
+            if (!finish) throw new InvalidOperationException("Missing boat rental station finish.");
         }
 
         private void Draw(string name, List<RuntimeMeshPlacement> placements, CityWetSurfaceKind response)
@@ -69,22 +49,22 @@ namespace BarPromenade
             return surface;
         }
 
-        internal void Hut(Vector3 ground) => Single("Hut", Place("Hut", ground, Quaternion.identity, Vector3.one), CityWetSurfaceKind.WeatheredTimber);
+        internal void Hut(Vector3 ground) => Single("Hut", kit.Place("Hut", ground, Quaternion.identity, Vector3.one), CityWetSurfaceKind.WeatheredTimber);
 
         internal void Hull(int ordinal, CitySeacoastBoatVariant variant, Vector3 ground, Quaternion facing)
         {
-            var hull = Place("Hull" + (int)variant, ground, facing, Vector3.one);
+            var hull = kit.Place("Hull" + (int)variant, ground, facing, Vector3.one);
             var host = Single("Hull " + ordinal, hull, CityWetSurfaceKind.WeatheredTimber);
             host.AddComponent<MeshCollider>().sharedMesh = hull.Mesh;
             FootstepGround.Stamp(host.transform, FootstepGroundKind.Wood);
         }
 
         internal void Oar(Vector3 ground, Quaternion facing) =>
-            Single("Oar", Place("Oar", ground, facing, Vector3.one), CityWetSurfaceKind.WeatheredTimber);
+            Single("Oar", kit.Place("Oar", ground, facing, Vector3.one), CityWetSurfaceKind.WeatheredTimber);
 
         internal Renderer Bulb(Transform assembly, Vector3 at)
         {
-            var bulb = Place("Bulb", at, Quaternion.identity, Vector3.one);
+            var bulb = kit.Place("Bulb", at, Quaternion.identity, Vector3.one);
             return Instance("Hut Lamp Bulb", assembly, bulb, CityNightResources.EmissiveMaterial);
         }
 
@@ -95,10 +75,10 @@ namespace BarPromenade
             switch (part.Kind)
             {
                 case CitySeacoastPartKind.HutSign:
-                    Single("Printed Sign", Place("Sign", at, part.Rotation, size), CityWetSurfaceKind.PaintedSteel);
+                    Single("Printed Sign", kit.Place("Sign", at, part.Rotation, size), CityWetSurfaceKind.PaintedSteel);
                     return true;
                 case CitySeacoastPartKind.PierDeck:
-                    pier.Add(Place("Deck", at, part.Rotation, new Vector3(size.x/2.2f, size.y/.12f, size.z)));
+                    pier.Add(kit.Place("Deck", at, part.Rotation, new Vector3(size.x/2.2f, size.y/.12f, size.z)));
                     return true;
                 case CitySeacoastPartKind.PierPile:
                     float bottom = at.y - size.y*.5f, top = at.y + size.y*.5f;
@@ -112,11 +92,11 @@ namespace BarPromenade
                     for (int bay = 0; bay < bays; bay++)
                     {
                         Vector3 midpoint = at + part.Rotation * Vector3.forward * ((bay+.5f)*pitch-size.z*.5f);
-                        pier.Add(Place("Rail", midpoint, part.Rotation, new Vector3(size.x/.08f, size.y/.10f, pitch-.006f)));
+                        pier.Add(kit.Place("Rail", midpoint, part.Rotation, new Vector3(size.x/.08f, size.y/.10f, pitch-.006f)));
                     }
                     return true;
                 case CitySeacoastPartKind.Slipway:
-                    slip.Add(Place("Slipway", at, part.Rotation, new Vector3(size.x/4f, size.y/.18f, size.z/1.70f)));
+                    slip.Add(kit.Place("Slipway", at, part.Rotation, new Vector3(size.x/4f, size.y/.18f, size.z/1.70f)));
                     return true;
                 default:
                     return false;
@@ -126,7 +106,7 @@ namespace BarPromenade
             {
                 if (high <= low) return;
                 var centre = new Vector3(at.x,(low+high)*.5f,at.z);
-                pier.Add(Place(name, centre, part.Rotation, new Vector3(size.x/.26f, high-low, size.z/.26f)));
+                pier.Add(kit.Place(name, centre, part.Rotation, new Vector3(size.x/.26f, high-low, size.z/.26f)));
             }
         }
 

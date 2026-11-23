@@ -214,9 +214,8 @@ Source-preservation: review owners/coverage без повтора действи
 
 ### 28. Окраинные дворы и горная граница City — Current
 
-- [x] Дворы/подпоры/дренаж/колея/запасы/чаша осмотрены.
-  `CityFringeApproaches`: четыре motor in/out/stop пройдены; у тоннеля
-  проверен настоящий край corridor `WalkableDepth`, без новой калитки.
+- [x] Дворы, подпоры, дренаж и чаша. `CityFringeApproaches` проверяет пути и край `WalkableDepth`.
+  `CitySouthTunnel` — колея, решётка, консоль, кладка до изгиба и пеший разворот.
 
 ### 29. Восточный пост и дальняя долина — Current: сохранение
 

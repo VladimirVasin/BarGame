@@ -1117,15 +1117,19 @@ namespace BarPromenade
             for (int index = -2; index <= 2; index++)
             {
                 Vector3 bar = drainCenter + tangent * (index * 1.12f);
+                const float halfDepth = .27f;
                 float ground = SampleAreaTop(layout, surfaces, ToXZ(bar));
+                float back = SampleAreaTop(layout, surfaces, ToXZ(bar - axis * halfDepth));
+                float front = SampleAreaTop(layout, surfaces, ToXZ(bar + axis * halfDepth));
+                Vector3 grade = axis * (2f * halfDepth) + Vector3.up * (front - back);
                 parts.Add(new CityFringeYardPartDescriptor(
                     $"{areaId}-drain-cover-{index + 2:00}",
                     areaId,
                     CityFringeYardPartKind.DrainCover,
                     CityFringeYardStyle.Iron,
-                    new Vector3(bar.x, ground + 0.025f, bar.z),
-                    Quaternion.LookRotation(axis, Vector3.up),
-                    new Vector3(0.10f, 0.07f, 1.18f),
+                    new Vector3(bar.x, ground + .006f, bar.z),
+                    Quaternion.LookRotation(grade, Vector3.up),
+                    new Vector3(1.115f, .07f, 2f * halfDepth),
                     false));
             }
         }

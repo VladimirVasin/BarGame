@@ -956,7 +956,7 @@ namespace BarPromenade.Tests.EditMode
                     "Mountain Tunnel Portal");
                 Assert.That(
                     portal.GetComponent<MeshRenderer>().sharedMaterial,
-                    Is.EqualTo(GroundSurfaceAppearance.SharedMaterial),
+                    Is.EqualTo(Resources.Load<Material>("City/Surfaces/SouthTunnel")),
                     "The close tunnel portal must not dither with the ridge.");
                 CityMountainTunnelDescriptor tunnel = plan.Tunnel;
                 Vector3 tunnelAxis = tunnel.Axis.normalized;

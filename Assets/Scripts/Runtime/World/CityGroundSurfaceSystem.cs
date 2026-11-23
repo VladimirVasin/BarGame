@@ -97,6 +97,9 @@ namespace BarPromenade
         internal static void Register(Renderer renderer, int priority = 10, bool paint = false, bool dynamic = false)
             => Register(renderer, priority, paint, dynamic, null);
 
+        internal static void RegisterPaintRelief(Renderer renderer, int priority, Func<Vector2, float> depthAtUv)
+            => Register(renderer, priority, true, false, null, depthAtUv);
+
         internal static void Register(GameObject source, IReadOnlyList<CityGroundSurfaceRegion> regions, bool dynamic = false)
         {
             if (source == null) return;
@@ -112,7 +115,7 @@ namespace BarPromenade
         }
 
         private static void Register(Renderer renderer, int priority, bool paint, bool dynamic,
-            IReadOnlyList<CityGroundSurfaceRegion> regions)
+            IReadOnlyList<CityGroundSurfaceRegion> regions, Func<Vector2, float> depthAtUv = null)
         {
             if (renderer == null) return;
             CityGroundSurfaceSystem system = renderer.GetComponentInParent<CityGroundSurfaceSystem>(true);
@@ -121,10 +124,10 @@ namespace BarPromenade
                 if (system.sources[i].Renderer == renderer)
                 {
                     Source existing = system.sources[i];
-                    existing.Priority = priority; existing.Paint = paint; existing.SetRegions(regions);
+                    existing.Priority = priority; existing.Paint = paint; existing.PaintDepth = depthAtUv; existing.SetRegions(regions);
                     return;
                 }
-            var source = new Source(renderer, priority, paint, dynamic, regions);
+            var source = new Source(renderer, priority, paint, dynamic, regions) { PaintDepth = depthAtUv };
             system.Capture(source);
             if (system.sealedSurface)
             {
@@ -602,7 +605,8 @@ namespace BarPromenade
                             if (Mathf.Abs(y - centre.y) > MaximumPaintProjectionDistance) continue;
                             FootstepGroundKind paintKind = styles[part.Surface].Kind;
                             int style = ProjectedStyle(part.Surface, paintKind == FootstepGroundKind.None ? styles[support.Surface].Kind : paintKind);
-                            projected.Add(new Triangle(plane.Project(part.A), plane.Project(part.B), plane.Project(part.C), style));
+                            projected.Add(new Triangle(plane.Project(part.A, source.PaintDepth), plane.Project(part.B, source.PaintDepth),
+                                plane.Project(part.C, source.PaintDepth), style));
                         }
                     }
                 }
@@ -683,9 +687,9 @@ namespace BarPromenade
             private readonly Vector3 Origin, RawNormal, Normal;
             internal float Height(Vector3 position) => Origin.y - (RawNormal.x * (position.x - Origin.x) +
                 RawNormal.z * (position.z - Origin.z)) / RawNormal.y;
-            internal Vertex Project(Vertex vertex)
+            internal Vertex Project(Vertex vertex, Func<Vector2, float> depthAtUv)
             {
-                Vector3 position = vertex.Position; position.y = Height(position);
+                Vector3 position = vertex.Position; position.y = Height(position) - (depthAtUv?.Invoke(vertex.Uv0) ?? 0f);
                 return new Vertex(position, Normal, vertex.Uv0, vertex.RoadCoordinates, vertex.Color);
             }
         }
@@ -744,6 +748,8 @@ namespace BarPromenade
                     ? JointMaterial : original;
                 for (int j = 0; j < indices[i].Count; j += 3) kinds.Add(styles[slots[i]].Kind);
             }
+            if (Array.Exists(materials, material => material.IsKeywordEnabled("_NORMALMAP")))
+                mesh.RecalculateTangents();
             // Partitioning carries the ordinary road/verge channels. Rebuild the
             // local talus mask from final positions only for sectors receiving it.
             if (talusLayout != null)
@@ -886,6 +892,7 @@ namespace BarPromenade
             { Renderer = renderer; Priority = priority; Paint = paint; Dynamic = dynamic; Order = nextOrder++; SetRegions(regions); }
             internal readonly Renderer Renderer; internal readonly bool Dynamic; internal readonly int Order;
             internal int Priority; internal bool Paint;
+            internal Func<Vector2, float> PaintDepth;
             internal CityGroundSurfaceRegion[] Regions;
             internal List<Triangle> Top, Sides, Support;
             internal void SetRegions(IReadOnlyList<CityGroundSurfaceRegion> regions)

@@ -245,6 +245,11 @@ namespace BarPromenade
                 Vector2 shoulder = new Vector2(-path.y, path.x) * .50f;
                 Reserve(new[] { approach - shoulder, approach + shoulder, stand + shoulder, stand - shoulder });
             }
+            foreach (var yard in CityWorldPlans.GetOrCreate(city).FringeYard.Yards)
+                if (yard.Kind == CityFringeYardKind.SouthTunnelForecourt)
+                    foreach (var part in yard.Parts)
+                        if (part.Kind == CityFringeYardPartKind.DrainCover || part.Kind == CityFringeYardPartKind.WheelRut)
+                            ReserveRect(part.Footprint);
             foreach (var stair in CityHillsideAccessPlan.ForLayout(city).AllStairs)
                 foreach (Rect piece in stair.WalkableBounds) ReserveRect(piece);
             foreach (var pocket in CityHillsideBenchPocketPlan.ForLayout(city).Pockets)

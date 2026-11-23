@@ -614,9 +614,7 @@ namespace BarPromenade
             var root = new GameObject("Open South Tunnel");
             root.transform.SetParent(parent, false);
 
-            CityMountainBoundaryMeshFactory.CreatePortalFrame(
-                root.transform,
-                tunnel);
+            new CitySouthTunnelArt().BuildPortal(root.transform, tunnel);
             BuildThroat(root.transform, tunnel);
             BuildTunnelPortalRockFacade(root.transform, tunnel, plan);
         }
@@ -890,12 +888,14 @@ namespace BarPromenade
                         new Vector3(0.22f, 0.05f, detailLength)));
                 }
 
+                float cableStart = CableOffset(segment.StartDistance);
+                float cableEnd = CableOffset(segment.EndDistance);
+                Vector3 from = detailCentre - forward * (detailLength * .5f) + right * cableStart;
+                Vector3 to = detailCentre + forward * (detailLength * .5f) + right * cableEnd;
                 cables.Add(new RuntimeOrientedBox(
-                    detailCentre +
-                    right * (halfWidth + 0.055f) +
-                    Vector3.up * 2.85f,
-                    rotation,
-                    new Vector3(0.08f, 0.08f, detailLength)));
+                    (from + to) * .5f + Vector3.up * 2.85f,
+                    Quaternion.LookRotation(to - from, Vector3.up),
+                    new Vector3(.08f, .08f, Vector3.Distance(from, to))));
             }
 
             for (float distance =
@@ -921,42 +921,50 @@ namespace BarPromenade
                 Quaternion rotation = Quaternion.LookRotation(
                     jointForward,
                     Vector3.up);
-                for (int side = -1; side <= 1; side += 2)
+                bool inVault = distance <= CityMountainBoundaryDefinition.TunnelStraightDepth;
+                if (!inVault)
                 {
+                    for (int side = -1; side <= 1; side += 2)
+                    {
+                        seams.Add(new RuntimeOrientedBox(
+                            sample.Position +
+                            right * ((halfWidth + 0.02f) * side) +
+                            Vector3.up * (tunnel.OpeningHeight * 0.5f),
+                            rotation,
+                            new Vector3(
+                                0.22f,
+                                tunnel.OpeningHeight,
+                                0.80f)));
+                    }
+
                     seams.Add(new RuntimeOrientedBox(
                         sample.Position +
-                        right * ((halfWidth + 0.02f) * side) +
-                        Vector3.up * (tunnel.OpeningHeight * 0.5f),
+                        Vector3.up * (tunnel.OpeningHeight - 0.10f),
                         rotation,
                         new Vector3(
-                            0.22f,
-                            tunnel.OpeningHeight,
+                            tunnel.OpeningWidth + 0.32f,
+                            0.20f,
                             0.80f)));
                 }
-
                 seams.Add(new RuntimeOrientedBox(
                     sample.Position +
-                    Vector3.up * (tunnel.OpeningHeight - 0.10f),
-                    rotation,
-                    new Vector3(
-                        tunnel.OpeningWidth + 0.32f,
-                        0.20f,
-                        0.80f)));
-                seams.Add(new RuntimeOrientedBox(
-                    sample.Position +
-                    Vector3.up * (ThroatFloorSurfaceLift + 0.04f),
+                    Vector3.up * (ThroatFloorSurfaceLift + (inVault ? .005f : .04f)),
                     rotation,
                     new Vector3(
                         tunnel.OpeningWidth + 0.20f,
-                        0.08f,
-                        0.80f)));
+                        inVault ? .01f : .08f,
+                        inVault ? .09f : .80f)));
                 supports.Add(new RuntimeOrientedBox(
                     sample.Position +
-                    right * (halfWidth - 0.02f) +
+                    right * (CableOffset(distance) + .08f) +
                     Vector3.up * 2.75f,
                     rotation,
                     new Vector3(0.42f, 0.10f, 0.12f)));
             }
+
+            float CableOffset(float distance) => Mathf.Lerp(halfWidth - .35f, halfWidth + .055f,
+                Mathf.InverseLerp(CityMountainBoundaryDefinition.TunnelStraightDepth,
+                    CityMountainBoundaryDefinition.TunnelStraightDepth + CityMountainBoundaryDefinition.TunnelSegmentLength, distance));
 
             CreateTunnelMetalBatch(
                 "Tunnel Technical Seams",

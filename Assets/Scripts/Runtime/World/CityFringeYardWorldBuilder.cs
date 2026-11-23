@@ -72,6 +72,8 @@ namespace BarPromenade
                  yardIndex++)
             {
                 CityFringeYardDescriptor yard = plan.Yards[yardIndex];
+                if (yard.Kind == CityFringeYardKind.SouthTunnelForecourt)
+                    new CitySouthTunnelArt().BuildForecourt(root.transform, yard, importedIds);
                 TryAppendImportedYardParts(
                     yard,
                     miscProvider,
