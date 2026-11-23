@@ -82,6 +82,7 @@ namespace BarPromenade
                 context,
                 context.NearbyDecorations);
             CityCoastalInfrastructureWorldBuilder.BuildHomeExterior(root, context);
+            CityWaterNetworkWorld.Build(root, CityWaterNetwork.ForLayout(context.Layout), home: context);
             CityLaundryWorldBuilder.BuildHomeExterior(root, context);
             CityResidentialCourtyardPlan courtyards = CityResidentialCourtyardPlan.ForLayout(context.Layout);
             CityResidentialCourtyardWorldBuilder.BuildHomeExterior(root, courtyards, context);

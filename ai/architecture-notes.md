@@ -718,11 +718,11 @@
   pins stay separate. Installation on this host belongs to the user.
 
 - **Accepted 2026-10-27 — functional industrial buildings:**
-  Eight metre Blender prototypes (IDs01–08) and stronger equipment at three
-  coastal sites. Roofs/gates/stock/windows express use. Fit, adjacency and port
-  bias pick variants. Timber/concrete/steel reuse metre UVs and materials.
-  Fixed task lights and halos, day≥2/3, bounce/air≤4, halo≤24, probes≤2.
-  No pipe/cargo scatter. Story§16/21/art§16. Existing City effects.
+  Eight Blender prototypes (IDs01–08), three coastal sites. Roofs/gates/stock/windows
+  show use; fit/adjacency/port bias pick variants. Shared metre UVs/materials.
+  Fixed task lights: day≥2/3, bounce/air≤4, halo≤24, probes≤2. No pipe/cargo scatter.
+  Story§16/21/art§16; existing City effects.
+- **Accepted 2026-11-23 — municipal water.** City/Ridge share supply loops. Steel branches follow façades and terraces; courts share tees. Separate sewers reach the east-beach grate.
 
 - **Accepted architecture exception 2026-10-27 — compact coastal town:**
   Map:Residential east/Industrial west+park; OldTown/Nightlife semantic enums.

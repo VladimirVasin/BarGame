@@ -24,6 +24,7 @@ namespace BarPromenade
             { "ConcreteWall", new SurfaceDefinition("PortConcreteWallAlbedo", new Color(.36f,.39f,.37f)) },
             { "Steel", new SurfaceDefinition("PortPaintedSteelAlbedo", new Color(.285f,.385f,.37f)) },
             { "SteelDark", new SurfaceDefinition("PortPaintedSteelAlbedo", new Color(.235f,.275f,.26f)) },
+            { "SteelService", new SurfaceDefinition("PortPaintedSteelAlbedo", new Color(.49f,.54f,.50f)) },
             { "SteelLight", new SurfaceDefinition("PortPaintedSteelAlbedo", new Color(.60f,.615f,.57f)) },
             { "SteelRust", new SurfaceDefinition("PortPaintedSteelAlbedo", new Color(.34f,.245f,.20f)) },
             { "Plaster", new SurfaceDefinition("PortWarehousePlasterAlbedo", new Color(.60f,.615f,.57f)) },
@@ -191,6 +192,7 @@ namespace BarPromenade
                 case "ConcreteWall": return new Color(.68f,.75f,.72f);
                 case "Steel": return new Color(.44f,.61f,.59f);
                 case "SteelDark": return new Color(.38f,.46f,.43f);
+                case "SteelService": return new Color(.69f,.75f,.70f);
                 case "SteelLight": return new Color(.84f,.88f,.82f);
                 case "SteelRust": return new Color(.59f,.44f,.35f);
                 case "Plaster": return new Color(.85f,.90f,.84f);

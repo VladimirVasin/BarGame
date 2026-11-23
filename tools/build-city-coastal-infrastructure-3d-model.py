@@ -16,6 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'tools'))
 import bar_parts as bp
 import interior_kit as kit
+from city_water_parts import water_parts
 from city_building_parts import gable_roof
 import bpy
 
@@ -32,8 +33,8 @@ EQUIPMENT = {
 }
 TASK_LIGHTS = {name: (0, 2.95 if name == 'Substation' else 3.06, size[2]*.5+.055)
                for name,size in SIZES.items()}
-PITCH = {'Concrete': 3, 'Plaster': 3, 'SteelDark': 1.6, 'Roof': 2,
-         'Timber': 1, 'Rubber': 1, 'SteelLight': 1.6, 'Glass': 1, 'TaskLightLens': 1}
+PITCH = {'SteelService': 1.6, 'SteelRust': 1.6, 'Concrete': 3, 'Plaster': 3, 'SteelDark': 1.6, 'Roof': 2,
+         'Timber': 1, 'Rubber': 1, 'SteelLight': 1.6, 'Glass': 1, 'TaskLightLens': 1, 'Water': 1}
 
 
 def box(c, s):
@@ -170,6 +171,7 @@ def make_kit():
             faces.append((a, b, b+sides, a+sides))
     faces.extend((tuple(reversed(range(sides))), tuple(range((rings-1)*sides, rings*sides))))
     result['CableSpan'] = {'Rubber': (vertices, faces)}
+    result.update(water_parts())
     return result
 
 
@@ -197,7 +199,7 @@ def manifest_for(groups):
 
 
 def validate(groups, manifest):
-    if set(groups) != set(SIZES)|{'PowerPole','FacadeInlet','CableSpan'}:
+    if set(groups) != set(SIZES)|{'PowerPole','FacadeInlet','CableSpan'}|set(water_parts()):
         raise ValueError('Coastal utility catalog incomplete')
     if manifest != manifest_for(make_kit()) or manifest['triangle_count'] > 12000:
         raise ValueError('Coastal utility determinism/budget contract failed')
@@ -236,12 +238,20 @@ def main():
             source=bp.to_source(geo);mesh.from_pydata(source[0],[],source[1]);mesh.update(calc_edges=True)
             uv=mesh.uv_layers.new(name='UVMap')
             for polygon in mesh.polygons:
+                if role == 'Water':
+                    polygon.use_smooth = True
                 axis=max(range(3),key=lambda i:abs(polygon.normal[i]));a,b=((1,2),(0,2),(0,1))[axis]
                 points=[mesh.vertices[mesh.loops[loop].vertex_index].co for loop in polygon.loop_indices]
                 low=(min(v[a] for v in points),min(v[b] for v in points))
                 extent=(max(v[a] for v in points)-low[0],max(v[b] for v in points)-low[1])
                 for loop in polygon.loop_indices:
-                    vertex=mesh.vertices[mesh.loops[loop].vertex_index].co
+                    index = mesh.loops[loop].vertex_index
+                    vertex = mesh.vertices[index].co
+                    if role == 'Water':
+                        # Signed bank coordinate and downstream metres survive FBX seams.
+                        across = index % 18
+                        uv.data[loop].uv = ((min(across, 17-across)-4)/4, vertex.y)
+                        continue
                     uv.data[loop].uv=((vertex[a]-low[0])/max(extent[0],.001),
                                       (vertex[b]-low[1])/max(extent[1],.001)) if role=='Glass' else (vertex[a]/PITCH[role],vertex[b]/PITCH[role])
             obj=bpy.data.objects.new(name+'__'+role,mesh);scene.collection.objects.link(obj);obj.parent=group

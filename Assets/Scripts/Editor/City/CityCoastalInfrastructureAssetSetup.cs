@@ -31,7 +31,7 @@ namespace BarPromenade.Editor
         {
             Manifest manifest=JsonUtility.FromJson<Manifest>(File.ReadAllText(ManifestPath));
             if(manifest==null || manifest.generator_version!="1.0.0" || manifest.assemblies==null ||
-                manifest.assemblies.Length!=6 || manifest.facility_ids==null || manifest.facility_ids.Length!=3 ||
+                manifest.assemblies.Length!=6+Enum.GetValues(typeof(CityWaterKit)).Length || manifest.facility_ids==null || manifest.facility_ids.Length!=3 ||
                 manifest.triangle_count>12000 || manifest.imported_basis_correction_unity_euler==null ||
                 (Vector(manifest.imported_basis_correction_unity_euler)-new Vector3(0f,180f,0f)).sqrMagnitude>.00001f || manifest.signature==null || manifest.signature.Length!=64)
                 throw new InvalidOperationException("Coastal utility manifest is stale or incomplete.");

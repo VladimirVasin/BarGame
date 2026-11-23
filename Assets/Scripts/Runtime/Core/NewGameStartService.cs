@@ -165,14 +165,13 @@ namespace BarPromenade
                     if (world.Supermarket == null || layout.Supermarket == null)
                         throw new InvalidOperationException("The lower city start needs the supermarket sidewalk.");
                     position = world.Supermarket.ReturnPosition;
-                    forward = layout.Supermarket.FacadeForward;
+                    forward = CityWaterNetwork.ForLayout(layout).StartStreetFacing(layout.Supermarket,position);
                     break;
                 case NewGameLocation.Ridge:
                     if (world.PlayerHome != null && layout.PlayerHome != null)
                     {
                         position = world.PlayerHome.ReturnPosition;
-                        Vector2Int facing = layout.PlayerHome.FrontageDirection;
-                        forward = new Vector3(facing.x, 0f, facing.y);
+                        forward = CityWaterNetwork.ForLayout(layout).StartStreetFacing(layout.PlayerHome,position);
                     }
                     else
                     {

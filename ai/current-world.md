@@ -73,7 +73,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   `NewGameStartService`: areas use AreaLoading, six interiors direct; no travel
   illustration/door/prologue/ride/cabin/arrival.
 - Village:lane foot/2m above stationthreshold→mother;Lodge:3m beforeentry→door.
-  City: supermarket sidewalk. Ridge: home sidewalk. Docks/cannery: clear pedestrian arrivals.
+  City/Ridge face the shop/home frontage pipes from their sidewalks. Docks/cannery: clear pedestrian arrivals.
   City-Bar-lodge arrival1x/laterspawns kept;day1 mother quest-mapmarker;
   door-map-start inside closes/no village signpost;
 - CombatTest:3floors/9rooms/4flights:L3gap/R3only/fanwell/9sets-signs;ground:A*/partial/gate;
@@ -458,10 +458,9 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   Road/ground complements retain metre poses. Graded home/bar/shop fronts share
   sidewalks, embedded skirts and fixture tops in City/Home.
   Home/bar/fair/arch and service approaches retain owners;
-- `CityCoastalInfrastructurePlan` places three passive functional buildings:
-  substation `5x4x3.7 m`, municipal workshop `7.4x4.2x4.4 m` and port workshop
-  `6x4.4x4.2 m`. Their fixed footprints clear existing fringe works, roads,
-  public pavements and traversal; maximum support-height spread `0.24 m`.
+- `CityCoastalInfrastructurePlan`: substation 5×4×3.7 m, municipal works
+  7.4×4.2×4.4 m, port workshop 6×4.4×4.2 m. Sites clear paths/works; grade spread ≤0.24 m.
+  `CityWaterNetwork` feeds both banks and Ridge along façades, stairs and bridges. Sewers reach the grated beach outfall.
   Substation feeds lower City and every Ridge building. Ridge drops prefer a wired
   neighbour; house (21,-6) feeds the cobbler. Upper pole axes stay 2 m from buildings; shafts and crossarms clear geometry;
   lower offset 5.35 m. Wires clear roads by 7 m and avoid bays, galleries and roofs

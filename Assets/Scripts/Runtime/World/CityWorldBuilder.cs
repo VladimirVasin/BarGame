@@ -390,6 +390,8 @@ namespace BarPromenade
 
             CityCoastalInfrastructureWorldBuilder.Build(world, infrastructurePlan,
                 partition == null ? null : partition.IsLower);
+            CityWaterNetworkWorld.Build(world, CityWaterNetwork.ForLayout(layout,seacoastPlan,plans.FringeYard),
+                partition == null ? null : partition.IsLower);
             CityLaundryWorldBuilder.Build(world, laundryPlan);
             CityDogParkWorldBuilder.Build(world, layout);
             CityStaticCollisionBuilder.AddDogParkColliders(world, plans.DogPark);

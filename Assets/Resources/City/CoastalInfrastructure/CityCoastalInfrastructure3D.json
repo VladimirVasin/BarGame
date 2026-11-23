@@ -8,7 +8,7 @@
     180,
     0
   ],
-  "signature": "961e029e2fd149207452b3018334d439d99c25a6e583b1c318ad7eb74c5cdc18",
+  "signature": "b29eeb0037a86df95ea85ea71b1d95033109ade91849ecd3dc0f220ead7f48cd",
   "cable_span": {
     "rings": 17,
     "sides": 6,
@@ -224,7 +224,340 @@
       ],
       "functional_equipment": [],
       "task_light_anchor": null
+    },
+    {
+      "name": "WaterBarrel",
+      "logical_wall_size_unity": null,
+      "bounds_min_unity": [
+        -0.145,
+        -0.145,
+        0.0
+      ],
+      "bounds_max_unity": [
+        0.145,
+        0.145,
+        1.0
+      ],
+      "triangle_count": 92,
+      "roles": [
+        "SteelDark"
+      ],
+      "functional_equipment": [],
+      "task_light_anchor": null
+    },
+    {
+      "name": "PipeSaddle",
+      "logical_wall_size_unity": null,
+      "bounds_min_unity": [
+        -0.171,
+        -0.171,
+        -0.105
+      ],
+      "bounds_max_unity": [
+        0.171,
+        0.4775,
+        0.105
+      ],
+      "triangle_count": 148,
+      "roles": [
+        "SteelLight",
+        "SteelDark"
+      ],
+      "functional_equipment": [],
+      "task_light_anchor": null
+    },
+    {
+      "name": "WallService",
+      "logical_wall_size_unity": null,
+      "bounds_min_unity": [
+        -0.115,
+        -0.22,
+        -0.06
+      ],
+      "bounds_max_unity": [
+        0.115,
+        0.475,
+        0.233
+      ],
+      "triangle_count": 460,
+      "roles": [
+        "SteelDark",
+        "SteelLight"
+      ],
+      "functional_equipment": [],
+      "task_light_anchor": null
+    },
+    {
+      "name": "StopCover",
+      "logical_wall_size_unity": null,
+      "bounds_min_unity": [
+        -0.16,
+        -0.044,
+        -0.16
+      ],
+      "bounds_max_unity": [
+        0.16,
+        0.0135,
+        0.16
+      ],
+      "triangle_count": 264,
+      "roles": [
+        "SteelDark",
+        "SteelLight"
+      ],
+      "functional_equipment": [],
+      "task_light_anchor": null
+    },
+    {
+      "name": "SewerCover",
+      "logical_wall_size_unity": null,
+      "bounds_min_unity": [
+        -0.31,
+        -0.044,
+        -0.31
+      ],
+      "bounds_max_unity": [
+        0.31,
+        0.0135,
+        0.31
+      ],
+      "triangle_count": 264,
+      "roles": [
+        "SteelDark",
+        "SteelLight"
+      ],
+      "functional_equipment": [],
+      "task_light_anchor": null
+    },
+    {
+      "name": "PumpHeader",
+      "logical_wall_size_unity": null,
+      "bounds_min_unity": [
+        -1.148,
+        -0.16,
+        -0.268372
+      ],
+      "bounds_max_unity": [
+        1.148,
+        1.125,
+        0.268372
+      ],
+      "triangle_count": 2104,
+      "roles": [
+        "SteelDark",
+        "SteelLight",
+        "Concrete"
+      ],
+      "functional_equipment": [],
+      "task_light_anchor": null
+    },
+    {
+      "name": "VentGrille",
+      "logical_wall_size_unity": null,
+      "bounds_min_unity": [
+        -0.3,
+        0.165,
+        -0.0245
+      ],
+      "bounds_max_unity": [
+        0.3,
+        0.595,
+        0.1275
+      ],
+      "triangle_count": 168,
+      "roles": [
+        "SteelDark",
+        "SteelLight"
+      ],
+      "functional_equipment": [],
+      "task_light_anchor": null
+    },
+    {
+      "name": "StreetBarrel",
+      "logical_wall_size_unity": null,
+      "bounds_min_unity": [
+        -0.145,
+        -0.145,
+        0.0
+      ],
+      "bounds_max_unity": [
+        0.145,
+        0.145,
+        1.0
+      ],
+      "triangle_count": 92,
+      "roles": [
+        "SteelService"
+      ],
+      "functional_equipment": [],
+      "task_light_anchor": null
+    },
+    {
+      "name": "StreetBend",
+      "logical_wall_size_unity": null,
+      "bounds_min_unity": [
+        -0.145,
+        -0.145,
+        -0.23
+      ],
+      "bounds_max_unity": [
+        0.23,
+        0.145,
+        0.145
+      ],
+      "triangle_count": 164,
+      "roles": [
+        "SteelService"
+      ],
+      "functional_equipment": [],
+      "task_light_anchor": null
+    },
+    {
+      "name": "PipeCollar",
+      "logical_wall_size_unity": null,
+      "bounds_min_unity": [
+        -0.177,
+        -0.168337,
+        -0.048
+      ],
+      "bounds_max_unity": [
+        0.177,
+        0.168337,
+        0.048
+      ],
+      "triangle_count": 76,
+      "roles": [
+        "SteelLight"
+      ],
+      "functional_equipment": [],
+      "task_light_anchor": null
+    },
+    {
+      "name": "WallClamp",
+      "logical_wall_size_unity": null,
+      "bounds_min_unity": [
+        -0.164,
+        -0.155973,
+        -0.085
+      ],
+      "bounds_max_unity": [
+        0.164,
+        0.307,
+        0.085
+      ],
+      "triangle_count": 132,
+      "roles": [
+        "SteelLight",
+        "SteelDark"
+      ],
+      "functional_equipment": [],
+      "task_light_anchor": null
+    },
+    {
+      "name": "GroundShoe",
+      "logical_wall_size_unity": null,
+      "bounds_min_unity": [
+        -0.22,
+        -0.655,
+        -0.185
+      ],
+      "bounds_max_unity": [
+        0.22,
+        -0.115,
+        0.185
+      ],
+      "triangle_count": 56,
+      "roles": [
+        "Concrete",
+        "SteelDark"
+      ],
+      "functional_equipment": [],
+      "task_light_anchor": null
+    },
+    {
+      "name": "StairBracket",
+      "logical_wall_size_unity": null,
+      "bounds_min_unity": [
+        -0.0375,
+        -0.711,
+        -0.08
+      ],
+      "bounds_max_unity": [
+        0.331,
+        -0.11,
+        0.08
+      ],
+      "triangle_count": 84,
+      "roles": [
+        "SteelDark"
+      ],
+      "functional_equipment": [],
+      "task_light_anchor": null
+    },
+    {
+      "name": "LineValve",
+      "logical_wall_size_unity": null,
+      "bounds_min_unity": [
+        -0.207,
+        -0.175945,
+        -0.207
+      ],
+      "bounds_max_unity": [
+        0.207,
+        0.454053,
+        0.207
+      ],
+      "triangle_count": 472,
+      "roles": [
+        "SteelDark",
+        "SteelRust"
+      ],
+      "functional_equipment": [],
+      "task_light_anchor": null
+    },
+    {
+      "name": "OutfallHead",
+      "logical_wall_size_unity": null,
+      "bounds_min_unity": [
+        -0.88,
+        -1.68,
+        -4.6
+      ],
+      "bounds_max_unity": [
+        0.88,
+        1.74,
+        0.21
+      ],
+      "triangle_count": 2360,
+      "roles": [
+        "Concrete",
+        "SteelDark",
+        "SteelLight",
+        "Rubber"
+      ],
+      "functional_equipment": [],
+      "task_light_anchor": null
+    },
+    {
+      "name": "OutfallStream",
+      "logical_wall_size_unity": null,
+      "bounds_min_unity": [
+        -1.198993,
+        -0.008041,
+        -0.56
+      ],
+      "bounds_max_unity": [
+        1.488368,
+        0.678763,
+        5.1
+      ],
+      "triangle_count": 752,
+      "roles": [
+        "Water"
+      ],
+      "functional_equipment": [],
+      "task_light_anchor": null
     }
   ],
-  "triangle_count": 3864
+  "triangle_count": 11552
 }

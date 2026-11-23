@@ -3557,7 +3557,7 @@ namespace BarPromenade
             }
         }
 
-        private static Vector3 ResolveForward(
+        internal static Vector3 ResolveForward(
             CityDistrictPointOfInterestDescriptor descriptor)
         {
             Vector2Int streetSide = descriptor.Accesses.Count > 0
@@ -3579,7 +3579,7 @@ namespace BarPromenade
                 : new Vector3(0f, 0f, Mathf.Sign(forward.z));
         }
 
-        private static float ResolveHorizontalScale(Rect bounds)
+        internal static float ResolveHorizontalScale(Rect bounds)
         {
             float minimum = Mathf.Min(bounds.width, bounds.height);
             return Mathf.Clamp(
