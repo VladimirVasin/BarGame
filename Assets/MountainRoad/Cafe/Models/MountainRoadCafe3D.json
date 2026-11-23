@@ -1,7 +1,7 @@
 {
   "generator": "tools/build-mountain-road-cafe-3d-model.py",
-  "generator_version": "1.3.0",
-  "blender_version": "5.0.1",
+  "generator_version": "1.4.0",
+  "blender_version": "5.2.3 LTS",
   "design_id": "mountain_road_cafe_nighthawks_v1",
   "display_name": "Bar Promenade Mountain Road Nighthawks Cafe",
   "reference_composition": "Nighthawks spatial translation; no copied branding or text",
@@ -110,9 +110,9 @@
     "response": "MountainRoad/Cafe/Textures/MountainRoadCafeSurfaceResponse",
     "albedo_size": 4096,
     "response_size": 2048,
-    "geometry_signature": "72932e8338c1938628c863556d7f8e846ce09e0463665d8ee06efc4d7757579f",
-    "uv_signature": "b1ae7c1b303ddf9b4b531f7a10dcb53d9a885ae3c7cfd827a932896bd8b22895",
-    "base_texels_per_metre": 88.83398343268308,
+    "geometry_signature": "14d103eca33a74f1080ad5ffd5750f4ffc50a99c677da1ff5189431774542fb4",
+    "uv_signature": "5b1d57d0859c1a83bcb243bc56840dcec67e95a8a016451f3192e5b0fa9663b7",
+    "base_texels_per_metre": 92.88536587697533,
     "material_tint_baked_once": true,
     "opaque_detail_min_clearance_m": 0.003,
     "glass_layers_per_pane": 1,
@@ -122,7 +122,7 @@
     "appliance_reference": "home_refrigerator_enamel_parameters",
     "appliance_pattern_edges_sampled": false,
     "broad_coplanar_overlap_count": 0,
-    "allowed_buried_seam_contact_count": 33,
+    "allowed_buried_seam_contact_count": 11,
     "broad_overlap_min_area_m2": 0.002
   },
   "budgets": {
@@ -144,10 +144,10 @@
     5.56,
     4.4
   ],
-  "mesh_count": 61,
-  "triangle_count": 5794,
+  "mesh_count": 64,
+  "triangle_count": 21030,
   "overlap_count": 0,
-  "allowed_seam_contact_count": 33,
+  "allowed_seam_contact_count": 11,
   "textures": [
     {
       "sheet": "CafeCounterDetail",
@@ -176,7 +176,7 @@
       "width": 4096,
       "height": 4096,
       "wrap": "Clamp",
-      "sha256": "e76cbe075f46c9cc0c084fd6155782d04f69e1102823c327121006cc22097226",
+      "sha256": "182f85937be0bf6f2d59f2e464035ddfa64000ace1e58b774093fe97471f3fa7",
       "srgb": true
     },
     {
@@ -186,7 +186,7 @@
       "width": 2048,
       "height": 2048,
       "wrap": "Clamp",
-      "sha256": "8fa04d20de5e754879c0531c2bff34dc0629b75ed0408ae38b632c036c3e4dd0",
+      "sha256": "8855f4e1cc9d37801ad2ffb704182a59328bcc3182ee473faa71e5e440af957b",
       "srgb": false
     }
   ],
@@ -1714,7 +1714,8 @@
       "role": "fridge_door",
       "owner": "FridgeDoor",
       "part_names": [
-        "Cafe_FridgeDoor"
+        "Cafe_FridgeDoor",
+        "Cafe_FridgeSeal"
       ],
       "liquid_part": "",
       "empty_local_y": 0.0,
@@ -1784,10 +1785,10 @@
       "base_surface": "InteriorPaint",
       "unique_surface": true,
       "family": "Linoleum",
-      "uv1_signature": "b6bac7254f655eb86da7c54707d4e72494344d88d1e96381fd1ccfb2ffa31b98",
+      "uv1_signature": "c6fd05465b9d08bdd2cf7874b90f960435bb0a4895b9d7fd4791c8f9b804b1ad",
       "uv_channel_count": 2,
       "surface_family": "Linoleum",
-      "uv0_signature": "0b532c518516eecc7349f8e0029d2ef836709edbc7da595082b6a3938bd3b68c",
+      "uv0_signature": "7ffb8df2e3b42e3148dc1e221a3041d7ab3337676d0dace1920d5741ddfc8417",
       "uv_strategy": "unique_guarded_uniform_metric_axes_uv0_original_uv1",
       "uv_transform": {
         "quarter_turns": 0,
@@ -1797,8 +1798,8 @@
       "emissive": false,
       "shadows": true,
       "initially_visible": true,
-      "vertices": 10,
-      "triangles": 16,
+      "vertices": 3859,
+      "triangles": 1938,
       "bounds_min": [
         -5.2402,
         -4.4916,
@@ -1821,7 +1822,7 @@
       "uv1_signature": "460eb937ebf6e70d4b06a21465336e7e150881961e8f1d5fce15df0a960a1f69",
       "uv_channel_count": 2,
       "surface_family": "PaintedMetal",
-      "uv0_signature": "2c62ae7a951223090fea74152a6aa538104dfb445086b2f5902301a980257646",
+      "uv0_signature": "fd4f070bff2d521e5f1aefff87c60220b15512b4e1a440128e0a0666fb54ec33",
       "uv_strategy": "unique_guarded_uniform_metric_axes_uv0_original_uv1",
       "uv_transform": {
         "quarter_turns": 3,
@@ -1855,7 +1856,7 @@
       "uv1_signature": "6e6ced9c0e027008a89b3272442e1722ea5dacc1eea98bb5d5ff955f7c6361e7",
       "uv_channel_count": 2,
       "surface_family": "PaintedMetal",
-      "uv0_signature": "953964caa4068764eaebc91802dffbfa581fa33cda3d83915eac6f9c9394c1d2",
+      "uv0_signature": "473b2b9728bea7c4e8cb335f645a6fc6154eff9fbdb5b015f3471d2dab7bbe11",
       "uv_strategy": "unique_guarded_uniform_metric_axes_uv0_original_uv1",
       "uv_transform": {
         "quarter_turns": 3,
@@ -1889,7 +1890,7 @@
       "uv1_signature": "d59f8cd829ef9925ae300b1705a39b6f5b2c6ac94e0fab44a43e8fa0236816db",
       "uv_channel_count": 2,
       "surface_family": "PaintedMetal",
-      "uv0_signature": "450f274d432cfcbdd75235f6c6906e043d71fa00955b97abc6d1aa92d5dacb67",
+      "uv0_signature": "22243d1260273d09056190eb53c8b7b20b2861ad64e4f9d0722d737bf5daa472",
       "uv_strategy": "unique_guarded_uniform_metric_axes_uv0_original_uv1",
       "uv_transform": {
         "quarter_turns": 0,
@@ -1923,7 +1924,7 @@
       "uv1_signature": "0bdb02674ffcbd7d0ed016e48495562e4a90c9124061d842bb3db1ceb5de1a44",
       "uv_channel_count": 2,
       "surface_family": "PaintedMetal",
-      "uv0_signature": "6ae819ba1910053f5e4961f092b6b525022cc410fce2b86f1cd437d2829e6012",
+      "uv0_signature": "7afb1de7fc4c41713773311bd1f3231b2b3cc21dc65fe9a9fc68109c9a8da015",
       "uv_strategy": "unique_guarded_uniform_metric_axes_uv0_original_uv1",
       "uv_transform": {
         "quarter_turns": 0,
@@ -1957,7 +1958,7 @@
       "uv1_signature": "8973d5c8c4ddcedbaf5bff5db7793f06745580e83ad31637056ab8a044b7cb71",
       "uv_channel_count": 2,
       "surface_family": "PaintedMetal",
-      "uv0_signature": "cb7d95038d947ef5e6013baab94d3c7ece57355cee83e56cd546006092e04a4b",
+      "uv0_signature": "42ba44316febfde2bc2eb57164dffec1751f8a4bf4cc03f31cc8af0e09980fcf",
       "uv_strategy": "unique_guarded_uniform_metric_axes_uv0_original_uv1",
       "uv_transform": {
         "quarter_turns": 3,
@@ -2387,7 +2388,7 @@
       "uv1_signature": "4568d3e0b2096fd30382d8cdd9b79b644645e52bc5a37b32ec1d0d27c6e242a6",
       "uv_channel_count": 2,
       "surface_family": "PaintedMetal",
-      "uv0_signature": "969cd929429adc905fe201fc913a2a8bd7052d599c5ce9f4a273a5740aaf3e72",
+      "uv0_signature": "769c8edff18c9df170f8a5997cfc3686d20fe8b62d17dd73d7d9842959ca82a2",
       "uv_strategy": "unique_guarded_uniform_metric_axes_uv0_original_uv1",
       "uv_transform": {
         "quarter_turns": 3,
@@ -2421,7 +2422,7 @@
       "uv1_signature": "d441f44ee2d225eb809bad80be6001f74029f417ae3e11fe2ec600edbe5b4a95",
       "uv_channel_count": 2,
       "surface_family": "PaintedMetal",
-      "uv0_signature": "258a347e34996209f5e452aa8eef5fef27b488d144f220936f43d9f495017dea",
+      "uv0_signature": "6232479317948eeda5b7c72cc3f01afaad263cb6e42d874b133087fe7eca90e5",
       "uv_strategy": "unique_guarded_uniform_metric_axes_uv0_original_uv1",
       "uv_transform": {
         "quarter_turns": 1,
@@ -2488,7 +2489,7 @@
       "uv1_signature": "5885f91bff5baa60747c1be252d5aabba9ba231f13ff0ec562cc4e61008ba3e5",
       "uv_channel_count": 2,
       "surface_family": "PaintedMetal",
-      "uv0_signature": "acd37867a624a6ebfba26e7b3b9bc056d6ee451e48b72d392f27bcfb1d72c3fe",
+      "uv0_signature": "cc2ed565e5edc881087f90d9866ad45dc262455aaeeead4367abe2d054861873",
       "uv_strategy": "unique_guarded_uniform_metric_axes_uv0_original_uv1",
       "uv_transform": {
         "quarter_turns": 2,
@@ -2522,7 +2523,7 @@
       "uv1_signature": "a3c99f510d4d4c3314c6b46a9766ffd42764b17a058103c015fa0eefbee539a2",
       "uv_channel_count": 2,
       "surface_family": "PaintedMetal",
-      "uv0_signature": "c3e4123016e483e4c97e796e63cb864ed9475fce8d246b1d34b90b389405e377",
+      "uv0_signature": "0946862f45b90425c67a058b52855bc1569bac56efd36bce009426a58cd09286",
       "uv_strategy": "unique_guarded_uniform_metric_axes_uv0_original_uv1",
       "uv_transform": {
         "quarter_turns": 1,
@@ -2589,7 +2590,7 @@
       "uv1_signature": "0c61dc63115b1836bad55849d788d4114a033b3d75ef521c0f85078ca3ac5782",
       "uv_channel_count": 2,
       "surface_family": "WallPaint",
-      "uv0_signature": "12dc41213b6be385ebceebd39eb5f3cda3549b4b66868f321af747817092645f",
+      "uv0_signature": "1c08db2e1808f60882e6a9406618bddead9be9142e0c884f5d458b275f9ff330",
       "uv_strategy": "unique_guarded_uniform_metric_axes_uv0_original_uv1",
       "uv_transform": {
         "quarter_turns": 1,
@@ -2620,10 +2621,10 @@
       "base_surface": "Timber",
       "unique_surface": true,
       "family": "Timber",
-      "uv1_signature": "31dc0009a364b8cd2bb7847cc01196610b30702f75750ae5f3ef8c6aee27a0a9",
+      "uv1_signature": "1ebd983eec26a40a42cfac47db6fc93a3cc63e09bae2d866df0b4f758caebd59",
       "uv_channel_count": 2,
       "surface_family": "Timber",
-      "uv0_signature": "1470cb98aea51cff810ae9a4022cdc5b7dbcd54ffad646b22a5f7e6d9cccf97b",
+      "uv0_signature": "b42e8ab8778f7874b26f43fabd91f24d83df2e750f2ecb3c39222badac49b824",
       "uv_strategy": "unique_guarded_uniform_metric_axes_uv0_original_uv1",
       "uv_transform": {
         "quarter_turns": 2,
@@ -2633,16 +2634,16 @@
       "emissive": false,
       "shadows": true,
       "initially_visible": true,
-      "vertices": 32,
-      "triangles": 56,
+      "vertices": 12,
+      "triangles": 20,
       "bounds_min": [
         -2.43,
-        -1.56,
+        -1.52,
         0.0
       ],
       "bounds_max": [
-        3.75321,
-        0.591611,
+        3.818923,
+        0.578212,
         0.9
       ]
     },
@@ -2654,10 +2655,10 @@
       "base_surface": "Timber",
       "unique_surface": true,
       "family": "Timber",
-      "uv1_signature": "0541c21bf1854f99f9202ea8ba84dbcf44b9ce7a413d167efaf34fc0302e4fd2",
+      "uv1_signature": "46f1150eeaf405392cda7c2b99db70c2bfd2bcbaf6a5cf9313594c5a6bb719ef",
       "uv_channel_count": 2,
       "surface_family": "Timber",
-      "uv0_signature": "563da5901ae2c7bb93e24fda13bdba560b6e5e22566f7898d3cfc5605a0c561f",
+      "uv0_signature": "fe89cae777cef37c65528feb20570b0fa29ef224ea9a6d22b5e64582ac573578",
       "uv_strategy": "unique_guarded_uniform_metric_axes_uv0_original_uv1",
       "uv_transform": {
         "quarter_turns": 3,
@@ -2667,16 +2668,16 @@
       "emissive": false,
       "shadows": true,
       "initially_visible": true,
-      "vertices": 32,
-      "triangles": 56,
+      "vertices": 64,
+      "triangles": 120,
       "bounds_min": [
         -2.56,
         -1.66,
         0.9
       ],
       "bounds_max": [
-        3.802532,
-        0.59874,
+        3.81,
+        0.6,
         1.02
       ]
     },
@@ -2688,10 +2689,10 @@
       "base_surface": "Timber",
       "unique_surface": true,
       "family": "Timber",
-      "uv1_signature": "c1050784a75c69fe2f5b1207d0e0f984f6f7c1e209ef340eac7aa44c57f549b2",
+      "uv1_signature": "54b5491c8e9105821ee04a4f7592b8236a32e22be952bfe48e70b092ec0e696c",
       "uv_channel_count": 2,
       "surface_family": "Timber",
-      "uv0_signature": "6c330f5f900c13957b03e22992ee84b50a9896c29ab83d889ab2bc6964080bad",
+      "uv0_signature": "6a69d18fa65437d6cf733c10c305fafff7e68da96c6f2412eb9a7c0bac2669d6",
       "uv_strategy": "unique_guarded_uniform_metric_axes_uv0_original_uv1",
       "uv_transform": {
         "quarter_turns": 0,
@@ -2701,17 +2702,17 @@
       "emissive": false,
       "shadows": true,
       "initially_visible": true,
-      "vertices": 16,
-      "triangles": 28,
+      "vertices": 576,
+      "triangles": 1008,
       "bounds_min": [
-        -2.47,
-        -1.6075,
-        0.49
+        -2.4375,
+        -1.5835,
+        0.19
       ],
       "bounds_max": [
-        3.71,
-        -1.5625,
-        0.91
+        3.5575,
+        -1.5225,
+        0.85
       ]
     },
     {
@@ -2722,10 +2723,10 @@
       "base_surface": "PaleEnamel",
       "unique_surface": true,
       "family": "PaintedMetal",
-      "uv1_signature": "06dda1bbc5a91548126ad63a2654008f865b8ea83ef049beb5fbeab5e159cd3f",
+      "uv1_signature": "cc12870a266e345c49f16a2d0c111e70c1a8b141677194496f2b0ed2c21f8c35",
       "uv_channel_count": 2,
       "surface_family": "PaintedMetal",
-      "uv0_signature": "4a2c9580889a7d6aa0088a8c21737b95d1149a71b392177d173c92805fd6a5ca",
+      "uv0_signature": "f4279712be24e5f803798129e71cb1bd95fae388630b9a1aba032d6268716139",
       "uv_strategy": "unique_guarded_uniform_metric_axes_uv0_original_uv1",
       "uv_transform": {
         "quarter_turns": 3,
@@ -2735,17 +2736,17 @@
       "emissive": false,
       "shadows": true,
       "initially_visible": true,
-      "vertices": 64,
-      "triangles": 116,
+      "vertices": 352,
+      "triangles": 684,
       "bounds_min": [
-        -2.41,
-        -1.787063,
-        0.0
+        -2.39,
+        -1.762,
+        0.203
       ],
       "bounds_max": [
-        3.65,
-        -1.672937,
-        0.5
+        3.63,
+        -1.526,
+        0.297
       ]
     },
     {
@@ -2756,10 +2757,10 @@
       "base_surface": "PaleEnamel",
       "unique_surface": true,
       "family": "PaintedMetal",
-      "uv1_signature": "96475b4c7e41e29c7aae653ac1d8f646cfbf031ea6aba7b347f527d21ab57eea",
+      "uv1_signature": "47223e20d18b391ab0af4269df67619ecdafaaeb7380b153d50cedd8762a1c8a",
       "uv_channel_count": 2,
       "surface_family": "PaintedMetal",
-      "uv0_signature": "20246e2a0bd0251b8df932e7844b74a450d0a84eb1c527e340a7c2546981fe71",
+      "uv0_signature": "2edf29e653abe897a1f2217728ac7d507f9f61a3cf02eb104bf3374cc2dcf035",
       "uv_strategy": "unique_guarded_uniform_metric_axes_uv0_original_uv1",
       "uv_transform": {
         "quarter_turns": 3,
@@ -2769,8 +2770,8 @@
       "emissive": false,
       "shadows": true,
       "initially_visible": true,
-      "vertices": 308,
-      "triangles": 560,
+      "vertices": 2464,
+      "triangles": 4872,
       "bounds_min": [
         -1.67,
         -2.35,
@@ -2779,7 +2780,7 @@
       "bounds_max": [
         4.33,
         0.27,
-        0.78
+        0.7575
       ]
     },
     {
@@ -2790,10 +2791,10 @@
       "base_surface": "Timber",
       "unique_surface": true,
       "family": "Cloth",
-      "uv1_signature": "28c975b24c04daebab8c74a06b8aa7b6e1aa7bdf55926e265cf182f62cfe38e8",
+      "uv1_signature": "760ec88e0ee7e82fc4390b9f00fda41249cb67e60389d571262b49d6a78cd790",
       "uv_channel_count": 2,
       "surface_family": "Cloth",
-      "uv0_signature": "b1492a493433b29f38b08607368c28017e4b73acdf3f43d922825c7b6bb243aa",
+      "uv0_signature": "4ef50c3092dcb3e3caff298bcca6e409042d9cfe2d567b609c0ef4078f469f3d",
       "uv_strategy": "unique_guarded_uniform_metric_axes_uv0_original_uv1",
       "uv_transform": {
         "quarter_turns": 1,
@@ -2803,16 +2804,16 @@
       "emissive": false,
       "shadows": true,
       "initially_visible": true,
-      "vertices": 196,
-      "triangles": 364,
+      "vertices": 1680,
+      "triangles": 3332,
       "bounds_min": [
         -1.74,
-        -2.413983,
-        0.7625
+        -2.42,
+        0.7545
       ],
       "bounds_max": [
         4.4,
-        0.333983,
+        0.34,
         0.8175
       ]
     },
@@ -2827,7 +2828,7 @@
       "uv1_signature": "722da716c2b421127cf9796c7894b6470a162f752954584542b81acd64f79e90",
       "uv_channel_count": 2,
       "surface_family": "PaintedMetal",
-      "uv0_signature": "74160b36a8b9de402f3096c7826c6213cf8acb336e5e5c131376e06da2b1c540",
+      "uv0_signature": "7bf62580ecdfeb8a82507fd12151e5ebd08e2e189c6c3dc7ae2d76f962669938",
       "uv_strategy": "unique_guarded_uniform_metric_axes_uv0_original_uv1",
       "uv_transform": {
         "quarter_turns": 3,
@@ -2861,7 +2862,7 @@
       "uv1_signature": "0e3ffa2992caabfd0a1f1cdd35bcfc8dfc541f505bce63fd5b22db0357993545",
       "uv_channel_count": 2,
       "surface_family": "Timber",
-      "uv0_signature": "55702b7ff98c021c6ea243fa6b7b2bfa5ada5779e320dddcf75e01622330566e",
+      "uv0_signature": "49930760e6ee90f3f58f857aaefb96008330011014c9c2c9552f072b638bee23",
       "uv_strategy": "unique_guarded_uniform_metric_axes_uv0_original_uv1",
       "uv_transform": {
         "quarter_turns": 1,
@@ -2892,10 +2893,10 @@
       "base_surface": "Timber",
       "unique_surface": true,
       "family": "Timber",
-      "uv1_signature": "ea84f5b99931f73d70e9779edb9b48d8064994241dea9aae7e25653344f20211",
+      "uv1_signature": "25e3cf0a2710111a32a4343726e4d2b552fc8431cac248429bd9499eb74c0404",
       "uv_channel_count": 2,
       "surface_family": "Timber",
-      "uv0_signature": "d84c658852aeb5921fee30f213638a5e4429987bbbbe1efa6d5bace6bca27d9f",
+      "uv0_signature": "7364a08a03c3abc4a3d5f235fb32666b601800566e6d9bb3a9f80cd542e3535e",
       "uv_strategy": "unique_guarded_uniform_metric_axes_uv0_original_uv1",
       "uv_transform": {
         "quarter_turns": 2,
@@ -2905,11 +2906,11 @@
       "emissive": false,
       "shadows": true,
       "initially_visible": true,
-      "vertices": 80,
-      "triangles": 140,
+      "vertices": 160,
+      "triangles": 280,
       "bounds_min": [
         -2.55,
-        4.4325,
+        4.4185,
         0.095
       ],
       "bounds_max": [
@@ -2926,10 +2927,10 @@
       "base_surface": "PaleEnamel",
       "unique_surface": true,
       "family": "PaintedMetal",
-      "uv1_signature": "df9dacb747714a6a75dd91d9658e0e377f266117a51c7dcc40818d73b773aa52",
+      "uv1_signature": "7d7ae629a686f8046b4939e8f1a112fcf62193c233ff7ce8e7ec995810a027cc",
       "uv_channel_count": 2,
       "surface_family": "PaintedMetal",
-      "uv0_signature": "5b2d1f31221a8aba91235033f4a14807ffb246898567ab952cf4a5c537d80362",
+      "uv0_signature": "25a1e2879732d50ec14a4517f9d0a607f6b3c259e00c845789f3a785d04fb11a",
       "uv_strategy": "unique_guarded_uniform_metric_axes_uv0_original_uv1",
       "uv_transform": {
         "quarter_turns": 2,
@@ -2939,17 +2940,17 @@
       "emissive": false,
       "shadows": true,
       "initially_visible": true,
-      "vertices": 80,
-      "triangles": 140,
+      "vertices": 240,
+      "triangles": 420,
       "bounds_min": [
-        -2.17,
-        4.3835,
-        0.6625
+        -2.165,
+        4.3705,
+        0.663
       ],
       "bounds_max": [
-        2.51,
-        4.4295,
-        0.6975
+        2.505,
+        4.4465,
+        0.697
       ]
     },
     {
@@ -2963,7 +2964,7 @@
       "uv1_signature": "03b1a2f8ae6561ca2b272f130c724978e8e11cda6033127f9f8982bfa2b7312e",
       "uv_channel_count": 2,
       "surface_family": "WallPaint",
-      "uv0_signature": "1d8f6b2b06e9e4619dc81714324cc97eb3fe42dbbc98f1476446b8357e89de92",
+      "uv0_signature": "85ff1b96f0a688e83dfcef605865505f7b775aa6d4cde13b1423908f4af3c437",
       "uv_strategy": "unique_guarded_uniform_metric_axes_uv0_original_uv1",
       "uv_transform": {
         "quarter_turns": 2,
@@ -2994,10 +2995,10 @@
       "base_surface": "PaleEnamel",
       "unique_surface": true,
       "family": "Enamel",
-      "uv1_signature": "8b3b9208b91dfd87ab7abdfb770a1726a9cafc5aa4145040aaebdbc8599f9645",
+      "uv1_signature": "6ec5a9fa455c5be922c8d0153c79d6a38a24f52ec5558651c08b30349be6e6ac",
       "uv_channel_count": 2,
       "surface_family": "Enamel",
-      "uv0_signature": "3116aeb1f02745efd2386de3fc3d28e543479156fba46607eede90dbf08c691f",
+      "uv0_signature": "3fb803da9f0a558acf271ceb8c89ddc9472aebd0970f8a677c91ff80f3c51b4a",
       "uv_strategy": "unique_guarded_uniform_metric_axes_uv0_original_uv1",
       "uv_transform": {
         "quarter_turns": 1,
@@ -3007,8 +3008,8 @@
       "emissive": false,
       "shadows": true,
       "initially_visible": true,
-      "vertices": 96,
-      "triangles": 172,
+      "vertices": 528,
+      "triangles": 1036,
       "bounds_min": [
         -2.5,
         4.412,
@@ -3028,10 +3029,10 @@
       "base_surface": "PaleEnamel",
       "unique_surface": true,
       "family": "PaintedMetal",
-      "uv1_signature": "973f9c646145f9ce7908fa8a461458302141e0caa95e3b797e847430a9735f4c",
+      "uv1_signature": "6753cd1d04cf413f338c1c226cdd1e98bafcee367b925ee4b2e8cdd09b818242",
       "uv_channel_count": 2,
       "surface_family": "PaintedMetal",
-      "uv0_signature": "f4db3ac8b8ca2d9c507e4c10f435579fabe133e271606e9d3a47232f4040d8e6",
+      "uv0_signature": "f5e6d5c9d5b8bf611bd6607e107c0eb864a2ac11af4fcc8ea2b51bf237f8ba52",
       "uv_strategy": "unique_guarded_uniform_metric_axes_uv0_original_uv1",
       "uv_transform": {
         "quarter_turns": 0,
@@ -3041,16 +3042,16 @@
       "emissive": false,
       "shadows": true,
       "initially_visible": true,
-      "vertices": 80,
-      "triangles": 170,
+      "vertices": 324,
+      "triangles": 640,
       "bounds_min": [
         -2.760406,
         4.219094,
         1.01
       ],
       "bounds_max": [
-        -1.91,
-        5.0695,
+        -1.909,
+        5.0705,
         1.097
       ]
     },
@@ -3065,7 +3066,7 @@
       "uv1_signature": "54e9643cfdcd3ec6b855cf6f7c0b1190d5769960cb8e7544b47aefb225a0ac0d",
       "uv_channel_count": 2,
       "surface_family": "Timber",
-      "uv0_signature": "0c328e16f53254a896364f1dacc11839b0e25d6f7d0b892001f34823b8a3dd69",
+      "uv0_signature": "685f49df693e36b0140cfc231930731fe03b2de3699dfe33069f115b84bf38aa",
       "uv_strategy": "unique_guarded_uniform_metric_axes_uv0_original_uv1",
       "uv_transform": {
         "quarter_turns": 3,
@@ -3099,7 +3100,7 @@
       "uv1_signature": "10afdddd82ca33db77ad067cd07900c5bccfa962e29eccc64b7a2b3f5e465e4f",
       "uv_channel_count": 2,
       "surface_family": "PaintedMetal",
-      "uv0_signature": "6f646739546643764601b6b22715d3c2b84761b49cf1e83595fce1a058987b04",
+      "uv0_signature": "99bb7ad7e33a334113d5ac19e99a38d5e3d089cd43482f5d84b4cc2d2d8d51f6",
       "uv_strategy": "unique_guarded_uniform_metric_axes_uv0_original_uv1",
       "uv_transform": {
         "quarter_turns": 1,
@@ -3166,7 +3167,7 @@
       "uv1_signature": "5422bdcd62373011ab5dbdff80447b8ad971551101ea44c5da6fd3b186b063a3",
       "uv_channel_count": 2,
       "surface_family": "Enamel",
-      "uv0_signature": "942272faff25d37039059e5c617143b4e5809490d913446bd6c7ec355287c474",
+      "uv0_signature": "17a9b51ba0681df44f2003be9d5ecf682f076b66176cefb5c0ca6fc3c6a74728",
       "uv_strategy": "unique_guarded_uniform_metric_axes_uv0_original_uv1",
       "uv_transform": {
         "quarter_turns": 0,
@@ -3200,7 +3201,7 @@
       "uv1_signature": "22b0cbb5204a66e0c728d26f7abf032d2606cb9839fb9d2a7658b3ab27099bc4",
       "uv_channel_count": 2,
       "surface_family": "Enamel",
-      "uv0_signature": "a87a49ae1a0f02d8cccb1e1fe91e9c0b1d96e73832adfc2241203bd9f857be28",
+      "uv0_signature": "e98fd8d45f827392a009f470ca92d89c9b06a3eacd906fce389b1cfab1a7fdb4",
       "uv_strategy": "unique_guarded_uniform_metric_axes_uv0_original_uv1",
       "uv_transform": {
         "quarter_turns": 0,
@@ -3234,7 +3235,7 @@
       "uv1_signature": "35b9875834c557ed297c4389106a857afe8eafbaa7e234a6683e0c085ebf954a",
       "uv_channel_count": 2,
       "surface_family": "Enamel",
-      "uv0_signature": "e4cc549a3e3ce975d92001cceb6b02e7bf7c1a224483885943f0758e95e88d9f",
+      "uv0_signature": "6de76ce12e11a3a64967efc0895ac8d3ad1b321b7bc859c4532b64beb879ba0f",
       "uv_strategy": "unique_guarded_uniform_metric_axes_uv0_original_uv1",
       "uv_transform": {
         "quarter_turns": 2,
@@ -3258,6 +3259,40 @@
       ]
     },
     {
+      "name": "Cafe_FridgeSeal",
+      "role": "fridge_gasket",
+      "group": "dynamic_prop",
+      "sheet": "CafePropsDetail",
+      "base_surface": "PaleEnamel",
+      "unique_surface": true,
+      "family": "Rubber",
+      "uv1_signature": "899a4a849dced4d5bf75271b9d4d56e308ffbf2617ddd65b3ccfe13ff0b043c1",
+      "uv_channel_count": 2,
+      "surface_family": "Rubber",
+      "uv0_signature": "6f2e4ab85d5ff0132abc762756330f97a7054f6adcacee31faa98b9bb3564ef5",
+      "uv_strategy": "unique_guarded_uniform_metric_axes_uv0_original_uv1",
+      "uv_transform": {
+        "quarter_turns": 3,
+        "offset_u": 3.318364,
+        "offset_v": 6.869902
+      },
+      "emissive": false,
+      "shadows": true,
+      "initially_visible": true,
+      "vertices": 64,
+      "triangles": 112,
+      "bounds_min": [
+        -4.297,
+        4.548,
+        0.089
+      ],
+      "bounds_max": [
+        -3.343,
+        4.561,
+        1.871
+      ]
+    },
+    {
       "name": "Cafe_FridgeDoor",
       "role": "fridge_door",
       "group": "dynamic_prop",
@@ -3268,7 +3303,7 @@
       "uv1_signature": "838eddb523367d3589743deeba557d090f92fb2edc4051334d23bbe6eb055b5d",
       "uv_channel_count": 2,
       "surface_family": "Enamel",
-      "uv0_signature": "1ea503f1001af27e7afff582d8ec79c2a6242997368e5a1dd2e66a772dd411b2",
+      "uv0_signature": "e08d3a3d595a0b08d1cd7cc5254d4127c770bbd431837c13dfe54c5466327142",
       "uv_strategy": "unique_guarded_uniform_metric_axes_uv0_original_uv1",
       "uv_transform": {
         "quarter_turns": 0,
@@ -3302,7 +3337,7 @@
       "uv1_signature": "119503af14a3e44ee3cebd04ec3b1b9e8e7709908046cf502595c3ee32498327",
       "uv_channel_count": 2,
       "surface_family": "WallPaint",
-      "uv0_signature": "4889dc4f8edec8d00388cfa70a967ca1d26bc0b6ebf09e438f1ec084075acbba",
+      "uv0_signature": "2aabc140c186e99bcb0161c0b868381f3d3cc7aa0c1dac93eb060ac2b585107b",
       "uv_strategy": "unique_guarded_uniform_metric_axes_uv0_original_uv1",
       "uv_transform": {
         "quarter_turns": 2,
@@ -3336,7 +3371,7 @@
       "uv1_signature": "966633a3d533668741bd74a70bc476da23574dbf2301674cf9ffe648c34b5830",
       "uv_channel_count": 2,
       "surface_family": "PaintedMetal",
-      "uv0_signature": "2b779272f3d3ec46e33eb5944ed1e50056cd47afa43b50d42a29b8b2f2440a12",
+      "uv0_signature": "03be75b9321a18d432f8768a3448fd02df5fa8e8b0f9cb72e79f24c96d248c8b",
       "uv_strategy": "unique_guarded_uniform_metric_axes_uv0_original_uv1",
       "uv_transform": {
         "quarter_turns": 3,
@@ -3396,14 +3431,14 @@
       "name": "Cafe_CounterDetails",
       "role": "counter_details",
       "group": "props",
-      "sheet": "CafePropsDetail",
+      "sheet": "CafeMetalDetail",
       "base_surface": "PaleEnamel",
       "unique_surface": true,
-      "family": "Enamel",
-      "uv1_signature": "77291a4501bd0a9c704c3c1c78b60f8d87b578ccf8aeb39ff27845380de60d94",
+      "family": "PaintedMetal",
+      "uv1_signature": "5998e3e04e6da0c0ee36de038973d0f477d9aff3a74ee7c288a7eccc7a8a4fe4",
       "uv_channel_count": 2,
-      "surface_family": "Enamel",
-      "uv0_signature": "2665d011876f115f755a3ccb20271df7017931cd88c050aec0a57c7cc6b10a95",
+      "surface_family": "PaintedMetal",
+      "uv0_signature": "eb7fb868b0b23b77479374818f348a9d84fb8b4e7109270a1637adc9def2542d",
       "uv_strategy": "unique_guarded_uniform_metric_axes_uv0_original_uv1",
       "uv_transform": {
         "quarter_turns": 2,
@@ -3413,17 +3448,85 @@
       "emissive": false,
       "shadows": true,
       "initially_visible": true,
-      "vertices": 72,
-      "triangles": 128,
+      "vertices": 224,
+      "triangles": 424,
       "bounds_min": [
         -0.36,
+        -0.955,
+        1.02
+      ],
+      "bounds_max": [
+        0.342,
+        -0.805,
+        1.2205
+      ]
+    },
+    {
+      "name": "Cafe_CondimentJars",
+      "role": "condiment_jar",
+      "group": "props",
+      "sheet": "CafePropsDetail",
+      "base_surface": "PaleEnamel",
+      "unique_surface": true,
+      "family": "Enamel",
+      "uv1_signature": "3f55fccffca4c645b8b8272f2e95dfa18f93849164148838b13a84188333461e",
+      "uv_channel_count": 2,
+      "surface_family": "Enamel",
+      "uv0_signature": "628e1b6692d6c2dc23ea6a48c64fe5a82dbbc457335783de922ad0ac57d4e00d",
+      "uv_strategy": "unique_guarded_uniform_metric_axes_uv0_original_uv1",
+      "uv_transform": {
+        "quarter_turns": 1,
+        "offset_u": 4.368124,
+        "offset_v": 0.740429
+      },
+      "emissive": false,
+      "shadows": true,
+      "initially_visible": true,
+      "vertices": 168,
+      "triangles": 328,
+      "bounds_min": [
+        0.05,
+        -0.93,
+        1.02
+      ],
+      "bounds_max": [
+        0.34,
+        -0.83,
+        1.19
+      ]
+    },
+    {
+      "name": "Cafe_FoldedNapkins",
+      "role": "folded_napkins",
+      "group": "props",
+      "sheet": "CafePropsDetail",
+      "base_surface": "PaleEnamel",
+      "unique_surface": true,
+      "family": "Paper",
+      "uv1_signature": "f7b390059d7d239eb1b451086dc1a9dc550beca4287afdada9014d8c27625642",
+      "uv_channel_count": 2,
+      "surface_family": "Paper",
+      "uv0_signature": "643651259c3c42f2eb5d6a55af3d1b0b0a2c20ec87b172a7b2bd6a9eedb51b6a",
+      "uv_strategy": "unique_guarded_uniform_metric_axes_uv0_original_uv1",
+      "uv_transform": {
+        "quarter_turns": 1,
+        "offset_u": 4.917144,
+        "offset_v": 0.129351
+      },
+      "emissive": false,
+      "shadows": true,
+      "initially_visible": true,
+      "vertices": 48,
+      "triangles": 84,
+      "bounds_min": [
+        -0.3195,
         -1.33,
-        0.99
+        1.02
       ],
       "bounds_max": [
         2.64,
-        -0.805,
-        1.21
+        -0.944,
+        1.2265
       ]
     },
     {
@@ -3500,10 +3603,10 @@
       "base_surface": "PaleEnamel",
       "unique_surface": true,
       "family": "Enamel",
-      "uv1_signature": "5906a8e82c509449295f10afbcea23dd57880595267f52913c4e821bc6db2d3d",
+      "uv1_signature": "82c6fefaad4bcc46e37647e7a92b75e4fc0bf094fe903a4558716661c946ef98",
       "uv_channel_count": 2,
       "surface_family": "Enamel",
-      "uv0_signature": "1b578388f44eafc6d22d9fb834bb214c856c368f738c1fdd5c0ed4cad4f40b38",
+      "uv0_signature": "a344819762935ecd443ee3d707492a365121f88c010770d595147106fe4eba16",
       "uv_strategy": "unique_guarded_uniform_metric_axes_uv0_original_uv1",
       "uv_transform": {
         "quarter_turns": 2,
@@ -3513,15 +3616,15 @@
       "emissive": false,
       "shadows": true,
       "initially_visible": true,
-      "vertices": 108,
-      "triangles": 222,
+      "vertices": 432,
+      "triangles": 856,
       "bounds_min": [
         0.683,
         -1.547,
         1.035
       ],
       "bounds_max": [
-        0.854572,
+        0.856,
         -1.413,
         1.153
       ]
@@ -3534,10 +3637,10 @@
       "base_surface": "PaleEnamel",
       "unique_surface": true,
       "family": "Enamel",
-      "uv1_signature": "169f955f958960e3e4e3ff4906252146754a9f91dc523499e0490c3911448a68",
+      "uv1_signature": "ac4df02702e262554fe5c182275d5cf47c07b6a1c6215eb03ae560cba41ab7a9",
       "uv_channel_count": 2,
       "surface_family": "Enamel",
-      "uv0_signature": "61743ba4c3357f220d87670016032cc5bb3161be42f2a985e208b610a3bdaa2a",
+      "uv0_signature": "8de65aa0e6ea7a3c23b9f6cee79a18cfef6bfc0063b2bc3f75da964205174d7b",
       "uv_strategy": "unique_guarded_uniform_metric_axes_uv0_original_uv1",
       "uv_transform": {
         "quarter_turns": 1,
@@ -3547,17 +3650,17 @@
       "emissive": false,
       "shadows": true,
       "initially_visible": true,
-      "vertices": 64,
-      "triangles": 120,
+      "vertices": 216,
+      "triangles": 428,
       "bounds_min": [
         0.669,
         -1.561,
-        1.035
+        1.02
       ],
       "bounds_max": [
         0.831,
         -1.399,
-        1.05
+        1.0395
       ]
     },
     {
@@ -3601,10 +3704,10 @@
       "base_surface": "PaleEnamel",
       "unique_surface": true,
       "family": "Enamel",
-      "uv1_signature": "e99765fbd679a0beac18493ff7cdc0b8b1385d1261865e318c2e4a9f43a079d5",
+      "uv1_signature": "15d72098dc60c0bc8aa390f376c280781beae501e2a2fc06f62c4d6a498f4494",
       "uv_channel_count": 2,
       "surface_family": "Enamel",
-      "uv0_signature": "8cae914b53d416b960b1ca2798371dd9affa9dd18d8966828bac8839edf6bb3a",
+      "uv0_signature": "3eebb7e304df11b0a3a75092e9ca993dae7956e126cceb27fd3fab4b6ab74baf",
       "uv_strategy": "unique_guarded_uniform_metric_axes_uv0_original_uv1",
       "uv_transform": {
         "quarter_turns": 1,
@@ -3614,10 +3717,10 @@
       "emissive": false,
       "shadows": true,
       "initially_visible": true,
-      "vertices": 108,
-      "triangles": 222,
+      "vertices": 432,
+      "triangles": 856,
       "bounds_min": [
-        1.695428,
+        1.694,
         -1.547,
         1.035
       ],
@@ -3635,10 +3738,10 @@
       "base_surface": "PaleEnamel",
       "unique_surface": true,
       "family": "Enamel",
-      "uv1_signature": "169f955f958960e3e4e3ff4906252146754a9f91dc523499e0490c3911448a68",
+      "uv1_signature": "ac4df02702e262554fe5c182275d5cf47c07b6a1c6215eb03ae560cba41ab7a9",
       "uv_channel_count": 2,
       "surface_family": "Enamel",
-      "uv0_signature": "30fc19f212371d46e0d2e12a9bb0e2e0ae8e17f01b4508a480b45cdf774a6189",
+      "uv0_signature": "9461853a900c97e05ed59aac4c041fa8d5a24e43694aa4c66b563deb2d46fa0d",
       "uv_strategy": "unique_guarded_uniform_metric_axes_uv0_original_uv1",
       "uv_transform": {
         "quarter_turns": 1,
@@ -3648,17 +3751,17 @@
       "emissive": false,
       "shadows": true,
       "initially_visible": true,
-      "vertices": 64,
-      "triangles": 120,
+      "vertices": 216,
+      "triangles": 428,
       "bounds_min": [
         1.719,
         -1.561,
-        1.035
+        1.02
       ],
       "bounds_max": [
         1.881,
         -1.399,
-        1.05
+        1.0395
       ]
     },
     {
@@ -3705,7 +3808,7 @@
       "uv1_signature": "9541a7f73b75ba04ae860119bcef8a8643c08cf2d59f0da9422302fa905e91bd",
       "uv_channel_count": 2,
       "surface_family": "PaintedMetal",
-      "uv0_signature": "3f488ebbe447f08076314563f99d7a1423447d14e1f6f2dc8c249307c5a1382f",
+      "uv0_signature": "d71abcf94b9691b3389339bb16a6f492fa03a5fd8932aaef5b896d2d22d4df8c",
       "uv_strategy": "unique_guarded_uniform_metric_axes_uv0_original_uv1",
       "uv_transform": {
         "quarter_turns": 2,
@@ -3739,7 +3842,7 @@
       "uv1_signature": "0b493ca06ac3a37a7cf72487afe857a2f131439c741a73bbb13b73e7dcacbd5b",
       "uv_channel_count": 2,
       "surface_family": "PaintedMetal",
-      "uv0_signature": "ad004fa4a8c0f73157a6e5d52e58cedaa92705b0dfc3c6987441600a077d7aa3",
+      "uv0_signature": "b4ad7eabd171f4cdf37790abc222f7773654c45c4e1f0deaa1c119b74f819792",
       "uv_strategy": "unique_guarded_uniform_metric_axes_uv0_original_uv1",
       "uv_transform": {
         "quarter_turns": 3,
@@ -3773,7 +3876,7 @@
       "uv1_signature": "0a33c36ba495781deab24ddca80ffc85e7e326e37cb084182136a04ad608b6b0",
       "uv_channel_count": 2,
       "surface_family": "Cloth",
-      "uv0_signature": "d1fd989702f8b41cd908819a8e17d19e102a14cd9f5ddaebcfdf70e54ac5dc3a",
+      "uv0_signature": "0d28214b7c321f52a2eee288c211dc78dbc6baeac9fb6c0d931786e6a7fbb813",
       "uv_strategy": "unique_guarded_uniform_metric_axes_uv0_original_uv1",
       "uv_transform": {
         "quarter_turns": 0,
@@ -3830,5 +3933,5 @@
       ]
     }
   ],
-  "build_signature": "a070a3f3f9c2e6067d03a1025118976b5370068ae41d5bcc9db2e725a3cf4c84"
+  "build_signature": "79d572a98abaaf62e5375a3fbd779114cb2e23dd355c19d938ebc88f07eaf691"
 }

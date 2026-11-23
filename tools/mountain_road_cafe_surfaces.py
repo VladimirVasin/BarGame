@@ -13,6 +13,7 @@ MANIFEST = ROOT / "ArtSource/MountainRoad/Surfaces/cafe-surfaces.json"
 ALBEDO = "MountainRoadCafeSurfaceAtlas"
 RESPONSE = "MountainRoadCafeSurfaceResponse"
 SIZE, RESPONSE_SIZE = 4096, 2048
+FLOOR_TILE, FLOOR_BORDER, FLOOR_TRIM = .32, .19, 8
 DESIGN = "mountain_road_cafe_physical_surfaces_v1"
 EXCLUDED_SHEETS = {"CafeGlassDetail", "CafeWarmEmission", "CafeCoffee"}
 _PALETTE_MEANS = {}
@@ -36,6 +37,12 @@ def selected(part):
 def profile(part):
     """The already accepted cafe colours, multiplied into pigment exactly once."""
     role = part.role
+    if role == "fridge_gasket":
+        return "Rubber", (.26, .28, .24), 0.
+    if role == "folded_napkins":
+        return "Paper", (.93, .91, .79), 0.
+    if role == "condiment_jar":
+        return "Enamel", (.74, .79, .73), .04
     if role in {"refrigerator_body", "fridge_door"}:
         return "Enamel", (.68, .69, .54), .05
     if role == "refrigerator_cavity":
@@ -112,6 +119,11 @@ def describe(part, sample_pixel=None, panel_region=None):
         for index in polygon.loop_indices:
             point = mesh.vertices[mesh.loops[index].vertex_index].co
             projection[index] = point[axes[0]], point[axes[1]]
+        if polygon.index in part.floor_charts:
+            tile, metric_uv = part.floor_charts[polygon.index]
+            faces[-1]["component"] = tile
+            for index in polygon.loop_indices:
+                projection[index] = metric_uv[mesh.loops[index].vertex_index]
     geometry = {"vertices": rounded([tuple(vertex.co) for vertex in mesh.vertices], 6),
                 "faces": [face["vertices"] for face in faces]}
     family, tint, metallic = appearance(part, sample_pixel, panel_region)
@@ -140,6 +152,8 @@ def layout(parts):
             chart["low"] = np.minimum(chart["low"], points.min(axis=0))
             chart["high"] = np.maximum(chart["high"], points.max(axis=0))
     for chart in charts.values():
+        if chart["part"]["role"] == "floor" and chart["key"][1] == 2:
+            chart["weight"] = 7.5 if chart["key"][2] > 0 else .25
         chart["extent"] = chart["high"] - chart["low"]
         if not np.isfinite(chart["extent"]).all() or chart["extent"].min() <= 1e-10:
             raise RuntimeError("Degenerate cafe metric chart: " + str(chart["key"]))
@@ -205,6 +219,77 @@ def review(part, row):
     part.obj.data.materials.append(material)
 
 
+def lino_noise(x, y, seed):
+    """Continuous metre-space noise, shared by both map resolutions."""
+    ix, iy = np.floor(x), np.floor(y)
+    fx, fy = x - ix, y - iy
+    fx, fy = fx * fx * (3 - 2 * fx), fy * fy * (3 - 2 * fy)
+
+    def corner(dx, dy):
+        return np.mod(np.sin((ix + dx) * 127.1 + (iy + dy) * 311.7 + seed) * 43758.5453, 1.)
+
+    lower = (1 - fx) * corner(0, 0) + fx * corner(1, 0)
+    upper = (1 - fx) * corner(0, 1) + fx * corner(1, 1)
+    return lower * (1 - fy) + upper * fy
+
+
+def diner_tile(slot, u, v, physical):
+    # One cell is 32 cm in BOTH axes, including partial cells at the windows.
+    if slot == FLOOR_TRIM:
+        pin = np.exp(-((v - FLOOR_BORDER + .030) / .006)**4)
+        color = (1-pin[...,None])*np.asarray((.35,.38,.385)) + pin[...,None]*np.asarray((.70,.68,.60))
+        seam = np.exp(-((v-FLOOR_BORDER)/.0025)**2)
+        roughness = .62
+    else:
+        dark, variant = divmod(slot, 4)
+        base = (.38,.41,.42) if dark else (.76,.73,.65)
+        offset = .008 if variant % 2 else -.005
+        color = np.broadcast_to(np.asarray(base)+offset, (*u.shape,3))
+        edge = np.minimum.reduce((u, v, FLOOR_TILE-u, FLOOR_TILE-v))
+        seam = np.exp(-(edge/.0022)**2)
+        roughness = .47 if variant >= 2 else .63
+    # Dispersed vinyl pigment and tiny wear marks, with no earthy mottle.
+    grain = lino_noise(u*168, v*168, 17+slot) - .5
+    pigment = lino_noise(u*15, v*26, 5+slot) - .5
+    color = color * (1 + .031*grain + .017*pigment)[...,None]
+    color = color*(1-.20*seam[...,None])
+    physical[...,0:2] = .5
+    physical[...,2] = roughness + .024*grain + .10*seam
+    physical[...,3] = 1 - .09*seam
+    return np.clip(color, 0, 1), np.clip(physical, 0, 1)
+
+
+def fitting_wear(chart, u, v, color, physical):
+    # Metric coordinates use Blender XY for horizontal faces and XZ/YZ for uprights.
+    role = chart["part"]["role"]
+    axis = chart["key"][1]
+    if role == "floor" and axis == 2 and chart["key"][2] > 0:
+        return diner_tile(chart["key"][3], u, v, physical)
+    grain = .5 + .5 * np.sin(31*u + .75*np.sin(17*v)) * np.cos(43*v + 2*u)
+    wear = np.zeros_like(u)
+    if role == "counter_top" and axis == 2:
+        wear = .75*np.exp(-((v+1.58)/.095)**2)
+        for x in (-1.50, -.38, .75, 1.8):
+            wear += .22*np.exp(-((u-x)/.34)**2 - ((v+1.42)/.17)**2)
+    elif role == "counter_rail" or role == "kitchen_cabinet_handle":
+        wear = .65 * grain
+    elif role == "stool_seat" and axis == 2:
+        wear = .45 * grain
+    elif role == "stove" and axis == 2:
+        edge = np.minimum(np.abs(v-chart["low"][1]), np.abs(v-chart["high"][1]))
+        chips = np.exp(-(edge/.012)**2) * np.clip((grain-.62)*4,0,1)
+        color *= (1-.32*chips)[...,None]
+        physical[...,2] += .11 * chips
+    elif role == "folded_napkins":
+        physical[...,2] = .86 + .08*grain
+    elif role == "condiment_jar":
+        physical[...,2] = .24 + .10*grain
+    wear = np.clip(wear,0,1)
+    color *= (1+.12*wear)[...,None]
+    physical[...,2] -= .20*wear
+    return np.clip(color,0,1), np.clip(physical,0,1)
+
+
 def bake(charts):
     from mountain_road_surface_authoring import sample
     from village_unique_surfaces import save
@@ -227,6 +312,7 @@ def bake(charts):
             row = chart["part"]
             color, physical = sample(row["family"], u, v, part_name=row["part_name"],
                                      tint=row["tint"], pixel_metres=1 / scale)
+            color, physical = fitting_wear(chart, u, v, color, physical)
             value = physical if response else color
             if not np.isfinite(value).all() or value.min() < 0 or value.max() > 1:
                 raise RuntimeError("Invalid cafe physical samples: " + row["mesh"])

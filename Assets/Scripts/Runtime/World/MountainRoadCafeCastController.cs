@@ -80,15 +80,8 @@ namespace BarPromenade
             : default;
         public MountainRoadCafeServicePresentation ServicePresentation =>
             servicePresentation;
-        /// <summary>
-        /// The spout anchor of the coffee-pot hand prop attached under the
-        /// attendant's right grip. FindModelTransform walks the whole
-        /// model subtree, so the attached prop's anchor is found the same
-        /// way the baked one used to be; null until the pot is attached.
-        /// </summary>
-        public Transform AttendantPourSpout => attendant?.Registry
-            ?.FindModelTransform(
-                CityPedestrianHandProps.CoffeePotSpoutAnchorName);
+        public Transform AttendantPourSpout => attendant?.CoffeePot?.FindAnchor(
+            CityPedestrianHandProps.CoffeePotSpoutAnchorName);
         public Transform AttendantMotionRoot => attendant != null
             ? attendant.transform
             : null;

@@ -102,8 +102,8 @@ namespace BarPromenade.Editor
             CityPedestrianAssetSetup.CemeteryMournerModelPath,
             CityPedestrianAssetSetup.WeighAttendantModelPath,
             CityPedestrianAssetSetup.LakeFishermanModelPath,
-            MountainRoadCafeCastAssetSetup.PairWomanModelPath,
-            MountainRoadCafeCastAssetSetup.AttendantModelPath
+            DefaultNpcWomanAssetSetup.ModelPath,
+            DefaultNpcAssetSetup.ModelPath
         };
 
         private static bool isBuilding;
@@ -891,11 +891,11 @@ namespace BarPromenade.Editor
             string modelPath;
             if (string.Equals(designId, CafeWomanDesignId, StringComparison.Ordinal))
             {
-                modelPath = MountainRoadCafeCastAssetSetup.PairWomanModelPath;
+                modelPath = DefaultNpcWomanAssetSetup.ModelPath;
             }
             else if (string.Equals(designId, CafeAttendantDesignId, StringComparison.Ordinal))
             {
-                modelPath = MountainRoadCafeCastAssetSetup.AttendantModelPath;
+                modelPath = DefaultNpcAssetSetup.ModelPath;
             }
             else if (!CityPedestrianAssetSetup.TryGetModelPath(designId, out modelPath))
             {

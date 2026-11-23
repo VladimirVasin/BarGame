@@ -9,14 +9,6 @@ namespace BarPromenade.Tests.EditMode
 {
     public sealed class MountainRoadCafeCastTests
     {
-        private const string PlayerModelPath =
-            "Assets/Player3D/V2/Models/PlayerCharacter3DV2.fbx";
-        private const string SharedMaterialPath =
-            "Assets/Player3D/Materials/Player3DLit.mat";
-        private const string StagedPrefabRoot =
-            "Assets/Pedestrians/Staged/Prefabs/";
-        private const int MinimumDetailedTriangleCount = 1800;
-
         private static readonly string[] StableIds =
         {
             MountainRoadCafeWorldBuilder.LonePatronAnchorId,
@@ -135,70 +127,32 @@ namespace BarPromenade.Tests.EditMode
 
         [Test]
         [Category("MountainRoad")]
-        public void Provider_LoadsFourDistinctPassiveStagedPrefabs()
+        public void Provider_BindsCafeClipsToFourAllocatedResidents()
         {
-            MountainRoadCafeCastProvider provider =
-                MountainRoadCafeCastProvider.Load();
-            Assert.That(provider, Is.Not.Null);
+            var provider = MountainRoadCafeCastProvider.Load();
             Assert.That(provider.HasCompleteCast, Is.True);
-
-            GameObject[] prefabs = GetProviderPrefabs(provider);
-            MountainRoadCafeCastRole[] roles =
+            var parent = new GameObject("Cafe wardrobe and animation proof");
+            try
             {
-                MountainRoadCafeCastRole.LonePatron,
-                MountainRoadCafeCastRole.PairMan,
-                MountainRoadCafeCastRole.PairWoman,
-                MountainRoadCafeCastRole.Attendant
-            };
-            Assert.That(prefabs, Has.Length.EqualTo(4));
-            Assert.That(prefabs.Distinct().Count(), Is.EqualTo(4));
-
-            Player3DAssetRegistry playerRegistry =
-                Player3DResources.LoadPrefab()
-                    .GetComponent<Player3DAssetRegistry>();
-            Assert.That(playerRegistry, Is.Not.Null);
-            Assert.That(playerRegistry.Animator.avatar, Is.Not.Null);
-            Assert.That(
-                AssetDatabase.GetAssetPath(playerRegistry.Animator.avatar),
-                Is.EqualTo(PlayerModelPath));
-
-            var ambientPrefabs = new HashSet<GameObject>(
-                CityPedestrianResources.AllArchetypes
-                    .Select(archetype => Resources.Load<GameObject>(
-                        archetype.PrefabResourcePath))
-                    .Where(prefab => prefab != null));
-
-            for (int index = 0; index < prefabs.Length; index++)
-            {
-                GameObject prefab = prefabs[index];
-                Assert.That(prefab, Is.Not.Null);
-                Assert.That(provider.GetPrefab(roles[index]), Is.SameAs(prefab));
-                string assetPath = AssetDatabase.GetAssetPath(prefab);
-                Assert.That(assetPath, Does.StartWith(StagedPrefabRoot));
-                Assert.That(assetPath, Does.Not.Contain("/Resources/"));
-                Assert.That(ambientPrefabs.Contains(prefab), Is.False);
-                Assert.That(
-                    prefab.GetComponentsInChildren<
-                        CityPedestrianAssetRegistry>(true),
-                    Is.Empty);
-
-                AssertPrefabContract(
-                    prefab,
-                    playerRegistry.Animator.avatar,
-                    roles[index]);
+                var signatures = new HashSet<string>();
+                foreach (MountainRoadCafeCastRole role in Enum.GetValues(typeof(MountainRoadCafeCastRole)))
+                {
+                    var body = MountainRoadCafeCastFactory.CreateBody(parent.transform, role, provider);
+                    var assignment = DefaultNpcPopulation.GetAssignment(DefaultNpcPopulation.CafeCharacterId(role));
+                    Assert.That(signatures.Add(assignment.VisibleSignature), Is.True);
+                    Assert.That(body.GetComponent<NpcWardrobe>().EquippedItemIds, Is.EquivalentTo(assignment.ItemIds));
+                    Assert.That(body.GetComponent<VillageResidentPresentation>().IsInitialized, Is.False);
+                    Assert.That(body.ClipBindings.Count, Is.EqualTo(role == MountainRoadCafeCastRole.Attendant ? 7 : 2));
+                    Assert.That(body.ClipBindings.All(binding => binding.Clip != null), Is.True);
+                    Assert.That(body.FindModelTransform("SOCKET_Mouth"), Is.Not.Null);
+                }
             }
-
-            Assert.That(
-                prefabs.Sum(prefab => prefab
-                    .GetComponent<MountainRoadCafeCastAssetRegistry>()
-                    .ClipBindings.Count),
-                Is.EqualTo(13),
-                "The isolated library retains ten cafe clips and three shared bar closing actions.");
+            finally { UnityEngine.Object.DestroyImmediate(parent); }
         }
 
         [Test]
         [Category("MountainRoad")]
-        public void BuiltCafe_ContainsOnlyFourBespokeInitializedFigures()
+        public void BuiltCafe_ContainsFourAllocatedFiguresOnTheirMarks()
         {
             var parent = new GameObject("Cafe Cast Test Parent");
             try
@@ -298,7 +252,7 @@ namespace BarPromenade.Tests.EditMode
                             MountainRoadCafeCastPresentation>(true),
                         Has.Length.EqualTo(1),
                         $"Cafe semantic anchor '{stableId}' does not own " +
-                        "exactly one bespoke figure.");
+                        "exactly one cafe figure.");
                 }
             }
             finally
@@ -1036,300 +990,6 @@ namespace BarPromenade.Tests.EditMode
             }
         }
 
-        private static void AssertPrefabContract(
-            GameObject prefab,
-            Avatar expectedAvatar,
-            MountainRoadCafeCastRole expectedRole)
-        {
-            MountainRoadCafeCastAssetRegistry[] registries =
-                prefab.GetComponentsInChildren<
-                    MountainRoadCafeCastAssetRegistry>(true);
-            Assert.That(registries, Has.Length.EqualTo(1));
-            MountainRoadCafeCastAssetRegistry registry = registries[0];
-            Assert.That(registry.Animator, Is.Not.Null);
-            Assert.That(registry.ModelRoot, Is.Not.Null);
-            Assert.That(registry.Role, Is.EqualTo(expectedRole));
-            Assert.That(registry.IdleClip, Is.Not.Null);
-            Assert.That(registry.BeatClip, Is.Not.Null);
-            int expectedClipCount = expectedRole switch
-            {
-                MountainRoadCafeCastRole.LonePatron => 2,
-                MountainRoadCafeCastRole.Attendant => 7,
-                _ => 2
-            };
-            Assert.That(
-                registry.ClipBindings.Count,
-                Is.EqualTo(expectedClipCount));
-            Assert.That(
-                registry.ClipBindings.Select(binding => binding.Kind)
-                    .Distinct().Count(),
-                Is.EqualTo(expectedClipCount));
-            foreach (MountainRoadCafeCastClipBinding clip in
-                     registry.ClipBindings)
-            {
-                Assert.That(clip.Clip, Is.Not.Null);
-                bool expectedLoop =
-                    clip.Kind == MountainRoadCafeCastClipKind.Idle ||
-                    clip.Kind == MountainRoadCafeCastClipKind.Wipe ||
-                    clip.Kind == MountainRoadCafeCastClipKind.Walk ||
-                    clip.Kind == MountainRoadCafeCastClipKind.ClosingAddressLoop;
-                Assert.That(clip.Loop, Is.EqualTo(expectedLoop));
-            }
-            if (expectedRole == MountainRoadCafeCastRole.LonePatron)
-            {
-                Assert.That(
-                    registry.BeatClip,
-                    Is.SameAs(registry.GetClip(
-                        MountainRoadCafeCastClipKind.Interject)));
-            }
-            // Since 2026-09-05 the pot, the towel and the woman's
-            // cigarette are hand-prop prefabs: the spout anchor lives on
-            // the coffee-pot prop, so NO cafe body may carry it, and no
-            // body may carry a renderer named like a prop part (exact
-            // names — the bartender's own towel is a different model).
-            Assert.That(
-                registry.FindModelTransform(
-                    CityPedestrianHandProps.CoffeePotSpoutAnchorName),
-                Is.Null,
-                $"{expectedRole} still carries the body-side spout anchor.");
-            var bodyRendererNames = new HashSet<string>(
-                prefab.GetComponentsInChildren<Renderer>(true)
-                    .Select(renderer => renderer.name),
-                StringComparer.Ordinal);
-            foreach (string propPart in new[]
-                     {
-                         "ACC_CoffeePotBody",
-                         "ACC_CoffeePotLid",
-                         "ACC_CoffeePotBaseRing",
-                         "ACC_CoffeePotLidKnob",
-                         "ACC_CoffeePotSpout",
-                         "ACC_CoffeePotSpoutLip",
-                         "ACC_CoffeePotHandleTop",
-                         "ACC_CoffeePotHandleBottom",
-                         "ACC_CoffeePotHandleGrip",
-                         "ACC_ServiceTowel",
-                         "ACC_CafeCigaretteFilter",
-                         "ACC_CafeCigarette",
-                         "ACC_CafeCigaretteEmber"
-                     })
-            {
-                Assert.That(
-                    bodyRendererNames.Contains(propPart),
-                    Is.False,
-                    $"{expectedRole} still carries '{propPart}' on its body.");
-            }
-
-            if (expectedRole == MountainRoadCafeCastRole.Attendant)
-            {
-                Assert.That(
-                    registry.FindModelTransform(
-                        CityPedestrianHandProps.GripRightSocketName),
-                    Is.Not.Null,
-                    "The attendant's coffee pot rides SOCKET_Grip.R.");
-                Assert.That(
-                    registry.FindModelTransform(
-                        CityPedestrianHandProps.GripLeftSocketName),
-                    Is.Not.Null,
-                    "The attendant's towel rides SOCKET_Grip.L.");
-            }
-
-            if (expectedRole == MountainRoadCafeCastRole.PairWoman)
-            {
-                Assert.That(
-                    registry.FindModelTransform(
-                        CityPedestrianHandProps.CigaretteRightSocketName),
-                    Is.Not.Null,
-                    "The woman's cigarette rides SOCKET_Cigarette.R.");
-            }
-
-            if (expectedRole == MountainRoadCafeCastRole.PairMan ||
-                expectedRole == MountainRoadCafeCastRole.PairWoman)
-            {
-                string cupSocket = expectedRole ==
-                                   MountainRoadCafeCastRole.PairWoman
-                    ? "SOCKET_Vessel.L"
-                    : "SOCKET_Bottle.R";
-                Assert.That(
-                    registry.FindModelTransform(cupSocket),
-                    Is.Not.Null,
-                    $"{expectedRole} requires its animated cup-hand socket.");
-            }
-            Assert.That(registry.Animator.avatar, Is.SameAs(expectedAvatar));
-            Assert.That(registry.Animator.applyRootMotion, Is.False);
-            Assert.That(
-                registry.Animator.runtimeAnimatorController,
-                Is.Null,
-                "Cafe figures are Playables-driven and must stay " +
-                "controller-free.");
-            Assert.That(registry.RendererBindings, Is.Not.Empty);
-            Assert.That(
-                registry.RendererBindings
-                    .Select(binding => binding.Renderer)
-                    .All(renderer => renderer != null),
-                Is.True);
-            Assert.That(
-                registry.RendererBindings
-                    .Select(binding => binding.Renderer)
-                    .Distinct().Count(),
-                Is.EqualTo(registry.RendererBindings.Count));
-
-            Texture2D atlas = registry.DetailAtlas;
-            Assert.That(atlas, Is.Not.Null);
-            Assert.That(
-                AssetDatabase.GetAssetPath(atlas),
-                Is.EqualTo(ExpectedAtlasPath(expectedRole)));
-            Assert.That(atlas.width, Is.EqualTo(256));
-            Assert.That(atlas.height, Is.EqualTo(256));
-            Assert.That(atlas.filterMode, Is.EqualTo(FilterMode.Point));
-            Assert.That(atlas.wrapMode, Is.EqualTo(TextureWrapMode.Clamp));
-            Assert.That(atlas.mipmapCount, Is.EqualTo(1));
-
-            Renderer[] prefabRenderers =
-                prefab.GetComponentsInChildren<Renderer>(true);
-            Assert.That(
-                CountTriangles(prefabRenderers),
-                Is.GreaterThanOrEqualTo(MinimumDetailedTriangleCount),
-                $"{expectedRole} fell below the cafe Hero V2 detail floor.");
-            Material sharedMaterial =
-                AssetDatabase.LoadAssetAtPath<Material>(SharedMaterialPath);
-            Assert.That(sharedMaterial, Is.Not.Null);
-            Assert.That(
-                registry.RendererBindings.All(binding =>
-                    binding.Renderer.sharedMaterials.Length == 1 &&
-                    binding.Renderer.sharedMaterial == sharedMaterial),
-                Is.True,
-                "Cafe detail atlases must not create material instances.");
-            int expectedMappedRendererCount = registry.RendererBindings.Count(
-                binding => binding.UsesDetailAtlas);
-            Assert.That(
-                expectedMappedRendererCount,
-                Is.GreaterThanOrEqualTo(12),
-                "The cafe atlas must cover face, clothing and footwear, " +
-                "not a token renderer.");
-
-            Assert.That(
-                prefab.GetComponentsInChildren<Collider>(true),
-                Is.Empty);
-            Assert.That(
-                prefab.GetComponentsInChildren<Collider2D>(true),
-                Is.Empty);
-            Assert.That(
-                prefab.GetComponentsInChildren<Rigidbody>(true),
-                Is.Empty);
-            Assert.That(
-                prefab.GetComponentsInChildren<Rigidbody2D>(true),
-                Is.Empty);
-            Assert.That(
-                prefab.GetComponentsInChildren<AudioSource>(true),
-                Is.Empty);
-            Assert.That(
-                prefab.GetComponentsInChildren<Light>(true),
-                Is.Empty);
-            Assert.That(
-                prefab.GetComponentsInChildren<Camera>(true),
-                Is.Empty);
-
-            GameObject instance = UnityEngine.Object.Instantiate(prefab);
-            try
-            {
-                instance.SetActive(false);
-                instance.SetActive(true);
-                MountainRoadCafeCastAssetRegistry instanceRegistry =
-                    instance.GetComponentInChildren<
-                        MountainRoadCafeCastAssetRegistry>(true);
-                instanceRegistry.ApplyBaseColors();
-                var properties = new MaterialPropertyBlock();
-                int mappedRendererCount = 0;
-                for (int index = 0;
-                     index < instanceRegistry.RendererBindings.Count;
-                     index++)
-                {
-                    MountainRoadCafeCastRendererBinding binding =
-                        instanceRegistry.RendererBindings[index];
-                    binding.Renderer.GetPropertyBlock(properties);
-                    AssertColor(
-                        properties.GetColor("_BaseColor"),
-                        binding.Color);
-                    AssertColor(
-                        properties.GetColor("_Color"),
-                        binding.Color);
-                    if (binding.UsesDetailAtlas)
-                    {
-                        Assert.That(
-                            properties.GetTexture("_BaseMap"),
-                            Is.SameAs(instanceRegistry.DetailAtlas));
-                        mappedRendererCount++;
-                    }
-
-                    properties.Clear();
-                }
-
-                Assert.That(
-                    instanceRegistry.DetailAtlas,
-                    Is.SameAs(atlas));
-                Assert.That(
-                    mappedRendererCount,
-                    Is.EqualTo(expectedMappedRendererCount));
-            }
-            finally
-            {
-                UnityEngine.Object.DestroyImmediate(instance);
-            }
-        }
-
-        private static string ExpectedAtlasPath(
-            MountainRoadCafeCastRole role)
-        {
-            switch (role)
-            {
-                case MountainRoadCafeCastRole.LonePatron:
-                    return "Assets/Pedestrians/Textures/" +
-                           "MountainCafeLonePatron3DDetailAtlas.png";
-                case MountainRoadCafeCastRole.PairMan:
-                    return "Assets/Pedestrians/Textures/" +
-                           "MountainCafeCoupleMan3DDetailAtlas.png";
-                case MountainRoadCafeCastRole.PairWoman:
-                    return "Assets/Pedestrians/Textures/" +
-                           "MountainCafeCoupleWoman3DDetailAtlas.png";
-                case MountainRoadCafeCastRole.Attendant:
-                    return "Assets/Pedestrians/Textures/" +
-                           "MountainCafeAttendant3DDetailAtlas.png";
-                default:
-                    throw new ArgumentOutOfRangeException(
-                        nameof(role),
-                        role,
-                        "Unknown cafe cast role.");
-            }
-        }
-
-        private static int CountTriangles(
-            IReadOnlyList<Renderer> renderers)
-        {
-            int triangleCount = 0;
-            for (int index = 0; index < renderers.Count; index++)
-            {
-                Renderer renderer = renderers[index];
-                Mesh mesh = renderer is SkinnedMeshRenderer skinned
-                    ? skinned.sharedMesh
-                    : renderer.GetComponent<MeshFilter>()?.sharedMesh;
-                Assert.That(
-                    mesh,
-                    Is.Not.Null,
-                    $"Renderer '{renderer.name}' has no shared mesh.");
-                triangleCount += (int)(mesh.GetIndexCount(0) / 3);
-            }
-
-            return triangleCount;
-        }
-
-        private static void AssertColor(Color actual, Color expected)
-        {
-            Assert.That(actual.r, Is.EqualTo(expected.r).Within(0.0001f));
-            Assert.That(actual.g, Is.EqualTo(expected.g).Within(0.0001f));
-            Assert.That(actual.b, Is.EqualTo(expected.b).Within(0.0001f));
-            Assert.That(actual.a, Is.EqualTo(expected.a).Within(0.0001f));
-        }
-
         private static void AssertVector(
             Vector3 actual,
             Vector3 expected,
@@ -1492,16 +1152,5 @@ namespace BarPromenade.Tests.EditMode
                 cafe.Right);
         }
 
-        private static GameObject[] GetProviderPrefabs(
-            MountainRoadCafeCastProvider provider)
-        {
-            return new[]
-            {
-                provider.LonePatronPrefab,
-                provider.PairManPrefab,
-                provider.PairWomanPrefab,
-                provider.AttendantPrefab
-            };
-        }
     }
 }

@@ -43,15 +43,17 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 
 import interior_kit as kit  # noqa: E402
+from city_building_coplanarity import _convex_intersection_area
+import bar_furniture as fittings
 import bar_parts as bp  # noqa: E402
 import mountain_road_cafe_surfaces as cafe_surfaces  # noqa: E402
 
 
-GENERATOR_VERSION = "1.3.0"
+GENERATOR_VERSION = "1.4.0"
 DESIGN_ID = "mountain_road_cafe_nighthawks_v1"
 DISPLAY_NAME = "Bar Promenade Mountain Road Nighthawks Cafe"
-EXPECTED_MESH_COUNT = 61
-EXPECTED_TRIANGLE_COUNT = 5794
+EXPECTED_MESH_COUNT = 64
+EXPECTED_TRIANGLE_COUNT = 21030
 EXPECTED_ANCHOR_COUNT = 52
 EXPECTED_PROP_COUNT = 7
 
@@ -280,6 +282,7 @@ class Part:
     local_geometry: kit.Geometry
     unity_origin: tuple[float, float, float]
     initially_visible: bool = True
+    floor_charts: dict = field(default_factory=dict)
 
 
 @dataclass
@@ -534,15 +537,16 @@ def hollow_cup(
 
 
 def cup_geometry() -> kit.Geometry:
-    handle = ring_tube(
-        (0.061, 0.062, 0.0), 0.037, 0.007, -72.0, 72.0, 9, 6)
-    return kit.merge(hollow_cup(), handle)
+    bowl = fittings.turned((0,0,0), [(.048,0),(.053,.002),(.054,.009),(.055,.014),
+        (.064,.066),(.067,.109),(.067,.115),(.065,.118),(.061,.118),(.059,.115),
+        (.059,.103),(.050,.026),(.045,.018)], 24)
+    handle = ring_tube((.061,.062,0), .037,.008, -72.,72., 14,8)
+    return kit.merge(bowl, handle)
 
 
 def saucer_geometry() -> kit.Geometry:
-    lower = bp.u_cylinder((0.0, 0.005, 0.0), (0.162, 0.005, 0.162), 16)
-    rim = bp.u_cylinder((0.0, 0.011, 0.0), (0.132, 0.004, 0.132), 16)
-    return kit.merge(lower, rim)
+    return fittings.turned((0,0,0), [(.046,-.015),(.051,-.014),(.052,-.010),
+        (.077,-.004),(.081,.001),(.080,.004),(.076,.0045),(.053,.0005),(.050,0)],24)
 
 
 def liquid_geometry() -> kit.Geometry:
@@ -899,16 +903,82 @@ def add_prop(
     return prop
 
 
+def build_floor(asset, outer):
+    """A flush, fitted tile field and a mitred border on the existing slab."""
+    pitch, border = cafe_surfaces.FLOOR_TILE, cafe_surfaces.FLOOR_BORDER
+    left, front = outer[0]
+    right, back = outer[3]
+    miter = border * (math.sqrt(2) - 1)
+    inner = [(left+border, front+border), (outer[1][0]-miter, front+border),
+             (right-border, outer[2][1]+miter), (right-border, back-border),
+             (left+border, back-border)]
+    vertices, faces = polygon_slab(outer, .018, .075)
+    faces.pop(1)
+    charts = {}
+
+    def top(points, chart, uv):
+        indices = list(range(len(vertices), len(vertices) + len(points)))
+        charts[len(faces)] = chart, dict(zip(indices, uv))
+        vertices.extend((x, .075, z) for x, z in points)
+        faces.append(tuple(reversed(indices)))
+
+    # Only the diagonal shop window cuts a grid cell at an angle.
+    diagonal = inner[1][0] - inner[1][1]
+    x0, z0 = inner[0]
+    xmax, zmax = inner[3]
+    for row in range(math.ceil((zmax-z0) / pitch)):
+        z = z0 + row*pitch
+        for col in range(math.ceil((xmax-x0) / pitch)):
+            x = x0 + col*pitch
+            x1, z1 = min(x+pitch, xmax), min(z+pitch, zmax)
+            rect = [(x,z), (x1,z), (x1,z1), (x,z1)]
+            tile = []
+            for i, pt in enumerate(rect):
+                last = rect[i-1]
+                a, b = diagonal-last[0]+last[1], diagonal-pt[0]+pt[1]
+                if a*b < 0:
+                    t = a/(a-b)
+                    tile.append((last[0]+t*(pt[0]-last[0]), last[1]+t*(pt[1]-last[1])))
+                if b >= 0:
+                    tile.append(pt)
+            if len(tile) < 3:
+                continue
+            # Four surface variants per colour; traffic selects the polished pair.
+            aisle = abs(z+pitch/2+3.03) < .61 and -3.95 < x < 2.95
+            service = abs(z+pitch/2-3.50) < .52 and -2.60 < x < 2.84
+            variant = ((col * 11 + row * 7 + col * row) % 5 < 2) + 2*int(aisle or service)
+            chart = ((row + col) % 2)*4 + variant
+            top(tile, chart, [(px-x,pz-z) for px,pz in tile])
+
+    for i, start in enumerate(outer):
+        j = (i+1) % len(outer)
+        dx, dz = outer[j][0]-start[0], outer[j][1]-start[1]
+        length = math.hypot(dx, dz)
+        nx, nz = -dz/length, dx/length
+        count = math.ceil(length/pitch)
+        def at(a,b,t):
+            return a[0]+t*(b[0]-a[0]), a[1]+t*(b[1]-a[1])
+        for step in range(count):
+            lo, hi = step/count, (step+1)/count
+            face = [at(start,outer[j],lo), at(start,outer[j],hi),
+                    at(inner[i],inner[j],hi), at(inner[i],inner[j],lo)]
+            uv = [((x-face[0][0])*dx/length + (z-face[0][1])*dz/length,
+                   (x-start[0])*nx + (z-start[1])*nz) for x,z in face]
+            top(face, cafe_surfaces.FLOOR_TRIM, uv)
+
+    def area(poly):
+        return abs(sum(px*poly[i-1][1] - pz*poly[i-1][0]
+                       for i,(px,pz) in enumerate(poly))) * .5
+
+    covered = sum(area([(vertices[k][0],vertices[k][2]) for k in faces[i]]) for i in charts)
+    if not math.isclose(covered, area(outer), abs_tol=1e-7):
+        raise RuntimeError("Cafe tiles and mitred border must cover the floor exactly.")
+    add_part(asset, "Cafe_Floor", (vertices, faces), "floor", "CafeInteriorDetail", group="shell")
+    asset.parts[-1].floor_charts = charts
+
+
 def build_shell(asset: AssetBuild) -> None:
-    inset_floor = tuple((x * 0.985, z * 0.985) for x, z in FOOTPRINT)
-    add_part(
-        asset,
-        "Cafe_Floor",
-        polygon_slab(inset_floor, 0.018, 0.075),
-        "floor",
-        "CafeInteriorDetail",
-        group="shell",
-    )
+    build_floor(asset, tuple((x * .985, z * .985) for x, z in FOOTPRINT))
     add_part(
         asset,
         "Cafe_Roof",
@@ -1093,43 +1163,33 @@ def build_interior(asset: AssetBuild) -> None:
     )
 
     # Long mahogany counter and faceted return.
-    counter_base = bp.u_box((0.62, 0.45, -1.15), (6.10, 0.90, 0.82), 0.024)
-    counter_top = bp.u_box((0.62, 0.96, -1.15), (6.36, 0.12, 1.02), 0.025)
-    return_start = (3.20, -1.15)
-    return_end = (3.45, 0.55)
-    return_base = segment_box(return_start, return_end, 0.447, 0.894, 0.62, 0.024)
-    return_top = segment_box(return_start, return_end, 0.9605, 0.105, 0.72, 0.025)
-    add_part(asset, "Cafe_CounterBase", kit.merge(counter_base, return_base),
-             "counter_base", "CafeCounterDetail", group="counter")
-    add_part(asset, "Cafe_CounterTop", kit.merge(counter_top, return_top),
-             "counter_top", "CafeCounterDetail", group="counter")
-    apron = bp.u_box((0.62, 0.70, -1.585), (6.18, 0.42, 0.045), 0.006)
-    add_part(asset, "Cafe_CounterApron", apron, "counter_apron",
-             "CafeCounterDetail", group="counter")
-    rail_bar = bp.u_cylinder((0.0, 0.0, 0.0), (0.055, 3.02, 0.055), 12)
-    rail_bar = bp.u_rotated(rail_bar, (0.0, 0.0, 90.0))
-    rail_bar = translate_geometry(rail_bar, (0.62, 0.25, -1.73))
-    foot_rail = merge([
-        rail_bar,
-        bp.u_cylinder((-2.35, 0.25, -1.73), (0.12, 0.25, 0.12), 10),
-        bp.u_cylinder((3.59, 0.25, -1.73), (0.12, 0.25, 0.12), 10),
-    ])
-    add_part(asset, "Cafe_CounterFootRail", foot_rail, "counter_rail",
-             "CafeMetalDetail", group="counter")
+    # Cut the two leaves at the same mitre. Only the edge along that joint
+    # gets a fine arris; the guest-facing lip is rolled over the end grain.
+    inner, outer = (2.92, -.64), (3.80, -1.66)
+    main = [(-2.56, -1.66), outer, inner, (-2.56, -.64)]
+    wing = [outer, (3.81, .50), (3.09, .60), inner]
+    counter_top = kit.merge(fittings.edged_slab(main, .90, .12, 1),
+                            fittings.edged_slab(wing, .90, .12, 3))
+    counter_base = polyline_strip([(-2.43, -1.15), (3.32, -1.15), (3.45, .55)],
+                                .74, 0., .90)
+    add_part(asset, "Cafe_CounterBase", counter_base, "counter_base", "CafeCounterDetail", group="counter")
+    add_part(asset, "Cafe_CounterTop", counter_top, "counter_top", "CafeCounterDetail", group="counter")
+    panels = [kit.translated(fittings.panel(.995, .66), (-1.94 + i, .52, -1.54))
+              for i in range(6)]
+    add_part(asset, "Cafe_CounterApron", merge(panels), "counter_apron", "CafeCounterDetail", group="counter")
+    tube = fittings.turned((0., 0., 0.), [(.025,0.),(.032,.009),(.032,6.01),(.025,6.02)], 16)
+    rail = [kit.translated(bp.u_rotated(tube, (0,0,-90)), (-2.39,.25,-1.73))]
+    for x in (-2.24, -.42, 1.44, 3.46):
+        bracket = fittings.turned((0.,0.,0.), [(.04,0.),(.034,.016),(.020,.032),
+                                   (.020,.164),(.047,.181),(.047,.204)], 12)
+        rail.append(kit.translated(bp.u_rotated(bracket, (90,0,0)), (x,.25,-1.73)))
+    add_part(asset, "Cafe_CounterFootRail", merge(rail), "counter_rail", "CafeMetalDetail", group="counter")
 
-    # Seven real bar stools. Their old 0.4675 m dining-chair height left the
-    # authored patrons visibly hovering 0.35 m above the seats; 0.8175 m meets
-    # the measured underside of all three seated coats beside the 1.02 m bar.
-    stool_metal: list[kit.Geometry] = []
-    stool_seats: list[kit.Geometry] = []
+    stool_metal, stool_seats = [], []
     for index, (x, z, forward_x, forward_z) in enumerate(STOOL_STATIONS):
-        stool_metal.extend([
-            bp.u_cylinder((x, 0.390, z), (0.10, 0.390, 0.10), 10),
-            bp.u_cylinder((x, 0.035, z), (0.34, 0.035, 0.34), 12),
-        ])
-        stool_seats.append(
-            bp.u_cylinder((x, 0.790, z), (0.48, 0.0275, 0.48), 14)
-        )
+        stem, foot, cushion = fittings.stool(x, z, STOOL_SEAT_TOP_Y, .48, .063, .34, .086)
+        stool_metal.extend((stem, foot))
+        stool_seats.append(cushion)
         add_anchor(asset, f"Stool.{index:02d}", "stool", (x, STOOL_SEAT_TOP_Y, z),
                    (forward_x, 0.0, forward_z))
     add_part(asset, "Cafe_StoolMetal", merge(stool_metal), "stool_metal",
@@ -1172,11 +1232,13 @@ def build_interior(asset: AssetBuild) -> None:
             (high_x - low_x, 0.68, 0.037),
             0.012,
         ))
-        cabinet_handles.append(bp.u_box(
-            (center_x, 0.68, SERVICE_CABINET_FRONT_Z - 0.066),
-            (0.24, 0.035, 0.046),
-            0.007,
-        ))
+        for dx in (-.10, .10):
+            cabinet_handles.append(bp.u_box((center_x + dx,.68,SERVICE_CABINET_FRONT_Z-.055),
+                                             (.030,.034,.058),.006))
+        cabinet_handles.append(bp.u_box((center_x,.68,SERVICE_CABINET_FRONT_Z-.086),
+                                         (.228,.034,.032),.009))
+        cabinet_fronts.append(bp.u_box((center_x,.435,SERVICE_CABINET_FRONT_Z-.045),
+                                        (high_x-low_x-.088,.58,.018),.009))
     add_part(
         asset,
         "Cafe_KitchenCabinetFronts",
@@ -1223,15 +1285,11 @@ def build_interior(asset: AssetBuild) -> None:
     ]
     burner_half_height = (STOVE_BURNER_TOP_Y - STOVE_PLATE_HIGH_Y) * 0.5
     for burner_x in (STOVE_CENTER[0] - 0.28, STOVE_CENTER[0] + 0.28):
-        stove_parts.append(bp.u_cylinder(
-            (
-                burner_x,
-                STOVE_PLATE_HIGH_Y + burner_half_height,
-                STOVE_CENTER[1],
-            ),
-            (0.38, burner_half_height, 0.38),
-            12,
-        ))
+        # The stepped cast-iron lip carries the pan at the measured height.
+        h = 2 * burner_half_height
+        stove_parts.append(fittings.turned((burner_x,STOVE_PLATE_HIGH_Y,STOVE_CENTER[1]),
+            [(.184,0),(.190,.003),(.187,.007),(.165,.010),(.160,h),
+             (.140,h),(.137,h-.004),(.110,h-.004),(.107,h-.001),(.077,h-.001)],24))
     for knob_x in (STOVE_CENTER[0] - 0.24, STOVE_CENTER[0] + 0.24):
         stove_parts.append(bp.u_box(
             (knob_x, STOVE_PLATE_LOW_Y + 0.018, STOVE_CENTER[1] - 0.365),
@@ -1241,16 +1299,9 @@ def build_interior(asset: AssetBuild) -> None:
     add_part(asset, "Cafe_Stove", merge(stove_parts), "stove",
              "CafeMetalDetail", group="appliance")
 
-    pan_bowl = translate_geometry(
-        hollow_cup(
-            height=0.075,
-            bottom_radius=0.20,
-            top_radius=0.27,
-            thickness=0.035,
-            sides=16,
-        ),
-        (PAN_CENTER[0], PAN_BOTTOM_Y, PAN_CENTER[1]),
-    )
+    pan_bowl = fittings.turned((PAN_CENTER[0],PAN_BOTTOM_Y,PAN_CENTER[1]),
+        [(.188,0),(.202,.002),(.210,.010),(.247,.040),(.268,.064),
+         (.271,.071),(.269,.075),(.261,.075),(.253,.062),(.215,.030),(.192,.011)], 28)
     pan_handle = segment_box(
         (PAN_CENTER[0] - 0.18, PAN_CENTER[1] - 0.18),
         (PAN_CENTER[0] - 0.55, PAN_CENTER[1] - 0.55),
@@ -1373,6 +1424,12 @@ def build_interior(asset: AssetBuild) -> None:
             0.010,
         ),
     ])
+    # The gasket sits against the inside of the closed leaf. The long pull
+    # stands off the front on two short feet, inside the grip envelope.
+    gasket = [bp.u_box((x,.98,.045),(.022,1.78,.013),.004) for x in (.034,.966)]
+    gasket += [bp.u_box((.5,y,.045),(.912,.022,.013),.004) for y in (.10,1.86)]
+    add_part(asset,"Cafe_FridgeSeal",merge(gasket),"fridge_gasket","CafePropsDetail",
+             group="dynamic_prop", parent=fridge_door.root)
     add_part(
         asset,
         "Cafe_FridgeDoor",
@@ -1382,7 +1439,7 @@ def build_interior(asset: AssetBuild) -> None:
         group="dynamic_prop",
         parent=fridge_door.root,
     )
-    fridge_door.part_names.append("Cafe_FridgeDoor")
+    fridge_door.part_names.extend(("Cafe_FridgeDoor", "Cafe_FridgeSeal"))
     add_anchor(
         asset,
         "Grip.FridgeDoor",
@@ -1423,26 +1480,24 @@ def build_interior(asset: AssetBuild) -> None:
              "CafeGlassDetail", group="appliance", casts_shadows=False)
 
     # Small counter equipment: napkin dispenser, sugar, salt and paper stack.
-    details = merge([
-        bp.u_box(
-            (-0.25, 1.10, HERO_COUNTER_DETAIL_Z),
-            (0.22, 0.22, 0.15),
-            0.012,
-        ),
-        bp.u_cylinder(
-            (0.10, 1.10, HERO_COUNTER_DETAIL_Z),
-            (0.10, 0.10, 0.10),
-            10,
-        ),
-        bp.u_cylinder(
-            (0.30, 1.09, HERO_COUNTER_DETAIL_Z),
-            (0.08, 0.09, 0.08),
-            10,
-        ),
-        bp.u_box((2.43, 1.045, -1.18), (0.42, 0.025, 0.30), 0.004),
-    ])
-    add_part(asset, "Cafe_CounterDetails", details, "counter_details",
-             "CafePropsDetail", group="props")
+    z = HERO_COUNTER_DETAIL_Z
+    y = 1.02
+    case = [bp.u_box((-.25,y+.012,z),(.220,.024,.150),.008),
+            bp.u_box((-.25,y+.108,z),(.210,.185,.142),.016)]
+    for dx in (-.087,.087):
+        case.append(bp.u_box((-.25+dx,y+.15,z-.068),(.029,.093,.010),.004))
+    for x,r,h in ((.10,.05,.17),(.30,.04,.13)):
+        case.append(fittings.turned((x,y+h,z),[(r*.83,0),(r*1.04,.003),(r*1.05,.014),
+                                    (r*.95,.020),(r*.81,.023)],16))
+    add_part(asset,"Cafe_CounterDetails",merge(case),"counter_details","CafeMetalDetail",group="props")
+    jars = [fittings.turned((x,y,z),[(r*.80,0),(r,.007),(r,.018),(r*.94,.022),
+                                   (r*.94,h-.025),(r*.78,h-.012),(r*.78,h)],12)
+            for x,r,h in ((.10,.05,.17),(.30,.04,.13))]
+    add_part(asset,"Cafe_CondimentJars",merge(jars),"condiment_jar","CafePropsDetail",group="props")
+    folds = [bp.u_box((-.25,y+.155,z-.072),(.139,.069,.006),.002),
+             bp.u_box((-.25,y+.175,z-.067),(.128,.063,.006),.002),
+             bp.u_box((2.43,1.041,-1.18),(.42,.042,.30),.004)]
+    add_part(asset,"Cafe_FoldedNapkins",merge(folds),"folded_napkins","CafePropsDetail",group="props")
 
 
 def menu_leaf_geometry(
@@ -1892,7 +1947,9 @@ def broad_coplanar_overlaps(asset: AssetBuild) -> tuple[list[dict], list[dict]]:
                 continue
             plane = sum(vertices[index][dominant] for index in face) / len(face)
             bounds = projected_face_bounds(vertices, face, dominant)
-            records.append((face_index, normal, dominant, plane, bounds))
+            axes = [axis for axis in range(3) if axis != dominant]
+            polygon = [(vertices[i][axes[0]], vertices[i][axes[1]]) for i in face]
+            records.append((face_index, normal, dominant, plane, bounds, polygon))
         faces_by_part.append((part, records))
 
     overlaps: list[dict] = []
@@ -1901,8 +1958,8 @@ def broad_coplanar_overlaps(asset: AssetBuild) -> tuple[list[dict], list[dict]]:
         first_part, first_faces = faces_by_part[first_index]
         for second_index in range(first_index, len(faces_by_part)):
             second_part, second_faces = faces_by_part[second_index]
-            for first_face, first_normal, first_axis, first_plane, first_bounds in first_faces:
-                for second_face, second_normal, second_axis, second_plane, second_bounds in second_faces:
+            for first_face, first_normal, first_axis, first_plane, first_bounds, first_polygon in first_faces:
+                for second_face, second_normal, second_axis, second_plane, second_bounds, second_polygon in second_faces:
                     if first_index == second_index and second_face <= first_face:
                         continue
                     if first_axis != second_axis:
@@ -1919,6 +1976,10 @@ def broad_coplanar_overlaps(asset: AssetBuild) -> tuple[list[dict], list[dict]]:
                         continue
                     area = overlap_first * overlap_second
                     if area <= 0.002:
+                        continue
+                    # The boxes of adjacent mitres and turned rings overlap in projection.
+                    area = _convex_intersection_area(first_polygon, second_polygon, 1e-9)
+                    if area <= .002:
                         continue
                     record = {
                         "first_part": first_part.name,
@@ -2040,7 +2101,7 @@ def validate(asset: AssetBuild, textures: Sequence[dict]) -> dict:
     fridge_pivot = asset.anchors.get("FridgeDoorPivot")
     if (fridge_prop is None or fridge_prop.role != "fridge_door" or
             fridge_prop.owner != "FridgeDoor" or
-            fridge_prop.part_names != ["Cafe_FridgeDoor"]):
+            fridge_prop.part_names != ["Cafe_FridgeDoor", "Cafe_FridgeSeal"]):
         problems.append("FridgeDoor dynamic prop contract is incomplete")
     elif max(
         abs(actual - expected)
@@ -2762,6 +2823,14 @@ def main() -> None:
     surfaces = cafe_surfaces.prepare(asset, validate_only=args.validate_only or args.reuse_surfaces,
                                     layout_only=args.surface_layout_only,
                                     sample_pixel=texture_pixel, panel_region=appliance_panel_region)
+    tiles = [chart for chart in surfaces["projection"]["charts"]
+             if chart["key"][:3] == ["Cafe_Floor", 2, 1]]
+    if {chart["key"][3] for chart in tiles} != set(range(cafe_surfaces.FLOOR_TRIM+1)):
+        raise RuntimeError("Cafe floor lost a checker colour, its polished finish or its border.")
+    for tile in tiles:
+        if tile["texels_per_metre"] < 640 or (tile["key"][3] != cafe_surfaces.FLOOR_TRIM and
+                any(abs(dimension-cafe_surfaces.FLOOR_TILE) > .0001 for dimension in tile["extent_m"])):
+            raise RuntimeError("Cafe floor UVs must preserve 32 cm square tiles at eye height.")
     if args.surface_layout_only:
         return
     textures = [row for row in textures if row["sheet"] in {"CafeGlassDetail", "CafeCounterDetail"}] + cafe_surfaces.textures(surfaces)

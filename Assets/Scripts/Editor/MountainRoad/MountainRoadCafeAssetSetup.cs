@@ -58,8 +58,8 @@ namespace BarPromenade.Editor
             "Assets/Resources/Materials/CityNoirEmission.mat";
         private const string ExpectedDesignId =
             "mountain_road_cafe_nighthawks_v1";
-        private const int ExpectedMeshCount = 61;
-        private const int ExpectedTriangleCount = 5794;
+        private const int ExpectedMeshCount = 64;
+        private const int ExpectedTriangleCount = 21030;
         private const int ExpectedAnchorCount = 52;
         private const int ExpectedPropCount = 7;
         private const int ExpectedStoolCount = 7;
@@ -579,8 +579,9 @@ namespace BarPromenade.Editor
                 fridgeDoor.PourTarget != null ||
                 fridgeDoor.LiquidTransform != null ||
                 fridgeDoor.LiquidRenderer != null ||
-                fridgeDoor.Renderers.Count != 1 ||
-                fridgeDoor.Renderers[0] == null ||
+                fridgeDoor.Renderers.Count != 2 ||
+                fridgeDoor.Renderers[0]?.name != "Cafe_FridgeDoor" ||
+                fridgeDoor.Renderers[1]?.name != "Cafe_FridgeSeal" ||
                 !registry.TryGetAnchor(
                     "FridgeDoorPivot",
                     out Transform fridgeDoorPivot) ||
@@ -891,7 +892,7 @@ namespace BarPromenade.Editor
                           prop.root_name,
                           "PROP_FridgeDoor",
                           StringComparison.Ordinal) ||
-                      prop.part_names.Length != 1 ||
+                      prop.part_names.Length != 2 || prop.part_names[1] != "Cafe_FridgeSeal" ||
                       !string.Equals(
                           prop.part_names[0],
                           "Cafe_FridgeDoor",

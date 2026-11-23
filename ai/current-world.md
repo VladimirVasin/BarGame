@@ -1813,9 +1813,9 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   collider remains `4 mm` over support. Seven threshold props and the hero
   counter seat use the cafe's transformed frame; shelter/map/XYZ/debug arrival
   share the plan. There is no MountainRoad copy. Its lone patron,
-  neighbouring couple and attendant are four dedicated staged models, not
-  pedestrian-pool substitutes. Its fixed-metre Blender set has `61` meshes /
-  `5,794` triangles, `52` semantic anchors and seven dynamic prop assemblies.
+  couple and attendant wear a coat, overshirt, braid/scarf and apron on four catalog NPCs.
+  The 32 cm vinyl checks have a border and polished aisle. The bar shares the clips. The cafe has `64` meshes /
+  `21,030` triangles, `52` semantic anchors and seven dynamic prop assemblies.
   The rear service wall reads as one kitchen run: a long cabinet and worktop
   with `CuttingBoardDock`, a compact stove and pan at `StovePanDock`, and a
   refrigerator cavity with two shelves.

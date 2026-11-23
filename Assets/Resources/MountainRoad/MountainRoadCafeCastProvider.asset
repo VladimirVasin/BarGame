@@ -12,7 +12,51 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8e05469386094c038eefd622f298af67, type: 3}
   m_Name: MountainRoadCafeCastProvider
   m_EditorClassIdentifier: BarPromenade.Runtime::BarPromenade.MountainRoadCafeCastProvider
-  lonePatronPrefab: {fileID: 5867363309768368238, guid: bf718fd7e094e0041a4e4a4b3942f585, type: 3}
-  pairManPrefab: {fileID: 663946243422956064, guid: 0731aedc0fa8ebb40b68d285eb9b6336, type: 3}
-  pairWomanPrefab: {fileID: 4980540669758797629, guid: f028dd8e1975fb646b1fb48bdb597ca5, type: 3}
-  attendantPrefab: {fileID: 5341111453057532531, guid: 49b7867b0b7f55140bf495d841f6a64a, type: 3}
+  roles:
+  - role: 0
+    clips:
+    - kind: 0
+      clip: {fileID: 6245834612081650424, guid: 184a9cf36663abd41a5dd7aad4412d2c, type: 3}
+      loop: 1
+    - kind: 6
+      clip: {fileID: -1978610072373957123, guid: 184a9cf36663abd41a5dd7aad4412d2c, type: 3}
+      loop: 0
+  - role: 1
+    clips:
+    - kind: 0
+      clip: {fileID: 1696308778416157560, guid: 184a9cf36663abd41a5dd7aad4412d2c, type: 3}
+      loop: 1
+    - kind: 1
+      clip: {fileID: -334269275527741307, guid: 184a9cf36663abd41a5dd7aad4412d2c, type: 3}
+      loop: 0
+  - role: 2
+    clips:
+    - kind: 0
+      clip: {fileID: -3304978708293513062, guid: 184a9cf36663abd41a5dd7aad4412d2c, type: 3}
+      loop: 1
+    - kind: 1
+      clip: {fileID: -1571020805900183713, guid: 184a9cf36663abd41a5dd7aad4412d2c, type: 3}
+      loop: 0
+  - role: 3
+    clips:
+    - kind: 2
+      clip: {fileID: -2869807845820341257, guid: 184a9cf36663abd41a5dd7aad4412d2c, type: 3}
+      loop: 1
+    - kind: 3
+      clip: {fileID: -7226570737868844738, guid: 184a9cf36663abd41a5dd7aad4412d2c, type: 3}
+      loop: 1
+    - kind: 4
+      clip: {fileID: 3692449745022551122, guid: 184a9cf36663abd41a5dd7aad4412d2c, type: 3}
+      loop: 0
+    - kind: 5
+      clip: {fileID: 3097864120358050459, guid: 184a9cf36663abd41a5dd7aad4412d2c, type: 3}
+      loop: 0
+    - kind: 7
+      clip: {fileID: -3600441236835388276, guid: 184a9cf36663abd41a5dd7aad4412d2c, type: 3}
+      loop: 0
+    - kind: 8
+      clip: {fileID: 7248370803549437165, guid: 184a9cf36663abd41a5dd7aad4412d2c, type: 3}
+      loop: 1
+    - kind: 9
+      clip: {fileID: 6999320582133130168, guid: 184a9cf36663abd41a5dd7aad4412d2c, type: 3}
+      loop: 0

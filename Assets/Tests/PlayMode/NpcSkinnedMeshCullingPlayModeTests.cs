@@ -86,7 +86,7 @@ namespace BarPromenade.Tests.PlayMode
                     CityPedestrianResources.LoadPrefab()),
                 new PrefabCase("Mother", mother.StagedPrefab),
                 new PrefabCase("shelter resident", shelter.StandingPrefab),
-                new PrefabCase("cafe woman", cafe.PairWomanPrefab),
+                new PrefabCase("cafe woman", DefaultNpcCatalog.GetPrefab(DefaultNpcCatalog.OrdinaryWoman)),
                 new PrefabCase("cashier", cashier.CashierPrefab),
                 new PrefabCase("shared worker", DefaultNpcCatalog.GetPrefab())
             };

@@ -11,6 +11,19 @@ using Object = UnityEngine.Object;
 
 namespace BarPromenade.Tests.PlayMode
 {
+    public sealed class CafeRefitAssetSetup : IPrebuildSetup
+    {
+        public void Setup()
+        {
+#if UNITY_EDITOR
+            Type.GetType("BarPromenade.Editor.MountainRoadCafeAssetSetup, BarPromenade.Editor", true)
+                .GetMethod("BuildOrThrow", Type.EmptyTypes).Invoke(null, null);
+            Type.GetType("BarPromenade.Editor.MountainRoadCafeCastAssetSetup, BarPromenade.Editor", true)
+                .GetMethod("BuildOrThrow", Type.EmptyTypes).Invoke(null, null);
+#endif
+        }
+    }
+
     public sealed class MountainRoadCafePlayModeTests
     {
         private const float PinnedFrameSeconds = 1f / 30f;
@@ -40,17 +53,6 @@ namespace BarPromenade.Tests.PlayMode
         private const float MinimumTapLiftClearance = 0.015f;
         private const float MaximumTapHorizontalGap = 0.020f;
         private const float MinimumTapDishClearance = 0.040f;
-        /// <summary>
-        /// The drag's cigarette axis against the lips-to-mouth-socket
-        /// direction. The generator validates this same dot product over
-        /// the whole drag window and records its minimum in
-        /// `MountainRoadCafeCast.json` (`cigarette_drag_socket_lip_alignment_min`,
-        /// 0.889 — the authored hold sits ~27 degrees off that axis, the
-        /// way a cigarette held at the lips reads level rather than
-        /// pointing down the throat). 0.86 leaves room for a sample at
-        /// the window's edge; the old 0.94 (20 degrees) contradicted the
-        /// authored clip and could never hold.
-        /// </summary>
         private const float MaximumCigaretteLipDistance = 0.025f,
             MinimumCigaretteAxisAlignment = 0.860f;
         private const float MinimumCigaretteApproach = 0.120f;
@@ -391,6 +393,56 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
+        [PrebuildSetup(typeof(CafeRefitAssetSetup))]
+        public IEnumerator CafeRefit_SeatsFourRecognizableResidentsBesideTheNewFittings()
+        {
+            CityGameRoot root = null;
+            yield return LoadSceneAndWaitForRoot(value => root = value);
+            var cafe = root.World.Cafe;
+            var seat = root.BenchSits.Single(value => value.Plan.Id == root.World.CafeSite.CounterSeat.StableId);
+            TeleportPlayer(root.Player, seat.Plan.EntryRootPosition, seat.Plan.EntryRotation);
+            SetCastAlwaysAnimate(cafe.NpcRoot);
+            yield return null;
+            yield return null;
+            var people = cafe.NpcRoot.GetComponentsInChildren<MountainRoadCafeCastPresentation>(true);
+            Assert.That(people, Has.Length.EqualTo(4));
+            foreach (var person in people)
+            {
+                var expected = DefaultNpcPopulation.GetAssignment(DefaultNpcPopulation.CafeCharacterId(person.Role));
+                Assert.That(person.GetComponent<NpcWardrobe>().EquippedItemIds, Is.EquivalentTo(expected.ItemIds));
+                Assert.That(person.GetComponent<DefaultNpcAppearance>().CurrentFaceId, Is.EqualTo(expected.FaceId));
+                Assert.That(person.Registry.Animator, Is.SameAs(person.GetComponent<VillageResidentPresentation>().Animator));
+            }
+            Assert.That(cafe.Model.SourceTriangleCount, Is.EqualTo(21030));
+            foreach (string part in new[] { "Cafe_CondimentJars", "Cafe_FoldedNapkins", "Cafe_FridgeSeal" })
+                Assert.That(cafe.Model.Parts.Single(item => item.SourceName == part).Renderer.enabled, Is.True, part);
+            Camera camera = Camera.main;
+            var pose = new Pose(camera.transform.position, camera.transform.rotation);
+            float fov = camera.fieldOfView;
+            Vector3 Room(float x, float y, float z) =>
+                cafe.Plan.Center + cafe.Plan.Right*x + Vector3.up*y + cafe.Plan.Forward*z;
+            void Photo(string name, Vector3 eye, Vector3 target, float lens)
+            {
+                camera.transform.SetPositionAndRotation(eye, Quaternion.LookRotation(target-eye, Vector3.up));
+                camera.fieldOfView = lens;
+                AreaCaptureFixture.CaptureCurrentCamera(camera, "CafeRefit", name);
+            }
+            try
+            {
+                Photo("counter-and-cast", Room(-3.4f,1.64f,-3.85f), Room(.90f,1.14f,-1.05f), 59);
+                Photo("attendant-and-kitchen", Room(.30f,1.70f,.50f), Room(-1.5f,1.25f,4.85f), 64);
+                Photo("cups-and-napkins", Room(-.90f,1.45f,-1.80f), Room(.17f,1.13f,-.97f), 52);
+                Photo("entrance-floor", Room(-3.47f,1.62f,-4.08f), Room(-.74f,.20f,-2.97f), 66);
+                Photo("guest-side", Room(.40f,1.58f,.70f), Room(.35f,1.32f,-2.16f), 72);
+            }
+            finally
+            {
+                camera.transform.SetPositionAndRotation(pose.position, pose.rotation);
+                camera.fieldOfView = fov;
+            }
+        }
+
+        [UnityTest]
         public IEnumerator DrinkReleaseFrame_ReturnsEveryCupToAuthoredDock()
         {
             CityGameRoot root = null;
@@ -506,19 +558,9 @@ namespace BarPromenade.Tests.PlayMode
                         MountainRoadCafeCastPresentation>(true)
                     .Single(candidate => candidate.Role ==
                         MountainRoadCafeCastRole.Attendant);
-            Renderer[] riskyBindings = attendant.Registry.RendererBindings
-                .Where(binding => binding?.Renderer != null &&
-                    IsServiceCounterRisk(binding.Renderer.name))
-                .Select(binding => binding.Renderer)
-                .Distinct()
-                .ToArray();
-            string[] requiredArmParts =
-            {
-                "GEO_Hand.R",
-                "GEO_Thumb.R",
-                "CLO_SleeveLower.R",
-                "CLO_RolledCuff.R"
-            };
+            Renderer[] riskyBindings = attendant.Registry.BodyRenderers
+                .Where(renderer => renderer.enabled && IsServiceCounterRisk(renderer.name)).ToArray();
+            string[] requiredArmParts = { "GEO_HandPalm.R", "GEO_HandThumb.R", "CLO_Shirt_workSleeve.R" };
             foreach (string required in requiredArmParts)
             {
                 Assert.That(
@@ -798,13 +840,12 @@ namespace BarPromenade.Tests.PlayMode
             Bounds counter = counterTop.Renderer.bounds;
             SkinnedMeshRenderer leftHand = FindSkinnedRenderer(
                 man.Registry,
-                "GEO_Hand.L");
+                "GEO_HandPalm.L");
             SkinnedMeshRenderer[] tapRenderers =
             {
                 leftHand,
-                FindSkinnedRenderer(man.Registry, "GEO_Thumb.L"),
-                FindSkinnedRenderer(man.Registry, "CLO_SleeveLower.L"),
-                FindSkinnedRenderer(man.Registry, "CLO_SleeveUpper.L")
+                FindSkinnedRenderer(man.Registry, "GEO_HandThumb.L"),
+                FindSkinnedRenderer(man.Registry, "CLO_Outer_overshirtSleeve.L")
             };
             Bounds[] dishBounds = root.World.Cafe.Model.Parts
                 .Where(part => part.SourceName ==
@@ -882,8 +923,21 @@ namespace BarPromenade.Tests.PlayMode
             Renderer cigarette = woman.HeldCigarette.FindRenderer(MountainRoadCafeCigaretteEffect.CigaretteRendererName);
             Assert.That(cigarette, Is.Not.Null);
             Assert.That(effect.CigaretteRenderer, Is.SameAs(cigarette));
-            SkinnedMeshRenderer lips = FindSkinnedRenderer(woman.Registry, "ACC_LipRed");
+            var face = FindSkinnedRenderer(woman.Registry, "GEO_FaceSurface");
             var cigaretteScratch = new Mesh();
+            Vector3 LipCenter()
+            {
+                // The painted lips sit on the centre meridian at row 49 of the 64px face.
+                var vertices = BakeWorldVertices(face, cigaretteScratch);
+                var uv = cigaretteScratch.uv;
+                int Row(int row) => Array.FindIndex(uv, p =>
+                    Mathf.Abs(p.x - .5f) < .001f && Mathf.Abs(p.y - row / 10f) < .001f);
+                int lower = Row(2);
+                int upper = Row(3);
+                Assert.That(lower, Is.GreaterThanOrEqualTo(0), "Missing lower lip UV row");
+                Assert.That(upper, Is.GreaterThanOrEqualTo(0), "Missing upper lip UV row");
+                return Vector3.Lerp(vertices[lower], vertices[upper], ((63f - 49f) / 63f - .2f) * 10f);
+            }
             // The lips end is the FILTER's far ring, not the paper tube's:
             // the tube starts where the 34 mm filter ends, so its ring
             // farthest from the ember is the tube/filter junction, a
@@ -908,11 +962,11 @@ namespace BarPromenade.Tests.PlayMode
                 SampleDefaultClip(woman, 0f);
                 Vector3 restEmber = MeasureRendererCenter(effect.EmberRenderer);
                 Vector3 restFilter = FilterCenter(restEmber);
-                float restDistance = Vector3.Distance(restFilter, MeasureRendererCenter(lips));
+                float restDistance = Vector3.Distance(restFilter, LipCenter());
                 SampleDefaultClip(woman, 0.31f);
                 Vector3 dragEmber = MeasureRendererCenter(effect.EmberRenderer);
                 Vector3 dragFilter = FilterCenter(dragEmber);
-                Vector3 lipCenter = MeasureRendererCenter(lips);
+                Vector3 lipCenter = LipCenter();
                 float dragDistance = Vector3.Distance(dragFilter, lipCenter);
                 Vector3 outward = (mouth.position - lipCenter).normalized;
                 float alignment = Vector3.Dot((dragEmber - dragFilter).normalized, outward);
@@ -1096,22 +1150,8 @@ namespace BarPromenade.Tests.PlayMode
 
         private static bool IsServiceCounterRisk(string rendererName)
         {
-            return string.Equals(
-                       rendererName,
-                       "GEO_Hand.R",
-                       StringComparison.Ordinal) ||
-                   string.Equals(
-                       rendererName,
-                       "GEO_Thumb.R",
-                       StringComparison.Ordinal) ||
-                   string.Equals(
-                       rendererName,
-                       "CLO_SleeveLower.R",
-                       StringComparison.Ordinal) ||
-                   string.Equals(
-                       rendererName,
-                       "CLO_RolledCuff.R",
-                       StringComparison.Ordinal);
+            return rendererName.EndsWith(".R", StringComparison.Ordinal) &&
+                (rendererName.StartsWith("GEO_Hand", StringComparison.Ordinal) || rendererName == "CLO_Shirt_workSleeve.R");
         }
 
         private static bool IsServiceCarryPhase(
@@ -1406,9 +1446,7 @@ namespace BarPromenade.Tests.PlayMode
             MountainRoadCafeCastAssetRegistry registry,
             string rendererName)
         {
-            return registry.RendererBindings
-                .Where(binding => binding?.Renderer != null)
-                .Select(binding => binding.Renderer)
+            return registry.BodyRenderers
                 .OfType<SkinnedMeshRenderer>()
                 .Single(renderer => string.Equals(
                     renderer.name,

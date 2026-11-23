@@ -85,24 +85,15 @@ namespace BarPromenade
 
             try
             {
-                ValidateProvider(provider, plan);
                 var presentations = new List<
                     MountainRoadCafeCastPresentation>(plan.Members.Count);
                 for (int index = 0; index < plan.Members.Count; index++)
                 {
                     MountainRoadCafeCastMemberPlan member =
                         plan.Members[index];
-                    GameObject instance = UnityEngine.Object.Instantiate(
-                        provider.GetPrefab(member.Role),
-                        marks[index],
-                        false);
+                    var registry = CreateBody(marks[index], member.Role, provider);
+                    GameObject instance = registry.gameObject;
                     instance.name = member.Name;
-                    instance.transform.localPosition = Vector3.zero;
-                    instance.transform.localRotation = Quaternion.identity;
-
-                    var registry = instance.GetComponentInChildren<
-                        MountainRoadCafeCastAssetRegistry>(true);
-                    registry.ApplyBaseColors();
                     registry.Animator.applyRootMotion = false;
                     // The menu close-up can keep the attendant off-screen
                     // while a world prop still follows the animated hand.
@@ -156,15 +147,18 @@ namespace BarPromenade
             }
         }
 
-        /// <summary>
-        /// What each role holds: the woman her cafe cigarette, the
-        /// attendant the towel in his left hand and the pot in his right.
-        /// The cafe bodies are not <see cref="CityPedestrianAssetRegistry"/>
-        /// bodies, so the socket is found by name off the model root and
-        /// the material copied from the body's first bound renderer; the
-        /// palette is the props' authored one (variant 0), because the
-        /// cafe cast wears manifest colours, not the street's variants.
-        /// </summary>
+        public static MountainRoadCafeCastAssetRegistry CreateBody(Transform parent, MountainRoadCafeCastRole role,
+            MountainRoadCafeCastProvider provider)
+        {
+            var actor = DefaultNpcFactory.CreateForCharacter(parent, DefaultNpcPopulation.CafeCharacterId(role),
+                initializeLocomotion: false);
+            // The seated, pouring and handoff clips use the metre rig and fixed world docks.
+            actor.transform.localScale = Vector3.one;
+            var registry = actor.gameObject.AddComponent<MountainRoadCafeCastAssetRegistry>();
+            registry.Configure(actor, provider.ForRole(role));
+            return registry;
+        }
+
         private static void AttachHandProps(
             MountainRoadCafeCastAssetRegistry registry,
             MountainRoadCafeCastPresentation presentation,
@@ -205,125 +199,7 @@ namespace BarPromenade
                     socketName + "' socket for the " + id + " hand prop.");
             }
 
-            Material material = null;
-            for (int index = 0;
-                 index < registry.RendererBindings.Count && material == null;
-                 index++)
-            {
-                Renderer renderer = registry.RendererBindings[index]?.Renderer;
-                if (renderer != null)
-                {
-                    material = renderer.sharedMaterial;
-                }
-            }
-
-            return CityPedestrianHandProps.Attach(socket, id, material, 0);
-        }
-
-        private static void ValidateProvider(
-            MountainRoadCafeCastProvider provider,
-            MountainRoadCafeCastPlan plan)
-        {
-            var uniquePrefabs = new HashSet<GameObject>();
-            for (int index = 0; index < plan.Members.Count; index++)
-            {
-                MountainRoadCafeCastMemberPlan member =
-                    plan.Members[index];
-                GameObject prefab = provider.GetPrefab(member.Role);
-                if (prefab == null || !uniquePrefabs.Add(prefab))
-                {
-                    throw new InvalidOperationException(
-                        "Each cafe cast role requires a unique staged prefab.");
-                }
-
-                ValidatePrefab(prefab, member.Role);
-            }
-        }
-
-        private static void ValidatePrefab(
-            GameObject prefab,
-            MountainRoadCafeCastRole role)
-        {
-            MountainRoadCafeCastAssetRegistry[] registries =
-                prefab.GetComponentsInChildren<
-                    MountainRoadCafeCastAssetRegistry>(true);
-            if (registries.Length != 1)
-            {
-                throw new InvalidOperationException(
-                    "The " + role + " prefab requires exactly one " +
-                    nameof(MountainRoadCafeCastAssetRegistry) + ".");
-            }
-
-            MountainRoadCafeCastAssetRegistry registry = registries[0];
-            if (registry.Animator == null ||
-                registry.ModelRoot == null ||
-                registry.Role != role ||
-                registry.IdleClip == null ||
-                registry.BeatClip == null)
-            {
-                throw new InvalidOperationException(
-                    "The " + role +
-                    " prefab has an incomplete cafe cast registry.");
-            }
-
-            int expectedClipCount = role switch
-            {
-                MountainRoadCafeCastRole.LonePatron => 2,
-                MountainRoadCafeCastRole.Attendant => 7,
-                _ => 2
-            };
-            if (registry.ClipBindings.Count != expectedClipCount)
-            {
-                throw new InvalidOperationException(
-                    "The " + role + " prefab has the wrong authored " +
-                    "clip count.");
-            }
-
-            // The spout anchor lives on the coffee-pot hand prop now. A
-            // body still carrying one is a stale build whose baked pot
-            // would double up with the attached prop.
-            if (registry.FindModelTransform(
-                    CityPedestrianHandProps.CoffeePotSpoutAnchorName) != null)
-            {
-                throw new InvalidOperationException(
-                    "The cafe " + role + " prefab still carries '" +
-                    CityPedestrianHandProps.CoffeePotSpoutAnchorName +
-                    "'; the spout anchor lives on the coffee-pot hand prop.");
-            }
-
-            if (registry.RendererBindings.Count == 0)
-            {
-                throw new InvalidOperationException(
-                    "The " + role +
-                    " prefab requires authored renderer colour bindings.");
-            }
-
-            for (int index = 0;
-                 index < registry.RendererBindings.Count;
-                 index++)
-            {
-                MountainRoadCafeCastRendererBinding binding =
-                    registry.RendererBindings[index];
-                if (binding == null || binding.Renderer == null)
-                {
-                    throw new InvalidOperationException(
-                        "The " + role +
-                        " prefab has an unbound cafe renderer colour.");
-                }
-            }
-
-            if (prefab.GetComponentInChildren<Collider>(true) != null ||
-                prefab.GetComponentInChildren<Collider2D>(true) != null ||
-                prefab.GetComponentInChildren<Rigidbody>(true) != null ||
-                prefab.GetComponentInChildren<Rigidbody2D>(true) != null ||
-                prefab.GetComponentInChildren<AudioSource>(true) != null ||
-                prefab.GetComponentInChildren<Light>(true) != null ||
-                prefab.GetComponentInChildren<Camera>(true) != null)
-            {
-                throw new InvalidOperationException(
-                    "The " + role +
-                    " staged cafe prefab must remain passive.");
-            }
+            return CityPedestrianHandProps.Attach(socket, id, registry.BodyRenderers[0].sharedMaterial, 0);
         }
 
         private static void DestroyObject(GameObject target)

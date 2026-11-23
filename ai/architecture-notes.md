@@ -632,11 +632,13 @@
   Water/newairbeams/particles/rim/outlines/flares/motionblur/newlens0;
   all24 reviewed,cost unmeasured.
 
+- **Accepted 2026-11-23 — City cafe:** Catalog residents wear fixed outfits. Cafe/bar share the bone-only clips.
+
 - **Accepted 2026-10-29 — relocate the complete diner to City:**
-  User:MountainRoad cafe→City:seven stools/four bespoke actors/cups/service/
+  User:MountainRoad cafe→City:seven stools/four roles/cups/service/
   smoke/conversation/hero seat-view/physical selection-only menu/three Lights/
   three device voices/seven threshold props. Whole lot:candidate `[10;0]`,
-  deterministic fallback `[9..10;0..2]`;metres/IDs/assets/materials/RU/EN kept.
+  deterministic fallback `[9..10;0..2]`;metres/IDs kept.
   Level ground joins the existing sidewalk; entry, walkability, weather shelter,
   map/XYZ/debug arrival and retained-City lifecycle follow that same plan.
   This is only a location exception to art §10f and story §17/§6. Keep open
@@ -4921,13 +4923,12 @@
 - **Accepted and implemented — The authored cafe is a bounded Blender
   migration, not a rewrite of the whole terminal:** the cafe's visible
   runtime-primitive shell, interior and furniture were replaced by one
-  fixed-metre deterministic Blender-authored set and measured manifest (`61`
-  meshes / `5,794` triangles / `52` anchors / seven dynamic props). The cafe
+  fixed-metre Blender set (`64` meshes / `21,030` triangles / `52` anchors / seven dynamic props). The cafe
   plan owns the five-sided
   footprint, `4.4 m` height, `2.8 m` chamfer, open `1.6 m` door, walkability,
   logical collision, shelter, map landmark, semantic/audio anchors and
   lighting; imported geometry brings no collider, Light, camera or material.
-  Generator `1.2.1` retains the rear service wall through that same bounded
+  Generator `1.4.0` retains the rear service wall through that same bounded
   asset contract: an extended cabinet and cutting-board dock, a compact stove
   with its pan dock, and a refrigerator cavity with two shelves. The sixth
   dynamic prop remains the separate hinge-ready `FridgeDoor`, with authored
@@ -5001,9 +5002,7 @@
   retrieved state makes the handoff/return one-shot per scene. This later
   exception adds no second menu or text and creates no order, product, payment,
   cash/inventory mutation, food, drink, dialogue, reaction, audio or story
-  state. It does not change the pair, husband or two-cup refill cycles. Asset
-  and localization contracts remain generator `1.2.1`, `61` meshes / `5,794`
-  triangles / `52` anchors / seven dynamic props.
+  state. It does not change the pair, husband or two-cup refill cycles. The menu retains its anchors and localization keys.
 
 - **Accepted architecture exception — 2026-09-04, explicit user request — a
   closed menu remains with the seated hero in both venues:** this supersedes

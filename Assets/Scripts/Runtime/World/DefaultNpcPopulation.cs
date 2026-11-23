@@ -13,6 +13,15 @@ namespace BarPromenade
         public const string DeliveryDriver = "cannery.delivery-driver";
         public const string VillageStationWorker = "village.station-worker";
         // Added after existing allocation identities: preserve their appearances.
+        public static string CafeCharacterId(MountainRoadCafeCastRole role) => role switch
+        {
+            MountainRoadCafeCastRole.LonePatron => "city.cafe.husband",
+            MountainRoadCafeCastRole.PairMan => "city.cafe.neighbour",
+            MountainRoadCafeCastRole.PairWoman => "city.cafe.wife",
+            MountainRoadCafeCastRole.Attendant => "city.cafe.attendant",
+            _ => throw new ArgumentOutOfRangeException(nameof(role))
+        };
+
         public const string BarBartender = "zzz.bar.bartender";
         public const string RidgeKioskSeller = "ridge.kiosk.seller";
         public const string PawnshopClerk = "city.pawnshop.clerk";
@@ -447,7 +456,23 @@ namespace BarPromenade
             RegisterAmbientDriver(AmbientTrafficRules.CirculatingCapacity);
             RegisterParkPlayer(ParkChessPlayer, "parkKing", "parkChecks", "outerwear.coat");
             RegisterParkPlayer(ParkCheckersPlayer, "parkDisc", "parkSpots", "outerwear.cardigan");
+            RegisterCafeMan(MountainRoadCafeCastRole.LonePatron, "outerwear.coat", "headwear.everyday", null);
+            RegisterCafeMan(MountainRoadCafeCastRole.PairMan, "outerwear.overshirt", null, null);
+            RegisterCafeMan(MountainRoadCafeCastRole.Attendant, null, "headwear.work", "apron.work");
+            roster.Add(new CharacterDefinition(CafeCharacterId(MountainRoadCafeCastRole.PairWoman),
+                DefaultNpcCatalog.OrdinaryWoman, false,
+                new SlotConstraint("outerwear", "outerwear.cardigan"), new SlotConstraint("hair", "hair.braid"),
+                new SlotConstraint("scarf", "scarf.warm"), new SlotConstraint("headwear", new string[] { null }),
+                new SlotConstraint("trousers", "trousers.everyday"), new SlotConstraint("boots", "boots.everyday"),
+                new SlotConstraint("gloves", new string[] { null })));
             return roster.ToArray();
+
+            void RegisterCafeMan(MountainRoadCafeCastRole role, string coat, string hat, string apron) =>
+                roster.Add(new CharacterDefinition(CafeCharacterId(role), model, false,
+                    new SlotConstraint("outerwear", new[] { coat }), new SlotConstraint("headwear", new[] { hat }),
+                    new SlotConstraint("scarf", new string[] { null }), new SlotConstraint("apron", new[] { apron }),
+                    new SlotConstraint("gloves", new string[] { null }), new SlotConstraint("shirt", "shirt.work"),
+                    new SlotConstraint("trousers", "trousers.everyday"), new SlotConstraint("boots", "boots.work")));
 
             void RegisterParkPlayer(string id, string hat, string scarf, string coat) =>
                 roster.Add(new CharacterDefinition(id, model, false,

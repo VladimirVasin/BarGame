@@ -50,49 +50,6 @@
           "name": "inhale",
           "normalized_time": 0.833333
         }
-      ],
-      "seated": true,
-      "perched": true,
-      "perch_seat_height_min_m": 0.48884,
-      "perch_seat_height_max_m": 0.48884,
-      "perch_support_contact_min_m": 0.817495,
-      "perch_support_contact_max_m": 0.817495,
-      "perch_support_radius_m": 0.201038,
-      "perch_pelvis_lift_m": 0.02284,
-      "perch_pelvis_planar_m": [
-        0.0,
-        0.019884
-      ],
-      "perch_contact_parts": [
-        "GEO_Shoe.R"
-      ],
-      "seated_drop_m": 0.51168,
-      "sleeping": true,
-      "counter_arm_contact_min_m": 4.5e-05,
-      "counter_arm_contact_max_m": 0.001542,
-      "stacked_arm_surface_gap_max_m": 0.008246,
-      "stacked_arm_cross_amount_min": 0.677942,
-      "stacked_arm_cross_amount_max": 0.698176,
-      "stacked_arm_height_min_m": 0.119477,
-      "stacked_arm_height_max_m": 0.122275,
-      "rounded_elbow_angle_min_degrees": 70.225721,
-      "rounded_elbow_angle_max_degrees": 73.017381,
-      "head_upper_arm_gap_max_m": 0.002063,
-      "head_lower_arm_gap_min_m": 0.087553,
-      "head_above_upper_arm_min_m": 0.001502,
-      "breathing_chest_travel_m": 0.0034,
-      "contact_frames_sampled": 289,
-      "animated_local_xz_min_m": [
-        -0.277989,
-        -0.133327
-      ],
-      "animated_local_xz_max_m": [
-        0.287845,
-        0.727783
-      ],
-      "animated_local_xz_size_m": [
-        0.565834,
-        0.86111
       ]
     },
     {
@@ -138,43 +95,6 @@
           "name": "return_to_sleep",
           "normalized_time": 0.84
         }
-      ],
-      "seated": true,
-      "perched": true,
-      "perch_seat_height_min_m": 0.48884,
-      "perch_seat_height_max_m": 0.48884,
-      "perch_support_contact_min_m": 0.817495,
-      "perch_support_contact_max_m": 0.817495,
-      "perch_support_radius_m": 0.201038,
-      "perch_pelvis_lift_m": 0.02284,
-      "perch_pelvis_planar_m": [
-        0.0,
-        0.019884
-      ],
-      "perch_contact_parts": [
-        "GEO_Shoe.R"
-      ],
-      "seated_drop_m": 0.51168,
-      "sleep_base_endpoints": true,
-      "sleep_base_endpoint_error_max_m": 0.0,
-      "seated_pelvis_travel_m": 0.0,
-      "head_rise_m": 0.227008,
-      "right_hand_travel_m": 0.517431,
-      "right_hand_toward_couple_x_m": 0.207921,
-      "right_hand_toward_couple_alignment": 0.42166,
-      "right_hand_wave_sweep_m": 0.231033,
-      "motion_frames_sampled": 145,
-      "animated_local_xz_min_m": [
-        -0.274693,
-        -0.133327
-      ],
-      "animated_local_xz_max_m": [
-        0.443158,
-        0.72031
-      ],
-      "animated_local_xz_size_m": [
-        0.717851,
-        0.853637
       ]
     },
     {
@@ -208,34 +128,6 @@
           "name": "tap",
           "normalized_time": 0.46
         }
-      ],
-      "seated": true,
-      "perched": true,
-      "perch_seat_height_min_m": 0.492564,
-      "perch_seat_height_max_m": 0.492564,
-      "perch_support_contact_min_m": 0.818487,
-      "perch_support_contact_max_m": 0.818487,
-      "perch_support_radius_m": 0.16786,
-      "perch_pelvis_lift_m": 0.019735,
-      "perch_pelvis_planar_m": [
-        0.0,
-        0.017931
-      ],
-      "perch_contact_parts": [
-        "GEO_Shoe.R"
-      ],
-      "seated_drop_m": 0.512299,
-      "animated_local_xz_min_m": [
-        -0.410349,
-        -0.131673
-      ],
-      "animated_local_xz_max_m": [
-        0.479333,
-        0.717384
-      ],
-      "animated_local_xz_size_m": [
-        0.889682,
-        0.849057
       ]
     },
     {
@@ -255,34 +147,6 @@
         0.0,
         0.0,
         0.0
-      ],
-      "seated": true,
-      "perched": true,
-      "perch_seat_height_min_m": 0.492564,
-      "perch_seat_height_max_m": 0.492564,
-      "perch_support_contact_min_m": 0.818487,
-      "perch_support_contact_max_m": 0.818487,
-      "perch_support_radius_m": 0.16786,
-      "perch_pelvis_lift_m": 0.019735,
-      "perch_pelvis_planar_m": [
-        0.0,
-        0.017931
-      ],
-      "perch_contact_parts": [
-        "GEO_Shoe.R"
-      ],
-      "seated_drop_m": 0.512299,
-      "animated_local_xz_min_m": [
-        -0.397909,
-        -0.15231
-      ],
-      "animated_local_xz_max_m": [
-        0.391271,
-        0.747995
-      ],
-      "animated_local_xz_size_m": [
-        0.78918,
-        0.900305
       ]
     },
     {
@@ -294,7 +158,7 @@
       "loop": true,
       "one_shot": false,
       "in_place": true,
-      "authored_posture": "seated in red with a lit cigarette in the free right hand",
+      "authored_posture": "seated with a lit cigarette in the free right hand",
       "gait": "one slow cigarette drag, a lowered hand and a restrained exhale",
       "keyed_bone_count": 31,
       "loop_max_error": 1e-06,
@@ -312,51 +176,6 @@
           "name": "exhale",
           "normalized_time": 0.58
         }
-      ],
-      "seated": true,
-      "perched": true,
-      "perch_seat_height_min_m": 0.48865,
-      "perch_seat_height_max_m": 0.48865,
-      "perch_support_contact_min_m": 0.818276,
-      "perch_support_contact_max_m": 0.818276,
-      "perch_support_radius_m": 0.15879,
-      "perch_pelvis_lift_m": 0.020968,
-      "perch_pelvis_planar_m": [
-        0.0,
-        0.018908
-      ],
-      "perch_contact_parts": [
-        "GEO_Shoe.R"
-      ],
-      "seated_drop_m": 0.509617,
-      "cigarette_filter_length_m": 0.0344,
-      "cigarette_total_length_m": 0.0944,
-      "cigarette_drag_filter_lip_surface_gap_min_m": 0.001744,
-      "cigarette_drag_filter_lip_surface_gap_max_m": 0.001744,
-      "cigarette_drag_filter_lip_center_distance_min_m": 0.010509,
-      "cigarette_drag_filter_lip_center_distance_max_m": 0.01051,
-      "cigarette_drag_axis_angle_max_degrees": 29.20955,
-      "cigarette_drag_socket_lip_alignment_min": 0.888622,
-      "cigarette_drag_ember_lip_distance_min_m": 0.094672,
-      "cigarette_drag_ember_farther_margin_min_m": 0.084162,
-      "cigarette_filter_hand_gap_max_m": 0.000315,
-      "cigarette_ember_hand_gap_min_m": 0.011983,
-      "cigarette_ember_filter_grip_margin_min_m": 0.011669,
-      "cigarette_idle_cigarette_head_gap_min_m": 0.042358,
-      "cigarette_idle_hand_head_gap_min_m": 0.032209,
-      "cigarette_drag_frames_sampled": 27,
-      "cigarette_idle_frames_sampled": 265,
-      "animated_local_xz_min_m": [
-        -0.371749,
-        -0.168243
-      ],
-      "animated_local_xz_max_m": [
-        0.398752,
-        0.481497
-      ],
-      "animated_local_xz_size_m": [
-        0.770501,
-        0.64974
       ]
     },
     {
@@ -368,7 +187,7 @@
       "loop": false,
       "one_shot": true,
       "in_place": true,
-      "authored_posture": "seated in red with one elbow held near the counter",
+      "authored_posture": "seated with one elbow held near the counter",
       "gait": "left hand lifts the cup while the cigarette stays in the right fingers",
       "keyed_bone_count": 31,
       "loop_max_error": 1e-06,
@@ -376,34 +195,6 @@
         0.0,
         0.0,
         0.0
-      ],
-      "seated": true,
-      "perched": true,
-      "perch_seat_height_min_m": 0.48865,
-      "perch_seat_height_max_m": 0.48865,
-      "perch_support_contact_min_m": 0.818276,
-      "perch_support_contact_max_m": 0.818276,
-      "perch_support_radius_m": 0.15879,
-      "perch_pelvis_lift_m": 0.020968,
-      "perch_pelvis_planar_m": [
-        0.0,
-        0.018908
-      ],
-      "perch_contact_parts": [
-        "GEO_Shoe.R"
-      ],
-      "seated_drop_m": 0.509617,
-      "animated_local_xz_min_m": [
-        -0.376283,
-        -0.168243
-      ],
-      "animated_local_xz_max_m": [
-        0.398543,
-        0.754756
-      ],
-      "animated_local_xz_size_m": [
-        0.774826,
-        0.922999
       ]
     },
     {
@@ -423,20 +214,6 @@
         0.0,
         0.0,
         0.0
-      ],
-      "ground_min_m": 0.0,
-      "ground_max_contact_gap_m": 0.0,
-      "animated_local_xz_min_m": [
-        -0.51044,
-        -0.156173
-      ],
-      "animated_local_xz_max_m": [
-        0.552049,
-        0.581112
-      ],
-      "animated_local_xz_size_m": [
-        1.062488,
-        0.737285
       ]
     },
     {
@@ -456,20 +233,6 @@
         0.0,
         0.0,
         0.0
-      ],
-      "ground_min_m": 0.0,
-      "ground_max_contact_gap_m": 0.0,
-      "animated_local_xz_min_m": [
-        -0.513729,
-        -0.288748
-      ],
-      "animated_local_xz_max_m": [
-        0.406398,
-        0.324725
-      ],
-      "animated_local_xz_size_m": [
-        0.920128,
-        0.613473
       ]
     },
     {
@@ -489,20 +252,6 @@
         0.0,
         0.0,
         0.0
-      ],
-      "ground_min_m": 0.0,
-      "ground_max_contact_gap_m": 0.0,
-      "animated_local_xz_min_m": [
-        -0.534167,
-        -0.156173
-      ],
-      "animated_local_xz_max_m": [
-        0.397867,
-        0.588528
-      ],
-      "animated_local_xz_size_m": [
-        0.932034,
-        0.744701
       ]
     },
     {
@@ -522,20 +271,6 @@
         0.0,
         0.0,
         0.0
-      ],
-      "ground_min_m": 0.0,
-      "ground_max_contact_gap_m": 0.0,
-      "animated_local_xz_min_m": [
-        -0.508341,
-        -0.156173
-      ],
-      "animated_local_xz_max_m": [
-        0.401469,
-        0.335581
-      ],
-      "animated_local_xz_size_m": [
-        0.90981,
-        0.491754
       ]
     },
     {
@@ -555,20 +290,6 @@
         0.0,
         0.0,
         0.0
-      ],
-      "ground_min_m": 0.0,
-      "ground_max_contact_gap_m": 0.0,
-      "animated_local_xz_min_m": [
-        -0.501639,
-        -0.156173
-      ],
-      "animated_local_xz_max_m": [
-        0.397867,
-        0.518269
-      ],
-      "animated_local_xz_size_m": [
-        0.899507,
-        0.674442
       ],
       "right_elbow_below_shoulder_min_m": 0.291173,
       "right_elbow_side_offset_max_m": 0.066408,
@@ -597,20 +318,6 @@
         0.0,
         0.0
       ],
-      "ground_min_m": 0.0,
-      "ground_max_contact_gap_m": 0.0,
-      "animated_local_xz_min_m": [
-        -0.473972,
-        -0.156173
-      ],
-      "animated_local_xz_max_m": [
-        0.397867,
-        0.510734
-      ],
-      "animated_local_xz_size_m": [
-        0.871839,
-        0.666907
-      ],
       "right_elbow_below_shoulder_min_m": 0.291173,
       "right_elbow_side_offset_max_m": 0.066408,
       "right_wrist_below_chin_min_m": 0.175665,
@@ -638,20 +345,6 @@
         0.0,
         0.0
       ],
-      "ground_min_m": 0.0,
-      "ground_max_contact_gap_m": 0.0,
-      "animated_local_xz_min_m": [
-        -0.501639,
-        -0.156173
-      ],
-      "animated_local_xz_max_m": [
-        0.397867,
-        0.518269
-      ],
-      "animated_local_xz_size_m": [
-        0.899507,
-        0.674442
-      ],
       "right_elbow_below_shoulder_min_m": 0.291173,
       "right_elbow_side_offset_max_m": 0.066408,
       "right_wrist_below_chin_min_m": 0.175665,
@@ -662,5 +355,5 @@
       "endpoint_match": true
     }
   ],
-  "build_signature": "73815ed142efe7d277f49c6681ad9a6bffe18e1d95c47f23cc30f74d699e411d"
+  "build_signature": "b998289a10b00c1b5e67aa61a8be3932fc7d72db82ca8b3bee2f85113f2acc90"
 }

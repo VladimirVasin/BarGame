@@ -41,190 +41,48 @@ namespace BarPromenade
         public bool Loop => loop;
     }
 
-    [Serializable]
-    public sealed class MountainRoadCafeCastRendererBinding
-    {
-        [SerializeField] private Renderer renderer;
-        [SerializeField] private Color color = Color.white;
-        [SerializeField] private bool usesDetailAtlas;
-
-        public MountainRoadCafeCastRendererBinding(
-            Renderer configuredRenderer,
-            Color configuredColor,
-            bool configuredUsesDetailAtlas)
-        {
-            renderer = configuredRenderer;
-            color = configuredColor;
-            usesDetailAtlas = configuredUsesDetailAtlas;
-        }
-
-        public Renderer Renderer => renderer;
-        public Color Color => color;
-        public bool UsesDetailAtlas => usesDetailAtlas;
-    }
-
-    /// <summary>
-    /// Authored animation and renderer contract carried by one of the four
-    /// staged cafe prefabs. Across the set it owns thirteen named clips:
-    /// one sleeping loop and one lone-patron interjection, four pair clips,
-    /// four attendant service clips and three shared bar closing clips.
-    /// </summary>
-    [DisallowMultipleComponent]
+    /// <summary>Binds the allocated resident to the cafe's clips, sockets and carried pot.</summary>
     public sealed class MountainRoadCafeCastAssetRegistry : MonoBehaviour
     {
-        private static readonly int BaseColorId =
-            Shader.PropertyToID("_BaseColor");
-        private static readonly int LegacyColorId =
-            Shader.PropertyToID("_Color");
-        private static readonly int BaseMapId =
-            Shader.PropertyToID("_BaseMap");
-        private static readonly int LegacyMapId =
-            Shader.PropertyToID("_MainTex");
-
-        [SerializeField] private Animator animator;
-        [SerializeField] private MountainRoadCafeCastRole role;
-        [SerializeField] private MountainRoadCafeCastClipKind defaultClipKind;
-        [SerializeField] private MountainRoadCafeCastClipBinding[]
-            clipBindings = Array.Empty<MountainRoadCafeCastClipBinding>();
-        [SerializeField] private Transform modelRoot;
-        [SerializeField] private MountainRoadCafeCastRendererBinding[]
-            rendererBindings =
-                Array.Empty<MountainRoadCafeCastRendererBinding>();
-        [SerializeField] private Texture2D detailAtlas;
-
-        /// <summary>
-        /// The coffee pot is a hand prop prefab attached by the cast
-        /// factory at runtime, never part of the attendant's body, so the
-        /// reference is runtime-only. The last requested visibility is
-        /// remembered because <see cref="SetCoffeePotVisible"/> is called
-        /// from Configure/OnEnable and from the presentation's clip
-        /// changes before and after the pot exists.
-        /// </summary>
-        [NonSerialized] private CityPedestrianHandPropRegistry coffeePot;
-        [NonSerialized] private bool coffeePotVisible;
-
-        public Animator Animator => animator;
-        public MountainRoadCafeCastRole Role => role;
-        public MountainRoadCafeCastClipKind DefaultClipKind =>
-            defaultClipKind;
-        public IReadOnlyList<MountainRoadCafeCastClipBinding> ClipBindings =>
-            clipBindings ?? Array.Empty<MountainRoadCafeCastClipBinding>();
-        public AnimationClip IdleClip => GetClip(defaultClipKind);
-        public AnimationClip BeatClip => role switch
+        private CafeRoleAnimations animations;
+        private readonly Dictionary<string, Transform> joints = new Dictionary<string, Transform>(StringComparer.Ordinal);
+        private CityPedestrianHandPropRegistry coffeePot;
+        private bool coffeePotVisible;
+        public Renderer[] BodyRenderers { get; private set; }
+        public Animator Animator { get; private set; }
+        public Transform ModelRoot { get; private set; }
+        public MountainRoadCafeCastRole Role => animations.Role;
+        public MountainRoadCafeCastClipKind DefaultClipKind => Role == MountainRoadCafeCastRole.Attendant
+            ? MountainRoadCafeCastClipKind.Wipe : MountainRoadCafeCastClipKind.Idle;
+        public IReadOnlyList<MountainRoadCafeCastClipBinding> ClipBindings => animations.Clips;
+        public AnimationClip IdleClip => GetClip(DefaultClipKind);
+        public AnimationClip BeatClip => GetClip(Role switch
         {
-            MountainRoadCafeCastRole.Attendant => GetClip(
-                MountainRoadCafeCastClipKind.Notice),
-            MountainRoadCafeCastRole.LonePatron => GetClip(
-                MountainRoadCafeCastClipKind.Interject),
-            _ => GetClip(MountainRoadCafeCastClipKind.Drink)
-        };
-        public Transform ModelRoot => modelRoot;
-        public IReadOnlyList<MountainRoadCafeCastRendererBinding>
-            RendererBindings => rendererBindings ??
-                Array.Empty<MountainRoadCafeCastRendererBinding>();
-        public Texture2D DetailAtlas => detailAtlas;
-
-        /// <summary>The attached coffee-pot hand prop, or null until the
-        /// factory attaches one (only the attendant ever gets one).</summary>
+            MountainRoadCafeCastRole.Attendant => MountainRoadCafeCastClipKind.Notice,
+            MountainRoadCafeCastRole.LonePatron => MountainRoadCafeCastClipKind.Interject,
+            _ => MountainRoadCafeCastClipKind.Drink
+        });
         public CityPedestrianHandPropRegistry CoffeePot => coffeePot;
-
-        /// <summary>Whether the pot was last asked to show: the walk and
-        /// pour clips carry it, everything else hides it.</summary>
         public bool IsCoffeePotVisible => coffeePotVisible;
 
-        public void Configure(
-            Animator configuredAnimator,
-            MountainRoadCafeCastRole configuredRole,
-            MountainRoadCafeCastClipKind configuredDefaultClipKind,
-            MountainRoadCafeCastClipBinding[] configuredClipBindings,
-            Transform configuredModelRoot,
-            MountainRoadCafeCastRendererBinding[]
-                configuredRendererBindings,
-            Texture2D configuredDetailAtlas)
+        public void Configure(VillageResidentPresentation actor, CafeRoleAnimations roleAnimations)
         {
-            animator = configuredAnimator ??
-                throw new ArgumentNullException(nameof(configuredAnimator));
-            role = configuredRole;
-            defaultClipKind = configuredDefaultClipKind;
-            clipBindings = configuredClipBindings ??
-                throw new ArgumentNullException(
-                    nameof(configuredClipBindings));
-            modelRoot = configuredModelRoot ??
-                throw new ArgumentNullException(nameof(configuredModelRoot));
-            rendererBindings = configuredRendererBindings ??
-                Array.Empty<MountainRoadCafeCastRendererBinding>();
-            detailAtlas = configuredDetailAtlas ??
-                throw new ArgumentNullException(
-                    nameof(configuredDetailAtlas));
-            NpcSkinnedMeshCullingGuard.EnableDynamicBounds(modelRoot);
-            ValidateClipContract();
-            ApplyBaseColors();
-            SetCoffeePotVisible(false);
+            animations = roleAnimations;
+            Animator = actor.Animator;
+            ModelRoot = actor.ModelRoot;
+            BodyRenderers = ModelRoot.GetComponentsInChildren<Renderer>(true);
+            foreach (var joint in ModelRoot.GetComponentsInChildren<Transform>(true))
+                joints.TryAdd(joint.name, joint);
+            NpcSkinnedMeshCullingGuard.EnableDynamicBounds(ModelRoot);
         }
 
-        public AnimationClip GetClip(
-            MountainRoadCafeCastClipKind kind)
-        {
-            return TryGetClip(kind, out AnimationClip clip, out _)
-                ? clip
-                : null;
-        }
+        public AnimationClip GetClip(MountainRoadCafeCastClipKind kind) =>
+            animations.TryGetClip(kind, out var clip, out _) ? clip : null;
+        public bool TryGetClip(MountainRoadCafeCastClipKind kind, out AnimationClip clip, out bool loop) =>
+            animations.TryGetClip(kind, out clip, out loop);
+        public Transform FindModelTransform(string jointName) =>
+            joints.TryGetValue(jointName, out var joint) ? joint : null;
 
-        public bool TryGetClip(
-            MountainRoadCafeCastClipKind kind,
-            out AnimationClip clip,
-            out bool loop)
-        {
-            if (clipBindings != null)
-            {
-                for (int index = 0; index < clipBindings.Length; index++)
-                {
-                    MountainRoadCafeCastClipBinding binding =
-                        clipBindings[index];
-                    if (binding != null && binding.Kind == kind &&
-                        binding.Clip != null)
-                    {
-                        clip = binding.Clip;
-                        loop = binding.Loop;
-                        return true;
-                    }
-                }
-            }
-
-            clip = null;
-            loop = false;
-            return false;
-        }
-
-        public Transform FindModelTransform(string transformName)
-        {
-            if (modelRoot == null || string.IsNullOrWhiteSpace(transformName))
-            {
-                return null;
-            }
-
-            Transform[] transforms =
-                modelRoot.GetComponentsInChildren<Transform>(true);
-            for (int index = 0; index < transforms.Length; index++)
-            {
-                if (string.Equals(
-                        transforms[index].name,
-                        transformName,
-                        StringComparison.Ordinal))
-                {
-                    return transforms[index];
-                }
-            }
-
-            return null;
-        }
-
-        /// <summary>
-        /// Takes the attached coffee-pot prop and applies the visibility
-        /// requested so far: the presentation may have asked for the
-        /// walk-clip pot before the factory attached it. A previous pot
-        /// is destroyed rather than orphaned.
-        /// </summary>
         public void AttachCoffeePot(CityPedestrianHandPropRegistry pot)
         {
             if (coffeePot != null && coffeePot != pot)
@@ -253,130 +111,7 @@ namespace BarPromenade
             }
         }
 
-        private void Awake()
-        {
-            NpcSkinnedMeshCullingGuard.EnableDynamicBounds(modelRoot);
-        }
-
-        private void OnDisable()
-        {
-            NpcFootstepSources.Unregister(transform);
-        }
-
-        private void OnEnable()
-        {
-            NpcFootstepSources.Register(transform);
-            ApplyBaseColors();
-            SetCoffeePotVisible(false);
-        }
-
-        private void ValidateClipContract()
-        {
-            var unique = new HashSet<MountainRoadCafeCastClipKind>();
-            for (int index = 0; index < clipBindings.Length; index++)
-            {
-                MountainRoadCafeCastClipBinding binding =
-                    clipBindings[index];
-                if (binding == null || binding.Clip == null ||
-                    !unique.Add(binding.Kind))
-                {
-                    throw new InvalidOperationException(
-                        "Cafe clip bindings must be non-null and unique.");
-                }
-            }
-
-            MountainRoadCafeCastClipKind[] expected;
-            if (role == MountainRoadCafeCastRole.Attendant)
-            {
-                expected = new[]
-                    {
-                        MountainRoadCafeCastClipKind.Wipe,
-                        MountainRoadCafeCastClipKind.Walk,
-                        MountainRoadCafeCastClipKind.Pour,
-                        MountainRoadCafeCastClipKind.Notice,
-                        MountainRoadCafeCastClipKind.ClosingAddressEnter,
-                        MountainRoadCafeCastClipKind.ClosingAddressLoop,
-                        MountainRoadCafeCastClipKind.ClosingAddressExit
-                    };
-            }
-            else if (role == MountainRoadCafeCastRole.LonePatron)
-            {
-                expected = new[]
-                {
-                    MountainRoadCafeCastClipKind.Idle,
-                    MountainRoadCafeCastClipKind.Interject
-                };
-            }
-            else
-            {
-                expected = new[]
-                    {
-                        MountainRoadCafeCastClipKind.Idle,
-                        MountainRoadCafeCastClipKind.Drink
-                    };
-            }
-            if (clipBindings.Length != expected.Length)
-            {
-                throw new InvalidOperationException(
-                    "Cafe cast role has the wrong authored clip count.");
-            }
-
-            for (int index = 0; index < expected.Length; index++)
-            {
-                if (!unique.Contains(expected[index]))
-                {
-                    throw new InvalidOperationException(
-                        "Cafe cast role is missing clip " + expected[index] +
-                        ".");
-                }
-            }
-
-            MountainRoadCafeCastClipKind expectedDefault =
-                role == MountainRoadCafeCastRole.Attendant
-                    ? MountainRoadCafeCastClipKind.Wipe
-                    : MountainRoadCafeCastClipKind.Idle;
-            if (defaultClipKind != expectedDefault ||
-                GetClip(defaultClipKind) == null)
-            {
-                throw new InvalidOperationException(
-                    "Cafe cast role has the wrong default loop.");
-            }
-        }
-
-        /// <summary>
-        /// Reapplies authored manifest colours and detail atlas without
-        /// material instances.
-        /// </summary>
-        public void ApplyBaseColors()
-        {
-            if (rendererBindings == null)
-            {
-                return;
-            }
-
-            var properties = new MaterialPropertyBlock();
-            for (int index = 0; index < rendererBindings.Length; index++)
-            {
-                MountainRoadCafeCastRendererBinding binding =
-                    rendererBindings[index];
-                if (binding == null || binding.Renderer == null)
-                {
-                    continue;
-                }
-
-                Renderer target = binding.Renderer;
-                target.GetPropertyBlock(properties);
-                properties.SetColor(BaseColorId, binding.Color);
-                properties.SetColor(LegacyColorId, binding.Color);
-                if (binding.UsesDetailAtlas && detailAtlas != null)
-                {
-                    properties.SetTexture(BaseMapId, detailAtlas);
-                    properties.SetTexture(LegacyMapId, detailAtlas);
-                }
-
-                target.SetPropertyBlock(properties);
-                properties.Clear();
-            }
-        }
+        private void OnDisable() => NpcFootstepSources.Unregister(transform);
+        private void OnEnable() => NpcFootstepSources.Register(transform);
     }
 }

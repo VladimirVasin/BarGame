@@ -17,8 +17,8 @@ namespace BarPromenade.Tests.EditMode
             "Assets/MountainRoad/Cafe/Models/MountainRoadCafe3D.json";
         private const string ModelPath =
             "Assets/MountainRoad/Cafe/Models/MountainRoadCafe3D.fbx";
-        private const int ExpectedMeshCount = 61;
-        private const int ExpectedTriangleCount = 5794;
+        private const int ExpectedMeshCount = 64;
+        private const int ExpectedTriangleCount = 21030;
         private const int ExpectedAnchorCount = 52;
         private const int ExpectedPropCount = 7;
         private const int ExpectedColliderDescriptorCount = 17;
@@ -222,7 +222,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(door.liquid_part, Is.Empty);
             Assert.That(
                 door.part_names,
-                Is.EqualTo(new[] { "Cafe_FridgeDoor" }));
+                Is.EqualTo(new[] { "Cafe_FridgeDoor", "Cafe_FridgeSeal" }));
 
             string[] anchorNames = manifest.anchors
                 .Select(anchor => anchor.name)
@@ -657,7 +657,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(fridgeDoor.PourTarget, Is.Null);
             Assert.That(fridgeDoor.LiquidTransform, Is.Null);
             Assert.That(fridgeDoor.LiquidRenderer, Is.Null);
-            Assert.That(fridgeDoor.Renderers.Count, Is.EqualTo(1));
+            Assert.That(fridgeDoor.Renderers.Count, Is.EqualTo(2));
             Assert.That(
                 fridgeDoor.Renderers[0].name,
                 Is.EqualTo("Cafe_FridgeDoor"));

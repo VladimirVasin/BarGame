@@ -20,7 +20,7 @@ namespace BarPromenade
     {
         public const float WipeMenuClearance = .015f;
         private VillageResidentPresentation actor;
-        private MountainRoadCafeCastAssetRegistry serviceClips;
+        private CafeRoleAnimations serviceClips;
         private CityPedestrianHandPropRegistry serviceTowel;
         private Renderer[] renderers = Array.Empty<Renderer>();
         private Vector3[] towelBoundsInGrip = Array.Empty<Vector3>();
@@ -129,9 +129,7 @@ namespace BarPromenade
             // stay enabled, and this adapter never rewrites their MPBs.
             actor.ReleaseAnimation();
             var provider = MountainRoadCafeCastProvider.Load();
-            serviceClips = provider != null && provider.AttendantPrefab != null
-                ? provider.AttendantPrefab.GetComponent<MountainRoadCafeCastAssetRegistry>()
-                : null;
+            serviceClips = provider?.ForRole(MountainRoadCafeCastRole.Attendant);
             if (serviceClips == null)
                 throw new InvalidOperationException("The shared cafe service clips are missing.");
 

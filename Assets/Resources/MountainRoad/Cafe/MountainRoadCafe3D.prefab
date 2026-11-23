@@ -317,6 +317,15 @@ MonoBehaviour:
     castsShadows: 1
     initiallyVisible: 1
     renderer: {fileID: 1238075514763570860}
+  - sourceName: Cafe_CondimentJars
+    role: condiment_jar
+    group: props
+    sheet: CafePropsDetail
+    baseSurface: PaleEnamel
+    emissive: 0
+    castsShadows: 1
+    initiallyVisible: 1
+    renderer: {fileID: 5173714444516684324}
   - sourceName: Cafe_CounterApron
     role: counter_apron
     group: counter
@@ -338,7 +347,7 @@ MonoBehaviour:
   - sourceName: Cafe_CounterDetails
     role: counter_details
     group: props
-    sheet: CafePropsDetail
+    sheet: CafeMetalDetail
     baseSurface: PaleEnamel
     emissive: 0
     castsShadows: 1
@@ -407,6 +416,15 @@ MonoBehaviour:
     castsShadows: 1
     initiallyVisible: 1
     renderer: {fileID: 4298762578059391723}
+  - sourceName: Cafe_FoldedNapkins
+    role: folded_napkins
+    group: props
+    sheet: CafePropsDetail
+    baseSurface: PaleEnamel
+    emissive: 0
+    castsShadows: 1
+    initiallyVisible: 1
+    renderer: {fileID: 4076387672124260496}
   - sourceName: Cafe_FridgeDoor
     role: fridge_door
     group: dynamic_prop
@@ -416,6 +434,15 @@ MonoBehaviour:
     castsShadows: 1
     initiallyVisible: 1
     renderer: {fileID: 6480213002895395020}
+  - sourceName: Cafe_FridgeSeal
+    role: fridge_gasket
+    group: dynamic_prop
+    sheet: CafePropsDetail
+    baseSurface: PaleEnamel
+    emissive: 0
+    castsShadows: 1
+    initiallyVisible: 1
+    renderer: {fileID: 5677019355008480645}
   - sourceName: Cafe_FryingPan
     role: frying_pan
     group: props
@@ -899,6 +926,7 @@ MonoBehaviour:
     liquidRenderer: {fileID: 0}
     renderers:
     - {fileID: 6480213002895395020}
+    - {fileID: 5677019355008480645}
     emptyLocalPosition: {x: 0, y: 0, z: 0}
     fullLocalPosition: {x: 0, y: 0, z: 0}
   - propName: Menu.Hero
@@ -1082,10 +1110,10 @@ MonoBehaviour:
     width: 9.8
     depth: 10
     height: 4.4
-  sourceTriangleCount: 5794
-  sourceGeneratorVersion: 1.3.0
+  sourceTriangleCount: 21030
+  sourceGeneratorVersion: 1.4.0
   designId: mountain_road_cafe_nighthawks_v1
-  buildSignature: a070a3f3f9c2e6067d03a1025118976b5370068ae41d5bcc9db2e725a3cf4c84
+  buildSignature: 79d572a98abaaf62e5375a3fbd779114cb2e23dd355c19d938ebc88f07eaf691
 --- !u!1001 &4379707433798876487
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1330,6 +1358,10 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: -357084728265715869, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value:
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
     - target: {fileID: -298477949341144362, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
@@ -1377,6 +1409,10 @@ PrefabInstance:
     - target: {fileID: 206197989193198958, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: 312406754174942679, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value:
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
     - target: {fileID: 535820041501855660, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
@@ -1545,6 +1581,10 @@ PrefabInstance:
     - target: {fileID: 8176878049376847148, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: 8218800706890762434, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value:
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
     - target: {fileID: 8441143871306047822, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
@@ -1838,6 +1878,11 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8898639662444093557, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
   m_PrefabInstance: {fileID: 4379707433798876487}
   m_PrefabAsset: {fileID: 0}
+--- !u!23 &4076387672124260496 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 312406754174942679, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
+  m_PrefabInstance: {fileID: 4379707433798876487}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &4157311764956152447 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 393613836000411448, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
@@ -1918,6 +1963,11 @@ MeshRenderer:
   m_CorrespondingSourceObject: {fileID: -298477949341144362, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
   m_PrefabInstance: {fileID: 4379707433798876487}
   m_PrefabAsset: {fileID: 0}
+--- !u!23 &5173714444516684324 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -357084728265715869, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
+  m_PrefabInstance: {fileID: 4379707433798876487}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &5267287730526785235 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -729878924226808940, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
@@ -1956,6 +2006,11 @@ Transform:
 --- !u!23 &5601848979348519019 stripped
 MeshRenderer:
   m_CorrespondingSourceObject: {fileID: 8176878049376847148, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
+  m_PrefabInstance: {fileID: 4379707433798876487}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &5677019355008480645 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 8218800706890762434, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
   m_PrefabInstance: {fileID: 4379707433798876487}
   m_PrefabAsset: {fileID: 0}
 --- !u!4 &5831630967364383077 stripped

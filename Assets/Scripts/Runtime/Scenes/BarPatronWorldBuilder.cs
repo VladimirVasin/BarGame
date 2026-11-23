@@ -699,13 +699,8 @@ namespace BarPromenade
         {
             MountainRoadCafeCastProvider provider =
                 MountainRoadCafeCastProvider.Load();
-            MountainRoadCafeCastAssetRegistry source =
-                provider != null && provider.PairManPrefab != null
-                    ? provider.PairManPrefab.GetComponent<
-                        MountainRoadCafeCastAssetRegistry>()
-                    : null;
-            AnimationClip clip = source?.GetClip(
-                MountainRoadCafeCastClipKind.Drink);
+            AnimationClip clip = null;
+            provider?.ForRole(MountainRoadCafeCastRole.PairMan).TryGetClip(MountainRoadCafeCastClipKind.Drink, out clip, out _);
             if (clip == null)
             {
                 GameLog.Warning("bar", "cafe_drink_clip_missing");

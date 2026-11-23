@@ -245,12 +245,10 @@ Source-preservation: review owners/coverage без повтора действи
   counter-замена Bottle→ShotGlass учтены в fixture, runtime не менялся.
 - [x] `BarFurnitureFinishes` — стык стойки, табуреты, краны, кабинки и бутылки. Посадка/подача/уборка/микрофон.
 
-### 33. Горное кафе — Current: сохранение
+### 33. Горное кафе — Current
 
-- [x] `MountainRoadNativeLighting` Passed: kit/стойка/стулья/кухня/персонажи/
-  меню/приборы/отражения у терминала; материалы/контакты сохранены.
-- [x] Source-preservation: review `CounterSeat_FocusesConfirmsAndRetrievesWorldMenu`;
-  цикл без нового заказа/покупки/обслуживания.
+- [x] Кафе в City: стойка, семь табуретов, кухня, посуда и шахматная плитка. Четыре постоянных NPC и отдельный банк движений.
+- [x] `CafeRefit_SeatsFourRecognizableResidentsBesideTheNewFittings`; хват чашек, посадка и цикл меню.
 
 ### 34. Лес дороги и деревни — Current: сохранение
 

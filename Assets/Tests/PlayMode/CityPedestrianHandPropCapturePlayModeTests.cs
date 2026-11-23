@@ -130,13 +130,13 @@ namespace BarPromenade.Tests.PlayMode
                 MountainRoadCafeCastProvider cafe = MountainRoadCafeCastProvider.Load();
                 Assert.That(cafe, Is.Not.Null, "The cafe cast provider is missing.");
                 MountainRoadCafeCastAssetRegistry cafeWoman = InstantiateCafeBody(
-                    cafe.PairWomanPrefab,
+                    cafe, MountainRoadCafeCastRole.PairWoman,
                     stage.transform,
                     new Vector3(-3.4f, 0f, 0f));
                 CityPedestrianHandPropRegistry cafeCigarette = AttachCafeProp(
                     cafeWoman, CityPedestrianHandPropId.CafeCigarette);
                 MountainRoadCafeCastAssetRegistry attendant = InstantiateCafeBody(
-                    cafe.AttendantPrefab,
+                    cafe, MountainRoadCafeCastRole.Attendant,
                     stage.transform,
                     new Vector3(-5.2f, 0f, 0f));
                 CityPedestrianHandPropRegistry towel = AttachCafeProp(
@@ -246,16 +246,12 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         private static MountainRoadCafeCastAssetRegistry InstantiateCafeBody(
-            GameObject prefab,
-            Transform parent,
-            Vector3 position)
+            MountainRoadCafeCastProvider provider, MountainRoadCafeCastRole role,
+            Transform parent, Vector3 position)
         {
-            Assert.That(prefab, Is.Not.Null, "A cafe body prefab is missing.");
-            GameObject instance = Object.Instantiate(prefab, parent);
-            instance.transform.localPosition = position;
-            instance.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
-            var registry = instance.GetComponent<MountainRoadCafeCastAssetRegistry>();
-            Assert.That(registry, Is.Not.Null);
+            var registry = MountainRoadCafeCastFactory.CreateBody(parent, role, provider);
+            registry.transform.localPosition = position;
+            registry.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
             return registry;
         }
 

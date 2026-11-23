@@ -286,14 +286,14 @@
   "additional_maps": [
     {
       "resource": "MountainRoad/Cafe/Textures/MountainRoadCafeSurfaceAtlas",
-      "sha256": "e76cbe075f46c9cc0c084fd6155782d04f69e1102823c327121006cc22097226",
+      "sha256": "182f85937be0bf6f2d59f2e464035ddfa64000ace1e58b774093fe97471f3fa7",
       "size": 4096,
       "mipmaps": true,
       "sRGB": true
     },
     {
       "resource": "MountainRoad/Cafe/Textures/MountainRoadCafeSurfaceResponse",
-      "sha256": "8fa04d20de5e754879c0531c2bff34dc0629b75ed0408ae38b632c036c3e4dd0",
+      "sha256": "8855f4e1cc9d37801ad2ffb704182a59328bcc3182ee473faa71e5e440af957b",
       "size": 2048,
       "mipmaps": true,
       "sRGB": false
