@@ -16,6 +16,8 @@ TEXTURE2D(_GroundJunctionResponse); SAMPLER(sampler_GroundJunctionResponse);
 float4 _GroundJunctionBounds[4];
 float _GroundJunctions;
 float _GroundKind;
+float _GroundPavingMetres;
+float _GroundSidewalkMetres;
 float _GroundWetness;
 float _GroundRoadCoordinates;
 float _GroundVertexData;
@@ -68,6 +70,113 @@ float GroundNoise(float2 p)
         lerp(GroundHash(cell + float2(0, 1)), GroundHash(cell + 1), f.x), f.y);
 }
 
+// Coverage of a strip in metres, integrated across the pixel. At a grazing
+// angle a millimetre joint loses coverage instead of growing to a black line.
+float PavingJoint(float distance, float radius, float pixelRadius)
+{
+    return max(0.0, min(radius, distance + pixelRadius) -
+        max(-radius, distance - pixelRadius)) / (2.0 * pixelRadius);
+}
+
+// Two neighbouring pours meet at one cutting line. Each strip has its own
+// spacing and phase, so the transverse joints stop at the longitudinal one.
+float2 PavingCourse(float along, float strip, float seed, float pixelRadius)
+{
+    float row = GroundHash(float2(strip, seed));
+    float span = lerp(11.0, 21.0, row);
+    float station = along + row * 37.0;
+    float cell = floor(station / span);
+    float lot = GroundHash(float2(cell, strip + seed + 3.7));
+    float previous = GroundHash(float2(cell - 1.0, strip + seed + 3.7));
+    float cut = station - (cell + lerp(.22, .78, lot)) * span;
+    float finish = lerp(previous, lot, smoothstep(-pixelRadius, pixelRadius, cut));
+    return float2(finish, PavingJoint(cut, .018 + .022 * row, pixelRadius));
+}
+
+float2 PavingGrainUv(float2 metres)
+{
+    return float2(.8 * metres.x - .6 * metres.y, .6 * metres.x + .8 * metres.y);
+}
+
+void ApplyCityPaving(float2 uv, float2 uvDx, float2 uvDy, float4 road, float footprint,
+    half wetness, inout SurfaceData surface, inout half relief)
+{
+    float2 metres = uv * _GroundPavingMetres;
+    bool hasFrame = _GroundRoadCoordinates > .5 && road.z > .1;
+    float2 paving = hasFrame ? road.xy : metres;
+    float seed = hasFrame ? floor(road.w * 251.0) : 31.0;
+    // A strip follows the paver. The two sides use this exact same wandering
+    // boundary. Open aprons use the authored metre UVs, including at Home.
+    float ragged = GroundNoise(metres * 5.3) - .5;
+    float width = hasFrame ? clamp(road.z, 2.6, 3.7) : 3.4;
+    float across = paving.x + .38 + .24 * (GroundNoise(float2(paving.y * .23, seed)) - .5) + .055 * ragged;
+    float boundary = floor(across / width + .5);
+    float lateral = across - boundary * width;
+    float aa = clamp(footprint * .5, .008, .65);
+    float along = paving.y + .075 * paving.x + .12 * ragged;
+    float strip = lateral < 0 ? boundary - 1.0 : boundary;
+    float2 course = PavingCourse(along, strip, seed, aa);
+    if (abs(lateral) < aa)
+    {
+        float other = lateral < 0 ? boundary : boundary - 1.0;
+        course = lerp(PavingCourse(along, other, seed, aa), course, .5 + .5 * abs(lateral) / aa);
+    }
+    half binder = max(course.y, PavingJoint(lateral, .026 + .017 * ragged, aa));
+    half mixAge = course.x;
+    half visible = 1.0h - smoothstep(.24h, 1.1h, footprint);
+    surface.albedo *= lerp(1.0h, lerp(.77h, 1.22h, mixAge) * (1.0h - .35h * binder), visible);
+    surface.smoothness *= lerp(1.0h, lerp(1.22h, .79h, mixAge), visible);
+    surface.smoothness += (.045h + .11h * wetness) * binder * visible;
+    relief -= .0010h * binder * visible;
+
+    // Reuse the isotropic aggregate at close range. Its G channel describes
+    // material height: exposed grains lighten the older mix, tar fills lows.
+    half detail = 1.0h - smoothstep(.018h, .065h, footprint);
+    [branch] if (detail > 0.0h)
+    {
+        half aggregate = SAMPLE_TEXTURE2D_GRAD(_GroundResponse, sampler_GroundResponse,
+            PavingGrainUv(metres), PavingGrainUv(uvDx * _GroundPavingMetres),
+            PavingGrainUv(uvDy * _GroundPavingMetres)).g - .5h;
+        half exposed = detail * (1.0h - binder) * lerp(.5h, 1.4h, mixAge);
+        surface.albedo *= 1.0h + aggregate * 1.45h * exposed;
+        surface.smoothness -= aggregate * .21h * exposed;
+        relief += aggregate * .0015h * exposed;
+    }
+    surface.smoothness = saturate(surface.smoothness);
+}
+
+void ApplyCitySidewalk(float2 metres, float4 edges, float footprint, half wetness,
+    inout SurfaceData surface, inout half relief)
+{
+    // Cast concrete flags in half bond. The metric field continues across
+    // mesh boundaries; the surveyed curb trims the last flag at the street.
+    float aa = clamp(footprint * .5, .001, .18);
+    float row = floor(metres.y / .50);
+    float2 cell = float2(metres.x / .75 + .5 * fmod(abs(row), 2.0), metres.y / .50);
+    float2 jointDistance = (.5 - abs(frac(cell) - .5)) * float2(.75, .50);
+    float seam = PavingJoint(min(jointDistance.x, jointDistance.y), .005, aa);
+    float cast = GroundHash(floor(cell));
+    float tone = lerp(.87, 1.12, cast);
+    float polish = lerp(.88, 1.12, cast);
+    if (edges.z < -.5)
+    {
+        float second = -1.0 - edges.z;
+        float distanceToStreet = min(edges.x, second);
+        float along = edges.x < second ? edges.y : edges.w;
+        float curb = 1.0 - smoothstep(.16-aa, .16+aa, distanceToStreet);
+        float end = (.5 - abs(frac(along) - .5));
+        float mortar = PavingJoint(end, .007, aa);
+        seam = max(lerp(seam, mortar, curb), PavingJoint(distanceToStreet - .16, .006, aa));
+        tone = lerp(tone, lerp(1.10, 1.28, GroundHash(float2(floor(along), 4))), curb);
+        polish = lerp(polish, 1.25, curb);
+    }
+    half visible = 1.0h - smoothstep(.05h, .30h, footprint);
+    surface.albedo *= lerp(1.0h, tone * (1.0h - .40h * seam), visible);
+    surface.smoothness *= lerp(1.0h, polish * (1.0h - .32h * seam), visible);
+    surface.smoothness += .035h * wetness * seam * visible;
+    relief -= .0015h * seam * visible;
+}
+
 void ApplyGroundAsphalt(float2 plane, half upward, float4 road, float roadFootprint,
     inout half3 albedo, inout half smoothness)
 {
@@ -106,6 +215,7 @@ void ApplyGroundLayers(float2 uv, float3 world, half3 normal,
     float2 plane = abs(normal.y) > 0.5 ? world.xz :
         (abs(normal.x) > abs(normal.z) ? world.zy : world.xy);
     float2 groundDx = ddx(world.xz), groundDy = ddy(world.xz);
+    float2 uvDx = ddx(uv), uvDy = ddy(uv);
     float roadFootprint = length(fwidth(road.xy)) + length(fwidth(plane)) * 0.36;
     half broad = GroundNoise(plane * 0.19);
     half wetness = saturate(max(_GroundWetness, _CityGroundWetness * _GroundCityClimate));
@@ -160,6 +270,12 @@ void ApplyGroundLayers(float2 uv, float3 world, half3 normal,
     surface.albedo *= lerp(0.95h, 1.04h, broad);
     surface.smoothness *= response.r;
     surface.smoothness *= lerp(0.65h, 1.0h, damp);
+    relief = (response.g - 0.5h) * 0.0015h;
+    [branch] if (_GroundSidewalkMetres > 0.0)
+        ApplyCitySidewalk(uv * _GroundSidewalkMetres, road,
+            max(length(uvDx), length(uvDy)) * _GroundSidewalkMetres, wetness, surface, relief);
+    [branch] if (_GroundPavingMetres > 0.0 && _GroundKind < .5 && normal.y > .5)
+        ApplyCityPaving(uv, uvDx, uvDy, road, max(length(groundDx), length(groundDy)), wetness, surface, relief);
     [branch] if (_PortGroundWearBounds.z > 0.0 && normal.y > 0.5)
     {
         float2 wearUv = (world.xz - _PortGroundWearBounds.xy) * _PortGroundWearBounds.zw;
@@ -167,8 +283,6 @@ void ApplyGroundLayers(float2 uv, float3 world, half3 normal,
         surface.albedo *= 1.0h - .36h*wear.r + .31h*wear.g - (.21h + .14h*wetness)*wear.b;
         surface.smoothness = lerp(surface.smoothness, lerp(.14h,.34h,wetness), wear.b);
     }
-    relief = (response.g - 0.5h) * 0.0015h;
-
     if (_GroundKind < 0.5) // Asphalt: patches and edges belong to the road frame.
     {
         ApplyGroundAsphalt(plane, upward, road, roadFootprint, surface.albedo, surface.smoothness);

@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using BarPromenade.Rendering;
 using NUnit.Framework;
@@ -12,6 +13,245 @@ namespace BarPromenade.Tests.PlayMode
 {
     public sealed partial class AreaCaptureFixture
     {
+        [UnityTest, Explicit("Read the printed supermarket sign from both approaches and inspect its night lighting.")]
+        public IEnumerator CityGrocerySignFromStreet()
+        {
+            GameSessionState.BeginNewGame();
+            GameSessionState.PrepareSupermarketReturn();
+            Assert.That(GameSessionState.TryStartGameTimeAt(12 * 60), Is.True);
+            CityGameRoot city = null;
+            yield return Capture(SceneIds.City, () =>
+            {
+                city = Object.FindAnyObjectByType<CityGameRoot>();
+                return city != null && city.IsInitialized ? city : null;
+            }, () =>
+            {
+                var shop = city.World.Root.transform.Find("Supermarket/Supermarket Exterior")
+                    .GetComponent<SupermarketExteriorAssetRegistry>();
+                Renderer board = shop.Parts.Single(part => part.SourceName == CitySupermarketFacadeWorldBuilder.PrintedSignName).Renderer;
+                var block = new MaterialPropertyBlock();
+                board.GetPropertyBlock(block);
+                var enamel = board.sharedMaterial;
+                Assert.That(enamel.GetTexture("_BaseMap"), Is.SameAs(Resources.Load<Texture2D>(SupermarketExteriorSurfaceAppearance.SignTextureResourcePath)));
+                Assert.That(enamel.GetTextureScale("_BaseMap"), Is.EqualTo(Vector2.one));
+                Assert.That(enamel.GetTextureOffset("_BaseMap"), Is.EqualTo(Vector2.zero));
+                Assert.That(enamel.GetTexture("_EmissionMap").name, Is.EqualTo("SupermarketSignWash"));
+                Assert.That(enamel.IsKeywordEnabled("_EMISSION"), Is.True);
+                float daylight = block.GetVector("_EmissionColor").x;
+                Assert.That(daylight, Is.InRange(.66f, 1f));
+#if UNITY_EDITOR
+                AssertSignReadsFromStreet(shop.transform, board, plainEdges: true);
+#endif
+                Assert.That(shop.TryGetAnchor("exterior_door", out var door), Is.True);
+                Vector3 face = board.bounds.center, outward = shop.transform.forward;
+                Vector3 right = Vector3.Cross(outward, Vector3.up);
+                Transform[] lamps = shop.GetComponentsInChildren<Transform>().Where(t => t.name == "ANCHOR_Source").ToArray();
+                Assert.That(lamps.Length, Is.EqualTo(2));
+                Assert.That(shop.GetComponentsInChildren<Light>(true), Is.Empty, "The sign wash is baked on the enamel.");
+                var plane = new Plane(outward, face + outward * .04f);
+                float sides = 1f;
+                foreach (Transform lamp in lamps)
+                {
+                    Ray axis = new Ray(lamp.position, lamp.forward);
+                    Assert.That(plane.Raycast(axis, out float distance), Is.True);
+                    Assert.That(distance, Is.InRange(.3f, 1f));
+                    Vector3 delta = axis.GetPoint(distance) - face;
+                    Assert.That(Mathf.Abs(delta.y), Is.LessThan(.4f));
+                    float horizontal = Vector3.Dot(delta, right);
+                    Assert.That(Mathf.Abs(horizontal), Is.InRange(.5f, 2.8f));
+                    sides *= horizontal;
+                }
+                Assert.That(sides, Is.Negative, "Each lamp should cover its own half of the lettering.");
+                Vector3 eye = door.position + Vector3.up * EyeHeight + outward * 8f;
+                Vector4 nightTint = default;
+                bool Night(bool lit)
+                {
+                    if (GameSessionState.GameTimeOfDayMinutes < 21 * 60)
+                    {
+                        GameSessionState.AdvanceGameTime((float)((22 * 60 - GameSessionState.GameTimeOfDayMinutes) /
+                            GameTimeState.GameMinutesPerRealSecond));
+                        city.DayNight.ApplyCurrentTime(true);
+                        board.GetPropertyBlock(block);
+                        nightTint = block.GetVector("_EmissionColor");
+                        Assert.That(nightTint.x, Is.GreaterThan(daylight));
+                    }
+                    board.GetPropertyBlock(block);
+                    block.SetVector("_EmissionColor", lit ? nightTint : Vector4.zero);
+                    board.SetPropertyBlock(block);
+                    return true;
+                }
+                return new[] {
+                    Shot.At("grocery-sign-front", eye, face, 49f),
+                    Shot.At("grocery-sign-left", eye - right * 5f, face, 50f),
+                    Shot.At("grocery-sign-right", eye + right * 5f, face, 50f),
+                    Shot.At("grocery-sign-unlit-reference", eye, face, 49f, readyWhen: () => Night(false)),
+                    Shot.At("grocery-sign-night", eye, face, 49f, readyWhen: () => Night(true))
+                };
+            });
+
+            float[] ReadEnamelStrip(string shot)
+            {
+                string path = Path.Combine(Directory.GetCurrentDirectory(), "Captures", SceneIds.City, shot + ".png");
+                var frame = new Texture2D(2, 2, TextureFormat.RGB24, false);
+                try
+                {
+                    Assert.That(frame.LoadImage(File.ReadAllBytes(path)), Is.True);
+                    // The head-on pose centres the board. Sample the enamel just below the type,
+                    // at the ends of the word, under each hood and at the join between them.
+                    float[] positions = { .315f, .4f, .5f, .6f, .685f };
+                    int y = Mathf.RoundToInt(frame.height * .466f);
+                    return positions.Select(u => frame.GetPixels(Mathf.RoundToInt(frame.width * u) - 3, y, 7, 3)
+                        .Average(pixel => pixel.grayscale)).ToArray();
+                }
+                finally { Object.DestroyImmediate(frame); }
+            }
+
+            float[] unlit = ReadEnamelStrip("grocery-sign-unlit-reference");
+            float[] lit = ReadEnamelStrip("grocery-sign-night");
+            float[] gains = lit.Zip(unlit, (on, off) => on - off).ToArray();
+            Assert.That(gains.Min(), Is.GreaterThan(.08f), "Both lamps must visibly illuminate the full word.");
+            Assert.That(gains.Min(), Is.GreaterThan(.55f * gains.Max()), "Keep the outer letters and central join lit.");
+        }
+
+        [UnityTest, Explicit("Review the cut concrete flags, curb stones and brick bond at the grocery entrance.")]
+        public IEnumerator CityGroceryStreetFinishes()
+        {
+            static Vector2 XZ(Vector3 p) => new(p.x, p.z);
+            GameSessionState.BeginNewGame();
+            GameSessionState.PrepareSupermarketReturn();
+            Assert.That(GameSessionState.TryStartGameTimeAt(12 * 60), Is.True);
+            CityGameRoot city = null;
+            yield return Capture(SceneIds.City, () =>
+            {
+                city = Object.FindAnyObjectByType<CityGameRoot>();
+                return city != null && city.IsInitialized ? city : null;
+            }, () =>
+            {
+                var shop = city.World.Root.transform.Find("Supermarket/Supermarket Exterior")
+                    .GetComponent<SupermarketExteriorAssetRegistry>();
+                Assert.That(shop.TryGetAnchor("exterior_door", out var door), Is.True);
+                Vector3 forward = shop.transform.forward, right = shop.transform.right;
+                var block = new MaterialPropertyBlock();
+                var masonry = shop.Parts.Where(p => p.SourceName is "Front Brick Wings" or "Dark Brick Plinth").ToArray();
+                Assert.That(masonry.Length, Is.EqualTo(2));
+                foreach (var part in masonry)
+                {
+                    part.Renderer.GetPropertyBlock(block, 0);
+                    if (block.isEmpty) part.Renderer.GetPropertyBlock(block);
+                    Assert.That(block.GetTexture("_BaseMap"), Is.EqualTo(Resources.Load<Texture2D>("City/Surfaces/SupermarketBrickAlbedo")));
+                    Assert.That(block.GetTexture("_SceneMaterialResponse"), Is.EqualTo(Resources.Load<Texture2D>("City/Surfaces/SupermarketBrickResponse")));
+                }
+                Physics.SyncTransforms();
+                var ground = city.World.Root.GetComponent<CityGroundSurfaceSystem>();
+                var support = CityStreetSurfacePlanner.Create(city.Layout).SupportPlan;
+                Vector3 wall = door.position + right * 4.35f;
+                var patches = support.Patches.Where(p => p.IsSupport && p.Kind == CityStreetSupportKind.Sidewalk)
+                    .OrderBy(p => (p.Bounds.center - XZ(door.position)).sqrMagnitude);
+                foreach (var patch in patches)
+                for (int i = 0; i < patch.TopVertices.Count; i++)
+                {
+                    Vector3 a = patch.TopVertices[i], b = patch.TopVertices[(i+1) % patch.TopVertices.Count];
+                    Vector3 edge = (a + b) * .5f;
+                    if ((edge - door.position).sqrMagnitude > 30f * 30f || (b-a).sqrMagnitude < 1f) continue;
+                    Vector3 outward = Vector3.Cross((b-a).normalized, Vector3.up).normalized;
+                    if (Vector2.Dot(XZ(outward), XZ(edge) - patch.Bounds.center) < 0) outward = -outward;
+                    if (!support.TrySampleTop(XZ(edge + outward * .06f), out float top, out var kind) ||
+                        kind != FootstepGroundKind.Concrete || edge.y - top < .035f || edge.y - top > .12f) continue;
+                    if (!TryCommonGroundHit(ground, edge - outward * .07f, out var hit)) continue;
+                    hit.collider.GetComponent<Renderer>().GetPropertyBlock(block, CommonGroundSlot(hit));
+                    if (block.GetFloat("_GroundSidewalkMetres") != CityExteriorAppearance.SidewalkTextureTileSize) continue;
+                    var mesh = ((MeshCollider)hit.collider).sharedMesh;
+                    var frames = new List<Vector4>();
+                    mesh.GetUVs(GroundSurfaceCoordinates.Channel, frames);
+                    int[] triangles = mesh.triangles;
+                    var bary = hit.barycentricCoordinate;
+                    int index = hit.triangleIndex * 3;
+                    Vector4 curb = frames[triangles[index]] * bary.x + frames[triangles[index+1]] * bary.y +
+                        frames[triangles[index+2]] * bary.z;
+                    if (curb.z > -.5f || Mathf.Abs(Mathf.Min(curb.x, -1f - curb.z) - .07f) > .025f) continue;
+                    return new[] {
+                        Shot.At("grocery-finish-approach", door.position + forward * 9f + right * 1.5f + Vector3.up * EyeHeight,
+                            door.position + Vector3.up * 1.15f, 65f),
+                        Shot.At("grocery-finish-curb", edge + outward * 1.1f + Vector3.up * EyeHeight,
+                            edge - outward * .48f, 58f),
+                        Shot.At("grocery-finish-brick", wall + forward * 1.45f - right * .35f + Vector3.up * EyeHeight,
+                            wall + Vector3.up * .68f, 60f)
+                    };
+                }
+                Assert.Fail("No raised curb at the grocery retained its metric frame through ground consolidation.");
+                return System.Array.Empty<Shot>();
+            });
+        }
+
+        [UnityTest, Explicit("Inspect paving lots and wet joints on the street at the player's arrival.")]
+        public IEnumerator CityAsphaltPaving()
+        {
+            GameSessionState.BeginNewGame();
+            Assert.That(GameSessionState.TryStartGameTimeAt(12 * 60), Is.True);
+            CityGameRoot city = null;
+            yield return Capture(SceneIds.City, () =>
+            {
+                city = Object.FindAnyObjectByType<CityGameRoot>();
+                return city != null && city.IsInitialized ? city : null;
+            }, () =>
+            {
+                Physics.SyncTransforms();
+                Vector3 hero = city.Player.Motor.transform.position;
+                Vector2 arrival = new Vector2(hero.x, hero.z);
+                var paths = city.Layout.RoadEdges.Where(e => city.Layout.GetPathKind(e) == CityPathKind.Street)
+                    .Select(e => city.Layout.RoadGeometry.Get(e))
+                    .OrderBy(path => (path.SampleDistance(path.Length * .5f).Position - arrival).sqrMagnitude);
+                var ground = city.World.Root.GetComponent<CityGroundSurfaceSystem>();
+                CityStreetSupportPlan support = CityStreetSurfacePlanner.Create(city.Layout).SupportPlan;
+                Texture asphalt = ResolveCommonGroundFinalTexture(CityExteriorAppearance.RoadTexture);
+                Assert.That(asphalt.width, Is.EqualTo(2048), "The road needs two pigment texels per 12 mm chip.");
+                foreach (var path in paths)
+                {
+                    var sample = path.SampleDistance(path.Length * .5f);
+                    Vector2 lane = sample.Position + sample.Right * .85f;
+                    if (!support.TrySampleTop(lane, FootstepGroundKind.Concrete, out float y)) continue;
+                    Vector3 point = new Vector3(lane.x, y, lane.y);
+                    if (!TryCommonGroundHit(ground, point, out RaycastHit hit)) continue;
+                    var renderer = hit.collider.GetComponent<MeshRenderer>();
+                    int slot = CommonGroundSlot(hit);
+                    var block = new MaterialPropertyBlock();
+                    renderer.GetPropertyBlock(block, slot);
+                    if (block.GetTexture("_BaseMap") != asphalt) continue;
+                    Assert.That(block.GetFloat("_GroundPavingMetres"), Is.EqualTo(CityExteriorAppearance.RoadTextureTileSize));
+                    Assert.That(block.GetFloat("_GroundRoadCoordinates"), Is.EqualTo(1f));
+                    Vector3 along = new Vector3(sample.Tangent.x, 0f, sample.Tangent.y);
+                    Vector3 right = new Vector3(sample.Right.x, 0f, sample.Right.y);
+                    Vector3 eye = point + right * 2.1f + Vector3.up * EyeHeight - along * 3f;
+                    Vector3 target = point - right * .8f + along * 4f;
+                    bool SetPaving(float metres)
+                    {
+                        renderer.GetPropertyBlock(block, slot);
+                        block.SetFloat("_GroundPavingMetres", metres);
+                        renderer.SetPropertyBlock(block, slot);
+                        return true;
+                    }
+                    bool Night()
+                    {
+                        if (GameSessionState.GameTimeOfDayMinutes < 21 * 60)
+                            GameSessionState.AdvanceGameTime((float)((22 * 60 - GameSessionState.GameTimeOfDayMinutes) /
+                                GameTimeState.GameMinutesPerRealSecond));
+                        city.DayNight.ApplyCurrentTime(true);
+                        return true;
+                    }
+                    return new[] {
+                        Shot.At("asphalt-paving-reference", eye, target, 66f, readyWhen: () => SetPaving(0f)),
+                        Shot.At("asphalt-paving-street", eye, target, 66f,
+                            readyWhen: () => SetPaving(CityExteriorAppearance.RoadTextureTileSize)),
+                        Shot.At("asphalt-paving-joint", point - right * .75f + Vector3.up * 1.45f,
+                            point - right * 1.25f + along * .7f, 64f),
+                        Shot.At("asphalt-paving-night", eye, target, 66f, readyWhen: Night)
+                    };
+                }
+                Assert.Fail("The arrival district has no paved asphalt contact on its street.");
+                return System.Array.Empty<Shot>();
+            });
+        }
+
         [UnityTest, Explicit("Survey the City stair-to-ground joints and review both banks in the live scene.")]
         public IEnumerator CityStairGroundJoints()
         {
@@ -311,7 +551,7 @@ namespace BarPromenade.Tests.PlayMode
         }
 
 #if UNITY_EDITOR
-        private static void AssertSignReadsFromStreet(Transform sign, Renderer print)
+        private static void AssertSignReadsFromStreet(Transform sign, Renderer print, bool plainEdges = false)
         {
             var mesh = print.GetComponent<MeshFilter>().sharedMesh;
             using var data = UnityEditor.MeshUtility.AcquireReadOnlyMeshData(mesh);
@@ -320,9 +560,11 @@ namespace BarPromenade.Tests.PlayMode
             data[0].GetVertices(vertices);
             data[0].GetUVs(0, uv);
             Vector3 streetRight = Vector3.Cross(sign.up, -sign.forward);
-            int left = 0, right = 0, bottom = 0, top = 0;
-            for (int i = 1; i < vertices.Length; i++)
+            int left = -1, right = -1, bottom = -1, top = -1;
+            for (int i = 0; i < vertices.Length; i++)
             {
+                if (plainEdges && uv[i] == Vector2.zero) continue;
+                if (left < 0) { left = right = top = bottom = i; continue; }
                 Vector3 point = print.transform.TransformPoint(vertices[i]);
                 float x = Vector3.Dot(point, streetRight);
                 if (x < Vector3.Dot(print.transform.TransformPoint(vertices[left]), streetRight)) left = i;
@@ -330,8 +572,10 @@ namespace BarPromenade.Tests.PlayMode
                 if (point.y < print.transform.TransformPoint(vertices[bottom]).y) bottom = i;
                 if (point.y > print.transform.TransformPoint(vertices[top]).y) top = i;
             }
-            Assert.That(uv[right].x - uv[left].x, Is.GreaterThan(.99f), "U grows to the viewer's right on the imported sign.");
-            Assert.That(uv[top].y - uv[bottom].y, Is.GreaterThan(.99f), "V grows upward on the imported sign.");
+            Assert.That(left, Is.GreaterThanOrEqualTo(0));
+            float span = plainEdges ? .96f : .99f; // Rounded enamel edges lie outside the printed face.
+            Assert.That(uv[right].x - uv[left].x, Is.GreaterThan(span), "U grows to the viewer's right on the imported sign.");
+            Assert.That(uv[top].y - uv[bottom].y, Is.GreaterThan(span), "V grows upward on the imported sign.");
         }
 #endif
 
@@ -1320,16 +1564,8 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(marker.ResolveKind(hit.triangleIndex), Is.EqualTo(kind), "Surface sound at " + expected);
             if (!checkTexture) return;
             Assert.That(texture, Is.Not.Null);
-            MeshCollider collider = (MeshCollider)hit.collider;
-            int triangle = hit.triangleIndex;
-            int slot = 0;
-            while (slot < collider.sharedMesh.subMeshCount - 1)
-            {
-                int count = (int)collider.sharedMesh.GetIndexCount(slot) / 3;
-                if (triangle < count) break;
-                triangle -= count; slot++;
-            }
-            Renderer renderer = collider.GetComponent<Renderer>();
+            int slot = CommonGroundSlot(hit);
+            Renderer renderer = hit.collider.GetComponent<Renderer>();
             var block = new MaterialPropertyBlock(); renderer.GetPropertyBlock(block, slot);
             Texture actual = block.GetTexture("_BaseMap");
             if (actual == null) actual = renderer.sharedMaterials[slot].GetTexture("_BaseMap");
@@ -1339,6 +1575,19 @@ namespace BarPromenade.Tests.PlayMode
                 "The contact must belong to its final City material region. " +
                 "source=" + DescribeCommonGroundTexture(texture) + ", expected=" + DescribeCommonGroundTexture(expectedTexture) +
                 ", actual=" + DescribeCommonGroundTexture(actual));
+        }
+
+        private static int CommonGroundSlot(RaycastHit hit)
+        {
+            Mesh mesh = ((MeshCollider)hit.collider).sharedMesh;
+            int triangle = hit.triangleIndex;
+            for (int slot = 0; slot < mesh.subMeshCount - 1; slot++)
+            {
+                int count = (int)mesh.GetIndexCount(slot) / 3;
+                if (triangle < count) return slot;
+                triangle -= count;
+            }
+            return mesh.subMeshCount - 1;
         }
 
         private static Texture ResolveCommonGroundFinalTexture(Texture source)

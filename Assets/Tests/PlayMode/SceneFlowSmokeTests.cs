@@ -89,10 +89,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 cityRoot.GetComponentsInChildren<HomeEntrance>(true),
                 Has.Length.EqualTo(1));
-            // The City grocery has been the authored exterior model since
-            // 3713d2d0; the primitive blade sign and glyph boxes survive
-            // only in the clipped Home-boundary fallback. The vertical sign
-            // and the lettering are parts of that model now.
+            // The street board and projecting corner housing belong to the imported facade.
             Transform supermarket =
                 cityRoot.World.Root.transform.Find("Supermarket");
             Assert.That(supermarket, Is.Not.Null);
@@ -115,9 +112,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 HasSupermarketExteriorPart(
                     supermarketRegistry,
-                    "Authored " +
-                    CitySupermarketFacadeWorldBuilder.SignWord +
-                    " Lettering"),
+                    CitySupermarketFacadeWorldBuilder.PrintedSignName),
                 Is.True,
                 "The grocery sign must carry real lettering.");
             Assert.That(

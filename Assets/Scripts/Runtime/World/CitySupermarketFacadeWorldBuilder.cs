@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -22,18 +21,10 @@ namespace BarPromenade
             new Color(0.30f, 0.34f, 0.25f);
         private static readonly Color SignHousingColor =
             new Color(0.20f, 0.18f, 0.14f);
-        private static readonly Color SignColor =
-            new Color(1.40f, 0.24f, 0.12f);
-        private static readonly Color LetterColor =
-            new Color(1.20f, 1.05f, 0.64f);
-
-        /// <summary>The word both supermarket signs spell.</summary>
-        public const string SignWord =
-            "\u041f\u0420\u041e\u0414\u0423\u041a\u0422\u042b";
-
         private const float BladeCenterY = 4.05f;
         private const float BladeHeight = 3.05f;
-        private const float BladeRowStep = 0.36f;
+        public const string SignWord = "ПРОДУКТЫ";
+        public const string PrintedSignName = "Printed " + SignWord + " Sign";
 
         public static void BuildCity(
             Transform parent,
@@ -87,8 +78,7 @@ namespace BarPromenade
                     lot.DoorPosition),
                 PlayerHomeBalconyGeometry.ToHomeLocalDirection(
                     context.PlayerHome,
-                    ResolveDirection(lot)),
-                CityNightResources.EmissiveMaterial);
+                    ResolveDirection(lot)));
         }
 
         private static void BuildAuthored(
@@ -159,15 +149,24 @@ namespace BarPromenade
 
                 SupermarketExteriorSurfaceAppearance.Apply(
                     renderer,
-                    surface);
+                    surface, plinth: binding.SourceName == "Dark Brick Plinth");
+                if (surface == SupermarketExteriorSurfaceKind.PrintedSign)
+                {
+                    Vector3 outward = instance.transform.forward;
+                    Bounds bounds = renderer.bounds;
+                    Vector3 streetRight = Vector3.Cross(outward, Vector3.up);
+                    float width = Mathf.Abs(Vector3.Dot(bounds.size, streetRight));
+                    float depth = Mathf.Abs(Vector3.Dot(bounds.size, outward));
+                    BuildSignLights(instance.transform, bounds.center + outward * (depth * .5f),
+                        outward, width, false);
+                }
             }
         }
 
         private static void BuildClippedLegacy(
             Transform parent,
             Vector3 doorPosition,
-            Vector3 direction,
-            Material emissiveMaterial)
+            Vector3 direction)
         {
             const bool clipToHomeExterior = true;
             direction.y = 0f;
@@ -294,63 +293,8 @@ namespace BarPromenade
                 null,
                 clipToHomeExterior);
 
-            CreateBox(
-                "Supermarket Sign Housing",
-                parent,
-                doorPosition +
-                direction * 0.10f +
-                Vector3.up * 3.48f,
-                CreateFacadeSize(
-                    frontageIsX,
-                    0.20f,
-                    0.90f,
-                    SupermarketEntranceGeometry.StorefrontWidth + 0.70f),
-                SignHousingColor,
-                null,
-                clipToHomeExterior);
-            CreateGlowBox(
-                "Supermarket Sign",
-                parent,
-                doorPosition +
-                direction * 0.22f +
-                Vector3.up * 3.48f,
-                CreateFacadeSize(
-                    frontageIsX,
-                    0.08f,
-                    0.62f,
-                    SupermarketEntranceGeometry.StorefrontWidth + 0.28f),
-                SignColor,
-                emissiveMaterial,
-                clipToHomeExterior);
-
-            // The sign spells the word: blocky segment glyphs bright
-            // enough to read down the street, the recognisable Soviet
-            // grocery lettering rather than anonymous glowing blocks.
-            IReadOnlyList<SignSegmentRect> lettering =
-                CitySignLettering.Layout(
-                    SignWord,
-                    0.62f,
-                    0.42f,
-                    0.90f);
-            for (int index = 0; index < lettering.Count; index++)
-            {
-                SignSegmentRect segment = lettering[index];
-                CreateGlowBox(
-                    "Supermarket Sign Letter",
-                    parent,
-                    doorPosition +
-                    direction * 0.275f +
-                    tangent * segment.Center.x +
-                    Vector3.up * (3.48f + segment.Center.y),
-                    CreateFacadeSize(
-                        frontageIsX,
-                        0.045f,
-                        segment.Size.y,
-                        segment.Size.x),
-                    LetterColor,
-                    emissiveMaterial,
-                    clipToHomeExterior);
-            }
+            BuildClippedSign(parent, doorPosition + direction * .22f + Vector3.up * 3.48f,
+                direction, tangent, frontageIsX);
 
             BuildBladeSign(
                 parent,
@@ -358,14 +302,11 @@ namespace BarPromenade
                 direction,
                 tangent,
                 frontageIsX,
-                emissiveMaterial,
                 clipToHomeExterior);
         }
 
         /// <summary>
-        /// The vertical corner box: one glyph per row reading down,
-        /// lettered on both street-facing sides — the classic Soviet
-        /// blade sign that marks the grocery from far along the block.
+        /// The projecting corner housing matches the unlettered blade on the imported facade.
         /// </summary>
         private static void BuildBladeSign(
             Transform parent,
@@ -373,7 +314,6 @@ namespace BarPromenade
             Vector3 direction,
             Vector3 tangent,
             bool frontageIsX,
-            Material emissiveMaterial,
             bool clipToHomeExterior)
         {
             Vector3 bladeCenter =
@@ -407,46 +347,69 @@ namespace BarPromenade
                 null,
                 clipToHomeExterior);
 
-            float top = (SignWord.Length - 1) * 0.5f * BladeRowStep;
-            for (int side = -1; side <= 1; side += 2)
+        }
+
+        private static void BuildClippedSign(Transform parent, Vector3 center, Vector3 outward,
+            Vector3 streetRight, bool frontageIsX)
+        {
+            const float width = 6.05f, height = .90f, depth = .08f;
+            Bounds original = new Bounds(center, CreateFacadeSize(frontageIsX, depth, height, width));
+            if (!HomeExteriorViewBuilder.TryClipToExteriorHalfSpace(original, out Bounds clipped)) return;
+            var registry = SupermarketExteriorModelResources.LoadPrefab().GetComponent<SupermarketExteriorAssetRegistry>();
+            foreach (var part in registry.Parts)
             {
-                Vector3 faceOffset = tangent * (side * 0.115f);
-                for (int row = 0; row < SignWord.Length; row++)
-                {
-                    IReadOnlyList<SignSegmentRect> glyph =
-                        CitySignLettering.Layout(
-                            SignWord[row].ToString(),
-                            0.46f,
-                            0.30f,
-                            1f);
-                    float rowY = top - row * BladeRowStep;
-                    for (int index = 0; index < glyph.Count; index++)
-                    {
-                        SignSegmentRect segment = glyph[index];
-                        // Each face flips the glyphs along the read
-                        // axis so both approaches read forward — the
-                        // asymmetric Р and К must never mirror.
-                        CreateGlowBox(
-                            "Supermarket Blade Sign Letter",
-                            parent,
-                            bladeCenter +
-                            faceOffset +
-                            direction * (segment.Center.x * side) +
-                            Vector3.up * (rowY + segment.Center.y),
-                            frontageIsX
-                                ? new Vector3(
-                                    segment.Size.x,
-                                    segment.Size.y,
-                                    0.04f)
-                                : new Vector3(
-                                    0.04f,
-                                    segment.Size.y,
-                                    segment.Size.x),
-                            LetterColor,
-                            emissiveMaterial,
-                            clipToHomeExterior);
-                    }
-                }
+                if (part.SourceName != PrintedSignName) continue;
+                var source = part.Renderer;
+                Transform holder = new GameObject(PrintedSignName).transform;
+                holder.SetParent(parent, false);
+                holder.localPosition = clipped.center;
+                holder.localRotation = Quaternion.LookRotation(outward);
+                float visibleWidth = Mathf.Abs(Vector3.Dot(streetRight, clipped.size));
+                holder.localScale = new Vector3(visibleWidth / width, 1f,
+                    Mathf.Abs(Vector3.Dot(outward, clipped.size)) / depth);
+                Renderer board = Object.Instantiate(source, holder, false);
+                board.transform.localPosition = source.transform.position - source.bounds.center;
+                board.transform.localRotation = source.transform.rotation;
+                board.transform.localScale = source.transform.lossyScale;
+                SupermarketExteriorSurfaceAppearance.Apply(board, SupermarketExteriorSurfaceKind.PrintedSign);
+                var block = new MaterialPropertyBlock();
+                board.GetPropertyBlock(block);
+                float fraction = visibleWidth / width;
+                float offset = .5f * (1f - fraction) + Vector3.Dot(clipped.center - center, streetRight) / width;
+                block.SetVector("_BaseMap_ST", new Vector4(fraction, 1, offset, 0));
+                board.SetPropertyBlock(block);
+                BuildSignLights(parent, parent.TransformPoint(center + outward * (depth * .5f)),
+                    parent.TransformDirection(outward), width, true);
+                return;
+            }
+            throw new InvalidOperationException("Missing printed supermarket sign on the exterior prefab.");
+        }
+
+        private static void BuildSignLights(Transform parent, Vector3 face, Vector3 outward, float width, bool clip)
+        {
+            Vector3 streetRight = Vector3.Cross(outward, Vector3.up);
+            foreach (int side in new[] { -1, 1 })
+            {
+                Vector3 target = face + streetRight * (side * width * .225f);
+                Vector3 contact = target + Vector3.up * .61f - outward * .075f;
+                if (clip && Mathf.Min(parent.InverseTransformPoint(contact).x,
+                    parent.InverseTransformPoint(contact + outward * .90f).x) - .32f < HomeExteriorViewBuilder.ContextMinimumX)
+                    continue;
+
+                Transform fitting = new GameObject("Supermarket sign lamp " + (side < 0 ? "left" : "right")).transform;
+                fitting.SetParent(parent, false);
+                fitting.SetPositionAndRotation(contact, Quaternion.LookRotation(outward));
+                Transform bracket = CityGlassReturnAssetProvider.CreateFloodlight(fitting).transform;
+                // Extend only the wall bracket. The swivel and shielded head retain their native proportions.
+                const float armScale = 2.6f;
+                bracket.localPosition = Vector3.forward * (.18f * armScale);
+                bracket.localScale = new Vector3(1f, 1f, armScale);
+                Transform head = CityGlassReturnAssetProvider.FindPart(bracket, "MOVE_Head");
+                head.SetParent(fitting, true);
+                head.localScale = Vector3.one;
+                head.rotation = Quaternion.LookRotation(target - head.position);
+                var lens = CityGlassReturnAssetProvider.FindPart(head, "LampLens").GetComponent<Renderer>();
+                CityNightGlowRegistry.Register(lens, SupermarketExteriorSurfaceAppearance.SignLampColor * 1.8f);
             }
         }
 
@@ -475,37 +438,6 @@ namespace BarPromenade
                 false);
             CityWindowAppearance.ApplyPlainPane(
                 glass.GetComponent<Renderer>());
-        }
-
-        private static void CreateGlowBox(
-            string name,
-            Transform parent,
-            Vector3 position,
-            Vector3 size,
-            Color color,
-            Material emissiveMaterial,
-            bool clipToHomeExterior)
-        {
-            Bounds bounds = new Bounds(position, size);
-            if (clipToHomeExterior &&
-                !HomeExteriorViewBuilder.TryClipToExteriorHalfSpace(
-                    bounds,
-                    out bounds))
-            {
-                return;
-            }
-
-            GameObject box = RuntimePrimitiveFactory.CreateBox(
-                name,
-                parent,
-                bounds.center,
-                bounds.size,
-                color,
-                emissiveMaterial,
-                false);
-            CityNightGlowRegistry.Register(
-                box.GetComponent<Renderer>(),
-                color);
         }
 
         private static Vector3 CreateFacadeSize(

@@ -105,7 +105,7 @@ namespace BarPromenade
                 }
 
                 renderer.sharedMaterial = DrinkContainerCatalog.IsDrink(itemId)
-                    ? VodkaBottleView.MaterialFor(part.Role) : RuntimePrimitiveFactory.DefaultMaterial;
+                    ? VodkaBottleView.MaterialFor(part.Role, itemId) : RuntimePrimitiveFactory.DefaultMaterial;
                 renderer.shadowCastingMode = ShadowCastingMode.On;
                 renderer.receiveShadows = true;
                 renderer.GetPropertyBlock(properties);
@@ -124,7 +124,19 @@ namespace BarPromenade
                 properties.SetFloat("_Metallic", metal ? .72f : 0f);
                 properties.SetFloat("_Smoothness", metal ? .42f : part.Role == "glass" &&
                     itemId == InventoryItemId.HawthornTincture ? .46f : part.Role == "shell" ? .24f : .12f);
-                if (part.Role != "glass" && part.Role != "liquid" && part.Role != "liquid_surface")
+                if (itemId == InventoryItemId.BeerCan && part.Role is not ("liquid" or "liquid_surface"))
+                {
+                    // Box-projected mesh UVs are in metres. The sleeve, wall and lid
+                    // have guarded columns in the same pigment/smoothness texture.
+                    properties.SetTexture("_BaseMap", renderer.sharedMaterial.GetTexture("_BaseMap"));
+                    properties.SetFloat("_Smoothness", 1f);
+                    properties.SetVector("_BaseMap_ST", part.Role switch {
+                        "label" => new Vector4(5f, 16f, .25f, .5f - .076f * 16f),
+                        "can_body" => new Vector4(2.7f, 6f, .625f, .05f),
+                        _ => new Vector4(2.7f, 11f, .875f, .5f)
+                    });
+                }
+                else if (part.Role != "glass" && part.Role != "liquid" && part.Role != "liquid_surface")
                 {
                     Texture2D grain = ProductGrain;
                     if (grain != null) properties.SetTexture("_BaseMap", grain);

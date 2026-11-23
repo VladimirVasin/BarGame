@@ -5,6 +5,18 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-23
 
+The wristwatch colon switches with each real second. `PlayerWatchPlayModeTests`
+samples the LCD while the calendar is paused and captures the night dial.
+
+CityAsphaltPaving shows staggered runs, sealed joints and fine aggregate under street lights.
+At the grocery, metric flags end at the surveyed curb. The brick pier and darker plinth share
+a running bond. The held can uses a shared sleeve/body/lid atlas with grip polish.
+CityGroceryStreetFinishes checks the composed curb and masonry. BeerCanFinishFollowsTheHeldParts
+checks the equipped finish. Lid marks read in the hand view, finer paper fibres fall into shadow.
+CityGrocerySignFromStreet checks the enamel print from both approaches and the overlapping pools of light at night.
+The focused City publisher checks the new sheets. The older
+BuildingOldTownFacadePrimary dimension mismatch remains.
+
 Exterior mains link City and Ridge façades, courtyard tees and stair flights to the works.
 `CityWaterNetworkReachesEveryBuildingAndTheSea` traces services, checks both arrival sightlines and the grated muddy outfall.
 

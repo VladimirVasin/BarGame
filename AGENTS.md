@@ -4,8 +4,8 @@
 
 Read `AI.md`/relevant `ai/`; verify facts before plans. Assess fit under
 `ai/prompt-templates.md`. Visual changes review all [effects](ai/visual-effects-standard.md).
-Soften every visible world joint, including structural edges: art bible §4.
-Each separate construction part keeps its finish.
+Soften all world joints and structural edges. Each part keeps its finish.
+Follow art §4 and the [texture standard](ai/surface-texturing-standard.md).
 
 ## World canon
 

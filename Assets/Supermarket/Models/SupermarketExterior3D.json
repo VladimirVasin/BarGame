@@ -1,7 +1,7 @@
 {
   "generator": "tools/build-supermarket-exterior-3d-model.py",
-  "generator_version": "1.0.0",
-  "blender_version": "5.0.1",
+  "generator_version": "1.1.0",
+  "blender_version": "5.2.3 LTS",
   "design_id": "supermarket_exterior_v1",
   "display_name": "Bar Promenade Neighbourhood Supermarket Exterior",
   "dimensions_m": {
@@ -81,8 +81,8 @@
     7.75,
     6.4
   ],
-  "mesh_count": 36,
-  "triangle_count": 3984,
+  "mesh_count": 35,
+  "triangle_count": 3144,
   "anchors": [
     {
       "name": "ExteriorDoor",
@@ -1013,19 +1013,19 @@
       ]
     },
     {
-      "name": "Main Shop Sign Field",
-      "role": "exterior_sign_housing",
+      "name": "Printed ПРОДУКТЫ Sign",
+      "role": "exterior_printed_sign",
       "group": "signage",
-      "sheet": "ExteriorSignHousing",
+      "sheet": "ExteriorPrintedSign",
       "emissive": false,
       "casts_shadows": true,
       "shadows": true,
       "tint": {
         "field": "",
         "rgb": [
-          0.13,
-          0.29,
-          0.23
+          1.0,
+          1.0,
+          1.0
         ],
         "scale": 1.0,
         "lerp_field": "",
@@ -1048,44 +1048,6 @@
         3.025,
         7.7,
         5.48
-      ]
-    },
-    {
-      "name": "Authored ПРОДУКТЫ Lettering",
-      "role": "exterior_sign_glow",
-      "group": "signage",
-      "sheet": "ExteriorSignGlow",
-      "emissive": true,
-      "casts_shadows": false,
-      "shadows": false,
-      "tint": {
-        "field": "",
-        "rgb": [
-          0.92,
-          0.68,
-          0.28
-        ],
-        "scale": 1.0,
-        "lerp_field": "",
-        "lerp_rgb": [
-          0.0,
-          0.0,
-          0.0
-        ],
-        "lerp_t": 0.0
-      },
-      "colliders": [],
-      "vertices": 480,
-      "triangles": 840,
-      "bounds_min": [
-        -2.465,
-        7.73,
-        4.6925
-      ],
-      "bounds_max": [
-        2.465,
-        7.75,
-        5.287388
       ]
     },
     {
@@ -1469,5 +1431,5 @@
       ]
     }
   ],
-  "build_signature": "c61b80ffe47081b7a13690005c334245074bdd471e7dfc11e9061eb342301dd0"
+  "build_signature": "edb99c3c4b86862d6d4d6e8d0a117b6e41430ad15a36a791b96c94c4256e9433"
 }

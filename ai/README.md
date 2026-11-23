@@ -29,7 +29,8 @@
 | `contextual-animation-standard.md` | canon | 8000 | Mandatory entry/exit, hard-handoff, authoring and test contract for contextual interactions on the 3D hero rig |
 | `speech-presentation-standard.md` | canon | 4000 | Mandatory shared bubbles for all speech, including E replies; ownership, ordering, pause and cleanup |
 | `item-interaction-standard.md` | canon | 6000 | Mandatory keyed prompts, shared 3D pickup/receipt screen, single credit, input and cleanup |
-| `visual-effects-standard.md` | canon | 6000 | Every scene/visual change: three groups incl. post-processing |
+| `visual-effects-standard.md` | canon | 6000 | Scene effects and post |
+| `surface-texturing-standard.md` | canon | 7000 | Scale, joints and finish |
 | `bartender-spec.md` | canon | 13000 | Default NPC bartender, shared service rig and contacts |
 | `city-zones-art-bible.md` | canon | 473000 | Binding form/material/light/sound; §16 holds nine acceptance checks |
 | `city-story-bible.md` | canon | 305000 | Binding meaning; §6 exception registry, §16 laws, §21 text register |

@@ -69,14 +69,28 @@ namespace BarPromenade
                     Vector3 a = contour[i], b = contour[(i + 1) % contour.Count];
                     signedArea += a.x * b.z - b.x * a.z;
                 }
+                Vector3 curbA = default, curbB = default;
+                int curbCount = 0;
+                int topStart = vertices.Count;
                 if (patch.IsSupport)
                 for (int i = 1; i < contour.Count - 1; i++)
                     AppendFace(contour[0], contour[i], contour[i + 1]);
+                int topEnd = vertices.Count;
                 for (int i = 0; i < contour.Count; i++)
                 {
                     Vector3 a = contour[i], b = contour[(i + 1) % contour.Count];
                     if (signedArea < 0f) { Vector3 swap = a; a = b; b = swap; }
                     AppendStrip(a, b, patch.Thickness);
+                }
+                if (curbCount is 1 or 2)
+                for (int i = topStart; i < topEnd; i++)
+                {
+                    // UV0 keeps City metres through Home's rotation and clipping.
+                    Vector2 xz = uvs[i] * tile;
+                    road[i] = new Vector4(curbA.z - curbA.x * xz.x - curbA.y * xz.y,
+                        curbA.y * xz.x - curbA.x * xz.y,
+                        curbCount == 2 ? -1f - (curbB.z - curbB.x * xz.x - curbB.y * xz.y) : -4097f,
+                        curbB.y * xz.x - curbB.x * xz.y);
                 }
 
                 void AppendFace(Vector3 a, Vector3 b, Vector3 c)
@@ -137,6 +151,15 @@ namespace BarPromenade
                     if (patch.Kind == CityStreetSupportKind.Sidewalk && patch.IsSupport &&
                         depth > CurbRadius && IsRaisedRoadFacing(a, b, normal))
                     {
+                        // The supporting convex top uses affine distances to its street edges.
+                        // Terrace clipping can return several intervals on the same line.
+                        Vector3 line = new Vector3(normal.x, normal.z, Vector3.Dot(normal, a));
+                        if ((line - curbA).sqrMagnitude > .000001f && (line - curbB).sqrMagnitude > .000001f)
+                        {
+                            if (curbCount == 0) curbA = line;
+                            else if (curbCount == 1) curbB = line;
+                            curbCount++;
+                        }
                         Vector3 up = Vector3.Cross((b - a).normalized, normal).normalized;
                         int start = vertices.Count;
                         foreach (Vector3 coefficient in curbTopology.Vertices)
@@ -190,7 +213,10 @@ namespace BarPromenade
                         Mathf.Abs(normal.y) > .5f ? new Vector2(point.x, point.z) :
                         Mathf.Abs(normal.x) > .5f ? new Vector2(point.z, point.y) : new Vector2(point.x, point.y);
                     uvs.Add(texturePoint / tile);
-                    if (frame != null)
+                    Vector2 xz = new Vector2(point.x, point.z);
+                    if (wrap)
+                        road.Add(new Vector4(0, outward.z * xz.x - outward.x * xz.y, -4097, 0));
+                    else if (frame != null)
                     {
                         CityRoadProjection projection = frame.Project(new Vector2(point.x, point.z));
                         road.Add(new Vector4(projection.SignedLateral, projection.DistanceAlong,

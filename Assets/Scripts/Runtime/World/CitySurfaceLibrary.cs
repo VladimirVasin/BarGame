@@ -16,6 +16,8 @@ namespace BarPromenade
         private static readonly int BaseMapId = Shader.PropertyToID("_BaseMap");
         private static readonly int ResponseId = Shader.PropertyToID("_SceneMaterialResponse");
         private static readonly int GroundResponseId = Shader.PropertyToID("_GroundResponse");
+        private static readonly int PavingMetresId = Shader.PropertyToID("_GroundPavingMetres");
+        private static readonly int SidewalkMetresId = Shader.PropertyToID("_GroundSidewalkMetres");
         private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
         private static readonly int ColorId = Shader.PropertyToID("_Color");
         private static readonly int TransformId = Shader.PropertyToID("_BaseMap_ST");
@@ -176,7 +178,14 @@ namespace BarPromenade
         private static void BindMaps(MaterialPropertyBlock target, CitySurfaceSheet sheet, bool ground)
         {
             target.SetTexture(BaseMapId, Load(sheet.albedo));
-            if (ground) target.SetTexture(GroundResponseId, Load(sheet.ground_response));
+            if (ground)
+            {
+                target.SetTexture(GroundResponseId, Load(sheet.ground_response));
+                target.SetFloat(PavingMetresId, sheet.source == CityExteriorAppearance.RoadTextureResourcePath
+                    ? sheet.meters_per_tile : 0f);
+                target.SetFloat(SidewalkMetresId, sheet.source == CityExteriorAppearance.SidewalkTextureResourcePath
+                    ? sheet.meters_per_tile : 0f);
+            }
             else
             {
                 target.SetTexture(ResponseId, Load(sheet.response));

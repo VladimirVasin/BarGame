@@ -30,7 +30,7 @@ namespace BarPromenade.Tests.EditMode
             "ExteriorInteriorDark",
             "ExteriorInteriorLight",
             "ExteriorSignHousing",
-            "ExteriorSignGlow",
+            "ExteriorPrintedSign",
             "ExteriorMat"
         };
 

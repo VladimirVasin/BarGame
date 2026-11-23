@@ -6,7 +6,7 @@ heavy volume, a broad striped fascia, brick end piers, a recessed glazed run
 and a small blade sign.  The result is deliberately not a 7-Eleven replica:
 there is no 7, logo, price, slogan, roadside pylon or exact corporate livery.
 The only authored text is the already-canonical Russian shop word
-``ПРОДУКТЫ``, assembled from deterministic block strokes rather than a font.
+``ПРОДУКТЫ``, printed on the enamel sign above the entrance.
 
 All input dimensions below are Unity-local metres with +Z facing the street.
 ``bar_parts.to_source`` converts them to Blender source space by swapping Y/Z
@@ -51,7 +51,7 @@ from city_building_coplanarity import (  # noqa: E402
 )
 
 
-GENERATOR_VERSION = "1.0.0"
+GENERATOR_VERSION = "1.1.0"
 DESIGN_ID = "supermarket_exterior_v1"
 DISPLAY_NAME = "Bar Promenade Neighbourhood Supermarket Exterior"
 
@@ -86,6 +86,7 @@ DEFAULT_PREVIEW = (
 )
 
 TEXTURE_PATHS = {
+    "ExteriorPrintedSign": ROOT / "Assets/Resources/Supermarket/ExteriorTextures/SupermarketSign.png",
     "ExteriorWallAtlas": (
         ROOT / "Assets" / "Resources" / "Supermarket" /
         "ExteriorTextures" / "SupermarketExteriorWallAtlas.png"
@@ -120,7 +121,7 @@ SHEET_PITCH = {
     "ExteriorInteriorDark": 1.8,
     "ExteriorInteriorLight": 1.0,
     "ExteriorSignHousing": 1.0,
-    "ExteriorSignGlow": 1.0,
+    "ExteriorPrintedSign": 6.05,
     "ExteriorMat": 0.8,
 }
 
@@ -134,7 +135,7 @@ PREVIEW_COLORS = {
     "ExteriorInteriorDark": (0.055, 0.065, 0.060, 1.0),
     "ExteriorInteriorLight": (1.0, 0.68, 0.31, 1.0),
     "ExteriorSignHousing": (0.11, 0.22, 0.18, 1.0),
-    "ExteriorSignGlow": (0.96, 0.71, 0.29, 1.0),
+    "ExteriorPrintedSign": (0.82, 0.80, 0.70, 1.0),
     "ExteriorMat": (0.10, 0.10, 0.085, 1.0),
 }
 
@@ -175,20 +176,6 @@ def merged_boxes(
     return kit.merge_all(bp.u_box(center, size, chamfer) for center, size in boxes)
 
 
-def mirror_unity_x(geometry: kit.Geometry) -> kit.Geometry:
-    """Mirror a front-facing graphic so it reads from outside at +Z.
-
-    An observer in front of Unity's +Z facade faces toward -Z, so their screen
-    right is local -X. Mirroring both vertices and winding preserves outward
-    volume while making authored text read left-to-right from the street.
-    """
-    vertices, faces = geometry
-    return (
-        [(-x, y, z) for x, y, z in vertices],
-        [tuple(reversed(face)) for face in faces],
-    )
-
-
 def create_material(sheet: str) -> "bpy.types.Material":
     material = bpy.data.materials.new(f"PREVIEW_Supermarket_{sheet}")
     material.diffuse_color = PREVIEW_COLORS[sheet]
@@ -220,13 +207,13 @@ def create_material(sheet: str) -> "bpy.types.Material":
             if base_input is not None:
                 material.node_tree.links.new(texture.outputs["Color"], base_input)
 
-        if sheet in {"ExteriorInteriorLight", "ExteriorSignGlow"}:
+        if sheet == "ExteriorInteriorLight":
             emission = bsdf.inputs.get("Emission Color") or bsdf.inputs.get("Emission")
             strength = bsdf.inputs.get("Emission Strength")
             if emission is not None:
                 emission.default_value = PREVIEW_COLORS[sheet]
             if strength is not None:
-                strength.default_value = 3.2 if sheet == "ExteriorSignGlow" else 5.0
+                strength.default_value = 5.0
 
     if sheet == "ExteriorGlass":
         material.diffuse_color = PREVIEW_COLORS[sheet]
@@ -270,7 +257,12 @@ def assign_uv(mesh: "bpy.types.Mesh", part: Part) -> None:
         axis = max(range(3), key=lambda index: abs(polygon.normal[index]))
         for loop_index in polygon.loop_indices:
             point = mesh.vertices[mesh.loops[loop_index].vertex_index].co
-            if atlas:
+            if part.sheet == "ExteriorPrintedSign":
+                # Source +Y becomes Unity +Z, so an observer on the street
+                # reads towards local -X. The rear and rolled edges keep plain enamel.
+                uv = ((high[0] - point.x) / (high[0] - low[0]),
+                      (point.z - low[2]) / (high[2] - low[2])) if polygon.normal.y > .999 else (0., 0.)
+            elif atlas:
                 uv = atlas_uv(point, part.atlas_side)
             elif tiled:
                 if axis == 0:
@@ -604,78 +596,12 @@ def build_interior_proxies(asset: AssetBuild, materials: dict[str, "bpy.types.Ma
     )
 
 
-def glyph_geometry(
-    letter: str,
-    x: float,
-    y: float,
-    z: float,
-    width: float,
-    height: float,
-    depth: float,
-) -> kit.Geometry:
-    stroke = 0.075
-    half_w = width * 0.5
-    half_h = height * 0.5
-
-    def bar(dx: float, dy: float, sx: float, sy: float, angle: float = 0.0) -> kit.Geometry:
-        center = (x + dx, y + dy, z)
-        geometry = bp.u_box(center, (sx, sy, depth), 0.003)
-        return bp.u_rotated_about(geometry, (0.0, 0.0, angle), center) if angle else geometry
-
-    full_v = height
-    full_h = width
-    top_y = half_h - stroke * 0.5
-    bottom_y = -half_h + stroke * 0.5
-    left_x = -half_w + stroke * 0.5
-    right_x = half_w - stroke * 0.5
-    items: list[kit.Geometry]
-    if letter == "П":
-        items = [bar(left_x, 0, stroke, full_v), bar(right_x, 0, stroke, full_v), bar(0, top_y, full_h, stroke)]
-    elif letter == "Р":
-        items = [bar(left_x, 0, stroke, full_v), bar(0, top_y, full_h, stroke), bar(0, 0.02, full_h, stroke), bar(right_x, height * 0.25, stroke, height * 0.48)]
-    elif letter == "О":
-        items = [bar(left_x, 0, stroke, full_v), bar(right_x, 0, stroke, full_v), bar(0, top_y, full_h, stroke), bar(0, bottom_y, full_h, stroke)]
-    elif letter == "Д":
-        items = [bar(left_x + 0.035, 0.015, stroke, height * 0.82), bar(right_x - 0.035, 0.015, stroke, height * 0.82), bar(0, top_y, width * 0.76, stroke), bar(0, bottom_y + 0.035, full_h, stroke), bar(-half_w + 0.025, bottom_y - 0.045, stroke, 0.16), bar(half_w - 0.025, bottom_y - 0.045, stroke, 0.16)]
-    elif letter == "У":
-        items = [bar(-0.095, height * 0.25, stroke, height * 0.52, -28.0), bar(0.095, height * 0.25, stroke, height * 0.52, 28.0), bar(0.0, -height * 0.23, stroke, height * 0.56, -8.0)]
-    elif letter == "К":
-        items = [bar(left_x, 0, stroke, full_v), bar(0.055, height * 0.20, stroke, height * 0.58, -42.0), bar(0.055, -height * 0.20, stroke, height * 0.58, 42.0)]
-    elif letter == "Т":
-        items = [bar(0, top_y, full_h, stroke), bar(0, -stroke * 0.18, stroke, height - stroke)]
-    elif letter == "Ы":
-        items = [bar(left_x, 0, stroke, full_v), bar(-0.03, bottom_y, width * 0.62, stroke), bar(-0.03, -0.02, width * 0.62, stroke), bar(width * 0.12, -height * 0.25, stroke, height * 0.48), bar(right_x, 0, stroke, full_v)]
-    else:
-        raise RuntimeError(f"No deterministic glyph recipe for {letter!r}")
-    return kit.merge_all(items)
-
-
 def build_signs(asset: AssetBuild, materials: dict[str, "bpy.types.Material"]) -> None:
     add_part(
-        asset, materials, "Main Shop Sign Field",
+        asset, materials, "Printed ПРОДУКТЫ Sign",
         bp.u_box((0.0, 5.03, 7.66), (6.05, 0.90, 0.08), 0.012),
-        "exterior_sign_housing", "ExteriorSignHousing",
-        bp.rgb(0.13, 0.29, 0.23), group="signage",
-    )
-
-    word = "ПРОДУКТЫ"
-    widths = {letter: (0.52 if letter == "Ы" else 0.46) for letter in word}
-    spacing = 0.17
-    total = sum(widths[letter] for letter in word) + spacing * (len(word) - 1)
-    cursor = -total * 0.5
-    glyphs: list[kit.Geometry] = []
-    for letter in word:
-        width = widths[letter]
-        center_x = cursor + width * 0.5
-        glyphs.append(glyph_geometry(letter, center_x, 5.03, 7.74, width, 0.50, 0.02))
-        cursor += width + spacing
-    lettering = mirror_unity_x(kit.merge_all(glyphs))
-    add_part(
-        asset, materials, "Authored ПРОДУКТЫ Lettering",
-        lettering,
-        "exterior_sign_glow", "ExteriorSignGlow",
-        bp.rgb(0.92, 0.68, 0.28), group="signage",
-        emissive=True, casts_shadows=False,
+        "exterior_printed_sign", "ExteriorPrintedSign",
+        bp.rgb(1.0, 1.0, 1.0), group="signage",
     )
 
     blade_housing = (
@@ -830,7 +756,7 @@ def validate(asset: AssetBuild) -> dict:
         "exterior_wall", "exterior_fascia", "exterior_masonry",
         "exterior_roof", "exterior_metal", "exterior_glass",
         "exterior_door", "exterior_interior", "exterior_interior_light",
-        "exterior_sign_housing", "exterior_sign_glow", "exterior_service",
+        "exterior_sign_housing", "exterior_printed_sign", "exterior_service",
         "exterior_roof_equipment", "exterior_dressing",
     }
     roles = {part.role for part in asset.parts}
@@ -873,10 +799,6 @@ def validate(asset: AssetBuild) -> dict:
         if abs(door_high[2] - door_low[2] - DOOR_HEIGHT) > 0.001:
             problems.append("the authored door no longer rises exactly 2.40 m")
 
-    sign_panel_front = 7.66 + 0.08 * 0.5
-    glyph_back = 7.74 - 0.02 * 0.5
-    if glyph_back - sign_panel_front + 1e-6 < OPAQUE_OVERLAY_CLEARANCE:
-        problems.append("sign glyphs violate the 0.03 m opaque-overlay clearance")
     if len(asset.parts) > 64:
         problems.append(f"the exterior fragments into {len(asset.parts)} meshes")
     triangles = kit.triangle_count(merged)

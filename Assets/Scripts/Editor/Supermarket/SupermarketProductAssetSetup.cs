@@ -800,7 +800,7 @@ namespace BarPromenade.Editor
                     !rendererSet.Add(binding.Renderer) ||
                     binding.Renderer.sharedMaterials.Length != 1 ||
                     binding.Renderer.sharedMaterial != (DrinkContainerCatalog.IsDrink(contract.ItemId)
-                        ? VodkaBottleView.MaterialFor(binding.Role) : sharedLit) ||
+                        ? VodkaBottleView.MaterialFor(binding.Role, contract.ItemId) : sharedLit) ||
                     binding.Renderer.shadowCastingMode != ShadowCastingMode.On ||
                     !binding.Renderer.receiveShadows)
                 {

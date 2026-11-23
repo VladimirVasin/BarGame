@@ -22,6 +22,7 @@ namespace BarPromenade
         }
         private static readonly VolumeSamples[] Volumes = new VolumeSamples[4];
         private static Material liquidMaterial;
+        private static Material beerCanFinish;
         private MaterialPropertyBlock properties;
         private Renderer liquid, surface, canSeal;
         private Quaternion closedCapRotation;
@@ -107,9 +108,15 @@ namespace BarPromenade
             return view;
         }
 
-        public static Material MaterialFor(string role) => role == "glass" ?
-            BarDrinkServiceResources.GlassMaterial : role == "liquid" || role == "liquid_surface" ?
-            LiquidMaterial : RuntimePrimitiveFactory.DefaultMaterial;
+        public static Material MaterialFor(string role, InventoryItemId item = InventoryItemId.VodkaBottle)
+        {
+            if (role == "glass") return BarDrinkServiceResources.GlassMaterial;
+            if (role is "liquid" or "liquid_surface") return LiquidMaterial;
+            if (item != InventoryItemId.BeerCan) return RuntimePrimitiveFactory.DefaultMaterial;
+            return beerCanFinish != null ? beerCanFinish :
+                beerCanFinish = Resources.Load<Material>("Supermarket/Products/BeerCanFinish") ??
+                    throw new InvalidOperationException("Missing beer can finish.");
+        }
 
         internal static void SetPassiveLiquid(Renderer renderer, Transform bottle, bool top,
             MaterialPropertyBlock block, InventoryItemId itemId = InventoryItemId.VodkaBottle)

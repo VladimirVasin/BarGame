@@ -114,6 +114,10 @@ def sample_sheet(row, size, ground=False):
         stop = min(size, start + 96)
         u, v = np.meshgrid((np.arange(size, dtype=np.float32) + .5) / size,
                            (np.arange(start, stop, dtype=np.float32) + .5) / size)
+        if row["family"] == "SupermarketBrick":
+            pitch = row["meters_per_tile"]
+            _, result[start:stop], _ = art.brick_bond_structure(u * pitch, v * pitch, pitch / size, .075, 2.)
+            continue
         x, y, width, height = coordinates(row, u, v)
         footprint = max(width, height) / size
         elevation, response = art.structure(row["material_family"], x, y, footprint)
@@ -146,18 +150,46 @@ def render_albedo(row):
     if row["layout"] == "repeat":
         macro = art._pigment.periodic(macro)
     linear_macro = art.linear(macro)
+    asphalt = row["material_family"] == "Asphalt"
+    shop_brick = row["family"] == "SupermarketBrick"
+    flags = row["family"] == "CitySidewalk"
+    if asphalt or shop_brick or flags:
+        # Keep the owner's palette, remove the superseded donor joints.
+        binder = linear_macro.mean(axis=(0, 1), dtype=np.float64).astype(np.float32)
+        linear_macro = binder + (linear_macro - binder) * (.06 if shop_brick or flags else .12)
     result = np.empty((size, size, 3), np.float32)
     for start in range(0, size, 96):
         stop = min(size, start + 96)
         u, v = np.meshgrid((np.arange(size, dtype=np.float32) + .5) / size,
                            (np.arange(start, stop, dtype=np.float32) + .5) / size)
         x, y, width, height = coordinates(row, u, v)
-        colour, _ = art.sample(row["material_family"], x, y, pixel_metres=max(width, height) / size)
+        footprint = max(width, height) / size
+        if asphalt:
+            # Sample the source aggregate at paving scale. Integer axes close
+            # on both tile boundaries and give an exact isotropic footprint.
+            x, y = 5 * x + 2 * y, -2 * x + 5 * y
+            footprint *= math.sqrt(29)
+        elif flags:
+            x, y = 2 * x + y, -x + 2 * y
+            footprint *= math.sqrt(5)
+        colour, _ = art.sample(row["material_family"], x, y, pixel_metres=footprint)
         detail = np.sum(art.linear(colour) * LUMA, axis=-1) / .58
+        if flags:
+            detail = 1. + .60 * (detail - 1.)
         result[start:stop] = linear_macro[start:stop] * detail[..., None]
+        if shop_brick:
+            pitch = row["meters_per_tile"]
+            _, _, mortar = art.brick_bond_structure(u * pitch, v * pitch, pitch / size, .075, 2.)
+            course = np.floor(v * 16)
+            brick = np.floor(u * 5 + .5 * np.mod(course, 2)) % 5
+            kiln = np.sin((brick + 1) * 31.7 + course * 73.1)
+            result[start:stop] *= (1. + .12 * kiln * (1. - mortar))[..., None]
+            lime = .32 * binder + 2.4 * np.dot(binder, LUMA)
+            result[start:stop] += mortar[..., None] * (lime - result[start:stop])
     # Keep existing authored tint/compensation valid for all shared consumers.
+    target_mean = row.get("target_linear_luminance", source_mean)
     for _ in range(4):
-        result = np.clip(result * (source_mean / max(1e-6, float(np.mean(np.sum(result * LUMA, axis=-1))))), 0, 1)
+        result = np.clip(result * (target_mean / max(1e-6, float(np.mean(np.sum(result * LUMA, axis=-1))))), 0, 1)
     return art.gamma(result), source_mean
 
 
@@ -214,11 +246,14 @@ def check_physics():
         dy = (art.structure(family, u, v + epsilon, .002)[0] - art.structure(family, u, v - epsilon, .002)[0]) / (2 * epsilon)
         if max(float(np.max(abs(dx - (response[..., 0] * 2 - 1)))), float(np.max(abs(dy - (response[..., 1] * 2 - 1))))) > .001:
             raise ValueError("City metric height derivative/sign drift: " + family)
-    _, response, _ = art.bar_brick_structure(u, v, .01)
-    dx = (art.bar_brick_structure(u + epsilon, v, .01)[0] - art.bar_brick_structure(u - epsilon, v, .01)[0]) / (2 * epsilon)
-    dy = (art.bar_brick_structure(u, v + epsilon, .01)[0] - art.bar_brick_structure(u, v - epsilon, .01)[0]) / (2 * epsilon)
-    if np.max(abs(np.stack((dx, dy), axis=-1) - (response[..., :2] * 2 - 1))) > .001:
-        raise ValueError("Unique Bar mortar metric derivatives drifted")
+    for course, scale in ((.08, 1.), (.075, 2.)):
+        def bond(x, y):
+            return art.brick_bond_structure(x, y, .01, course, scale)
+        _, response, _ = bond(u, v)
+        dx = (bond(u + epsilon, v)[0] - bond(u - epsilon, v)[0]) / (2 * epsilon)
+        dy = (bond(u, v + epsilon)[0] - bond(u, v - epsilon)[0]) / (2 * epsilon)
+        if np.max(abs(np.stack((dx, dy), axis=-1) - (response[..., :2] * 2 - 1))) > .001:
+            raise ValueError("Brick mortar metric derivatives drifted")
 
 
 def authoring_recipe_hash():
@@ -256,7 +291,7 @@ def publish_ground_grain(check):
           flush=True)
 
 
-def validate():
+def validate(selected=None):
     art.sources(); check_physics()
     manifest = json.loads(MANIFEST.read_text(encoding="utf8"))
     if manifest["design_id"] != art.DESIGN or manifest["gpu_budget_bytes"] != art.BUDGET:
@@ -266,6 +301,9 @@ def validate():
         raise ValueError("City explicit owner coverage drift")
     estimated = 0; resources = set()
     for row in manifest["sheets"]:
+        if selected and row["family"] not in selected:
+            estimated += sum(bc7_bytes(row[field]) for field in ("size", "response_size", "ground_response_size") if row.get(field))
+            continue
         if row["family"] in recipes:
             recipe = recipes[row["family"]]
             if any(row.get(key) != value for key, value in recipe.items() if key != "ground"):
@@ -289,9 +327,18 @@ def validate():
                 data = np.asarray(image, np.float32) / 255
             if kind == "albedo":
                 measured = mean_luma(data[..., :3])
+                if row["family"] == "CityRoadAsphalt":
+                    # Most pigment contrast belongs to aggregate smaller than a
+                    # hand. Average 47 mm squares in the actual shipped sheet.
+                    gray = data[..., :3] @ LUMA
+                    block = size // 256
+                    coarse = gray.reshape(256, block, 256, block).mean(axis=(1, 3))
+                    if gray.std() < gray.mean() * .045 or coarse.std() > gray.mean() * .035:
+                        raise ValueError("City asphalt lost fine aggregate or regained coarse pebble mottling")
                 if abs(measured - row["mean_linear_luminance"]) > .00001:
                     raise ValueError("City measured mean drifted: " + resource)
-                if row.get("source_mean_linear_luminance") is not None and abs(measured - row["source_mean_linear_luminance"]) > .001:
+                target = row.get("target_linear_luminance", row.get("source_mean_linear_luminance"))
+                if target is not None and abs(measured - target) > .001:
                     raise ValueError("City authored palette compensation drifted: " + resource)
             elif row["family"] in recipes and (kind == "response" or
                     row["material_family"] in GROUND_GRAIN_HEIGHT):
@@ -303,14 +350,15 @@ def validate():
             estimated += bc7_bytes(size)
     if manifest["estimated_gpu_bytes"] != estimated or estimated > art.BUDGET:
         raise ValueError("City BC7 mip budget mismatch")
-    if manifest["source_provenance"] != art.provenance() or manifest["sheets"][-1]["chart_manifest_sha256"] != sha(BAR.read_bytes()):
+    if manifest["source_provenance"] != art.provenance() or ((not selected or "CityBarFacade" in selected)
+            and manifest["sheets"][-1]["chart_manifest_sha256"] != sha(BAR.read_bytes())):
         raise ValueError("City generation provenance drifted")
     if manifest.get("authoring_recipe_sha256") != authoring_recipe_hash():
         raise ValueError("City authoring recipe changed; rebuild affected sheets")
-    print(f"CITY SURFACES OK: {len(recipes)} source-aligned sheets + guarded Bar atlas; {len(resources)} BC7 maps {estimated}/{art.BUDGET} bytes; independent metric response and source means.", flush=True)
+    print(f"CITY SURFACES OK: {', '.join(selected) if selected else 'all families'}; {len(resources)} maps checked, library {estimated}/{art.BUDGET} bytes.", flush=True)
 
 
-def build(only=None):
+def build(only=None, focused=False):
     art.sources(); check_physics()
     OUTPUT.mkdir(parents=True, exist_ok=True)
     retained = {}
@@ -365,7 +413,7 @@ def build(only=None):
     folder_meta = Path(str(OUTPUT) + ".meta")
     if not folder_meta.exists():
         folder_meta.write_text("fileFormatVersion: 2\nguid: " + uuid.uuid5(uuid.NAMESPACE_URL, OUTPUT.relative_to(ROOT).as_posix()).hex + "\nfolderAsset: yes\nDefaultImporter:\n  externalObjects: {}\n  userData:\n  assetBundleName:\n  assetBundleVariant:\n", encoding="utf8")
-    validate()
+    validate(only if focused else None)
 
 
 if __name__ == "__main__":
@@ -373,12 +421,15 @@ if __name__ == "__main__":
     parser.add_argument("--validate-only", action="store_true")
     parser.add_argument("--ground-grain", action="store_true", help="Publish or validate the packed asphalt and concrete ground maps.")
     parser.add_argument("--only", nargs="+", help="Rebuild named sheets from a complete existing manifest; validate every retained output.")
+    parser.add_argument("--focused", action="store_true", help="Validate only named sheets plus the whole library budget.")
     args = parser.parse_args()
+    if args.focused and (not args.only or set(args.only) - ({r["family"] for r in art.catalogue()} | {"CityBarFacade"})):
+        parser.error("--focused requires --only with known sheet names")
     if args.ground_grain:
         if args.only:
             parser.error("--ground-grain selects the complete granular ground set")
         publish_ground_grain(args.validate_only)
     elif args.validate_only:
-        validate()
+        validate(args.only if args.focused else None)
     else:
-        build(args.only)
+        build(args.only, args.focused)

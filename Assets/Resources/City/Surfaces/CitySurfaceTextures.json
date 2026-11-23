@@ -2,7 +2,7 @@
   "design_id": "city_material_surfaces_v1",
   "generator_version": "1.0.0",
   "gpu_budget_bytes": 234881024,
-  "estimated_gpu_bytes": 205789280,
+  "estimated_gpu_bytes": 211032160,
   "channels": [
     "signed_physical_slope_u",
     "signed_physical_slope_v",
@@ -17,7 +17,7 @@
   ],
   "source_provenance": {
     "generator": "image_gen (built-in)",
-    "source_manifest_sha256": "743bd6768e9f4280f9bb8b2827a9501fd2bcbd354e9c807eaa47f7563074f85b",
+    "source_manifest_sha256": "a541a72134ccd97e82420710a6748bb06536bf2c4f326dc1e8cc2c2590f12a3d",
     "images": [
       {
         "name": "Masonry",
@@ -772,20 +772,20 @@
       "material_family": "Asphalt",
       "meters_per_tile": 12.0,
       "layout": "repeat",
-      "size": 1024,
+      "size": 2048,
       "unique_uv": false,
       "full_color": false,
-      "response_size": 512,
+      "response_size": 1024,
       "ground_response": "City/Surfaces/CityRoadAsphaltGroundResponse",
       "ground_response_size": 512,
       "wrap_mode": "Repeat",
       "source_sha256": "3ba93d67163c4c7666e251338160cb2b500b191d6e367702049713e6e7247964",
       "source_mean_linear_luminance": 0.07297181,
       "albedo": "City/Surfaces/CityRoadAsphaltAlbedo",
-      "albedo_sha256": "a63ae42283fa29ae7b32b70a3312cba177d26a2629a2aa1a5133895773d5d763",
-      "mean_linear_luminance": 0.07296901,
+      "albedo_sha256": "088e5b67805ba6d18ba32492405553205009edc66ad5275842d902210dd36f89",
+      "mean_linear_luminance": 0.07297877,
       "response": "City/Surfaces/CityRoadAsphaltResponse",
-      "response_sha256": "49d8400df7f161ab8984049f609a6d65041fe0c3ecda65970ae37df34d2b25f9",
+      "response_sha256": "d8b4016fd739172fd830e07834d0b17831bd95674deb3b04fa4c41b26734125c",
       "ground_response_sha256": "c37d9fff21b2266d90ff0aba3797fd8dda338f27549305752c02a25f42caaa61"
     },
     {
@@ -948,8 +948,8 @@
       "source_sha256": "261c1f6b87ffa43907659a606ed11ef088fb4a39a8cc3e2f76d3909e80417e0d",
       "source_mean_linear_luminance": 0.23483175,
       "albedo": "City/Surfaces/CitySidewalkAlbedo",
-      "albedo_sha256": "93ed784541746fd0b16c6150747c70f2ece4c987f8f8bdc952aa23240e643c68",
-      "mean_linear_luminance": 0.2348333,
+      "albedo_sha256": "0fb47764d131cb23c17bdd7efab15a75dd0e745a9f26404ae59bb46619cbdb44",
+      "mean_linear_luminance": 0.2348287,
       "response": "City/Surfaces/CitySidewalkResponse",
       "response_sha256": "c1ad24aa3d084824cbd150514cd72a2a57bc8c33fcb40639e61bf1d238b7e3ac",
       "ground_response_sha256": "cd2e3dd3ab63862c7caaf96ed4441256e22e253fa0e2a00801142b983d65f31c"
@@ -2695,9 +2695,10 @@
       "source_name": "",
       "source_asset": "",
       "material_family": "Brick",
-      "meters_per_tile": 2.4,
+      "meters_per_tile": 1.2,
       "layout": "repeat",
       "size": 1024,
+      "target_linear_luminance": 0.16,
       "unique_uv": false,
       "full_color": false,
       "response_size": 512,
@@ -2707,10 +2708,10 @@
       "source_sha256": "6f15dd2686c19cbcceb4fc85afce570ca90972cf89475675df994738db111c6b",
       "source_mean_linear_luminance": 0.03933647,
       "albedo": "City/Surfaces/SupermarketBrickAlbedo",
-      "albedo_sha256": "4852bdebbed2a8d6b090e4ac0b8d34aec7c94587831f8406c7e2bd276ec65ddb",
-      "mean_linear_luminance": 0.03933705,
+      "albedo_sha256": "b0b96ba649730712c4bfaaf768d1e78e779095c754578e4ed624396fe955f129",
+      "mean_linear_luminance": 0.15998314,
       "response": "City/Surfaces/SupermarketBrickResponse",
-      "response_sha256": "ddfcff4a1367567b2c9a1e38242927c59d839e21a9c0082d5b8b226b7178d611"
+      "response_sha256": "35e23bfc2a40fee331ba26d8c583c29a5b480198cf763aed74d664e4b2359ebb"
     },
     {
       "family": "SupermarketMetal",
@@ -2930,5 +2931,5 @@
     }
   ],
   "additional_maps": [],
-  "authoring_recipe_sha256": "52ddcde8ecf7adc6d8e8428fbca4bf07849a1d7107e3a56b4099557337b9203b"
+  "authoring_recipe_sha256": "f41a4083618823ef9836b113b348d6eef7ff437c68c8e8f7c50252eea37ee875"
 }

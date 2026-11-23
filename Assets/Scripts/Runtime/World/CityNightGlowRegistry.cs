@@ -32,6 +32,7 @@ namespace BarPromenade
             Shader.PropertyToID("_BaseColor");
         private static readonly int ColorId =
             Shader.PropertyToID("_Color");
+        private static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
 
         private static readonly List<Entry> entries = new List<Entry>();
         private static readonly List<CityLightHalo> halos =
@@ -43,14 +44,14 @@ namespace BarPromenade
         public static float NightFactor => nightFactor;
         public static int Count => entries.Count;
 
-        public static void Register(Renderer renderer, Color litColor)
+        public static void Register(Renderer renderer, Color litColor, bool bakedLight = false)
         {
             if (renderer == null)
             {
                 throw new ArgumentNullException(nameof(renderer));
             }
 
-            var entry = new Entry(renderer, litColor);
+            var entry = new Entry(renderer, litColor, bakedLight);
             entries.Add(entry);
             Apply(entry);
         }
@@ -123,8 +124,17 @@ namespace BarPromenade
             Color color = Color.Lerp(dead, entry.LitColor, nightFactor);
             properties.Clear();
             entry.Renderer.GetPropertyBlock(properties);
-            properties.SetColor(BaseColorId, color);
-            properties.SetColor(ColorId, color);
+            if (entry.BakedLight)
+            {
+                // A diffuse light bake modulates only its contribution, leaving the ink and ambient response intact.
+                properties.SetVector(EmissionColorId, (Vector4)entry.LitColor.linear *
+                    GameTimeDayNightRules.FixtureFactor(nightFactor));
+            }
+            else
+            {
+                properties.SetColor(BaseColorId, color);
+                properties.SetColor(ColorId, color);
+            }
             entry.Renderer.SetPropertyBlock(properties);
         }
 
@@ -139,14 +149,16 @@ namespace BarPromenade
 
         private readonly struct Entry
         {
-            public Entry(Renderer renderer, Color litColor)
+            public Entry(Renderer renderer, Color litColor, bool bakedLight)
             {
                 Renderer = renderer;
                 LitColor = litColor;
+                BakedLight = bakedLight;
             }
 
             public Renderer Renderer { get; }
             public Color LitColor { get; }
+            public bool BakedLight { get; }
         }
     }
 }

@@ -173,9 +173,8 @@ namespace BarPromenade
         internal void RefreshTime()
         {
             if (lcd == null) return;
-            int secondOfDay = (int)(GameSessionState.GameTimeOfDayMinutes * 60d);
-            int minute = secondOfDay / 60;
-            bool showColon = (secondOfDay & 1) == 0;
+            int minute = GameSessionState.GameMinuteOfDay;
+            bool showColon = ((long)Time.unscaledTimeAsDouble & 1L) == 0;
             if (minute == DisplayedMinute && showColon == colonVisible) return;
 
             if (minute != DisplayedMinute)

@@ -544,7 +544,7 @@ namespace BarPromenade
                 {
                     SupermarketExteriorSurfaceAppearance.Apply(
                         renderer,
-                        SupermarketExteriorSurfaceKind.Brick);
+                        SupermarketExteriorSurfaceKind.Brick, plinth: true);
                 }
                 else
                 {

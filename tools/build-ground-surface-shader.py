@@ -45,6 +45,8 @@ def outputs():
         _GroundSubstrateColor("Snow substrate tint", Color) = (1,1,1,1)
         _GroundShoulderMix("Shoulder pitch, width and smoothness", Vector) = (0,0,0,0)
         _GroundKind("Surface family", Float) = 0
+        _GroundPavingMetres("Asphalt paving metres per UV repeat", Float) = 0
+        _GroundSidewalkMetres("Sidewalk metres per UV repeat", Float) = 0
         _GroundWetness("Local weather amount", Range(0,1)) = 0
         _GroundCityClimate("City ground weather", Float) = 0
         _GroundClampV("Directional ground sheet", Float) = 0

@@ -14,7 +14,7 @@ namespace BarPromenade
         InteriorDark,
         InteriorLight,
         SignHousing,
-        SignGlow,
+        PrintedSign,
         Mat
     }
 
@@ -35,6 +35,8 @@ namespace BarPromenade
             "Supermarket/ExteriorTextures/SupermarketExteriorBrickAlbedo";
         public const string MetalTextureResourcePath =
             "Supermarket/ExteriorTextures/SupermarketExteriorMetalAlbedo";
+        public const string SignTextureResourcePath = "Supermarket/ExteriorTextures/SupermarketSign";
+        internal static readonly Color SignLampColor = new Color(1f, .88f, .72f);
 
         private static readonly int BaseMapId =
             Shader.PropertyToID("_BaseMap");
@@ -51,8 +53,7 @@ namespace BarPromenade
 
         private static readonly Color WallTint =
             new Color(0.96f, 0.93f, 0.82f, 1f);
-        private static readonly Color BrickTint =
-            new Color(0.55f, 0.42f, 0.36f, 1f);
+        private static readonly Color BrickPlinthTint = new Color(.79f, .77f, .75f, 1f);
         private static readonly Color RoofTint =
             new Color(0.50f, 0.50f, 0.47f, 1f);
         private static readonly Color MetalTint =
@@ -65,14 +66,16 @@ namespace BarPromenade
             new Color(0.11f, 0.13f, 0.105f, 1f);
         private static readonly Color InteriorLightColor =
             new Color(0.78f, 0.92f, 0.72f, 1f);
-        private static readonly Color SignGlowColor =
-            new Color(1.04f, 0.88f, 0.54f, 1f);
 
         private static Texture2D wallAtlas;
         private static Texture2D fasciaAtlas;
         private static Texture2D brick;
         private static Texture2D metal;
         private static Texture2D roof;
+        private static Material printedSign;
+        internal static Material PrintedSignMaterial => printedSign != null ? printedSign :
+            printedSign = Resources.Load<Material>("Supermarket/ExteriorTextures/SupermarketSignEnamel") ??
+                throw new InvalidOperationException("Missing enamel supermarket sign material.");
 
         public static bool TryResolveSheet(
             string sheet,
@@ -107,8 +110,8 @@ namespace BarPromenade
                 case "ExteriorSignHousing":
                     kind = SupermarketExteriorSurfaceKind.SignHousing;
                     return true;
-                case "ExteriorSignGlow":
-                    kind = SupermarketExteriorSurfaceKind.SignGlow;
+                case "ExteriorPrintedSign":
+                    kind = SupermarketExteriorSurfaceKind.PrintedSign;
                     return true;
                 case "ExteriorMat":
                     kind = SupermarketExteriorSurfaceKind.Mat;
@@ -121,7 +124,7 @@ namespace BarPromenade
 
         public static void Apply(
             Renderer renderer,
-            SupermarketExteriorSurfaceKind kind)
+            SupermarketExteriorSurfaceKind kind, bool plinth = false)
         {
             if (renderer == null)
             {
@@ -137,7 +140,7 @@ namespace BarPromenade
                     ApplyTextured(renderer, GetFasciaAtlas(), Color.white, 0.14f, 0f);
                     return;
                 case SupermarketExteriorSurfaceKind.Brick:
-                    ApplyTextured(renderer, GetBrick(), BrickTint, 0.07f, 0f);
+                    ApplyTextured(renderer, GetBrick(), plinth ? BrickPlinthTint : Color.white, 0.07f, 0f);
                     return;
                 case SupermarketExteriorSurfaceKind.Roof:
                     ApplyTextured(renderer, GetRoof(), RoofTint, 0.04f, 0f);
@@ -160,8 +163,9 @@ namespace BarPromenade
                 case SupermarketExteriorSurfaceKind.SignHousing:
                     ApplyFlat(renderer, SignHousingTint, 0.12f, 0.12f);
                     return;
-                case SupermarketExteriorSurfaceKind.SignGlow:
-                    ApplyEmission(renderer, SignGlowColor);
+                case SupermarketExteriorSurfaceKind.PrintedSign:
+                    renderer.sharedMaterial = PrintedSignMaterial;
+                    CityNightGlowRegistry.Register(renderer, SignLampColor, bakedLight: true);
                     return;
                 case SupermarketExteriorSurfaceKind.Mat:
                     ApplyTextured(renderer, GetMetal(), MatTint, 0.02f, 0f);
@@ -271,6 +275,7 @@ namespace BarPromenade
             brick = null;
             metal = null;
             roof = null;
+            printedSign = null;
         }
     }
 }

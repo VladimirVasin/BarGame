@@ -160,6 +160,36 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator BeerCanFinishFollowsTheHeldParts()
+        {
+            Assert.That(GameSessionState.TryPurchaseWorldItem("test.finish.beer", InventoryItemId.BeerCan).Succeeded, Is.True);
+            yield return InventoryToggle(true, itemId: InventoryItemId.BeerCan);
+            yield return Await(() => bottle.Phase == PlayerVodkaBottleController.BottlePhase.Carrying, "Can did not reach the hand.");
+            var finish = Resources.Load<Material>("Supermarket/Products/BeerCanFinish");
+            Assert.That(finish, Is.Not.Null);
+            Assert.That(finish.IsKeywordEnabled("_SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A"), Is.True);
+            var atlas = finish.GetTexture("_BaseMap");
+            Assert.That(atlas.width, Is.EqualTo(256));
+            var block = new MaterialPropertyBlock();
+            foreach (var part in bottle.Bottle.GetComponentInChildren<SupermarketProductAssetRegistry>().Parts)
+            {
+                if (part.Role is "liquid" or "liquid_surface")
+                {
+                    Assert.That(part.Renderer.sharedMaterial, Is.EqualTo(VodkaBottleView.LiquidMaterial));
+                    continue;
+                }
+                Assert.That(part.Renderer.sharedMaterial, Is.EqualTo(finish));
+                part.Renderer.GetPropertyBlock(block);
+                Assert.That(block.GetTexture("_BaseMap"), Is.EqualTo(atlas));
+                Assert.That(block.GetVector("_BaseMap_ST").z, Is.EqualTo(part.Role == "label" ? .25f : part.Role == "can_body" ? .625f : .875f));
+            }
+            RenderSettings.sun.transform.rotation = Quaternion.LookRotation(new Vector3(-.8f, -.8f, -.35f));
+            yield return null;
+            Capture("beer-finish-carry", false);
+            Capture("beer-finish-grip", true, bottle.Bottle.Grip.position, new Vector3(1f, .7f, 1.2f), .14f);
+        }
+
+        [UnityTest]
         public IEnumerator DrinkContainers_PurchaseSipSwitch_PreserveFillOpeningAndContacts()
         {
             DrinkId[] balancedDrinks = { DrinkId.LightBeer, DrinkId.DarkBeer, DrinkId.WhiteWine,

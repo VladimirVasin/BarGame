@@ -38,6 +38,8 @@ namespace BarPromenade.Editor
 
         public const string SharedLitMaterialPath =
             "Assets/Resources/Materials/RuntimePrimitiveLit.mat";
+        private const string SignTexturePath = "Assets/Resources/Supermarket/ExteriorTextures/SupermarketSign.png";
+        private const string SignWashPath = "Assets/Resources/Supermarket/ExteriorTextures/SupermarketSignWash.png";
         public const string SharedEmissionMaterialPath =
             "Assets/Resources/Materials/CityNoirEmission.mat";
 
@@ -59,6 +61,8 @@ namespace BarPromenade.Editor
             FasciaAtlasTexturePath,
             BrickTexturePath,
             MetalTexturePath,
+            SignTexturePath,
+            SignWashPath,
         };
 
         private static bool buildQueued;
@@ -127,7 +131,7 @@ namespace BarPromenade.Editor
         public static bool IsAtlasTexturePath(string path)
         {
             return PathsEqual(path, WallAtlasTexturePath) ||
-                PathsEqual(path, FasciaAtlasTexturePath);
+                PathsEqual(path, FasciaAtlasTexturePath) || PathsEqual(path, SignTexturePath) || PathsEqual(path, SignWashPath);
         }
 
         public static bool IsSourcePath(string path)
@@ -277,6 +281,7 @@ namespace BarPromenade.Editor
                 {
                     Renderer renderer = renderers[part.name];
                     renderer.sharedMaterial =
+                        part.sheet == "ExteriorPrintedSign" ? SupermarketExteriorSurfaceAppearance.PrintedSignMaterial :
                         part.emissive ? sharedEmission : sharedLit;
                     renderer.shadowCastingMode = part.shadows
                         ? ShadowCastingMode.On
@@ -854,6 +859,7 @@ namespace BarPromenade.Editor
                 }
 
                 Material expectedMaterial =
+                    part.sheet == "ExteriorPrintedSign" ? SupermarketExteriorSurfaceAppearance.PrintedSignMaterial :
                     part.emissive ? sharedEmission : sharedLit;
                 if (renderer.sharedMaterial != expectedMaterial)
                 {

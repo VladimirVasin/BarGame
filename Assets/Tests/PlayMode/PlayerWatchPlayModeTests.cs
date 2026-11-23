@@ -22,7 +22,7 @@ namespace BarPromenade.Tests.PlayMode
                 var mouse = InputSystem.AddDevice<Mouse>();
                 GameInput.HandleApplicationFocus(true);
                 GameSessionState.BeginNewGame("Wristwatch PlayMode");
-                Assert.That(GameSessionState.TryStartGameTimeAt(12 * 60 + 34), Is.True);
+                Assert.That(GameSessionState.TryStartGameTimeAt(34), Is.True); // 00:34 for the night dial capture.
 
                 yield return SceneManager.LoadSceneAsync(SceneIds.City, LoadSceneMode.Single);
                 CityGameRoot city = null;
@@ -85,7 +85,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(registry.TryGetPart(Player3DAnatomicalPart.LeftForearm, out var skin), Is.True);
             capture.Pending = () =>
             {
-                Capture(camera, fixedView ? "home-dial" : "city-dial");
+                Capture(camera, fixedView ? "home-dial" : "city-night-dial");
                 dial = camera.WorldToViewportPoint(watch.Dial.position);
                 dialFacing = Vector3.Dot(watch.Dial.forward, (camera.transform.position - watch.Dial.position).normalized);
                 wristDistance = Vector3.Distance(watch.Dial.position, leftHand.Bone.position);
@@ -105,7 +105,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(watch.DisplayedMinute, Is.EqualTo(GameSessionState.GameMinuteOfDay));
             if (fixedView)
             {
-                yield return CheckColon(registry, capture, camera);
+                yield return CheckColon(registry, capture);
                 Assert.That(watch.IsOpen, Is.True, "Pausing holds the wristwatch pose.");
             }
 
@@ -140,7 +140,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(BarMinigameModalLock.IsAnyLocked, Is.False);
         }
 
-        private static IEnumerator CheckColon(Player3DAssetRegistry registry, WatchLateCapture capture, Camera camera)
+        private static IEnumerator CheckColon(Player3DAssetRegistry registry, WatchLateCapture capture)
         {
             var lcd = Array.Find(registry.GetComponentsInChildren<MeshRenderer>(),
                 renderer => renderer.sharedMaterial != null &&
@@ -149,34 +149,31 @@ namespace BarPromenade.Tests.PlayMode
             int colon = Shader.PropertyToID("_ColonVisible");
             int digits = Shader.PropertyToID("_Segments");
             var block = new MaterialPropertyBlock();
-            const float step = (float)(1d / (60d * GameTimeState.GameMinutesPerRealSecond));
-
             using (GameTimeScaleRuntime.AcquirePause())
             {
-                // Centre on an even second and advance calendar time explicitly.
-                double now = GameSessionState.GameTimeOfDayMinutes;
-                double start = Math.Floor(now) + 1d + 10.5d / 60d;
-                GameSessionState.AdvanceGameTime((float)((start - now) / GameTimeState.GameMinutesPerRealSecond));
-                yield return null;
                 lcd.GetPropertyBlock(block);
                 Vector4 segmentMasks = block.GetVector(digits);
-                Assert.That(block.GetFloat(colon), Is.EqualTo(1f));
-
-                GameSessionState.AdvanceGameTime(step);
-                capture.Pending = () => Capture(camera, "home-colon-off");
-                yield return null;
-                lcd.GetPropertyBlock(block);
-                Assert.That(block.GetFloat(colon), Is.Zero);
-                Assert.That(block.GetVector(digits), Is.EqualTo(segmentMasks));
-                yield return null;
-                lcd.GetPropertyBlock(block);
-                Assert.That(block.GetFloat(colon), Is.Zero, "A paused calendar holds the blink phase.");
-
-                GameSessionState.AdvanceGameTime(step);
-                yield return null;
-                lcd.GetPropertyBlock(block);
-                Assert.That(block.GetFloat(colon), Is.EqualTo(1f));
-                Assert.That(block.GetVector(digits), Is.EqualTo(segmentMasks));
+                double sampleTime = 0d;
+                Action sampleDial = () =>
+                {
+                    // Sample after the watch updates, using the timestamp of that same frame.
+                    sampleTime = Time.unscaledTimeAsDouble;
+                    lcd.GetPropertyBlock(block);
+                };
+                bool sawOn = false, sawOff = false;
+                double deadline = Time.unscaledTimeAsDouble + 10d;
+                while (!sawOn || !sawOff)
+                {
+                    capture.Pending = sampleDial;
+                    yield return null;
+                    Assert.That(capture.Pending, Is.Null);
+                    Assert.That(sampleTime, Is.LessThan(deadline), "Both colon phases while the calendar is paused");
+                    bool expectedOn = sampleTime % 2d < 1d;
+                    Assert.That(block.GetFloat(colon), Is.EqualTo(expectedOn ? 1f : 0f));
+                    Assert.That(block.GetVector(digits), Is.EqualTo(segmentMasks));
+                    sawOn |= expectedOn;
+                    sawOff |= !expectedOn;
+                }
             }
         }
 

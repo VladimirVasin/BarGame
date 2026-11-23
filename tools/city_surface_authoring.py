@@ -136,17 +136,14 @@ def structure(family, u, v, pixel_metres):
     return height, response.astype(np.float32)
 
 
-def bar_brick_structure(u, v, pixel_metres):
-    """Metric shallow mortar for unique Bar brick charts, with analytic slopes.
-
-    Existing City facade atlases already paint their own brick course rhythm;
-    this field belongs only to the new unique Bar charts replacing that image.
-    """
+def brick_bond_structure(u, v, pixel_metres, course=.08, grain_scale=1.):
+    """Metric shallow mortar; the short supermarket repeat contains 16 courses."""
     x, y = np.broadcast_arrays(np.asarray(u, np.float32), np.asarray(v, np.float32))
-    height, response = structure("Brick", x, y, pixel_metres)
+    height, response = structure("Brick", x * grain_scale, y * grain_scale, pixel_metres * grain_scale)
+    response[..., :2] = .5 + (response[..., :2] - .5) * grain_scale
     sigma = math.sqrt(.003 ** 2 + float(pixel_metres) ** 2 / 6)
-    dy = np.mod(y + .04, .08) - .04
-    row = np.floor(y / .08)
+    dy = np.mod(y + course * .5, course) - course * .5
+    row = np.floor(y / course)
     dx = np.mod(x + np.mod(row, 2) * .12 + .12, .24) - .12
     horizontal = np.exp(-(dy / sigma) ** 2)
     vertical = np.exp(-(dx / sigma) ** 2)
@@ -172,7 +169,7 @@ def sample(family, u, v, *, part_name="", tint=None, pixel_metres=.01):
     height, response = structure(family, x, y, pixel_metres)
     mortar = None
     if family == "Brick" and part_name:
-        height, response, mortar = bar_brick_structure(x, y, pixel_metres)
+        height, response, mortar = brick_bond_structure(x, y, pixel_metres)
     luminance = np.sum(linear(pigment) * np.asarray((.2126, .7152, .0722)), axis=-1)
     mean = float(np.mean(np.sum(linear(sources()[cell][-1]) * np.asarray((.2126, .7152, .0722)), axis=-1)))
     detail = np.clip(luminance / max(.01, mean), .65, 1.35)
@@ -230,7 +227,10 @@ def catalogue():
     }
     small = {"Cloth", "Canvas", "Paper", "Rubber", "Grass", "Needles", "Moss"}
     for name, (family, pitch, ground) in city.items():
-        add("City" + name, "Textures/City" + name + "Albedo", family, pitch, ground=ground, size=512 if family in small else 1024)
+        size = 512 if family in small else 1024
+        if name == "RoadAsphalt":
+            size = 2048  # A 12 m sheet resolves a 12 mm chip across two texels.
+        add("City" + name, "Textures/City" + name + "Albedo", family, pitch, ground=ground, size=size)
     add("CityEastGroundTransition", "Textures/CityEastGroundTransitionAlbedo", "Soil", 12., "authored_atlas", True)
     for district, primary, secondary in (("OldTown", "Brick", "Stone"), ("Residential", "Plaster", "Concrete"),
                                          ("Industrial", "PaintedMetal", "Brick"), ("Nightlife", "Plaster", "Concrete")):
@@ -269,7 +269,11 @@ def catalogue():
         add("PlayerHome" + name, "PlayerHome/ExteriorTextures/PlayerHomeExterior" + name + "Albedo", family, pitch)
     for name, family, layout in (("WallAtlas", "Plaster", "quadrant_atlas"), ("FasciaAtlas", "PaintedMetal", "quadrant_atlas"),
                                  ("BrickAlbedo", "Brick", "repeat"), ("MetalAlbedo", "PaintedMetal", "repeat")):
-        add("Supermarket" + name.replace("Albedo", ""), "Supermarket/ExteriorTextures/SupermarketExterior" + name, family, 2.4, layout)
+        add("Supermarket" + name.replace("Albedo", ""), "Supermarket/ExteriorTextures/SupermarketExterior" + name,
+            family, 1.2 if family == "Brick" else 2.4, layout)
+        if family == "Brick":
+            # Diffuse reflectance of the fired face and pale mortar together.
+            rows[-1]["target_linear_luminance"] = .16
     for name, family in (("Plaster", "Plaster"), ("Stone", "Stone"), ("Wood", "DarkWood"), ("Metal", "PaintedMetal")):
         asset = "Assets/Church/Textures/Church" + name + "Albedo.png"
         add("Church" + name, "", family, 2.4, source_asset=asset)

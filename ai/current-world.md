@@ -139,7 +139,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   Clock persists across Single loads: CalendarDeltaTime advances0.25game min/
   real second,24h=5760s(96min). Midnight increments a zero-based index/display
   one-based DAY N. True pause stops it; intoxication slowdown does not.
-  Home and H wristwatch show HH:MM; wristwatch colon toggles each game second.
+  Home and H wristwatch show HH:MM. The backlit wristwatch colon toggles each real second.
   Inventory shows DAY N · HH:MM.
   Day announced at Wake and midnight;
 - a separately runtime-composed `MountainRoad` area. The hero arrives `6 m`
@@ -695,9 +695,8 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   City, MountainRoad and AlpineVillage ground/retaining surfaces use shared
   `GroundSurfaceLit` via `GroundSurfaceAppearance`, linear response companions
   and MPBs (indexed in City); shared lit-shader parity and interior materials stay separate.
-  UV4 road metres/width/seed place wear across/along actual roads; Home projects
-  back into the same City frame. Open aprons omit lane bands. Existing snow
-  state drives edge/substrate tint, without new collision or accumulation.
+  City/Home UV4 aligns road wear and lots, or curb distances/stations. Flags use metre UVs;
+  aprons omit tyre bands. Snow drives edge/substrate tint without extra collision or accumulation.
   Other City ground reads registry-driven global `_CityGroundWetness` without
   a second renderer list; MountainRoad never inherits that City flag.
   Mountain ridge haze keeps its dedicated shader and gains rock response;
@@ -1520,10 +1519,10 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
 - the fixed-metre `supermarket_exterior_v1` replaces City misc shell, apartment
   window bands and runtime-box storefront. The passive `15.5 x 15.5 x 6.4 m`
   neighbourhood-store body owns dark brick piers, a recessed double entrance,
-  four framed glazing bays, a `9.2 m` canopy, integrated original
-  cream/ochre/green/burgundy fascia, the authored `ПРОДУКТЫ` sign, service
-  elevations, parapet and low roof plant. Four dedicated sheets split unique
-  wall/fascia atlases from physically repeated brick/metal; roof and warm
+  four glazed bays, a `9.2 m` canopy, cream/ochre/green/burgundy fascia,
+  enamel `ПРОДУКТЫ` board with two broad, overlapping pools of baked light from hooded lamps on the city clock,
+  service elevations, parapet and low roof plant. Wall/fascia use unique atlases,
+  brick/metal use metre UVs. Roof and warm
   supermarket glazing reuse shared families. Unity aligns `exterior_door` to
   the lot door. City mass surrounds a rear receiving cavity with solid
   jambs/header/floor/ceiling; the local trolley parks inside the service door.
