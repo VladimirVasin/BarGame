@@ -18,19 +18,17 @@ namespace BarPromenade
         public const string ResourcePath = "VillageLife/VillageResidentLibrary";
         [SerializeField] private GameObject stationWorker;
         [SerializeField] private GameObject woodWoman;
-        [SerializeField] private GameObject repairNeighbor;
-        [SerializeField] private GameObject sewingWoman;
         [SerializeField] private GameObject snowNeighbor;
         [SerializeField] private GameObject basketVisitor;
         public bool IsComplete => stationWorker != null && woodWoman != null &&
-            repairNeighbor != null && sewingWoman != null && snowNeighbor != null && basketVisitor != null;
+            snowNeighbor != null && basketVisitor != null;
         public static VillageResidentLibrary Load() => Resources.Load<VillageResidentLibrary>(ResourcePath);
         public GameObject GetPrefab(VillageResidentRole role) => role switch
         {
             VillageResidentRole.StationWorker => stationWorker,
             VillageResidentRole.WoodWoman => woodWoman,
-            VillageResidentRole.RepairNeighbor => repairNeighbor,
-            VillageResidentRole.SewingWoman => sewingWoman,
+            VillageResidentRole.RepairNeighbor => DefaultNpcCatalog.GetPrefab(DefaultNpcCatalog.OrdinaryWorker),
+            VillageResidentRole.SewingWoman => DefaultNpcCatalog.GetPrefab(DefaultNpcCatalog.OrdinaryWoman),
             VillageResidentRole.SnowNeighbor => snowNeighbor,
             VillageResidentRole.BasketVisitor => basketVisitor,
             _ => throw new ArgumentOutOfRangeException(nameof(role))
@@ -39,12 +37,20 @@ namespace BarPromenade
         public void Configure(GameObject[] cast)
         {
             if (cast == null || cast.Length != 6) throw new ArgumentException("The village has exactly six authored residents.", nameof(cast));
-            stationWorker = cast[0]; woodWoman = cast[1]; repairNeighbor = cast[2];
-            sewingWoman = cast[3]; snowNeighbor = cast[4]; basketVisitor = cast[5];
+            stationWorker = cast[0]; woodWoman = cast[1]; snowNeighbor = cast[4]; basketVisitor = cast[5];
         }
 
         public VillageResidentPresentation Create(VillageResidentRole role, Transform parent)
         {
+            if (role == VillageResidentRole.RepairNeighbor || role == VillageResidentRole.SewingWoman)
+            {
+                bool carpenter = role == VillageResidentRole.RepairNeighbor;
+                var actor = DefaultNpcFactory.CreateForCharacter(parent, carpenter ? DefaultNpcPopulation.Severin : DefaultNpcPopulation.Marta);
+                actor.Role = role;
+                // The two work tracks were authored at these statures on the 1.75 m common rig.
+                actor.transform.localScale = Vector3.one * ((carpenter ? 1.86f : 1.56f) / 1.75f);
+                return actor;
+            }
             GameObject prefab = GetPrefab(role);
             if (prefab == null) throw new InvalidOperationException("Village resident assets are incomplete.");
             var instance = Instantiate(prefab, parent, false);

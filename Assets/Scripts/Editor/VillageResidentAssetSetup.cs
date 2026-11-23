@@ -46,6 +46,8 @@ namespace BarPromenade.Editor
                         prefabs[index] = AssetDatabase.LoadAssetAtPath<GameObject>(DefaultNpcAssetSetup.PrefabPath);
                         continue;
                     }
+                    if (index == (int)VillageResidentRole.RepairNeighbor || index == (int)VillageResidentRole.SewingWoman)
+                        continue; // Permanent catalogue assignments own the two workshop bodies.
                     string name = ((VillageResidentRole)index).ToString();
                     ConfigureImporter(Folder + name + ".fbx", false, avatar);
                     var manifest = JsonUtility.FromJson<Manifest>(File.ReadAllText(Folder + name + ".json"));

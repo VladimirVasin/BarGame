@@ -59,7 +59,7 @@ def check_npcs():
     residents = load("npc_joint_check_residents", "build-village-residents-3d-model.py")
     for name, builder in (("WoodWoman", lambda: residents.ResidentBuilder(True)),
                           ("Village male substrate", lambda: residents.ResidentBuilder(False)),
-                          *((role, lambda role=role: residents.LifeResidentBuilder(role)) for role in residents.LIFE_ROLES)):
+                          *((role, lambda role=role: residents.LifeResidentBuilder(role)) for role in residents.PUBLISHED_LIFE_ROLES)):
         try:
             result = builder().build()
             errors = []

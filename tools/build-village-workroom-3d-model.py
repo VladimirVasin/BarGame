@@ -16,6 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 import interior_kit as kit
 import bar_parts as bp
+from bar_furniture import turned, shell
 spec = importlib.util.spec_from_file_location("workroom_door_source", ROOT / "tools/build-village-resident-doors-3d-model.py")
 doors = importlib.util.module_from_spec(spec); sys.modules[spec.name] = doors; spec.loader.exec_module(doors)
 VERSION = "1.0.0"
@@ -24,8 +25,8 @@ ANCHORS = {
     "RoomEntry":(-.004,0,1.60), "RepairDock":(-2.02,0,-.97), "RepairJoin":(-1.86,.90,-1.45),
     "RepairLeftSupport":(-1.75,.90,-1.45), "HammerRest":(-2.20,.90,-1.37),
     "RepairRailRest":(-1.86,.90,-1.45), "RepairRailFixed":(-1.875,.90,-1.45),
-    "SewingDock":(-2.10,0,.98), "SewingSeat":(-2.10,.42,.78), "ClothRest":(-2.10,.674,1.36),
-    "MittenRest":(-2.02,.690,1.36), "SewingBox":(-1.73,.666,1.33), "BoxStow":(-1.73,.706,1.42), "BoxRest":(-1.55,.46,1.10),
+    "SewingDock":(-2.10,0,.98), "SewingSeat":(-2.10,.42,.78), "ClothRest":(-2.165,.674,1.385),
+    "MittenRest":(-2.085,.690,1.385), "SewingBox":(-1.67,.666,1.49), "BoxStow":(-1.67,.752,1.58), "BoxRest":(-1.55,.46,1.10),
     "PlayerHelpDock":(-.62,0,-1.70), "ChairPartLeftGrip":(-1.04,1,-1.92),
     "ChairPartRightGrip":(-1.04,1,-1.48), "BenchSeat":(-2.99,.44,-.10),
     "BenchApproach":(-2.24,0,-.10), "BasketStand":(.77,0,.45), "BasketRest":(.77,.38,.45),
@@ -39,6 +40,13 @@ COLORS = {"Timber":(.30,.245,.175,1), "Masonry":(.48,.455,.385,1), "LayeredStone
           "RustedIron":(.24,.235,.215,1), "Cloth":(.37,.305,.225,1), "Glass":(.55,.52,.44,.12),
           "Lamp":(.58,.40,.21,1)}
 
+FINISHES = {"Workbench": (.345,.276,.195,1), "RepairRail": (.385,.318,.225,1),
+            "ChairFrame": (.332,.267,.190,1), "Hammer": (.355,.259,.166,1),
+            "Box": (.390,.312,.225,1), "BoxLid": (.390,.312,.225,1),
+            "SewingTable": (.320,.270,.205,1), "Cabinet": (.272,.237,.190,1),
+            "Cloth": (.385,.358,.293,1), "ClothFlap": (.385,.358,.293,1),
+            "Mitten": (.292,.307,.262,1), "Thread": (.399,.375,.313,1)}
+
 
 def u(g): return bp.to_source(g)
 def at(g, p): return kit.translated(g,p)
@@ -46,17 +54,140 @@ def merge(items): return kit.merge_all(items)
 def box(p,s,c=.008): return bp.u_box(p,s,c)
 
 
-def table(cx,cz,width,depth,height,top=.065):
-    parts=[box((cx,height-top*.5,cz),(width,top,depth),.012),
-           box((cx,height-top-.105,cz-depth*.5+.08),(width-.12,.17,.055)),
-           box((cx,height-top-.105,cz+depth*.5-.08),(width-.12,.17,.055))]
-    for x in (-1,1):
-        for z in (-1,1):
-            # Shared turned-leg profile is authored vertically in Blender then swapped to Unity.
-            source=kit.turned_leg(height-top,.042,.029,.036,8)
-            leg=([(a,c,b) for a,b,c in source[0]],[tuple(reversed(f)) for f in source[1]])
-            parts.append(at(leg,(cx+x*(width*.5-.10),0,cz+z*(depth*.5-.10))))
+def boards(cx, top, cz, width, depth, thickness, count):
+    """Separate planks cut to a single support plane, with narrow eased seams."""
+    pitch = depth / count
+    return [box((cx,top-thickness/2,cz-depth/2+(i+.5)*pitch),
+                (width,thickness,pitch-.0015), min(.0035,thickness/5)) for i in range(count)]
+
+
+def table(cx,cz,width,depth,height,top=.065, heavy=False):
+    parts = boards(cx,height,cz,width,depth,top, 4 if heavy else 3)
+    shoulder = height-top
+    leg = .112 if heavy else .066
+    end = width/2-.096
+    side = depth/2-.072
+    for sign in (-1,1):
+        parts.append(box((cx,shoulder-.064,cz+sign*side),(2*end,.128,leg*.64)))
+        parts.append(box((cx+sign*end,shoulder-.064,cz),(leg*.64,.128,2*side)))
+        parts.append(box((cx+sign*end,.17,cz),(leg*.70,.085,2*side)))
+        for direction in (-1,1):
+            x,z=cx+sign*end,cz+direction*side
+            parts.append(box((x,shoulder/2,z),(leg,shoulder,leg),.008))
+    parts.append(box((cx,.17,cz),(2*end+.034,.085,leg*.8)))
     return merge(parts)
+
+
+def spindle(position, length, radius, rotation=(0,0,0)):
+    profile=[(.72*radius,0),(radius,.06*length),(radius,.16*length),
+             (.85*radius,.19*length),(.78*radius,.72*length),
+             (.93*radius,.76*length),(.93*radius,.86*length),(.68*radius,length)]
+    return at(bp.u_rotated(turned((0,0,0),profile,12),rotation),position)
+
+
+def severin_bench(add):
+    add("Workbench",table(-2.08,-1.82,2,.82,.86,.09,heavy=True))
+    # The side-laid seat and both bottom legs rest on the bench at .86 m.
+    chair=[box((-1.50,1.125,-1.865+i*.164),(.055,.53,.162),.006) for i in range(3)]
+    for y in (.889,1.355):
+        for z in (-1.919,-1.481):
+            chair.append(spindle((-1.480,y,z),.465,.033,(0,0,-90)))
+        chair.append(box((-1.746,y,-1.919),(.535,.053,.058),.008))
+    for x,w in ((-1.652,.055),(-1.825,.071),(-1.978,.082)):
+        chair.append(box((x,1.122,-1.919),(w,.466,.036),.008))
+    chair.append(box((-1.897,.878,-1.478),(.079,.036,.056),.003))
+    add("ChairFrame",merge(chair))
+    rail=[box((.398,-.020,-.0275),(.796,.040,.055),.003),
+          box((.799,.021,-.0275),(.045,.112,.049),.004),
+          box((.82,.072,-.25),(.054,.056,.52),.007),
+          turned((.015,-.005,-.005),[(.012,0),(.012,.005),(.010,.006)],12)]
+    add("RepairRail",merge(rail),position=ANCHORS["RepairRailRest"],anchors={
+        "Join":(0,0,0),"LeftSupport":(.11,0,0),"ChairPartLeftGrip":(.82,.10,-.47),
+        "ChairPartRightGrip":(.82,.10,-.03)})
+    # The fixed pad sits on the rail and the screw presses the underside of the
+    # worktop. Only the spine of the C passes outside its front edge (z=-1.41).
+    cx, jaw, spine = -1.79, -1.462, -1.375
+    clamp=[box((cx,.816,spine),(.042,.242,.034),.007),
+           box((cx,.923,(spine+jaw)/2),(.044,.028,.116),.006),
+           box((cx,.711,(spine+jaw)/2),(.044,.031,.116),.006),
+           turned((cx,.900,jaw),[(.021,0),(.023,.003),(.020,.009)],14),
+           turned((cx,.663,jaw),[(.011,0),(.013,.008),(.009,.014),(.009,.098),
+                                (.020,.103),(.020,.107)],14),
+           spindle((cx-.0415,.670,jaw),.083,.006,(0,0,-90))]
+    for i in range(6):
+        clamp.append(turned((cx,.732+i*.005,jaw),[(.009,0),(.011,.001),(.009,.003)],10))
+    add("RepairClamp",merge(clamp),"RustedIron")
+    grip=turned((0,-.070,0),[(.015,0),(.021,.007),(.020,.026),(.016,.117),
+                              (.014,.178),(.019,.277),(.014,.335)],14)
+    add("Hammer",kit.scaled(grip,(1,1,.80)),position=ANCHORS["HammerRest"],euler=(90,180,0),
+        anchors={"Grip":(0,0,0),"StrikeFace":(-.095,.265,0)})
+    head=turned((0,0,0),[(.023,0),(.026,.003),(.024,.027),(.018,.042),(.021,.070),
+                          (.026,.086),(.026,.108),(.019,.133),(.011,.170),(.005,.188)],8)
+    add("HammerHead",at(bp.u_rotated(head,(0,0,-90)),(-.095,.265,0)),"RustedIron",parent="Hammer")
+
+
+def fabric_panel(left, right, y):
+    # A stitched doubled edge and slight waves share the same fold hinge.
+    depth=.26
+    outline=[(left+.010,-depth/2),(right-.012,-depth/2+.001),(right,-.122),
+             (right,.118),(right-.011,.13),(left+.009,.129),(left,.120),(left,-.121)]
+    body=shell([[(x,y,z) for x,z in outline],[(x,y+.004+.001*math.cos(z*18+x*23),z) for x,z in outline]])
+    hems=[box(((left+right)/2,y+.005,z),(right-left-.018,.003,.006),.001)
+          for z in (-.124,.124)]
+    return merge([body]+hems)
+
+
+def marta_fittings(add):
+    add("SewingTable",table(-2.10,1.65,1.40,.70,.66))
+    add("BoxShelf",table(-1.55,1.10,.46,.40,.46,.045))
+    stool=[table(-2.10,.78,.46,.44,.42,.055)]
+    for x in (-2.292,-1.908):
+        stool.append(box((x,.644,.593),(.042,.465,.047),.007))
+    for y,h in ((.57,.070),(.766,.142)):
+        stool.append(box((-2.10,y,.594),(.36,h,.032),.007))
+    add("SewingSeat",merge(stool))
+    add("Cloth",fabric_panel(0,.18,0),"Cloth",position=ANCHORS["ClothRest"],
+        anchors={"Grip":(.09,.02,0),"FoldHinge":(0,.025,0),"PacketLeftGrip":(.15,.0475,-.08),
+                 "PacketRightGrip":(.15,.0475,.08),"HoldEdge":(.135,.014,.09)})
+    add("ClothFlap",fabric_panel(-.18,0,-.025),"Cloth",position=(0,.025,0),parent="Cloth",
+        anchors={"EdgeGrip":(-.15,-.0225,-.08)})
+    # Thumb and palm share one outline so their seam remains closed in silhouette.
+    outline=[(-.064,-.056),(.072,-.056),(.084,-.044),(.082,.057),(.065,.067),
+             (.053,.062),(.035,.073),(-.019,.073),(-.033,.055),(-.053,.067),
+             (-.074,.058),(-.079,.045),(-.060,.014)]
+    mitten=shell([[(x*.91,.001,z*.94) for x,z in outline],[(x,.011,z) for x,z in outline],
+                  [(x*.95,.024,z*.97) for x,z in outline]])
+    add("Mitten",kit.merge(mitten,box((.002,.014,-.047),(.140,.030,.033),.006)),"Cloth",
+        position=ANCHORS["MittenRest"],anchors={"Grip":(-.065,.015,0),"Stitch":(.025,.015,.015)})
+    sewingbox=[box((0,.018,0),(.256,.017,.304),.003),
+               box((0,.081,0),(.244,.010,.288),.002)]
+    # A side pull and an overhanging lid grip keep fingers clear of the wood.
+    for z in (-.110,-.040):
+        sewingbox.append(box((.176,.104,z),(.094,.016,.017),.003))
+    sewingbox.append(box((.222,.104,-.075),(.017,.020,.087),.004))
+    for sign in (-1,1):
+        sewingbox.extend([box((sign*.132,.075,0),(.018,.150,.320),.003),
+                          box((0,.075,sign*.152),(.246,.150,.016),.003)])
+    add("Box",merge(sewingbox),position=ANCHORS["SewingBox"],euler=(0,90,0),
+        anchors={"Stow":(-.09,.086,0),"LeftGrip":(-.132,.10,-.15),"RightGrip":(.222,.104,-.075)})
+    lid=boards(0,.016,-.16,.282,.32,.016,3)
+    for x in (-.088,.088):
+        lid.append(box((x,-.002,-.16),(.022,.006,.263),.002))
+    for z in (-.161,-.091):
+        lid.append(box((.164,.010,z),(.066,.016,.014),.004))
+    lid.append(box((.191,.010,-.126),(.018,.020,.086),.005))
+    add("BoxLid",merge(lid),position=(0,.15,.16),euler=(105,0,0),parent="Box",anchors={"LidGrip":(.191,.010,-.126)})
+    fixed,moving=[],[]
+    for x in (-.082,.082):
+        fixed.append(box((x,.137,.161),(.056,.034,.005),.002))
+        moving.append(box((x,.008,-.023),(.055,.005,.041),.002))
+        for offset in (-.020,.020):
+            fixed.append(at(bp.u_rotated(turned((0,0,0),[(.0046,0),(.005,.001),(.005,.011)],12),
+                            (0,0,-90)),(x+offset-.0055,.15,.16)))
+        moving.append(at(bp.u_rotated(turned((0,0,0),[(.0045,0),(.005,.001),(.005,.026)],12),
+                         (0,0,-90)),(x-.013,0,0)))
+    add("BoxHinges",merge(fixed),"RustedIron",parent="Box",solid=False)
+    add("LidHinges",merge(moving),"RustedIron",parent="BoxLid",solid=False)
 
 
 def lining_reveal_bridge(width,height,sill=True):
@@ -146,7 +277,7 @@ def build_pack():
     objects=[]; rows=[]
     def add(name,g,surface="Timber",position=(0,0,0),euler=(0,0,0),parent="",anchors=None,solid=True,source=False,role="",scale=(1,1,1)):
         obj=doors.mesh_object("GEO_Workroom_"+name,g if source else u(g),source_root,mats[surface])
-        part=doors.part_row(obj,role or name,surface,list(COLORS[surface]))
+        part=doors.part_row(obj,role or name,surface,list(FINISHES.get(name,COLORS[surface])))
         part.update(name=name,position=position,euler=euler,parent=parent,solid=solid,scale=scale,
                     anchors=[dict(name=k,position=v) for k,v in (anchors or {}).items()])
         rows.append(part); objects.append(obj); return obj
@@ -187,8 +318,14 @@ def build_pack():
     # Real boarding below the three-millimetre seams, and the same level
     # threshold through the masonry reveal. No terrain is an indoor floor.
     floor += [box((-1.05,-.05,.13),(4.5,.06,4.8),.002),
-              box((across,-.0575,2.65),(1.04,.115,.29),.002)]
+              box((across,-.060,2.65),(1.04,.110,.29),.002)]
+    # The sill is flush at zero. Timber either side carries a pinned metal strip.
+    floor += boards(across,0,2.65,1.04,.29,.005,2)
     floor_obj=add("Floor",merge(floor))
+    saddles = [box((across,.001,2.657),(1.005,.002,.040),.0008)]
+    for x in (-.42,-.14,.14,.42):
+        saddles.append(turned((across+x,.002,2.657),[(.006,0),(.0055,.001)],12))
+    add("ThresholdStrip",merge(saddles),"RustedIron",solid=False)
     floor_tree=BVHTree.FromPolygons(*doors.geometry(floor_obj),all_triangles=False)
     for key in ("RoomEntry","RepairDock","SewingDock","PlayerHelpDock","BenchApproach"):
         x,_,z=ANCHORS[key]
@@ -222,81 +359,84 @@ def build_pack():
         geom=merge([box((-w*.5-.028,0,0),(.056,h+.112,.12)),box((w*.5+.028,0,0),(.056,h+.112,.12)),
                     box((0,h*.5+.028,0),(w,.056,.12)),box((0,-h*.5-.028,0),(w,.056,.12)),
                     box((0,0,0),(.037,h,.05)),box((0,-h*.5-.07,.005),(w+.19,.065,.25))])
+        # Glazing beads follow the frame. A separate nosing and apron show its depth.
+        trim=[box((sign*(w/2+.014),0,-.065),(.022,h+.040,.016),.003) for sign in (-1,1)]
+        trim.extend([box((0,sign*(h/2+.012),-.065),(w,.022,.016),.003) for sign in (-1,1)])
+        trim.extend([box((0,-h/2-.101,-.084),(w+.13,.044,.055),.006),
+                     box((0,-h/2-.071,-.129),(w+.18,.039,.034),.007)])
+        geom=merge([geom]+trim)
         glass=box((0,0,0),(w,h,.008),.001)
         if side: geom=bp.u_rotated(geom,(0,90,0));glass=bp.u_rotated(glass,(0,90,0))
         add(name+"Frame",at(geom,center));add(name+"Glass",at(glass,center),"Glass")
     window("FrontWindow",ANCHORS["FrontWindow"],1.20,.86)
     window("LeftWindow",ANCHORS["LeftWindow"],.72,.80,True)
-    add("Workbench",table(-2.08,-1.82,2,.82,.86,.09))
-    add("SewingTable",table(-2.10,1.65,1.40,.70,.66))
-    add("BoxShelf",table(-1.55,1.10,.46,.40,.46,.045))
-    # The seat centre follows the resident's actual pelvis, twenty centimetres behind her ground dock.
-    stool=[table(-2.10,.78,.46,.44,.42,.055),box((-2.10,.68,.60),(.45,.46,.042)),
-           box((-2.10,.49,.597),(.32,.08,.027))]
-    add("SewingSeat",merge(stool))
-    bench=[box((-2.99,.4125,-.10),(.46,.055,1.35),.013),box((-3.205,.72,-.10),(.052,.56,1.35),.013)]
-    for z in (-.60,.40):
-        for x in (-3.15,-2.83): bench.append(box((x,.19,z),(.058,.38,.068)))
-    bench.append(box((-2.99,.16,-.10),(.055,.065,1.13)))
+    severin_bench(add)
+    marta_fittings(add)
+    bench=boards(-.10,.44,2.99,1.35,.46,.048,3)
+    bench=[bp.u_rotated(board,(0,-90,0)) for board in bench]
+    for z in (-.62,.42):
+        for x in (-3.156,-2.824):
+            bench.append(box((x,.196,z),(.069,.392,.074),.006))
+        bench.extend([box((-2.99,.16,z),(.36,.071,.053)),
+                      box((-3.201,.66,z),(.047,.52,.060),.006)])
+    for y,h in ((.61,.13),(.806,.16)):
+        bench.append(box((-3.20,y,-.10),(.043,h,1.35),.007))
+    bench.append(box((-2.99,.16,-.10),(.055,.072,1.10)))
     add("Bench",merge(bench))
-    cabinet=[box((.76,.72,1.72),(.58,1.44,.68)),box((.76,.74,1.365),(.51,1.31,.035)),
-             box((.93,.78,1.338),(.055,.055,.045))]
+    cabinet=[box((.76,.706,1.72),(.56,1.40,.64)),box((.76,1.424,1.72),(.59,.04,.68)),
+             box((.76,.735,1.382),(.51,1.32,.030))]
+    for x in (.541,.979):
+        cabinet.append(box((x,.735,1.357),(.060,1.302,.028),.004))
+    for y in (.125,.774,1.347):
+        cabinet.append(box((.76,y,1.357),(.382,.065,.028),.005))
     add("Cabinet",merge(cabinet))
+    handle=[box((.925,y,1.331),(.019,.023,.052),.003) for y in (.723,.809)]
+    handle.append(box((.925,.766,1.306),(.022,.106,.022),.006))
+    add("CabinetPull",merge(handle),"RustedIron",solid=False)
     shelves=[]
     for y in (1.43,1.83):
-        shelves.extend([box((-2.12,y,-2.11),(1.68,.055,.25)),box((-2.78,y-.13,-2.19),(.055,.26,.07)),box((-1.44,y-.13,-2.19),(.055,.26,.07))])
+        shelves.extend(boards(-2.12,y+.0275,-2.11,1.68,.25,.055,2))
+        for x in (-2.78,-1.44):
+            shelves.append(box((x,y-.13,-2.19),(.06,.26,.07)))
+            shelves.append(at(bp.u_rotated(box((0,0,0),(.046,.199,.046)),(38,0,0)),(x,y-.11,-2.116)))
     add("Shelves",merge(shelves))
-    clutter=[]
+    stock=[]
     for i in range(3):
-        clutter.append(box((-2.62+i*.24,1.485,-2.11),(.19,.06,.18),.007))
-    clutter.extend([box((-1.65,1.57,-2.14),(.28,.22,.14)),box((-2.26,1.92,-2.13),(.34,.12,.15))])
-    add("ShelfStock",merge(clutter),"Cloth")
-    stand=[box((.77,.35,.45),(.55,.06,.55))]
+        for layer in range(i+1):
+            stock.append(box((-2.62+i*.24,1.470+layer*.020,-2.11),(.19-.004*layer,.023,.17),.007))
+    for x,y in ((-1.67,1.458),(-2.27,1.858)):
+        stock.append(at(bp.u_rotated(turned((0,0,0),[(.048,0),(.058,.008),(.060,.24),(.053,.25)],14),
+                        (0,0,-90)),(x-.12,y+.060,-2.13)))
+    add("ShelfStock",merge(stock),"Cloth")
+    stand=boards(.77,.38,.45,.55,.55,.046,3)
     for x in (.56,.98):
-        for z in (.24,.66):stand.append(box((x,.16,z),(.055,.32,.055)))
+        for z in (.24,.66):
+            stand.append(box((x,.168,z),(.054,.336,.060)))
+        stand.append(box((x,.13,.45),(.036,.051,.44)))
     add("BasketStand",merge(stand))
-    # One old chair lies on the bench. The pegged repair is lower than the two hand rails held by a helper.
-    # A recognizable side-laid chair: upright seat in the bench frame, four legs pointing right,
-    # and a slatted back to the left. No chair leg passes through the worktop.
-    chair=[box((-1.50,1.14,-1.70),(.055,.50,.50)),box((-1.91,.86,-1.4775),(.07,.08,.055))]
-    for y in (.91,1.37):
-        for z in (-1.92,-1.48):chair.append(box((-1.265,y,z),(.47,.05,.05)))
-        chair.append(box((-1.755,y,-1.92),(.56,.048,.05)))
-    for x in (-1.70,-1.91):chair.append(box((x,1.14,-1.92),(.075,.46,.035)))
-    add("ChairFrame",merge(chair))
-    rail=merge([box((.41,-.04,-.0275),(.82,.08,.055),.004),box((.82,.072,-.25),(.055,.056,.52),.004)])
-    add("RepairRail",rail,position=ANCHORS["RepairRailRest"],anchors={"Join":(0,0,0),"LeftSupport":(.11,0,0),
-        "ChairPartLeftGrip":(.82,.10,-.47),"ChairPartRightGrip":(.82,.10,-.03)})
-    add("RepairClamp",merge([box((-1.95,.87,-1.57),(.035,.20,.04)),box((-1.95,.975,-1.51),(.035,.035,.16)),
-        box((-1.95,.79,-1.51),(.035,.035,.16))]),"RustedIron")
-    add("Hammer",box((0,.098,0),(.033,.336,.034),.006),position=ANCHORS["HammerRest"],euler=(90,180,0),
-        anchors={"Grip":(0,0,0),"StrikeFace":(-.095,.265,0)})
-    add("HammerHead",merge([box((0,.265,0),(.19,.041,.053),.008),box((.068,.269,0),(.10,.043,.039),.005)]),
-        "RustedIron",parent="Hammer")
-    add("Cloth",box((.09,.0025,0),(.18,.005,.26),.002),"Cloth",position=ANCHORS["ClothRest"],
-        anchors={"Grip":(.09,.02,0),"FoldHinge":(0,.025,0),"PacketLeftGrip":(.15,.0475,-.08),
-                 "PacketRightGrip":(.15,.0475,.08),"HoldEdge":(.135,.014,.09)})
-    add("ClothFlap",box((-.09,-.0225,0),(.18,.005,.26),.002),"Cloth",position=(0,.025,0),parent="Cloth",
-        anchors={"EdgeGrip":(-.15,-.0225,-.08)})
-    mitten=merge([box((.005,0,0),(.125,.025,.13),.011),box((-.055,0,.034),(.043,.025,.067),.010),box((.068,-.002,0),(.040,.024,.102),.008)])
-    add("Mitten",mitten,"Cloth",position=ANCHORS["MittenRest"],anchors={"Grip":(-.065,.015,0),"Stitch":(.025,.015,.015)})
-    sewingbox=merge([box((0,.011,0),(.43,.022,.36)),box((-.203,.085,0),(.024,.15,.36)),box((.203,.085,0),(.024,.15,.36)),
-                     box((0,.085,-.168),(.39,.15,.024)),box((0,.085,.168),(.39,.15,.024))])
-    add("Box",sewingbox,position=ANCHORS["SewingBox"],euler=(0,90,0),anchors={"Stow":(-.09,.04,0),"LeftGrip":(-.14,.10,-.16),"RightGrip":(.14,.10,-.16)})
-    add("BoxLid",box((0,.008,-.18),(.43,.016,.36),.005),position=(0,.15,.18),euler=(105,0,0),parent="Box",anchors={"LidGrip":(0,.015,-.31)})
     add("Thread",bp.u_cylinder((0,.5,0),(.003,.5,.003),6),"Cloth",position=ANCHORS["MittenRest"],
         solid=False,anchors={"Start":(0,0,0),"End":(0,1,0)},scale=(1,.06,1))
     # Each lighting anchor has a visible, plain household practical.
     for name in ("RoomLamp","RepairLamp","SewingLamp"):
         p=ANCHORS[name]
-        shade=kit.lathe([(.12,-.075),(.12,-.058),(.045,.065),(.027,.073)],10)
-        shade_u=([(a,c,b) for a,b,c in shade[0]],[tuple(reversed(f)) for f in shade[1]])
-        add(name+"Shade",at(shade_u,p),"Lamp")
-        add(name+"Bulb",at(bp.u_cylinder((0,-.03,0),(.045,.025,.045),8),p),"Lamp")
-        if name=="RoomLamp": stem=box((p[0],2.23,p[2]),(.022,.14,.022),.003)
-        elif name=="RepairLamp":stem=merge([box((p[0],p[1]+.05,-2.20),(.12,.20,.035)),box((p[0],p[1]+.05,-2.14),(.025,.025,.12),.003)])
-        else:stem=merge([box((p[0],.69,p[2]),(.18,.035,.16)),box((p[0],.935,p[2]),(.023,.49,.023),.003)])
-        add(name+"Stem",stem,"RustedIron")
+        shade=turned(p,[(.040,.070),(.046,.062),(.056,.040),(.105,-.033),(.123,-.055),
+                        (.126,-.068),(.123,-.075),(.116,-.075),(.112,-.062),(.049,.034),(.033,.053)][::-1],20)
+        add(name+"Shade",shade,"Lamp")
+        bulb=turned((0,0,0),[(.005,-.069),(.022,-.065),(.033,-.053),(.036,-.033),
+                             (.031,-.014),(.017,.007),(.014,.028)],16)
+        add(name+"Bulb",at(bulb,p),"Lamp")
+        socket=turned(p,[(.018,.025),(.022,.030),(.022,.050),(.030,.053),(.030,.074),(.021,.079)],14)
+        if name=="RoomLamp":
+            stem=[box((p[0],2.23,p[2]),(.018,.14,.018),.003),
+                  turned((p[0],2.275,p[2]),[(.042,0),(.056,.011),(.058,.025)],14)]
+        elif name=="RepairLamp":
+            stem=[box((p[0],p[1]+.075,-2.251),(.13,.17,.038),.007),
+                  box((p[0],p[1]+.087,-2.168),(.032,.035,.160),.005)]
+        else:
+            stem=[turned((p[0],.660,p[2]),[(.093,0),(.093,.010),(.085,.019),(.048,.027),(.021,.039)],16),
+                  spindle((p[0],.697,p[2]),.577,.014)]
+        stem.append(socket)
+        add(name+"Stem",merge(stem),"RustedIron")
 
     # Exact real geometry must leave the common doorway, both window openings and shared circulation clear.
     solids=[obj for obj,row in zip(objects,rows) if row["solid"] and row["position"]==(0,0,0) and not row["parent"] and row["surface"]!="Glass"]

@@ -298,10 +298,308 @@ namespace BarPromenade.Tests.PlayMode
 
         private sealed class WorkroomObservation
         {
+            internal readonly Dictionary<VillageResidentPresentation, Renderer[]> VisibleParts = new Dictionary<VillageResidentPresentation, Renderer[]>();
             internal readonly HashSet<string> Actions = new HashSet<string>();
             internal readonly Dictionary<VillageResidentPresentation, Vector3> LastRoots = new Dictionary<VillageResidentPresentation, Vector3>();
             internal readonly Dictionary<string, Quaternion> FirstRotations = new Dictionary<string, Quaternion>();
             internal readonly HashSet<string> Captured = new HashSet<string>();
+        }
+
+        // Test the rendered fingers, palms, cuffs and forearms against the wooden panels.
+        // Each core is inset by 2 mm so brushing the eased lip is a valid contact.
+        private sealed class SewingArmClearance : IDisposable
+        {
+            private readonly SkinnedMeshRenderer[] skins;
+            private readonly int[][] indices;
+            private readonly int[][] forearmFaces;
+            private readonly SkinnedMeshRenderer cardigan;
+            private readonly ScarfContactProbe torsoProbe = new ScarfContactProbe();
+            private readonly Transform[] shoulders, elbows;
+            private readonly List<Vector3> world = new List<Vector3>();
+            private readonly Mesh baked = new Mesh();
+            private readonly List<Vector3> vertices = new List<Vector3>();
+            private readonly List<Vector3> local = new List<Vector3>();
+            private readonly HashSet<string> overlaps = new HashSet<string>();
+            private readonly Transform box, lid;
+            private readonly Bounds[] boards =
+            {
+                new Bounds(new Vector3(-.132f,.075f,0), new Vector3(.014f,.146f,.316f)),
+                new Bounds(new Vector3( .132f,.075f,0), new Vector3(.014f,.146f,.316f)),
+                new Bounds(new Vector3(0,.075f,-.152f), new Vector3(.242f,.146f,.012f)),
+                new Bounds(new Vector3(0,.075f, .152f), new Vector3(.242f,.146f,.012f)),
+                new Bounds(new Vector3(0,.081f,0), new Vector3(.240f,.006f,.284f)),
+                new Bounds(new Vector3(0,.008f,-.16f), new Vector3(.278f,.012f,.316f))
+            };
+
+            internal SewingArmClearance(VillageResidentPresentation actor, Transform box, Transform lid)
+            {
+                this.box = box; this.lid = lid;
+                skins = actor.ModelRoot.GetComponentsInChildren<SkinnedMeshRenderer>(true).Where(r => r.enabled &&
+                    (r.name.StartsWith("GEO_Hand", StringComparison.Ordinal) || r.name.StartsWith("CLO_CardiganSleeve", StringComparison.Ordinal)
+                        || r.name.StartsWith("CLO_CardiganCuff", StringComparison.Ordinal))).ToArray();
+                Assert.That(skins.Count(r => r.name.StartsWith("GEO_Hand")), Is.EqualTo(12));
+                Assert.That(skins.Length, Is.GreaterThan(12));
+                indices = skins.Select(r => r.sharedMesh.triangles).ToArray();
+                cardigan = actor.ModelRoot.GetComponentsInChildren<SkinnedMeshRenderer>(true).Single(r => r.enabled && r.name == "CLO_Cardigan");
+                var bones = actor.ModelRoot.GetComponentsInChildren<Transform>(true);
+                Transform[] Pair(string name) => new[] { ".L", ".R" }.Select(side => bones.Single(b => b.name == name + side)).ToArray();
+                shoulders = Pair("upper_arm");
+                elbows = Pair("forearm");
+                forearmFaces = skins.Select((skin, index) =>
+                {
+                    if (!skin.name.StartsWith("CLO_CardiganSleeve", StringComparison.Ordinal)) return indices[index];
+                    // The sleeve is sewn into the torso at the shoulder. Use its deformed elbow and forearm section.
+                    int forearm = Array.FindIndex(skin.bones, b => b.name == "forearm" + skin.name.Substring(skin.name.Length - 2));
+                    Assert.That(forearm, Is.GreaterThanOrEqualTo(0));
+                    var weights = skin.sharedMesh.boneWeights;
+                    bool AtElbow(int vertex)
+                    {
+                        var w = weights[vertex];
+                        return (w.boneIndex0 == forearm && w.weight0 >= .5f) || (w.boneIndex1 == forearm && w.weight1 >= .5f) ||
+                            (w.boneIndex2 == forearm && w.weight2 >= .5f) || (w.boneIndex3 == forearm && w.weight3 >= .5f);
+                    }
+                    var faces = new List<int>();
+                    var tris = indices[index];
+                    for (int i = 0; i < tris.Length; i += 3)
+                        if (AtElbow(tris[i]) || AtElbow(tris[i+1]) || AtElbow(tris[i+2]))
+                        { faces.Add(tris[i]); faces.Add(tris[i+1]); faces.Add(tris[i+2]); }
+                    Assert.That(faces, Is.Not.Empty);
+                    return faces.ToArray();
+                }).ToArray();
+            }
+
+            internal void Observe(VillageResidentPresentation actor)
+            {
+                var torso = torsoProbe.Read(cardigan);
+                Vector3 left = (shoulders[0].position - shoulders[1].position).normalized;
+                Vector3 middle = (shoulders[0].position + shoulders[1].position) * .5f;
+                for (int side = 0; side < elbows.Length; side++)
+                {
+                    Vector3 elbow = elbows[side].position;
+                    if (Vector3.Dot(elbow - shoulders[side].position, actor.transform.up) > .025f ||
+                        Vector3.Dot(elbow - middle, side == 0 ? left : -left) < .045f)
+                        overlaps.Add($"{actor.CurrentAction}/{actor.CurrentActionSeconds:F2}/{elbows[side].name} outside working pose");
+                }
+                for (int s = 0; s < skins.Length; s++)
+                {
+                    var skin = skins[s];
+                    skin.BakeMesh(baked, true);
+                    baked.GetVertices(vertices);
+                    world.Clear();
+                    foreach (var vertex in vertices) world.Add(skin.localToWorldMatrix.MultiplyPoint3x4(vertex));
+                    if (IntersectsTorso(world, forearmFaces[s], torso))
+                        overlaps.Add($"{actor.CurrentAction}/{actor.CurrentActionSeconds:F2}/torso/{skin.name}");
+                    if (skin.name.StartsWith("GEO_HandPalm", StringComparison.Ordinal))
+                    {
+                        Transform grip = skin.name.EndsWith(".L") ? actor.LeftGrip : actor.RightGrip;
+                        Assert.That(Vector3.Distance(skin.localToWorldMatrix.MultiplyPoint3x4(baked.bounds.center), grip.position),
+                            Is.LessThan(.15f), "Contact test must sample the visible palm in world metres");
+                    }
+                    for (int p = 0; p < boards.Length; p++)
+                    {
+                        Matrix4x4 space = (p == boards.Length - 1 ? lid : box).worldToLocalMatrix * skin.localToWorldMatrix;
+                        if (p == 0 || p == boards.Length - 1)
+                        {
+                            local.Clear();
+                            foreach (var v in vertices) local.Add(space.MultiplyPoint3x4(v));
+                        }
+                        var board = boards[p];
+                        int[] tris = indices[s];
+                        for (int i = 0; i < tris.Length; i += 3)
+                        {
+                            Vector3 a = local[tris[i]], b = local[tris[i+1]], c = local[tris[i+2]];
+                            if (!InsideBoard(a,b,c,board)) continue;
+                            overlaps.Add($"{actor.CurrentAction}/{Mathf.Floor(actor.CurrentActionSeconds * 4) / 4:F2}/{p}/{skin.name}");
+                            break;
+                        }
+                    }
+                }
+            }
+
+            private bool IntersectsTorso(List<Vector3> points, int[] faces, ScarfContactSurface torso)
+            {
+                for (int i = 0; i < faces.Length; i += 3)
+                {
+                    Vector3 a = points[faces[i]], b = points[faces[i+1]], c = points[faces[i+2]];
+                    var bounds = new Bounds(a, Vector3.zero);
+                    bounds.Encapsulate(b);
+                    bounds.Encapsulate(c);
+                    if (!bounds.Intersects(torso.Bounds)) continue;
+                    if (torsoProbe.Contains(a, torso)) return true;
+                    for (int j = 0; j < torso.Triangles.Length; j += 3)
+                    {
+                        if (!bounds.Intersects(torso.TriangleBounds[j / 3])) continue;
+                        Vector3 x = torso.Vertices[torso.Triangles[j]], y = torso.Vertices[torso.Triangles[j+1]],
+                            z = torso.Vertices[torso.Triangles[j+2]];
+                        if (ScarfContactProbe.Crosses(a,b,x,y,z) || ScarfContactProbe.Crosses(b,c,x,y,z) || ScarfContactProbe.Crosses(c,a,x,y,z) ||
+                            ScarfContactProbe.Crosses(x,y,a,b,c) || ScarfContactProbe.Crosses(y,z,a,b,c) || ScarfContactProbe.Crosses(z,x,a,b,c)) return true;
+                    }
+                }
+                return false;
+            }
+
+            private static bool InsideBoard(Vector3 a, Vector3 b, Vector3 c, Bounds board)
+            {
+                // Triangle bounds, face normal, and nine edge/box-axis cross products (SAT).
+                a -= board.center; b -= board.center; c -= board.center;
+                Vector3 h = board.extents;
+                if (Mathf.Min(a.x, Mathf.Min(b.x,c.x)) > h.x || Mathf.Max(a.x, Mathf.Max(b.x,c.x)) < -h.x ||
+                    Mathf.Min(a.y, Mathf.Min(b.y,c.y)) > h.y || Mathf.Max(a.y, Mathf.Max(b.y,c.y)) < -h.y ||
+                    Mathf.Min(a.z, Mathf.Min(b.z,c.z)) > h.z || Mathf.Max(a.z, Mathf.Max(b.z,c.z)) < -h.z) return false;
+                bool Separate(Vector3 n)
+                {
+                    float r = Mathf.Abs(n.x)*h.x + Mathf.Abs(n.y)*h.y + Mathf.Abs(n.z)*h.z;
+                    float x = Vector3.Dot(a,n), y = Vector3.Dot(b,n), z = Vector3.Dot(c,n);
+                    return Mathf.Min(x,Mathf.Min(y,z)) > r || Mathf.Max(x,Mathf.Max(y,z)) < -r;
+                }
+                bool Edge(Vector3 edge) => Separate(Vector3.Cross(edge,Vector3.right)) ||
+                    Separate(Vector3.Cross(edge,Vector3.up)) || Separate(Vector3.Cross(edge,Vector3.forward));
+                return !Separate(Vector3.Cross(b-a,c-a)) && !Edge(b-a) && !Edge(c-b) && !Edge(a-c);
+            }
+
+            internal void AssertClear() => Assert.That(overlaps.Count, Is.Zero, string.Join(", ", overlaps.OrderBy(k => k)));
+            public void Dispose() { torsoProbe.Dispose(); Object.DestroyImmediate(baked); }
+        }
+
+        [UnityTest]
+        [Explicit("House 08 chair repair and sewing box at the two actual work docks.")]
+        [PrebuildSetup(typeof(VillageWorkroomGeometrySetup))]
+        public IEnumerator VillageWorkroom_RepairChairAndStowBox()
+        {
+            GameSessionState.BeginNewGame();
+            GameSessionState.TryStartGameTimeFromWake();
+            yield return SceneManager.LoadSceneAsync(SceneIds.AlpineVillage, LoadSceneMode.Single);
+            var village = Object.FindAnyObjectByType<AlpineVillageRoot>();
+            Assert.That(village, Is.Not.Null);
+            float deadline = Time.realtimeSinceStartup + TimeoutSeconds;
+            while (!village.IsInitialized && Time.realtimeSinceStartup < deadline) yield return null;
+            Assert.That(village.IsInitialized, Is.True);
+
+            VillageWorkroomController room = village.Workroom;
+            var repairer = village.Life.Neighbours.Single(n => n.Role == VillageResidentRole.RepairNeighbor);
+            var sewer = village.Life.Neighbours.Single(n => n.Role == VillageResidentRole.SewingWoman);
+            var report = new VillageWorkroomReport();
+            float originalDelta = Time.captureDeltaTime;
+            bool lifeEnabled = village.Life.enabled;
+            var camera = Camera.main;
+            Vector3 cameraPosition = camera.transform.position;
+            Quaternion cameraRotation = camera.transform.rotation;
+            float fov = camera.fieldOfView;
+            try
+            {
+                village.Life.enabled = false;
+                Time.captureDeltaTime = 1f / 60f;
+                void PlaceWorker(VillageNeighbourState worker, string dock)
+                {
+                    worker.Actor.gameObject.SetActive(true);
+                    worker.Actor.transform.SetPositionAndRotation(room.Plan.Anchor(dock), Quaternion.LookRotation(room.Plan.Facing(dock)));
+                    room.ReserveIndoorWork(worker);
+                }
+                PlaceWorker(repairer, "RepairDock");
+                PlaceWorker(sewer, "SewingDock");
+                village.Player.Motor.Teleport(room.Plan.Anchor("PlayerHelpDock") + Vector3.up * PlayerFactory.GroundedRootOffset);
+                Physics.SyncTransforms();
+                room.Environment.Advance(1f);
+                var box = WorkroomBox(room);
+                var lid = WorkroomBoxLid(room);
+                Assert.That(room.Room.Part("BoxHinges").parent, Is.EqualTo(box));
+                Assert.That(room.Room.Part("LidHinges").parent, Is.EqualTo(lid));
+                using var clearance = new SewingArmClearance(sewer.Actor, box, lid);
+                Assert.That(repairer.Actor.GetComponent<NpcWardrobe>().IsEquipped("apron.work"), Is.True);
+                Assert.That(sewer.Actor.GetComponent<NpcWardrobe>().IsEquipped("outerwear.cardigan"), Is.True);
+                var hammerFace = room.Room.Part("Hammer").Find("ANCHOR_StrikeFace");
+                var workers = new[] { repairer, sewer };
+                var witnessed = new HashSet<VillageWorkroomContact>();
+                bool helping = false, held = false, boxOpen = false, fold = false, packed = false;
+                int contactsAtStrike = 0;
+                for (int step = 0; step < 4000 && !(room.ChairFixed && room.SewingCycles > 0); step++)
+                {
+                    int previousStrikes = room.RepairStrikes;
+                    room.AdvanceResident(repairer, Time.captureDeltaTime, true);
+                    room.AdvanceResident(sewer, Time.captureDeltaTime, true);
+                    if (step % 2 == 0) clearance.Observe(sewer.Actor);
+                    foreach (var worker in workers)
+                    {
+                        var actor = worker.Actor;
+                        if (actor.CurrentAction == VillageResidentAction.Idle) continue;
+                        var frame = VillageResidentPresentation.SampleWorkroomProps(actor.CurrentAction, actor.CurrentActionSeconds);
+                        void Contact(Transform grip, float weight, VillageWorkroomContact kind, bool left)
+                        {
+                            if (weight < .9999f || kind == VillageWorkroomContact.None) return;
+                            AssertWorkroomPhysicalContact(room, grip.position, kind, left, worker);
+                            witnessed.Add(kind);
+                        }
+                        Contact(actor.LeftGrip, frame.LeftContactWeight, frame.LeftContactKind, true);
+                        Contact(actor.RightGrip, frame.RightContactWeight, frame.RightContactKind, false);
+                    }
+                    if (room.RepairStrikes != previousStrikes)
+                    {
+                        Assert.That(Vector3.Distance(hammerFace.position, room.Plan.Anchor("RepairJoin")), Is.LessThan(.02f));
+                        contactsAtStrike++;
+                    }
+                    if (!helping && room.RepairAction == VillageResidentAction.RepairWork)
+                    {
+                        Assert.That(room.Help.BeginHelp(), Is.True);
+                        helping = true;
+                    }
+                    if (room.Help.IsHolding && room.Help.Controller.PhaseProgress > .05f)
+                    {
+                        AssertWorkroomHeroGrips(room, report);
+                        if (!held && room.RepairStrikes != previousStrikes)
+                        {
+                            WorkroomFrame(camera, room.Plan, "refit-chair", new Vector3(-2.93f, 1.60f, -.76f),
+                                room.Plan.Local(room.RepairRail.position) + Vector3.right * .08f, 60f);
+                            held = true;
+                        }
+                    }
+                    if (sewer.Actor.CurrentAction == VillageResidentAction.SewingUnpack && !boxOpen &&
+                        Quaternion.Angle(lid.localRotation, Quaternion.identity) > 95f)
+                    {
+                        Assert.That(Vector3.Distance(box.position, room.Plan.Anchor("SewingBox")), Is.LessThan(.01f));
+                        boxOpen = true;
+                    }
+                    if (sewer.Actor.CurrentAction == VillageResidentAction.SewingFold &&
+                        Quaternion.Angle(room.Room.Part("ClothFlap").localRotation, Quaternion.identity) > 160f) fold = true;
+                    if (sewer.Actor.CurrentAction == VillageResidentAction.SewingStow &&
+                        sewer.Actor.CurrentActionSeconds >= 1.53f && sewer.Actor.CurrentActionSeconds < 1.53f + Time.captureDeltaTime)
+                        WorkroomFrame(camera, room.Plan, "refit-box", new Vector3(-2.81f, 1.48f, 1.86f),
+                            new Vector3(-1.98f, .83f, 1.25f), 55f);
+                    if (sewer.Actor.CurrentAction == VillageResidentAction.SewingStow &&
+                        sewer.Actor.CurrentActionSeconds >= 2.05f && sewer.Actor.CurrentActionSeconds < 2.05f + Time.captureDeltaTime)
+                        WorkroomFrame(camera, room.Plan, "refit-lid", new Vector3(-1.40f, 1.55f, 2.36f),
+                            new Vector3(-1.96f, .84f, 1.19f), 51f);
+                    if (!packed && sewer.Actor.CurrentAction == VillageResidentAction.SewingStow && sewer.Actor.CurrentActionSeconds > 4.8f)
+                    {
+                        Assert.That(Quaternion.Angle(lid.localRotation, Quaternion.identity), Is.LessThan(1f));
+                        Assert.That(Vector3.Distance(box.position, room.Plan.Anchor("BoxRest")), Is.LessThan(.01f));
+                        var cavity = new Bounds(new Vector3(0, .087f, 0), new Vector3(.247f, .125f, .289f));
+                        foreach (string item in new[] { "Cloth", "ClothFlap", "Mitten" })
+                        {
+                            var mesh = room.Room.Part(item).Find("Geometry").GetComponent<MeshFilter>();
+                            foreach (Vector3 vertex in mesh.sharedMesh.vertices)
+                                Assert.That(cavity.Contains(box.InverseTransformPoint(mesh.transform.TransformPoint(vertex))), Is.True,
+                                    item + " protrudes through the sewing box");
+                        }
+                        packed = true;
+                    }
+                    if ((helping && room.Help.OwnsActiveInteraction) || step % 120 == 119) yield return null;
+                }
+                clearance.AssertClear();
+                Assert.That(held && room.ChairFixed && contactsAtStrike > 0, Is.True, "Chair rail, assisted stroke and completed repair");
+                Assert.That(Vector3.Distance(room.RepairRail.position, room.Plan.Anchor("RepairRailFixed")), Is.LessThan(.003f));
+                Assert.That(boxOpen && fold && packed && room.SewingCycles > 0, Is.True, "Open, fold, pack, close, return");
+                foreach (var contact in new[] { VillageWorkroomContact.Hammer, VillageWorkroomContact.Chair,
+                    VillageWorkroomContact.Box, VillageWorkroomContact.BoxLid, VillageWorkroomContact.ClothFlap, VillageWorkroomContact.Mitten })
+                    Assert.That(witnessed, Does.Contain(contact));
+            }
+            finally
+            {
+                room.Help.Cancel();
+                village.Life.enabled = lifeEnabled;
+                camera.transform.SetPositionAndRotation(cameraPosition, cameraRotation);
+                camera.fieldOfView = fov;
+                Time.captureDeltaTime = originalDelta;
+            }
         }
 
         [UnityTest]
@@ -349,6 +647,8 @@ namespace BarPromenade.Tests.PlayMode
                 {
                     AssertVillageResidentDetail(state.Actor, heroTriangles);
                     observation.LastRoots.Add(state.Actor, state.Actor.transform.position);
+                    observation.VisibleParts.Add(state.Actor, state.Actor.ModelRoot.GetComponentsInChildren<Renderer>()
+                        .Where(r => r.enabled).ToArray());
                 }
                 camera = Camera.main;
                 Assert.That(camera, Is.Not.Null);
@@ -697,7 +997,7 @@ namespace BarPromenade.Tests.PlayMode
                 VillageResidentPresentation actor = state.Actor;
                 Assert.That(observation.LastRoots.ContainsKey(actor), Is.True, "A workroom resident was replaced.");
                 Assert.That(actor.gameObject.activeInHierarchy, Is.True);
-                foreach (Renderer renderer in actor.ModelRoot.GetComponentsInChildren<Renderer>(true))
+                foreach (Renderer renderer in observation.VisibleParts[actor])
                     Assert.That(renderer.enabled && renderer.gameObject.activeInHierarchy, Is.True, "A worker was hidden instead of walking.");
                 Assert.That(Vector3.Distance(observation.LastRoots[actor], actor.transform.position), Is.LessThan(.08f),
                     $"Resident root jumped: {state.Role}/{state.Task} at {actor.transform.position}");

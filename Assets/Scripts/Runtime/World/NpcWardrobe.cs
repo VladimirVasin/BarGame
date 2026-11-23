@@ -60,6 +60,8 @@ namespace BarPromenade
         [SerializeField] private string[] equippedItemIds = Array.Empty<string>();
         private MaterialPropertyBlock properties;
         private Color? hairColor;
+        private IReadOnlyDictionary<string, Color> garmentDyes;
+        internal void SetGarmentDyes(IReadOnlyDictionary<string, Color> dyes) => garmentDyes = dyes;
         public string CurrentOutfitId => outfitId;
         public Texture2D Atlas => atlas;
         public IReadOnlyList<GarmentBinding> Garments => garments;
@@ -331,6 +333,7 @@ namespace BarPromenade
                 renderer.sharedMaterial = material;
                 renderer.GetPropertyBlock(properties);
                 Color color = garment.Slot == HairStyleSlot ? hairColor ?? garment.Color : garment.Color;
+                if (garmentDyes != null && garmentDyes.TryGetValue(renderer.name, out Color dye)) color = dye;
                 properties.SetColor("_BaseColor", color); properties.SetColor("_Color", color);
                 properties.SetTexture("_BaseMap", atlas); properties.SetTexture("_MainTex", atlas);
                 properties.SetVector("_BaseMap_ST", new Vector4(1f, 1f, 0f, 0f));

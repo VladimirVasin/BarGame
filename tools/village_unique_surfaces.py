@@ -92,9 +92,74 @@ def describe(obj, row, owner):
             "uv1_signature": digest(rounded(uv)), "part_name": row.get("name", row["mesh"])}
 
 
-def layout(parts):
-    from warehouse_master_projection import _pack_density
+def pack_village(charts):
+    """Keep the other three shipped model packs at their original metric UVs."""
+    from warehouse_master_projection import _pack, _pack_density
+    slots = json.loads((SOURCE.parent / "workroom-atlas-reservations.json").read_text())
+    extents = {(mesh, *map(int, face.split(":"))): np.asarray(extent)
+               for mesh, faces in slots.items() for face, extent in faces.items()}
+    fixed = [c for c in charts.values() if c["part"]["owner"] != "Workroom"]
+    reservations = [{"key": k, "extent": e, "weight": 1.} for k, e in extents.items()]
+    foundation = fixed + reservations
+    density = 125.11148386545884  # Original allocation of the shared village sheet.
+    ordered = sorted(foundation, key=lambda c: (-c["extent"][1], -c["extent"][0], c["key"]))
+    packed = _pack(ordered, density, SIZE, SIZE)
+    if packed is None:
+        packed, density = _pack_density(foundation, SIZE, SIZE)
+    grid = np.zeros((SIZE // 4, SIZE // 4), dtype=bool)
+
+    def occupy(origin, extent, scale):
+        low = np.floor((origin - 3) / 4).astype(int)
+        high = np.ceil((origin + extent * scale + 3) / 4).astype(int)
+        grid[low[1]:high[1], low[0]:high[0]] = True
+
+    for chart in fixed:
+        x, y, scale = packed[chart["key"]]
+        occupy(np.array((x, y)), chart["extent"], scale)
+
+    pending = []
+    for key, chart in charts.items():
+        if chart["part"]["owner"] != "Workroom":
+            continue
+        if key not in extents:
+            pending.append(chart)
+            continue
+        x, y, scale = packed[key]
+        room = extents[key] * scale
+        scale = min(scale, float(min(room / chart["extent"])))
+        if scale < 80:
+            pending.append(chart)
+            continue
+        origin = np.array((x, y)) + (room - chart["extent"] * scale) * .5
+        packed[key] = (*origin, scale)
+        occupy(origin, chart["extent"], scale)
+
+    # Fit added or enlarged faces in genuinely unused gutters between shelves.
+    for chart in sorted(pending, key=lambda c: -max(c["extent"])):
+        integral = np.pad(grid, ((1, 0), (1, 0))).cumsum(0, dtype=np.int32).cumsum(1, dtype=np.int32)
+        for scale in (density, 100., 80.):
+            width, height = np.ceil((chart["extent"] * scale + 8) / 4).astype(int)
+            if width > grid.shape[1] or height > grid.shape[0]:
+                continue
+            available = (integral[height:, width:] - integral[:-height, width:]
+                         - integral[height:, :-width] + integral[:-height, :-width]) == 0
+            if available.any():
+                row, col = np.unravel_index(available.argmax(), available.shape)
+                packed[chart["key"]] = (float(col * 4 + 4), float(row * 4 + 4), scale)
+                grid[row:row+height, col:col+width] = True
+                break
+        else:
+            raise RuntimeError("No guarded village atlas space for " + str(chart["key"]))
+    return packed, density
+
+
+def layout(parts, retained=()):
     charts = {}
+    for row in retained:
+        key = tuple(row["key"])
+        low = np.asarray(row["origin_m"])
+        extent = np.asarray(row["extent_m"])
+        charts[key] = {"key": key, "low": low, "extent": extent, "part": {"owner": "retained"}, "weight": 1.}
     for part in sorted(parts, key=lambda p: p["mesh"]):
         if not part["unique_surface"]:
             continue
@@ -108,13 +173,14 @@ def layout(parts):
             row["high"] = np.maximum(row["high"], points.max(axis=0))
             row["faces"].append(face)
     for chart in charts.values():
-        chart["extent"] = chart["high"] - chart["low"]
+        if "high" in chart:
+            chart["extent"] = chart["high"] - chart["low"]
         if not np.isfinite(chart["extent"]).all() or min(chart["extent"]) <= 1e-10:
             raise RuntimeError("Degenerate village unique chart: " + str(chart["key"]))
-    packed, density = _pack_density(list(charts.values()), SIZE, SIZE)
+    packed, density = pack_village(charts)
     occupied = np.zeros((SIZE, SIZE), dtype=np.uint16)
     rows = []
-    for number, chart in enumerate(charts.values(), 1):
+    for number, chart in enumerate(sorted(charts.values(), key=lambda c: c["key"][0]), 1):
         x, y, scale = packed[chart["key"]]
         chart["origin"] = np.asarray((x, y))
         chart["scale"] = scale
@@ -275,7 +341,69 @@ def save(data, path, linear):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def bake(charts):
+def sample_workroom(chart, u, v, pixel_metres):
+    from village_surface_authoring import sample
+    part, axis = chart["part"], chart["key"][1]
+    name, family = part["part_name"], part["family"]
+    swap = False
+    if family == "Timber":
+        if name in ("Workbench", "SewingTable", "BoxShelf", "BasketStand", "SewingSeat"):
+            top = {"Workbench": .86, "SewingTable": .66, "BoxShelf": .46,
+                   "BasketStand": .38, "SewingSeat": .42}[name]
+            swap = (axis != 2) & (v < top - .09) & ((v < .115) | (v > .22))
+        elif name == "Bench":
+            swap = axis != 0
+        elif name in ("Hammer", "Cabinet", "FrontWindowFrame", "LeftWindowFrame"):
+            swap = axis != 2
+        elif name == "ChairFrame":
+            swap = (axis == 0) | ((axis == 1) & (u < -1.58) & (v > .924) & (v < 1.325))
+    grain, cross = np.where(swap, v, u), np.where(swap, u, v)
+    color, physical = sample(family, grain, cross, part_name=name, tint=part["tint"], pixel_metres=pixel_metres)
+    du, dv = physical[..., 0].copy(), physical[..., 1].copy()
+    physical[..., 0], physical[..., 1] = np.where(swap, dv, du), np.where(swap, du, dv)
+    if family == "Timber":
+        # End faces reveal annual arcs. Worn joinery keeps a softer, rubbed finish.
+        top_edges = {"Workbench": .86, "SewingTable": .66, "BoxShelf": .46,
+                     "BasketStand": .38, "BoxLid": .016}
+        if axis == 0 and name in top_edges:
+            end = v > top_edges[name] - (.015 if name == "BoxLid" else .04)
+            rings = np.cos(210 * np.hypot((u - chart["low"][0]) * .38, v - top_edges[name] + .035))
+            color *= np.where(end, .94 + .065 * rings, 1.)[..., None]
+        if axis == 2 and name == "Workbench":
+            scars = np.zeros_like(u)
+            for x, z, tilt in ((-1.97,-1.47,.32),(-1.88,-1.54,-.4),(-2.00,-1.52,.17),
+                               (-1.81,-1.49,-.24),(-1.89,-1.57,.35),(-1.79,-1.54,-.34)):
+                scars += np.exp(-((u-x)/.035)**2 - ((v-z-(u-x)*tilt)/.006)**2)
+            color *= (1 - .18*scars)[..., None]
+            physical[..., 2] -= .10*np.exp(-((u+1.9)/.32)**2-((v+1.49)/.18)**2)
+        if name == "Hammer":
+            physical[..., 2] -= .16 * np.exp(-((v-.015)/.09)**2) if axis != 2 else .06
+    elif family == "Cloth" and name in ("Cloth", "ClothFlap", "Mitten") and axis == 2:
+        # The two halves share their weave across the fold line and a narrow stitched selvedge.
+        edge = np.exp(-((np.abs(v)-.119)/.009)**2) if name != "Mitten" else np.exp(-((v+.047)/.015)**2)
+        weave = np.cos(2*np.pi*(u*41 + np.abs((v*22) % 1 - .5))) * np.exp(-(pixel_metres*44)**2)
+        color *= (1 + .045*weave - .10*edge)[..., None]
+        physical[..., 2] -= .05*edge
+    elif family == "RustedIron":
+        bounded = (u - chart["low"][0]) / chart["extent"][0]
+        bright = np.exp(-((bounded-.05)/.12)**2) + np.exp(-((bounded-.95)/.12)**2)
+        physical[..., 2] -= .19*bright
+        color *= (1 + .12*bright)[..., None]
+    return np.clip(color, 0, 1), np.clip(physical, 0, 1)
+
+
+def read_atlas(path, size):
+    import bpy
+    image = bpy.data.images.load(str(path), check_existing=False)
+    image.alpha_mode = "CHANNEL_PACKED"
+    image.colorspace_settings.name = "Non-Color"
+    raw = np.empty(size * size * 4, np.float32)
+    image.pixels.foreach_get(raw)
+    bpy.data.images.remove(image)
+    return raw.reshape(size, size, 4)
+
+
+def bake(charts, previous=None):
     from village_surface_authoring import sample
     SOURCE.mkdir(parents=True, exist_ok=True)
     records = {}
@@ -285,7 +413,22 @@ def bake(charts):
             output[..., :2] = .5
             output[..., 2:] = 1
         ratio = size / SIZE
+        path = SOURCE / (name + ".source.png")
+        if previous is not None:
+            if hashlib.sha256(path.read_bytes()).hexdigest() != previous["maps"][name]["sha256"]:
+                raise RuntimeError("Shared atlas does not match its source manifest: " + name)
+            output = read_atlas(path, size)[..., :output.shape[2]]
+            room_meshes = {p["mesh"] for p in previous["parts"] if p["owner"] == "Workroom"}
+            for row in previous["projection"]["charts"]:
+                if row["key"][0] in room_meshes:
+                    start = np.asarray(row["origin_px"]) * ratio
+                    end = start + np.asarray(row["extent_m"]) * row["texels_per_metre"] * ratio
+                    x, y = np.floor(start - 3 * ratio).astype(int)
+                    right, top = np.ceil(end + 3 * ratio).astype(int)
+                    output[y:top, x:right] = (.5, .5, 1., 1.) if response else (0., 0., 0.)
         for chart in charts.values():
+            if chart["part"]["owner"] == "retained":
+                continue
             origin, scale = chart["origin"] * ratio, chart["scale"] * ratio
             low = np.maximum(0, np.floor(origin - 3 * ratio).astype(int))
             high = np.minimum(size, np.ceil(origin + chart["extent"] * scale + 3 * ratio).astype(int))
@@ -293,8 +436,11 @@ def bake(charts):
             u = chart["low"][0] + (xx + .5 - origin[0]) / scale
             v = chart["low"][1] + (yy + .5 - origin[1]) / scale
             part = chart["part"]
-            color, physical = sample(part["family"], u, v, part_name=part["part_name"],
-                                     tint=part["tint"], pixel_metres=1 / scale)
+            if part["owner"] == "Workroom":
+                color, physical = sample_workroom(chart, u, v, 1 / scale)
+            else:
+                color, physical = sample(part["family"], u, v, part_name=part["part_name"],
+                                         tint=part["tint"], pixel_metres=1 / scale)
             value = physical if response else color
             if not np.isfinite(value).all() or np.min(value) < 0 or np.max(value) > 1:
                 raise RuntimeError("Invalid village unique map samples: " + part["mesh"])
@@ -306,19 +452,32 @@ def bake(charts):
     return records
 
 
-def prepare(validate_only=False, layout_only=False):
-    parts, geometry = collect()
-    charts, projection = layout(parts)
+def prepare(validate_only=False, layout_only=False, workroom_only=False):
+    previous = None
+    retained, rows = [], []
+    if workroom_only:
+        previous = json.loads(MANIFEST.read_text())
+        rows = [p for p in previous["parts"] if p["owner"] != "Workroom"]
+        other_meshes = {p["mesh"] for p in rows}
+        retained = [c for c in previous["projection"]["charts"] if c["key"][0] in other_meshes]
+        data, objects = module("workroom").build_pack()
+        parts = [describe(obj, row, "Workroom") for obj, row in zip(objects, data["parts"], strict=True)]
+        geometry = dict(previous["geometry_signatures"], Workroom=data["build_signature"])
+    else:
+        parts, geometry = collect()
+    charts, projection = layout(parts, retained)
+    if workroom_only and retained != [r for r in projection["charts"] if r["key"][0] in other_meshes]:
+        raise RuntimeError("Workroom refit would move another village model's UVs")
     lookup = {tuple(row["key"]): row for row in projection["charts"]}
-    rows = []
     for part in sorted(parts, key=lambda p: p["mesh"]):
         row = {key: value for key, value in part.items() if key not in ("metric_uv", "projection_uv", "faces")}
         if part["unique_surface"]:
             row["uv0_signature"] = digest(rounded(packed_uv(part, lookup)))
         rows.append(row)
+    rows.sort(key=lambda p: p["mesh"])
     current = {"design_id": DESIGN, "version": 1, "albedo": "Village/Textures/Surfaces/" + ALBEDO,
                "response": "Village/Textures/Surfaces/" + RESPONSE, "albedo_size": SIZE,
-               "response_size": RESPONSE_SIZE, "unique_part_count": sum(p["unique_surface"] for p in parts),
+               "response_size": RESPONSE_SIZE, "unique_part_count": sum(p["unique_surface"] for p in rows),
                "geometry_signatures": geometry, "source_geometry_signature": digest(geometry),
                "uv_signature": digest(rows), "projection": projection, "parts": rows,
                "channels": ["height_slope_u", "height_slope_v", "roughness", "cavity"],
@@ -343,7 +502,7 @@ def prepare(validate_only=False, layout_only=False):
                 raise RuntimeError("Village unique source map checksum changed")
         validate_model_contracts(recorded)
         return recorded
-    current["maps"] = bake(charts)
+    current["maps"] = bake(charts, previous)
     MANIFEST.parent.mkdir(parents=True, exist_ok=True)
     MANIFEST.write_text(json.dumps(current, indent=2) + "\n", encoding="utf8")
     return current

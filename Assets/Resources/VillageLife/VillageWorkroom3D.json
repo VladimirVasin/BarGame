@@ -2,7 +2,7 @@
   "generator_version": "1.0.0",
   "design_id": "village_workroom_08_v1",
   "scale_mode": "fixed_metres",
-  "build_signature": "c476269293e9f66aabdc3665acc2f311ca852d37ded8759ada8a2aebde5830d8",
+  "build_signature": "d4f8024cedfb3128e8effb6d349b28f8d453e514cfd70571f2cf21546860ec9b",
   "house_id": "village-house-08",
   "room_min": [
     -3.3,
@@ -14,8 +14,8 @@
     2.3,
     2.53
   ],
-  "mesh_count": 44,
-  "triangle_count": 9056,
+  "mesh_count": 48,
+  "triangle_count": 15766,
   "anchors": [
     {
       "name": "RoomEntry",
@@ -92,33 +92,33 @@
     {
       "name": "ClothRest",
       "position": [
-        -2.1,
+        -2.165,
         0.674,
-        1.36
+        1.385
       ]
     },
     {
       "name": "MittenRest",
       "position": [
-        -2.02,
+        -2.085,
         0.69,
-        1.36
+        1.385
       ]
     },
     {
       "name": "SewingBox",
       "position": [
-        -1.73,
+        -1.67,
         0.666,
-        1.33
+        1.49
       ]
     },
     {
       "name": "BoxStow",
       "position": [
-        -1.73,
-        0.706,
-        1.42
+        -1.67,
+        0.752,
+        1.58
       ]
     },
     {
@@ -437,7 +437,7 @@
         0.0,
         2.7950000762939453
       ],
-      "triangles": 560,
+      "triangles": 616,
       "name": "Floor",
       "position": [
         0,
@@ -458,6 +458,52 @@
       ],
       "anchors": [],
       "unique_surface": false
+    },
+    {
+      "mesh": "GEO_Workroom_ThresholdStrip",
+      "role": "ThresholdStrip",
+      "surface": "RustedIron",
+      "tint": [
+        0.24,
+        0.235,
+        0.215,
+        1
+      ],
+      "bounds_min": [
+        -0.5064982771873474,
+        0.0,
+        2.63700008392334
+      ],
+      "bounds_max": [
+        0.498501718044281,
+        0.003000000026077032,
+        2.677000045776367
+      ],
+      "triangles": 204,
+      "name": "ThresholdStrip",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "euler": [
+        0,
+        0,
+        0
+      ],
+      "parent": "",
+      "solid": false,
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "anchors": [],
+      "unique_surface": true,
+      "surface_family": "RustedIron",
+      "uv0_signature": "be28d33e831f98af2e061207733da57148476efed9d557b06b2755269f59eaec",
+      "uv1_signature": "b509a2d6c3729f860242963ad8af4ce11cbecdea4996861bb5e3e906848b3605",
+      "uv_channel_count": 2
     },
     {
       "mesh": "GEO_Workroom_PrivateFloor",
@@ -765,15 +811,15 @@
       ],
       "bounds_min": [
         -2.7950000762939453,
-        0.9674999713897705,
-        2.553999900817871
+        0.9470000267028809,
+        2.5280001163482666
       ],
       "bounds_max": [
         -1.4049999713897705,
         1.9859999418258667,
         2.803999900817871
       ],
-      "triangles": 168,
+      "triangles": 336,
       "name": "FrontWindowFrame",
       "position": [
         0,
@@ -795,8 +841,8 @@
       "anchors": [],
       "unique_surface": true,
       "surface_family": "Timber",
-      "uv0_signature": "8fb254f63c2b22d007600ceeab3e7f929eaf0349baa67dc770dcae8d2ab6cc70",
-      "uv1_signature": "d76f48f7cd80f4e6462013787abfca44cdf208d5aad44d90158e55e71c1ab913",
+      "uv0_signature": "c9f69978b84b03d9eb019d309d8db85a1fa1e588199c5560a66b68aec19c35e7",
+      "uv1_signature": "ead0199ab4bc089b74ad1c0c7ffb4053b21c0ac21f8370e3d918fdf11f7573f9",
       "uv_channel_count": 2
     },
     {
@@ -852,8 +898,8 @@
         1
       ],
       "bounds_min": [
-        -3.819999933242798,
-        0.9975000023841858,
+        -3.8459999561309814,
+        0.9769999980926514,
         -2.1549999713897705
       ],
       "bounds_max": [
@@ -861,7 +907,7 @@
         1.9559999704360962,
         -1.2450000047683716
       ],
-      "triangles": 168,
+      "triangles": 336,
       "name": "LeftWindowFrame",
       "position": [
         0,
@@ -883,8 +929,8 @@
       "anchors": [],
       "unique_surface": true,
       "surface_family": "Timber",
-      "uv0_signature": "6cb1b75eaa9e73bb70f31a2c2f55530cd885cba2c2c26df549013e3ae45b9250",
-      "uv1_signature": "bc5918dd6f1d580cc5a713ebcf98f4ae291b2e2a42d1d010e45e2569a2762da3",
+      "uv0_signature": "94cc63b87e362c0e38396b65dc2f93adc33f8cd27e6c0085c3e30f37a8f977a6",
+      "uv1_signature": "eab7d840dc86d1b4a039bcdb356fbd52b18373cc7da8ced1769858688aa27403",
       "uv_channel_count": 2
     },
     {
@@ -934,22 +980,22 @@
       "role": "Workbench",
       "surface": "Timber",
       "tint": [
-        0.3,
-        0.245,
-        0.175,
+        0.345,
+        0.276,
+        0.195,
         1
       ],
       "bounds_min": [
         -3.0799999237060547,
         0.0,
-        -2.2300000190734863
+        -2.229249954223633
       ],
       "bounds_max": [
         -1.0800000429153442,
         0.8600000143051147,
-        -1.409999966621399
+        -1.4107500314712524
       ],
-      "triangles": 452,
+      "triangles": 420,
       "name": "Workbench",
       "position": [
         0,
@@ -971,376 +1017,8 @@
       "anchors": [],
       "unique_surface": true,
       "surface_family": "Timber",
-      "uv0_signature": "a8a3a0890022f7b46a26ca37c6dfdb7d045d00b053e616fa69d976dd31bfb3d6",
-      "uv1_signature": "214d23ec353eec056a5f0970b6501e9082b2c3ae3bc2eea503bdcbb7f2aeac35",
-      "uv_channel_count": 2
-    },
-    {
-      "mesh": "GEO_Workroom_SewingTable",
-      "role": "SewingTable",
-      "surface": "Timber",
-      "tint": [
-        0.3,
-        0.245,
-        0.175,
-        1
-      ],
-      "bounds_min": [
-        -2.799999952316284,
-        0.0,
-        1.2999999523162842
-      ],
-      "bounds_max": [
-        -1.399999976158142,
-        0.6600000262260437,
-        2.0
-      ],
-      "triangles": 452,
-      "name": "SewingTable",
-      "position": [
-        0,
-        0,
-        0
-      ],
-      "euler": [
-        0,
-        0,
-        0
-      ],
-      "parent": "",
-      "solid": true,
-      "scale": [
-        1,
-        1,
-        1
-      ],
-      "anchors": [],
-      "unique_surface": true,
-      "surface_family": "Timber",
-      "uv0_signature": "7b46087824a7e585e2b4c52dac9f0092aaa38e0f7dc87b2cfb0c0cd76e1957d4",
-      "uv1_signature": "7cf7fdf8c1e6de759c5d999e99483afa233fe0ba6b9d85936c4dd2e41608d0c3",
-      "uv_channel_count": 2
-    },
-    {
-      "mesh": "GEO_Workroom_BoxShelf",
-      "role": "BoxShelf",
-      "surface": "Timber",
-      "tint": [
-        0.3,
-        0.245,
-        0.175,
-        1
-      ],
-      "bounds_min": [
-        -1.7799999713897705,
-        0.0,
-        0.8999999761581421
-      ],
-      "bounds_max": [
-        -1.3200000524520874,
-        0.46000000834465027,
-        1.2999999523162842
-      ],
-      "triangles": 452,
-      "name": "BoxShelf",
-      "position": [
-        0,
-        0,
-        0
-      ],
-      "euler": [
-        0,
-        0,
-        0
-      ],
-      "parent": "",
-      "solid": true,
-      "scale": [
-        1,
-        1,
-        1
-      ],
-      "anchors": [],
-      "unique_surface": true,
-      "surface_family": "Timber",
-      "uv0_signature": "a9c4de619fd02c5bbcd67f47854efb1f0175c915fd0a49fe53c37398365bb3a8",
-      "uv1_signature": "6460a5ce1e18b4e34f6f2f767e1895661e0fc0913186200c7468e3ba6da42c4c",
-      "uv_channel_count": 2
-    },
-    {
-      "mesh": "GEO_Workroom_SewingSeat",
-      "role": "SewingSeat",
-      "surface": "Timber",
-      "tint": [
-        0.3,
-        0.245,
-        0.175,
-        1
-      ],
-      "bounds_min": [
-        -2.3299999237060547,
-        0.0,
-        0.5600000023841858
-      ],
-      "bounds_max": [
-        -1.8700000047683716,
-        0.9100000262260437,
-        1.0
-      ],
-      "triangles": 508,
-      "name": "SewingSeat",
-      "position": [
-        0,
-        0,
-        0
-      ],
-      "euler": [
-        0,
-        0,
-        0
-      ],
-      "parent": "",
-      "solid": true,
-      "scale": [
-        1,
-        1,
-        1
-      ],
-      "anchors": [],
-      "unique_surface": true,
-      "surface_family": "Timber",
-      "uv0_signature": "2b1f8fa7d0a77530fe0a30a32118048636314088d5a1196296cc4f26d4c5eef0",
-      "uv1_signature": "c8114baa57584a435b652a89df152965babc74839dd3913d9defa59ea4022d3f",
-      "uv_channel_count": 2
-    },
-    {
-      "mesh": "GEO_Workroom_Bench",
-      "role": "Bench",
-      "surface": "Timber",
-      "tint": [
-        0.3,
-        0.245,
-        0.175,
-        1
-      ],
-      "bounds_min": [
-        -3.2309999465942383,
-        0.0,
-        -0.7749999761581421
-      ],
-      "bounds_max": [
-        -2.759999990463257,
-        1.0,
-        0.574999988079071
-      ],
-      "triangles": 196,
-      "name": "Bench",
-      "position": [
-        0,
-        0,
-        0
-      ],
-      "euler": [
-        0,
-        0,
-        0
-      ],
-      "parent": "",
-      "solid": true,
-      "scale": [
-        1,
-        1,
-        1
-      ],
-      "anchors": [],
-      "unique_surface": true,
-      "surface_family": "Timber",
-      "uv0_signature": "0c6d8f84a323441db000bafec89660ef7f577fa331b85a91f6e3b577c81fcbe8",
-      "uv1_signature": "f1f53e354d287ded4592e5b378eb473682346505b3e589946150d19937878269",
-      "uv_channel_count": 2
-    },
-    {
-      "mesh": "GEO_Workroom_Cabinet",
-      "role": "Cabinet",
-      "surface": "Timber",
-      "tint": [
-        0.3,
-        0.245,
-        0.175,
-        1
-      ],
-      "bounds_min": [
-        0.4699999988079071,
-        0.0,
-        1.315500020980835
-      ],
-      "bounds_max": [
-        1.0499999523162842,
-        1.440000057220459,
-        2.059999942779541
-      ],
-      "triangles": 84,
-      "name": "Cabinet",
-      "position": [
-        0,
-        0,
-        0
-      ],
-      "euler": [
-        0,
-        0,
-        0
-      ],
-      "parent": "",
-      "solid": true,
-      "scale": [
-        1,
-        1,
-        1
-      ],
-      "anchors": [],
-      "unique_surface": true,
-      "surface_family": "Timber",
-      "uv0_signature": "a95e18bb2cc0fb61ae3c90abb93310db2cfd66e780c81fab06d6850ecf37a18f",
-      "uv1_signature": "144155e098d9f71f0f121fc0bffe4b0d7c1734b9ff6d36710b08bc616cac2df1",
-      "uv_channel_count": 2
-    },
-    {
-      "mesh": "GEO_Workroom_Shelves",
-      "role": "Shelves",
-      "surface": "Timber",
-      "tint": [
-        0.3,
-        0.245,
-        0.175,
-        1
-      ],
-      "bounds_min": [
-        -2.9600000381469727,
-        1.1699999570846558,
-        -2.234999895095825
-      ],
-      "bounds_max": [
-        -1.2799999713897705,
-        1.8574999570846558,
-        -1.9850000143051147
-      ],
-      "triangles": 168,
-      "name": "Shelves",
-      "position": [
-        0,
-        0,
-        0
-      ],
-      "euler": [
-        0,
-        0,
-        0
-      ],
-      "parent": "",
-      "solid": true,
-      "scale": [
-        1,
-        1,
-        1
-      ],
-      "anchors": [],
-      "unique_surface": true,
-      "surface_family": "Timber",
-      "uv0_signature": "2bdd5cb8958e1864937f984aa2fa6f6bbd4632e49a6ed26c2bf326be01922f66",
-      "uv1_signature": "28d791f968bd5f640af77dcaac8224e82316ea14c1aa53c896d28ec680c7efb6",
-      "uv_channel_count": 2
-    },
-    {
-      "mesh": "GEO_Workroom_ShelfStock",
-      "role": "ShelfStock",
-      "surface": "Cloth",
-      "tint": [
-        0.37,
-        0.305,
-        0.225,
-        1
-      ],
-      "bounds_min": [
-        -2.7149999141693115,
-        1.4550000429153442,
-        -2.2100000381469727
-      ],
-      "bounds_max": [
-        -1.5099999904632568,
-        1.9800000190734863,
-        -2.0199999809265137
-      ],
-      "triangles": 140,
-      "name": "ShelfStock",
-      "position": [
-        0,
-        0,
-        0
-      ],
-      "euler": [
-        0,
-        0,
-        0
-      ],
-      "parent": "",
-      "solid": true,
-      "scale": [
-        1,
-        1,
-        1
-      ],
-      "anchors": [],
-      "unique_surface": true,
-      "surface_family": "Cloth",
-      "uv0_signature": "690874d0003611e57139b505b6d7b2c14044ee1bda4fa2f3f498b777dda3df53",
-      "uv1_signature": "e7692c0aa4f1ce6fca92f69c4d65770c5de1c50a97f30b2d43668f20f6be8a0c",
-      "uv_channel_count": 2
-    },
-    {
-      "mesh": "GEO_Workroom_BasketStand",
-      "role": "BasketStand",
-      "surface": "Timber",
-      "tint": [
-        0.3,
-        0.245,
-        0.175,
-        1
-      ],
-      "bounds_min": [
-        0.4950000047683716,
-        0.0,
-        0.17499999701976776
-      ],
-      "bounds_max": [
-        1.0449999570846558,
-        0.3799999952316284,
-        0.7250000238418579
-      ],
-      "triangles": 140,
-      "name": "BasketStand",
-      "position": [
-        0,
-        0,
-        0
-      ],
-      "euler": [
-        0,
-        0,
-        0
-      ],
-      "parent": "",
-      "solid": true,
-      "scale": [
-        1,
-        1,
-        1
-      ],
-      "anchors": [],
-      "unique_surface": true,
-      "surface_family": "Timber",
-      "uv0_signature": "83ce9f0b45250d84ecb9c56dcc2934a621e87bb1b7eef22ebe1c5bbf31e34fe5",
-      "uv1_signature": "30525bf939bd259ee81a1f7511b4be631a96bb12f7d1a3214c015161f4e01590",
+      "uv0_signature": "9e6c8afb2f933431fe14c0fc34428f79a1fd7bcf9b9c7f7994ddd89f5f5eaabe",
+      "uv1_signature": "7d8d9cfd2f41bc40c458e00e114b81eee7be44e196e6cfdd5be9b5042c7f9beb",
       "uv_channel_count": 2
     },
     {
@@ -1348,22 +1026,22 @@
       "role": "ChairFrame",
       "surface": "Timber",
       "tint": [
-        0.3,
-        0.245,
-        0.175,
+        0.332,
+        0.267,
+        0.19,
         1
       ],
       "bounds_min": [
-        -2.0350000858306885,
-        0.8199999928474426,
-        -1.9500000476837158
+        -2.0190000534057617,
+        0.8560000061988831,
+        -1.9520000219345093
       ],
       "bounds_max": [
-        -1.0299999713897705,
-        1.3949999809265137,
-        -1.4500000476837158
+        -1.0149999856948853,
+        1.3899999856948853,
+        -1.4479999542236328
       ],
-      "triangles": 280,
+      "triangles": 1004,
       "name": "ChairFrame",
       "position": [
         0,
@@ -1385,8 +1063,8 @@
       "anchors": [],
       "unique_surface": true,
       "surface_family": "Timber",
-      "uv0_signature": "5380237f668938f54c2f4eafb154c006f0035a161b426d7269972614a1735267",
-      "uv1_signature": "b80fe79f79976ccefd1ac5a05cba8f6e81fe6205ca79f01ec45b2c7b9bf41843",
+      "uv0_signature": "f0917117b7dc4ded61c36783e948807774755e10eca7f5f093169669ea6a4a31",
+      "uv1_signature": "1bbf25cddbff2e40847528a7f8517f472d755b571c502adeb26edebf8c43efbd",
       "uv_channel_count": 2
     },
     {
@@ -1394,22 +1072,22 @@
       "role": "RepairRail",
       "surface": "Timber",
       "tint": [
-        0.3,
-        0.245,
-        0.175,
+        0.385,
+        0.318,
+        0.225,
         1
       ],
       "bounds_min": [
         0.0,
-        -0.07999999821186066,
+        -0.03999999910593033,
         -0.5099999904632568
       ],
       "bounds_max": [
-        0.8475000262260437,
+        0.847000002861023,
         0.10000000149011612,
         0.009999999776482582
       ],
-      "triangles": 56,
+      "triangles": 152,
       "name": "RepairRail",
       "position": [
         -1.86,
@@ -1464,8 +1142,8 @@
       ],
       "unique_surface": true,
       "surface_family": "Timber",
-      "uv0_signature": "ebb8414bdc9457de5ded1a35578721afe5e16659ced809016effaef3485433be",
-      "uv1_signature": "fbdf6a419617875305ff8aab9832a33a506a2404d3d116adf1d0eda1865587f2",
+      "uv0_signature": "b23cc0e9b005415dd7279f62de09d343540c93a2362a7be94ec5ea67b9a8a945",
+      "uv1_signature": "8bfb453f1a33cfb70db453e136b91c7e48d0dc31c6a245ff599d106801e04991",
       "uv_channel_count": 2
     },
     {
@@ -1479,16 +1157,16 @@
         1
       ],
       "bounds_min": [
-        -1.9674999713897705,
-        0.7699999809265137,
-        -1.590000033378601
+        -1.8315000534057617,
+        0.6629999876022339,
+        -1.4844233989715576
       ],
       "bounds_max": [
-        -1.9325000047683716,
-        0.9925000071525574,
-        -1.4299999475479126
+        -1.7484999895095825,
+        0.9369999766349792,
+        -1.3580000400543213
       ],
-      "triangles": 84,
+      "triangles": 852,
       "name": "RepairClamp",
       "position": [
         0,
@@ -1510,8 +1188,8 @@
       "anchors": [],
       "unique_surface": true,
       "surface_family": "RustedIron",
-      "uv0_signature": "1a70b82d92f1a6908f661a435fb602d73049605b6567db291d083309052ca3de",
-      "uv1_signature": "6b501843e3d877be96c9b7f327287dcd6d850ab607e227f20c17c06684eb114f",
+      "uv0_signature": "237712709f8deee758a807f6e3da9b8057b1d9707172e9aec82f7a04955c75d0",
+      "uv1_signature": "80811d9448a57983c80a3035771f02ae5eb6307a26a89ae8c4a6095299158edd",
       "uv_channel_count": 2
     },
     {
@@ -1519,22 +1197,22 @@
       "role": "Hammer",
       "surface": "Timber",
       "tint": [
-        0.3,
-        0.245,
-        0.175,
+        0.355,
+        0.259,
+        0.166,
         1
       ],
       "bounds_min": [
-        -0.016499999910593033,
+        -0.020999999716877937,
         -0.07000000029802322,
-        -0.017000000923871994
+        -0.01637878827750683
       ],
       "bounds_max": [
-        0.016499999910593033,
-        0.26600000262260437,
-        0.017000000923871994
+        0.020999999716877937,
+        0.26499998569488525,
+        0.01637878827750683
       ],
-      "triangles": 28,
+      "triangles": 192,
       "name": "Hammer",
       "position": [
         -2.2,
@@ -1573,8 +1251,8 @@
       ],
       "unique_surface": true,
       "surface_family": "Timber",
-      "uv0_signature": "fd1cdedc0d1c3cab84f81c156f35b836147555bea33cca23378b26bcb099700e",
-      "uv1_signature": "5e1cf3cba033fdfe66027c7bc281e35d173ff44c913eaf9be60128578f281fd3",
+      "uv0_signature": "679635716fecc0cce1ecd49287bccefba0067cf6578d8a7784688fef1575f8dd",
+      "uv1_signature": "e051cc8db2092efd7563850595f934cd2405f45c1da64c4012d705a33d71b47e",
       "uv_channel_count": 2
     },
     {
@@ -1589,15 +1267,15 @@
       ],
       "bounds_min": [
         -0.0949999988079071,
-        0.24449999630451202,
-        -0.026499999687075615
+        0.23899999260902405,
+        -0.026000000536441803
       ],
       "bounds_max": [
-        0.11800000071525574,
-        0.2904999852180481,
-        0.026499999687075615
+        0.09300000220537186,
+        0.29100000858306885,
+        0.026000000536441803
       ],
-      "triangles": 56,
+      "triangles": 156,
       "name": "HammerHead",
       "position": [
         0,
@@ -1619,8 +1297,146 @@
       "anchors": [],
       "unique_surface": true,
       "surface_family": "RustedIron",
-      "uv0_signature": "8e00570aa1f5e91ae9d9045f538e9b566e9970ae63da5c4ff1d235d1860eef98",
-      "uv1_signature": "476a1f7d9ca2883db4e32a3fca0ce19efd79c9c0805995d5bfd5f6303fd65829",
+      "uv0_signature": "e408c8cc092d3269dc97918e8d9e5cc46f6a6e2619403ab58644550e5459cb7c",
+      "uv1_signature": "9879d9caee3d8fd1711aeace1f60ba690db01f1119397bdc05bb58342b55099c",
+      "uv_channel_count": 2
+    },
+    {
+      "mesh": "GEO_Workroom_SewingTable",
+      "role": "SewingTable",
+      "surface": "Timber",
+      "tint": [
+        0.32,
+        0.27,
+        0.205,
+        1
+      ],
+      "bounds_min": [
+        -2.799999952316284,
+        0.0,
+        1.3007500171661377
+      ],
+      "bounds_max": [
+        -1.399999976158142,
+        0.6600000262260437,
+        1.999250054359436
+      ],
+      "triangles": 392,
+      "name": "SewingTable",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "euler": [
+        0,
+        0,
+        0
+      ],
+      "parent": "",
+      "solid": true,
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "anchors": [],
+      "unique_surface": true,
+      "surface_family": "Timber",
+      "uv0_signature": "d099c44a376c7e156c2b846a5be798044736296744f3e6a4ba85dcc633af39f6",
+      "uv1_signature": "d47eecc61b00c53765fa0acac9b0e1460d942389709f91481d3bb6542f40c871",
+      "uv_channel_count": 2
+    },
+    {
+      "mesh": "GEO_Workroom_BoxShelf",
+      "role": "BoxShelf",
+      "surface": "Timber",
+      "tint": [
+        0.3,
+        0.245,
+        0.175,
+        1
+      ],
+      "bounds_min": [
+        -1.7799999713897705,
+        0.0,
+        0.9007499814033508
+      ],
+      "bounds_max": [
+        -1.3200000524520874,
+        0.46000000834465027,
+        1.2992500066757202
+      ],
+      "triangles": 392,
+      "name": "BoxShelf",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "euler": [
+        0,
+        0,
+        0
+      ],
+      "parent": "",
+      "solid": true,
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "anchors": [],
+      "unique_surface": true,
+      "surface_family": "Timber",
+      "uv0_signature": "e401f3667432e244945f27a0f224537ab442869b16d56d2affb6e683b51908a0",
+      "uv1_signature": "5201e11b799318fae198b19b2244307026f15c3497fe53818edecd0ba7314c00",
+      "uv_channel_count": 2
+    },
+    {
+      "mesh": "GEO_Workroom_SewingSeat",
+      "role": "SewingSeat",
+      "surface": "Timber",
+      "tint": [
+        0.3,
+        0.245,
+        0.175,
+        1
+      ],
+      "bounds_min": [
+        -2.3299999237060547,
+        0.0,
+        0.5607500076293945
+      ],
+      "bounds_max": [
+        -1.8700000047683716,
+        0.8765000104904175,
+        0.9992499947547913
+      ],
+      "triangles": 504,
+      "name": "SewingSeat",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "euler": [
+        0,
+        0,
+        0
+      ],
+      "parent": "",
+      "solid": true,
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "anchors": [],
+      "unique_surface": true,
+      "surface_family": "Timber",
+      "uv0_signature": "bcab3183947614eed39d1ff796dc852a7584c2ae2106eb7afd0179c54c057158",
+      "uv1_signature": "50bde00af634737f3cc9630b7f4ce665594a3a465922341d4031d8ee35df1069",
       "uv_channel_count": 2
     },
     {
@@ -1628,9 +1444,9 @@
       "role": "Cloth",
       "surface": "Cloth",
       "tint": [
-        0.37,
-        0.305,
-        0.225,
+        0.385,
+        0.358,
+        0.293,
         1
       ],
       "bounds_min": [
@@ -1640,15 +1456,15 @@
       ],
       "bounds_max": [
         0.18000000715255737,
-        0.004999999888241291,
+        0.006500000134110451,
         0.12999999523162842
       ],
-      "triangles": 28,
+      "triangles": 84,
       "name": "Cloth",
       "position": [
-        -2.1,
+        -2.165,
         0.674,
-        1.36
+        1.385
       ],
       "euler": [
         0,
@@ -1706,8 +1522,8 @@
       ],
       "unique_surface": true,
       "surface_family": "Cloth",
-      "uv0_signature": "7fd3996e2671d815f160825439d2b6f263dee7e647ac999dd5147af919ea39d6",
-      "uv1_signature": "682667496c772410ee7b566db5ae4ef75e829a50deca4f3642776181bb5f9267",
+      "uv0_signature": "a050eadbdd248babb6c8875513fcfe407ad138e998b37b2ce8e7ed65c72a6a3d",
+      "uv1_signature": "5899e8527929ca15abb0e2dd50b3f637fd22bcc0aff27d70ef25db24f005a521",
       "uv_channel_count": 2
     },
     {
@@ -1715,9 +1531,9 @@
       "role": "ClothFlap",
       "surface": "Cloth",
       "tint": [
-        0.37,
-        0.305,
-        0.225,
+        0.385,
+        0.358,
+        0.293,
         1
       ],
       "bounds_min": [
@@ -1727,10 +1543,10 @@
       ],
       "bounds_max": [
         0.0,
-        -0.019999999552965164,
+        -0.01850000023841858,
         0.12999999523162842
       ],
-      "triangles": 28,
+      "triangles": 84,
       "name": "ClothFlap",
       "position": [
         0,
@@ -1761,8 +1577,8 @@
       ],
       "unique_surface": true,
       "surface_family": "Cloth",
-      "uv0_signature": "6c25fb4d0d6f614614b099958834c657af48c4cb600f9f4e077e5bf32a6a2838",
-      "uv1_signature": "12adfb8b2e242b00309c62df09f5c2832916a94991c65fe490ba0aa0c18d7d04",
+      "uv0_signature": "a557d27321eb499194952484eb96a1ce4044d0c8ff084483d8f8cce950daee99",
+      "uv1_signature": "53af68d389519bd555853c8d59e5fba8b9fa7a3158b513fb8c11a9bd64025130",
       "uv_channel_count": 2
     },
     {
@@ -1770,27 +1586,27 @@
       "role": "Mitten",
       "surface": "Cloth",
       "tint": [
-        0.37,
-        0.305,
-        0.225,
+        0.292,
+        0.307,
+        0.262,
         1
       ],
       "bounds_min": [
-        -0.07649999856948853,
-        -0.014000000432133675,
-        -0.06499999761581421
+        -0.07900000363588333,
+        -0.0010000000474974513,
+        -0.06350000202655792
       ],
       "bounds_max": [
-        0.08799999952316284,
-        0.012500000186264515,
-        0.06750000268220901
+        0.08399999886751175,
+        0.028999999165534973,
+        0.0729999989271164
       ],
-      "triangles": 84,
+      "triangles": 102,
       "name": "Mitten",
       "position": [
-        -2.02,
+        -2.085,
         0.69,
-        1.36
+        1.385
       ],
       "euler": [
         0,
@@ -1824,8 +1640,8 @@
       ],
       "unique_surface": true,
       "surface_family": "Cloth",
-      "uv0_signature": "618aaf4439361e314b24b81e8137dd0b941e030ea93bbe695799a4ec747dea93",
-      "uv1_signature": "620c8d92298d8adc9fa4bfec91f399f97ed08a3df73c50e4f946a69c076582fe",
+      "uv0_signature": "a2e6e9dcb433ad6edaac374850e487e0300a13a418a44620351c87d2c8b9ba47",
+      "uv1_signature": "2303e8449ccd9f06a6e806b4c22bead04be2a7487f746c995e12aafe611ba8fc",
       "uv_channel_count": 2
     },
     {
@@ -1833,27 +1649,27 @@
       "role": "Box",
       "surface": "Timber",
       "tint": [
-        0.3,
-        0.245,
-        0.175,
+        0.39,
+        0.312,
+        0.225,
         1
       ],
       "bounds_min": [
-        -0.2150000035762787,
+        -0.14100000262260437,
         0.0,
-        -0.18000000715255737
+        -0.1599999964237213
       ],
       "bounds_max": [
-        0.2150000035762787,
-        0.1599999964237213,
-        0.18000000715255737
+        0.2304999977350235,
+        0.15000000596046448,
+        0.1599999964237213
       ],
-      "triangles": 140,
+      "triangles": 252,
       "name": "Box",
       "position": [
-        -1.73,
+        -1.67,
         0.666,
-        1.33
+        1.49
       ],
       "euler": [
         0,
@@ -1872,31 +1688,31 @@
           "name": "Stow",
           "position": [
             -0.09,
-            0.04,
+            0.086,
             0
           ]
         },
         {
           "name": "LeftGrip",
           "position": [
-            -0.14,
+            -0.132,
             0.1,
-            -0.16
+            -0.15
           ]
         },
         {
           "name": "RightGrip",
           "position": [
-            0.14,
-            0.1,
-            -0.16
+            0.222,
+            0.104,
+            -0.075
           ]
         }
       ],
       "unique_surface": true,
       "surface_family": "Timber",
-      "uv0_signature": "04cc2ee7cd585a248e9abf1296d4e7f62f43dc1c7d17950987f3d538cabc2f61",
-      "uv1_signature": "be4e3e10a1c1972fa7881cc6925c01c410708d8d676efa1bdefe9c4267abcced",
+      "uv0_signature": "77be7e03c514679dcd77839b633c57ca9b3d92860232008ee514fd3cb2336d65",
+      "uv1_signature": "61851050a319fad18abda14fee34ecb9ec684539f3b995fecd89e761c1fed319",
       "uv_channel_count": 2
     },
     {
@@ -1904,27 +1720,27 @@
       "role": "BoxLid",
       "surface": "Timber",
       "tint": [
-        0.3,
-        0.245,
-        0.175,
+        0.39,
+        0.312,
+        0.225,
         1
       ],
       "bounds_min": [
-        -0.2150000035762787,
-        0.0,
-        -0.36000001430511475
+        -0.14100000262260437,
+        -0.004999999888241291,
+        -0.3192499876022339
       ],
       "bounds_max": [
-        0.2150000035762787,
-        0.01600000075995922,
-        0.0
+        0.20000000298023224,
+        0.019999999552965164,
+        -0.000750000006519258
       ],
-      "triangles": 28,
+      "triangles": 224,
       "name": "BoxLid",
       "position": [
         0,
         0.15,
-        0.18
+        0.16
       ],
       "euler": [
         105,
@@ -1942,16 +1758,384 @@
         {
           "name": "LidGrip",
           "position": [
-            0,
-            0.015,
-            -0.31
+            0.191,
+            0.01,
+            -0.126
           ]
         }
       ],
       "unique_surface": true,
       "surface_family": "Timber",
-      "uv0_signature": "a70f6f9a51a3bb44e482c2c5a8047cd7995c6d9948b03f04c07f61ce78218153",
-      "uv1_signature": "6bd9d5e5de40a460deded9e8325ea9410a28bdd100c06bb61a0d51c4a31e8bb4",
+      "uv0_signature": "20a1b037497de6208b8b54590034bc6e8754b4448423c759218957f82307ec8b",
+      "uv1_signature": "d05c14e459d5ccf146fd74e775896b7308f9a4157b0aefaa69407a913402a86a",
+      "uv_channel_count": 2
+    },
+    {
+      "mesh": "GEO_Workroom_BoxHinges",
+      "role": "BoxHinges",
+      "surface": "RustedIron",
+      "tint": [
+        0.24,
+        0.235,
+        0.215,
+        1
+      ],
+      "bounds_min": [
+        -0.10999999940395355,
+        0.11999999731779099,
+        0.1550000011920929
+      ],
+      "bounds_max": [
+        0.10999999940395355,
+        0.1550000011920929,
+        0.16500000655651093
+      ],
+      "triangles": 328,
+      "name": "BoxHinges",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "euler": [
+        0,
+        0,
+        0
+      ],
+      "parent": "Box",
+      "solid": false,
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "anchors": [],
+      "unique_surface": true,
+      "surface_family": "RustedIron",
+      "uv0_signature": "d6f8e05ac1df7c8b97389c461c5101bc233f5e5472ec9b3bb4af4a1edcfd4c64",
+      "uv1_signature": "9c4724c25cb88d6bf61fb073ac65c0e1c2de6ac1ee64b239b6702dcbcee8fe59",
+      "uv_channel_count": 2
+    },
+    {
+      "mesh": "GEO_Workroom_LidHinges",
+      "role": "LidHinges",
+      "surface": "RustedIron",
+      "tint": [
+        0.24,
+        0.235,
+        0.215,
+        1
+      ],
+      "bounds_min": [
+        -0.10949999839067459,
+        -0.004999999888241291,
+        -0.04349999874830246
+      ],
+      "bounds_max": [
+        0.10949999839067459,
+        0.010499999858438969,
+        0.004999999888241291
+      ],
+      "triangles": 192,
+      "name": "LidHinges",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "euler": [
+        0,
+        0,
+        0
+      ],
+      "parent": "BoxLid",
+      "solid": false,
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "anchors": [],
+      "unique_surface": true,
+      "surface_family": "RustedIron",
+      "uv0_signature": "e9e26337b709b1b636077315aa3e10e3777894bd88ec86157e606fdbbba09676",
+      "uv1_signature": "16c231a8918e8d7db330e5babc16e846fe02b510f06d948ebc3e121fbc24c785",
+      "uv_channel_count": 2
+    },
+    {
+      "mesh": "GEO_Workroom_Bench",
+      "role": "Bench",
+      "surface": "Timber",
+      "tint": [
+        0.3,
+        0.245,
+        0.175,
+        1
+      ],
+      "bounds_min": [
+        -3.2244999408721924,
+        0.0,
+        -0.7749999761581421
+      ],
+      "bounds_max": [
+        -2.7607500553131104,
+        0.9200000166893005,
+        0.574999988079071
+      ],
+      "triangles": 392,
+      "name": "Bench",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "euler": [
+        0,
+        0,
+        0
+      ],
+      "parent": "",
+      "solid": true,
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "anchors": [],
+      "unique_surface": true,
+      "surface_family": "Timber",
+      "uv0_signature": "d878842426c99cc1394885f5763bbd049f93182a2cafcc8a83fd5a3b16bedc16",
+      "uv1_signature": "27d25fc604b51ff323323c562558ca5702deedc7284c1506c844defedaab2e7f",
+      "uv_channel_count": 2
+    },
+    {
+      "mesh": "GEO_Workroom_Cabinet",
+      "role": "Cabinet",
+      "surface": "Timber",
+      "tint": [
+        0.272,
+        0.237,
+        0.19,
+        1
+      ],
+      "bounds_min": [
+        0.4650000035762787,
+        0.006000000052154064,
+        1.343000054359436
+      ],
+      "bounds_max": [
+        1.0549999475479126,
+        1.444000005722046,
+        2.059999942779541
+      ],
+      "triangles": 224,
+      "name": "Cabinet",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "euler": [
+        0,
+        0,
+        0
+      ],
+      "parent": "",
+      "solid": true,
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "anchors": [],
+      "unique_surface": true,
+      "surface_family": "Timber",
+      "uv0_signature": "2d7cb3014b372b6f3375e756e8340889560dddb79cbe73b0e6af767c5d12abbf",
+      "uv1_signature": "679661639165348d62858de5e8a5240e899c333f0a73f74e5440825f86ff1f84",
+      "uv_channel_count": 2
+    },
+    {
+      "mesh": "GEO_Workroom_CabinetPull",
+      "role": "CabinetPull",
+      "surface": "RustedIron",
+      "tint": [
+        0.24,
+        0.235,
+        0.215,
+        1
+      ],
+      "bounds_min": [
+        0.9139999747276306,
+        0.7114999890327454,
+        1.2949999570846558
+      ],
+      "bounds_max": [
+        0.9359999895095825,
+        0.8205000162124634,
+        1.3569999933242798
+      ],
+      "triangles": 84,
+      "name": "CabinetPull",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "euler": [
+        0,
+        0,
+        0
+      ],
+      "parent": "",
+      "solid": false,
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "anchors": [],
+      "unique_surface": true,
+      "surface_family": "RustedIron",
+      "uv0_signature": "c1980f1323706eec9e8bc43135bc6d14cc1854e6c34b40230fc6805b24a03866",
+      "uv1_signature": "68521fb4fe821ea52bbdea0c123af27f2f37a2e563aa041b09e6dca53fd087aa",
+      "uv_channel_count": 2
+    },
+    {
+      "mesh": "GEO_Workroom_Shelves",
+      "role": "Shelves",
+      "surface": "Timber",
+      "tint": [
+        0.3,
+        0.245,
+        0.175,
+        1
+      ],
+      "bounds_min": [
+        -2.9600000381469727,
+        1.1699999570846558,
+        -2.234250068664551
+      ],
+      "bounds_max": [
+        -1.2799999713897705,
+        1.8574999570846558,
+        -1.9857499599456787
+      ],
+      "triangles": 336,
+      "name": "Shelves",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "euler": [
+        0,
+        0,
+        0
+      ],
+      "parent": "",
+      "solid": true,
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "anchors": [],
+      "unique_surface": true,
+      "surface_family": "Timber",
+      "uv0_signature": "0186fd6bb1542528174b3875a468e418e975ee5c746b8a50ac2737be3ac0270e",
+      "uv1_signature": "9935a68373f7eace05487cfc3cd92a83a9e28d4ce4d234ff2523082c5b5f506d",
+      "uv_channel_count": 2
+    },
+    {
+      "mesh": "GEO_Workroom_ShelfStock",
+      "role": "ShelfStock",
+      "surface": "Cloth",
+      "tint": [
+        0.37,
+        0.305,
+        0.225,
+        1
+      ],
+      "bounds_min": [
+        -2.7149999141693115,
+        1.4579999446868896,
+        -2.194999933242798
+      ],
+      "bounds_max": [
+        -1.5399999618530273,
+        1.9780000448226929,
+        -2.0250000953674316
+      ],
+      "triangles": 384,
+      "name": "ShelfStock",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "euler": [
+        0,
+        0,
+        0
+      ],
+      "parent": "",
+      "solid": true,
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "anchors": [],
+      "unique_surface": true,
+      "surface_family": "Cloth",
+      "uv0_signature": "44fc2dd1682387e206b1aa2fa0e464768e36988cf7ade73f451948ca3135a889",
+      "uv1_signature": "1c82247763c2e26a6f0977cfb1caf04501ea5605623247160caa9dfd09887104",
+      "uv_channel_count": 2
+    },
+    {
+      "mesh": "GEO_Workroom_BasketStand",
+      "role": "BasketStand",
+      "surface": "Timber",
+      "tint": [
+        0.3,
+        0.245,
+        0.175,
+        1
+      ],
+      "bounds_min": [
+        0.4950000047683716,
+        0.0,
+        0.1757500022649765
+      ],
+      "bounds_max": [
+        1.0449999570846558,
+        0.3799999952316284,
+        0.7242500185966492
+      ],
+      "triangles": 252,
+      "name": "BasketStand",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "euler": [
+        0,
+        0,
+        0
+      ],
+      "parent": "",
+      "solid": true,
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "anchors": [],
+      "unique_surface": true,
+      "surface_family": "Timber",
+      "uv0_signature": "04cdee1dcd998c5d90c5177706c3bea5945a16dfc900dd9c07b9fff6d2c6e122",
+      "uv1_signature": "02eb142a38ef4922c71a72d391c210d4b7f14e8ba4b212b04f0aaa0671383d5e",
       "uv_channel_count": 2
     },
     {
@@ -1959,9 +2143,9 @@
       "role": "Thread",
       "surface": "Cloth",
       "tint": [
-        0.37,
-        0.305,
-        0.225,
+        0.399,
+        0.375,
+        0.313,
         1
       ],
       "bounds_min": [
@@ -1977,9 +2161,9 @@
       "triangles": 20,
       "name": "Thread",
       "position": [
-        -2.02,
+        -2.085,
         0.69,
-        1.36
+        1.385
       ],
       "euler": [
         0,
@@ -2028,16 +2212,16 @@
         1
       ],
       "bounds_min": [
-        -1.1699999570846558,
+        -1.1759999990463257,
         2.0250000953674316,
-        0.015873217955231667
+        0.004000000189989805
       ],
       "bounds_max": [
-        -0.9300000071525574,
-        2.1730000972747803,
-        0.24412678182125092
+        -0.9240000247955322,
+        2.1700000762939453,
+        0.25600001215934753
       ],
-      "triangles": 76,
+      "triangles": 436,
       "name": "RoomLampShade",
       "position": [
         0,
@@ -2070,16 +2254,16 @@
         1
       ],
       "bounds_min": [
-        -1.0724999904632568,
-        2.0450000762939453,
-        0.10750000178813934
+        -1.0859999656677246,
+        2.0309998989105225,
+        0.09399999678134918
       ],
       "bounds_max": [
-        -1.027500033378601,
-        2.0950000286102295,
-        0.1525000035762787
+        -1.0140000581741333,
+        2.128000020980835,
+        0.16599999368190765
       ],
-      "triangles": 28,
+      "triangles": 220,
       "name": "RoomLampBulb",
       "position": [
         0,
@@ -2112,16 +2296,16 @@
         1
       ],
       "bounds_min": [
-        -1.0609999895095825,
-        2.1600000858306885,
-        0.11900000274181366
+        -1.1080000400543213,
+        2.125,
+        0.07345417886972427
       ],
       "bounds_max": [
-        -1.0390000343322754,
+        -0.9919999837875366,
         2.299999952316284,
-        0.14100000262260437
+        0.18654581904411316
       ],
-      "triangles": 28,
+      "triangles": 272,
       "name": "RoomLampStem",
       "position": [
         0,
@@ -2143,8 +2327,8 @@
       "anchors": [],
       "unique_surface": true,
       "surface_family": "RustedIron",
-      "uv0_signature": "1e1845f9c6f494b795479cf2eeb270ec7cb25afe787663d320f1594c4f6e9803",
-      "uv1_signature": "f2c18327fee61a730b61c7a040add229c662a8482cbdaa301ca2507a71a5196c",
+      "uv0_signature": "2dcb5e00e8ef5615f33e0a72efdebd208289f9dfbe30894145e10e2a81c08716",
+      "uv1_signature": "88c01632857a4a17da7ff481ac653a0a1179c92507f16ce668a0d98e8483a302",
       "uv_channel_count": 2
     },
     {
@@ -2158,16 +2342,16 @@
         1
       ],
       "bounds_min": [
-        -2.819999933242798,
+        -2.8259999752044678,
         1.7050000429153442,
-        -2.2141268253326416
+        -2.2260000705718994
       ],
       "bounds_max": [
-        -2.5799999237060547,
-        1.8530000448226929,
-        -1.9858732223510742
+        -2.5739998817443848,
+        1.850000023841858,
+        -1.9739999771118164
       ],
-      "triangles": 76,
+      "triangles": 436,
       "name": "RepairLampShade",
       "position": [
         0,
@@ -2200,16 +2384,16 @@
         1
       ],
       "bounds_min": [
-        -2.7225000858306885,
-        1.725000023841858,
-        -2.122499942779541
+        -2.7360000610351562,
+        1.7109999656677246,
+        -2.135999917984009
       ],
       "bounds_max": [
-        -2.677500009536743,
-        1.774999976158142,
-        -2.077500104904175
+        -2.6640000343322754,
+        1.8079999685287476,
+        -2.063999891281128
       ],
-      "triangles": 28,
+      "triangles": 220,
       "name": "RepairLampBulb",
       "position": [
         0,
@@ -2242,16 +2426,16 @@
         1
       ],
       "bounds_min": [
-        -2.759999990463257,
-        1.7300000190734863,
-        -2.2174999713897705
+        -2.765000104904175,
+        1.7699999809265137,
+        -2.2699999809265137
       ],
       "bounds_max": [
-        -2.640000104904175,
-        1.9299999475479126,
-        -2.0799999237060547
+        -2.634999990463257,
+        1.940000057220459,
+        -2.0707521438598633
       ],
-      "triangles": 56,
+      "triangles": 220,
       "name": "RepairLampStem",
       "position": [
         0,
@@ -2273,8 +2457,8 @@
       "anchors": [],
       "unique_surface": true,
       "surface_family": "RustedIron",
-      "uv0_signature": "09979a59861e2f4106442fe218f42eab776630be51740b61e8c0ecd320b774d5",
-      "uv1_signature": "83a4b78b03b18f3c28f94641b5eef96729a2eaca4cf7821986db12b6e296c9b9",
+      "uv0_signature": "3741e630bd30dba78529201bcfc7d04f85d2c5dc10338cfd79e70cfdafd722aa",
+      "uv1_signature": "b9390c2833ec9ba2b67c8a9918dedc4820ada5ba47dcd1d0aac8ff35b4c28671",
       "uv_channel_count": 2
     },
     {
@@ -2288,16 +2472,16 @@
         1
       ],
       "bounds_min": [
-        -2.7699999809265137,
+        -2.7760000228881836,
         1.125,
-        1.7358732223510742
+        1.7239999771118164
       ],
       "bounds_max": [
-        -2.5299999713897705,
-        1.2730000019073486,
-        1.9641268253326416
+        -2.5239999294281006,
+        1.2699999809265137,
+        1.9759999513626099
       ],
-      "triangles": 76,
+      "triangles": 436,
       "name": "SewingLampShade",
       "position": [
         0,
@@ -2330,16 +2514,16 @@
         1
       ],
       "bounds_min": [
-        -2.672499895095825,
-        1.1449999809265137,
-        1.8274999856948853
+        -2.686000108718872,
+        1.13100004196167,
+        1.8140000104904175
       ],
       "bounds_max": [
-        -2.627500057220459,
-        1.1950000524520874,
-        1.872499942779541
+        -2.614000082015991,
+        1.2280000448226929,
+        1.8860000371932983
       ],
-      "triangles": 28,
+      "triangles": 220,
       "name": "SewingLampBulb",
       "position": [
         0,
@@ -2372,16 +2556,16 @@
         1
       ],
       "bounds_min": [
-        -2.740000009536743,
-        0.6725000143051147,
-        1.7699999809265137
+        -2.743000030517578,
+        0.6600000262260437,
+        1.7569999694824219
       ],
       "bounds_max": [
-        -2.559999942779541,
-        1.1799999475479126,
-        1.9299999475479126
+        -2.556999921798706,
+        1.2790000438690186,
+        1.9429999589920044
       ],
-      "triangles": 56,
+      "triangles": 508,
       "name": "SewingLampStem",
       "position": [
         0,
@@ -2403,8 +2587,8 @@
       "anchors": [],
       "unique_surface": true,
       "surface_family": "RustedIron",
-      "uv0_signature": "d2c5290a941d7ba11e01e853da46b80f84d748e96e215415633976fec8f5c5af",
-      "uv1_signature": "3c5c6677e2f88f6365fa2f5b8ce8f7d4499fafe8201656e15130ec6415837d08",
+      "uv0_signature": "7a131e62d0b71d943c3d22731c12f9fe1010f58e4991ccbfd394dbfa6f6c6c2e",
+      "uv1_signature": "ad8c606771017083be50d7a58c355e318f0dedf9e857897b16c9def94cdb44f0",
       "uv_channel_count": 2
     }
   ],

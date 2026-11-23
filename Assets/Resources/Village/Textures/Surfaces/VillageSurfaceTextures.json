@@ -485,14 +485,14 @@
       "size": 4096,
       "mipmaps": true,
       "sRGB": true,
-      "sha256": "ca2d5d1d32fa731907a57b4ab5f15af8f64acaf3a5cefbd572324d42893ad59c"
+      "sha256": "00194ef6155e6bd513e959863f7f876a94ac5e09e33ff74739ae2e21c76123e5"
     },
     {
       "resource": "Village/Textures/Surfaces/VillageUniqueResponse",
       "size": 2048,
       "mipmaps": true,
       "sRGB": false,
-      "sha256": "27d21c9f07476cfb45dbb98682b6a070f3b2e18d2ca3e7132cc29a661a4f4102"
+      "sha256": "132482f65fe7d8931ef82a68ab470248256fbd942cc2a3eba4563cbadb93f205"
     },
     {
       "resource": "Village/Textures/Junctions/VillageJunctionAtlas",

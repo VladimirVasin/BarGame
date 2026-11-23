@@ -68,7 +68,7 @@ namespace BarPromenade
         private bool gustUsesHeldMask;
         private Transform rightUpperArm, rightForearm, rightHand;
         private Transform leftUpperArm, leftForearm, leftHand;
-        public VillageResidentRole Role => role;
+        public VillageResidentRole Role { get => role; internal set => role = value; }
         public Transform ModelRoot => modelRoot;
         public Transform RightGrip => rightGrip;
         public Transform LeftGrip => leftGrip;
@@ -420,7 +420,7 @@ namespace BarPromenade
             return matches;
         }
 
-        private bool SolveArm(bool isLeft, Vector3 target, float weight, Quaternion handRotation)
+        private bool SolveArm(bool isLeft, Vector3 target, float weight, Quaternion handRotation, bool preserveElbow = false)
         {
             Transform upper = isLeft ? leftUpperArm : rightUpperArm;
             Transform forearm = isLeft ? leftForearm : rightForearm;
@@ -450,7 +450,7 @@ namespace BarPromenade
             Vector3 anatomicalForward = Vector3.Cross(anatomicalRight, transform.up).normalized;
             float acrossBody = Mathf.Clamp01(-Vector3.Dot(delta, outward) / Mathf.Max(.01f, upperLength));
             Vector3 pole = -transform.up + outward * (.35f + .45f * acrossBody) - anatomicalForward * .08f;
-            Vector3 bend = Vector3.ProjectOnPlane(pole, axis).normalized;
+            Vector3 bend = Vector3.ProjectOnPlane(preserveElbow ? forearm.position - shoulder : pole, axis).normalized;
             if (bend.sqrMagnitude < .1f) bend = Vector3.ProjectOnPlane(transform.up, axis).normalized;
             float along = (upperLength * upperLength - lowerLength * lowerLength + distance * distance) / (2f * distance);
             Vector3 elbow = shoulder + axis * along + bend * Mathf.Sqrt(Mathf.Max(0, upperLength * upperLength - along * along));

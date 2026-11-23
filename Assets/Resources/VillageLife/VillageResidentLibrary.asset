@@ -14,7 +14,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: BarPromenade.Runtime::BarPromenade.VillageResidentLibrary
   stationWorker: {fileID: 2158398761492892204, guid: 7295d5c3b3c51a14b8cdfa096c9c6a5b, type: 3}
   woodWoman: {fileID: 3520561316079187549, guid: ed678961936ef974286ca87abbb4286a, type: 3}
-  repairNeighbor: {fileID: 6331535035912595546, guid: dad6d0a5d464a284bbf860e7a5861c82, type: 3}
-  sewingWoman: {fileID: 4961204016723448710, guid: 5ba71a1fba075d949ad4fbbf2e3279b7, type: 3}
   snowNeighbor: {fileID: 11767587219020415, guid: 6922528e90ff73546ac44c04da457e0b, type: 3}
   basketVisitor: {fileID: 1228313460650438701, guid: 820315d9ff596974d856950bb0cf834b, type: 3}

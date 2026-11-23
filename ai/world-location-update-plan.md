@@ -264,9 +264,9 @@ Source-preservation: review owners/coverage без повтора действи
 - [x] `AlpineVillageNativeLighting`: улица/фасад матери/workroom materials
   просмотрены. `VillageWorkroomWalls` после terrain-fix прошёл:
   пики у стены убраны, actual-triangle/floor/exterior controls сохранены.
-- [x] Source-preservation: cavity ограничена plinth; наружный terrain/снег,
-  walk mask и dock/contact owners прежние. Остальные ворота/запасы/распорядок/
-  помощь/identities/session state сохранены; свежий прогон этих действий не выполнялся.
+- [x] №08: верстак и стул, место Марты с коробкой, окна, порог, скамья, шкаф и лампы.
+  Волокно, железо и ткань в масштабе предмета. `VillageWorkroom_RepairChairAndStowBox` — ремонт и укладка.
+- [x] Каверна ограничена цоколем. Снег, проходы, опоры и распорядок остальных дворов сохранены.
 
 ### 36. Деревенские общественные комплексы — Current: сохранение
 

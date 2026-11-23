@@ -5,10 +5,10 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-23
 
-CafeRefit: outfits/fittings/tiles. DrinkReleaseFrame/CounterSeat: cups/menu. BarFurnitureFinishes: seats/bottles. VodkaBottle_NeckClearsPouringPalm, CounterLip_ClearsCuffDuringPickup: hands. BarFullRoomFrameTime: full room. HomeFurnitureFinishes checks wear and seal reversal. HomeBedDeformableSurfaceTests checks support. SupermarketFinishes covers purchases. CityCheckpointFinishes covers entry/road light, boom, gravel and E. CitySouthTunnel covers masonry, drain, rain and return. CityTrawlerVisit checks hull/cargo. CityPort's road assertion expects an enabled source mesh. CityBoatRentalStation covers sign UVs, rests and return. ImageGenCityMap_PreservesPlanAndLivePlaces checks the redraw. CityRiverEmbankments covers walks/03. validate_mooring_feet checks contact.
+VillageWorkroom_RepairChairAndStowBox: catalogue cast, peg, hammer, grips, elbow height, both forearms and fingers clear torso/lid, packed box. CafeRefit: outfits/fittings/tiles. DrinkReleaseFrame/CounterSeat: cups/menu. BarFurnitureFinishes: seats/bottles. VodkaBottle_NeckClearsPouringPalm, CounterLip_ClearsCuffDuringPickup: hands. BarFullRoomFrameTime: full room. HomeFurnitureFinishes checks wear and seal reversal. HomeBedDeformableSurfaceTests checks support. SupermarketFinishes covers purchases. CityCheckpointFinishes covers entry/road light, boom, gravel and E. CitySouthTunnel covers masonry, drain, rain and return. CityTrawlerVisit checks hull/cargo. CityPort's road assertion expects an enabled source mesh. CityBoatRentalStation covers sign UVs, rests and return. ImageGenCityMap_PreservesPlanAndLivePlaces checks the redraw. CityRiverEmbankments covers walks/03. validate_mooring_feet checks contact.
 CityParkBandstand checks seats, corner clicks, one lamp and resident outfits.
 
-CityCanneryFinishes checks the rebuilt bay, work surfaces, dispatch and the equipped apron panels in pose.
+CityCanneryFinishes: bay, benches, dispatch, apron in pose.
 
 PlayerWatchPlayModeTests checks the paused calendar, timed LCD colon and night dial.
 
@@ -26,16 +26,13 @@ Exterior mains link City and Ridge façades, courtyard tees and stair flights to
 
 `DebugWorldStart_SelectedLocationUsesItsNormalArrivalWithoutTheHomeOpening` checks City/shop and Ridge/home arrivals.
 
-Build the arrival district first. Near either approach, prepare adjacent
-terrain and joints off-thread and publish scene objects in steps. Release
-distant district objects, keep shared clocks, hero and Line 03 seats.
+Build the arrival district first. Prepare adjacent terrain/joints off-thread and publish incrementally. Unload distant objects; retain clocks, hero and Line 03 seats.
 `MenuWarmup_ReusesSharedPlansAtTheStreetDoor` compares door and allocator
 samples and drives the seated hero across both seams. `CityTerracePilotPlayModeTests`
 covers boarding and transfers.
 
 Service-yard bins open onto wet cardboard. At street phones the hero dials with his right index. Esc/Q exits. Lid, door, cradle and keys have world audio.
-`LiveCity_StreetUtilitiesWalkOpenCallAndLeave` verified public approaches,
-rendered index contact, physical key travel, both keyboard exits and audible cues. Blender checks dial orientation and cardboard clearance.
+`LiveCity_StreetUtilitiesWalkOpenCallAndLeave` checks approaches, finger/key travel, exits and audio. Blender checks dial orientation and cardboard clearance.
 
 ## 2026-11-22
 

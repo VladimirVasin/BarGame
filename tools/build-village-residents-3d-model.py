@@ -25,6 +25,7 @@ VERSION = "1.0.0"
 WOMAN_SCALE = 1.64 / 1.75
 ROLE_NAMES = ("StationWorker", "WoodWoman")
 LIFE_ROLES = ("RepairNeighbor", "SewingWoman", "SnowNeighbor", "BasketVisitor")
+PUBLISHED_LIFE_ROLES = ("SnowNeighbor", "BasketVisitor")
 LIFE_HEIGHTS = {"RepairNeighbor":1.86,"SewingWoman":1.56,"SnowNeighbor":1.68,"BasketVisitor":1.70}
 CLIPS = (("Idle", 4., True), ("Walk", 1.25, True), ("Reach", 3., False),
          ("Carry", 4., True), ("CarryWalk", 1.5, True), ("Place", 3., False),
@@ -108,11 +109,10 @@ def atlas(path, female, validate_only=False, role=None):
     if role is not None:
         # Each new face and garment has its own drawing, not a palette swap.
         c.rect(192,192,256,256,(245,238,229,255))
-        profiles={"RepairNeighbor":(210,235,218,239),"SewingWoman":(211,232,220,241),
-                  "SnowNeighbor":(208,236,218,240),"BasketVisitor":(212,233,219,240)}
+        profiles={"SnowNeighbor":(208,236,218,240),"BasketVisitor":(212,233,219,240)}
         first,last,eye,mouth=profiles[role]
         for x in (first,last):
-            brow=(108,108,108,255) if role=="SewingWoman" else (75,75,75,255)
+            brow=(75,75,75,255)
             c.line(x-5,eye-5,x,eye-7 if role=="BasketVisitor" else eye-6,brow)
             c.line(x,eye-7 if role=="BasketVisitor" else eye-6,x+4,eye-5,brow)
             c.line(x-4,eye,x+4,eye,(187,187,180,255))
@@ -120,37 +120,21 @@ def atlas(path, female, validate_only=False, role=None):
             if role!="BasketVisitor":
                 c.line(x-6,eye+5,x+4,eye+6,(183,183,176,255))
                 c.line(x-7,eye+2,x-9,eye+4,(168,168,159,255))
-        nose=224 if role!="RepairNeighbor" else 225
+        nose=224
         c.line(nose,eye+1,nose-2,233,(184,179,170,255))
         c.line(nose-3,234,nose+3,234,(122,118,111,255))
-        c.line(214,mouth,231,mouth+(-1 if role=="SewingWoman" else 0),(125,117,108,255))
-        if role=="RepairNeighbor":
-            c.rect(213,236,234,239,(112,107,99,255))
-            for x in range(214,234,4):c.line(x,236,x-1,239,(171,168,158,255))
-            c.line(211,204,237,204,(193,190,180,255))
-        elif role=="SnowNeighbor":
+        c.line(214,mouth,231,mouth,(125,117,108,255))
+        if role=="SnowNeighbor":
             for y in range(238,253):
                 for x in range(203,244):
                     if (x*3+y*7)%11==0:c.put(x,y,(175,173,160,255))
-        elif role=="SewingWoman":
-            for y in (203,207):c.line(210,y,236,y,(193,193,182,255))
-            c.line(210,231,207,240,(176,174,166,255));c.line(237,231,240,240,(176,174,166,255))
-        # Garment fronts differ: work-coat buttons, a crossed house coat,
-        # a short padded jacket, or a long diagonal fastening.
         c.rect(55,2,73,125,(242,241,234,255))
         if role=="BasketVisitor":
             c.line(39,8,76,116,(146,147,137,255),1)
             for y in (30,57,85):c.ellipse(round(39+y*.32),y,2,2,(101,107,99,255))
-        elif role=="SewingWoman":
-            c.line(49,5,76,120,(168,162,150,255))
-            for y in (36,65,94):
-                for x in (61,74):c.ellipse(x,y,2,2,(149,141,128,255))
-        elif role=="SnowNeighbor":
+        else:
             for y in range(20,122,22):c.line(10,y,119,y,(209,207,196,255))
             c.line(63,5,63,120,(129,133,126,255))
-        else:
-            c.line(62,5,62,121,(157,157,145,255))
-            for y in (23,46,69,92):c.ellipse(66,y,2,2,(123,119,107,255))
     if validate_only:
         if path.read_bytes()!=c.png_bytes(): raise RuntimeError("Deterministic atlas differs: "+str(path))
     else:
@@ -293,9 +277,10 @@ class ResidentBuilder(base.PedestrianBuilder):
 
 
 class LifeResidentBuilder(ResidentBuilder):
-    """Four silhouettes share only the proven adult anatomical substrate."""
+    """The two authored neighbours in the quiet yard."""
     def __init__(self, role):
-        super().__init__(role in ("SewingWoman","BasketVisitor"));self.role=role
+        if role not in PUBLISHED_LIFE_ROLES: raise ValueError("No authored village body for " + role)
+        super().__init__(role == "BasketVisitor");self.role=role
 
     def remove(self, *names):
         for part in list(self.result.parts):
@@ -305,20 +290,18 @@ class LifeResidentBuilder(ResidentBuilder):
     def build(self):
         result=super().build();role=self.role
         palettes={
-            "RepairNeighbor":((.255,.245,.175,1),(.155,.155,.115,1),(.235,.20,.14,1),(.36,.35,.30,1)),
-            "SewingWoman":((.19,.22,.29,1),(.13,.16,.21,1),(.39,.28,.22,1),(.52,.50,.43,1)),
             "SnowNeighbor":((.16,.23,.28,1),(.095,.15,.19,1),(.23,.23,.19,1),(.18,.17,.14,1)),
             "BasketVisitor":((.22,.30,.22,1),(.14,.20,.145,1),(.28,.17,.155,1),(.13,.095,.07,1))}
         coat,dark,knit,hair=palettes[role]
         base.PALETTE.update({"life_coat":coat,"life_dark":dark,"life_knit":knit,"life_hair":hair})
         color_map={"v_coat":coat,"v_dark":dark,"v_knit":knit,"v_hair":hair}
         self.remove("CLO_ScarfTail")
-        if role in ("RepairNeighbor","SewingWoman","BasketVisitor"):
+        if role=="BasketVisitor":
             self.remove("CLO_KnitCap","CLO_CapFold","CLO_CapEarFlap.L","CLO_CapEarFlap.R",
                 "CLO_WoolHood","CLO_HoodKnot","HAIR_ForeheadLock","HAIR_BackBun")
         bpy.context.view_layer.update()
-        width={"RepairNeighbor":.86,"SewingWoman":1.025,"SnowNeighbor":1.10,"BasketVisitor":.87}[role]
-        lower={"RepairNeighbor":.69,"SewingWoman":.52,"SnowNeighbor":.75,"BasketVisitor":.60}[role]
+        width={"SnowNeighbor":1.10,"BasketVisitor":.87}[role]
+        lower={"SnowNeighbor":.75,"BasketVisitor":.60}[role]
         for part in result.parts:
             if part.palette_name in color_map:
                 part.color=color_map[part.palette_name];part.obj.color=part.color
@@ -328,33 +311,16 @@ class LifeResidentBuilder(ResidentBuilder):
                 for vertex,point in zip(part.obj.data.vertices,world):
                     point.x*=width
                     point.z=lower+(point.z-bottom)*(top-lower)/(top-bottom)
-                    if role=="SewingWoman":point.y+=.018*(1-(point.z-lower)/(top-lower))
                     vertex.co=part.obj.matrix_world.inverted() @ point
             elif part.obj.name=="GEO_FaceSurface":
                 for vertex in part.obj.data.vertices:
                     row=vertex.index//7
-                    if role=="RepairNeighbor":vertex.co.x*=.90;vertex.co.y-=.003 if row in (3,4) else 0
-                    elif role=="SewingWoman":vertex.co.x*=1.07 if row<4 else 1.01
-                    elif role=="SnowNeighbor":vertex.co.x*=1.12 if row<4 else 1.06
+                    if role=="SnowNeighbor":vertex.co.x*=1.12 if row<4 else 1.06
                     elif role=="BasketVisitor":vertex.co.x*=.93;vertex.co.y+=.002 if row in (3,4) else 0
             elif part.obj.name=="GEO_Head":
                 for vertex in part.obj.data.vertices:
-                    vertex.co.x*={"RepairNeighbor":.93,"SewingWoman":1.03,"SnowNeighbor":1.06,"BasketVisitor":.94}[role]
-        if role=="RepairNeighbor":
-            self.add_part("CLO_FlatCapCrown",base.make_ellipsoid((0,.005,1.676),(.123,.132,.065),18,8),"head","headwear","life_dark")
-            self.add_part("CLO_FlatCapBrim",base.make_ellipsoid((0,-.121,1.640),(.096,.071,.013),14,4),"head","headwear","life_knit")
-            self.add_part("CLO_CapBand",base.make_frustum_between((0,0,1.616),(0,0,1.645),.104,.107,16),"head","headwear","life_dark")
-            self.add_part("CLO_NarrowScarf",base.make_tapered_box((.053,-.15,1.16),(.055,-.15,1.38),(.056,.022,0),(.060,.024,0)),"chest","clothing","life_knit")
-            for side,sign in (("L",1),("R",-1)):
-                self.add_part("CLO_ReinforcedElbow."+side,base.make_ellipsoid((sign*.483,.020,1.161),(.056,.027,.073),10,5),"forearm."+side,"clothing","life_dark")
-        elif role=="SewingWoman":
-            self.add_part("CLO_HeadscarfCrown",base.make_ellipsoid((0,.010,1.655),(.123,.120,.094),16,8),"head","headwear","life_knit")
-            for side,sign in (("L",1),("R",-1)):
-                self.add_part("CLO_HeadscarfSide."+side,base.make_frustum_between((sign*.098,-.01,1.61),(sign*.073,-.053,1.46),.050,.034,10),"head","headwear","life_knit")
-            self.add_part("CLO_WoolShawl",base.make_vertical_shell(((1.10,.208,.122,.040),(1.27,.272,.155,.025),(1.40,.130,.122,.01),(1.445,.080,.084,-.005)),16),"chest","clothing","life_knit")
-            self.add_part("CLO_ShawlTie",base.make_ellipsoid((.055,-.15,1.24),(.039,.029,.050),10,5),"chest","clothing","life_dark")
-            self.add_part("HAIR_SilverFringe",base.make_ellipsoid((0,-.101,1.620),(.076,.020,.032),14,4),"head","hair","life_hair")
-        elif role=="SnowNeighbor":
+                    vertex.co.x*={"SnowNeighbor":1.06,"BasketVisitor":.94}[role]
+        if role=="SnowNeighbor":
             for side,sign in (("L",1),("R",-1)):
                 self.add_part("CLO_PaddedElbow."+side,base.make_ellipsoid((sign*.488,.025,1.168),(.065,.030,.088),12,6),"forearm."+side,"clothing","life_dark")
             self.add_part("CLO_ScarfTucked",base.make_vertical_shell(((1.325,.101,.113,-.01),(1.37,.108,.114,-.005),(1.408,.080,.083,-.01)),14),"neck","clothing","life_knit")
@@ -377,46 +343,10 @@ class LifeResidentBuilder(ResidentBuilder):
             groups[pair[0]].add([vertex.index],1-t,"REPLACE");groups[pair[1]].add([vertex.index],t,"REPLACE")
         for part in result.parts:
             if not part.obj.data.uv_layers:self.uv(part)
-        if role=="SewingWoman":
-            bpy.context.view_layer.update()
-            # This short older woman's skull sits into her shoulders. Move the
-            # entire head assembly, not just its visible face or scarf; retain
-            # the shared rig pivot within the cranio-cervical junction.
-            for part in result.parts:
-                if part.bone=="head":
-                    for vertex in part.obj.data.vertices:
-                        point=part.obj.matrix_world @ vertex.co
-                        point.z-=.045;point.y-=.008
-                        vertex.co=part.obj.matrix_world.inverted() @ point
-                elif part.obj.name=="GEO_Neck":
-                    points=[part.obj.matrix_world @ v.co for v in part.obj.data.vertices]
-                    low=min(p.z for p in points);high=max(p.z for p in points)
-                    for vertex,point in zip(part.obj.data.vertices,points):
-                        point.z-=.045*(point.z-low)/(high-low)
-                        vertex.co=part.obj.matrix_world.inverted() @ point
-                elif part.obj.name=="CLO_ScarfNeck":
-                    points=[part.obj.matrix_world @ v.co for v in part.obj.data.vertices]
-                    low=min(p.z for p in points);high=max(p.z for p in points)
-                    for vertex,point in zip(part.obj.data.vertices,points):
-                        point.z=1.390+(point.z-low)*.065/(high-low)
-                        vertex.co=part.obj.matrix_world.inverted() @ point
-                elif part.obj.name.startswith("CLO_Collar."):
-                    for vertex in part.obj.data.vertices:
-                        point=part.obj.matrix_world @ vertex.co
-                        point.z=1.405+(point.z-1.405)*.48
-                        vertex.co=part.obj.matrix_world.inverted() @ point
-                elif part.obj.name=="CLO_WoolShawl":
-                    # The wrap lies across shoulder mass, with a short closed
-                    # neckline, rather than standing up as a tall funnel.
-                    vertices,faces=base.make_vertical_shell(((1.235,.226,.142,.006),
-                        (1.365,.251,.158,-.008),(1.418,.154,.128,-.012),
-                        (1.447,.077,.084,-.020)),16)
-                    for vertex,point in zip(part.obj.data.vertices,vertices):
-                        vertex.co=part.obj.matrix_world.inverted() @ Vector(point)
         return result
 
 
-def solve_grips(rig, targets, strict=True):
+def solve_grips(rig, targets, strict=True, pole=None):
     """Analytic two-bone arm solve onto exact grip sockets, no exported IK."""
     for side in ("L","R"):
         if side not in targets:
@@ -435,7 +365,7 @@ def solve_grips(rig, targets, strict=True):
             distance=max(abs(a-b)+.001,min(distance,a+b-.001))
             wrist=shoulder+line.normalized()*distance
             target=wrist+hand_q @ local_grip
-        axis=line.normalized(); outward=Vector((1 if side=="L" else -1,.2,-.15))
+        axis=line.normalized(); outward=pole if pole is not None else Vector((1 if side=="L" else -1,.2,-.15))
         bend=(outward-axis*outward.dot(axis)).normalized()
         along=(a*a-b*b+distance*distance)/(2*distance)
         elbow=shoulder+axis*along+bend*math.sqrt(max(0,a*a-along*along))
@@ -701,7 +631,7 @@ def make_life_actions(result):
 def build_phase_two(args,assets,sources):
     # This branch never exports any of the first two bodies or their eight clips.
     if args.preview_only:
-        for role in LIFE_ROLES:
+        for role in PUBLISHED_LIFE_ROLES:
             if args.preview_role is not None and args.preview_role!=role:continue
             bpy.ops.wm.open_mainfile(filepath=str(sources/(role+".blend")))
             for obj in list(bpy.data.objects):
@@ -718,13 +648,13 @@ def build_phase_two(args,assets,sources):
     protected=[published/(name+suffix) for name in ROLE_NAMES for suffix in (".fbx",".json","Atlas.png")]
     protected += [published/("VillageResidentActions"+suffix) for suffix in (".fbx",".json")]
     if args.body_only_role:
-        protected += [published/(role+suffix) for role in LIFE_ROLES if role!=args.body_only_role
+        protected += [published/(role+suffix) for role in PUBLISHED_LIFE_ROLES if role!=args.body_only_role
                       for suffix in (".fbx",".json","Atlas.png")]
         protected += [published/("VillageResidentLifeActions"+suffix) for suffix in (".fbx",".json")]
     before={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in protected}
-    for role in LIFE_ROLES:
+    for role in PUBLISHED_LIFE_ROLES:
         if args.body_only_role and args.body_only_role!=role:continue
-        texture=assets/(role+"Atlas.png");texture_hash=atlas(texture,role in ("SewingWoman","BasketVisitor"),args.validate_only,role)
+        texture=assets/(role+"Atlas.png");texture_hash=atlas(texture,role=="BasketVisitor",args.validate_only,role)
         result=LifeResidentBuilder(role).build();metrics=measured(result)
         if metrics["triangle_count"]<2384 or metrics["mesh_count"]<34:raise RuntimeError(f"{role} below hero detail: {metrics}")
         manifest={"generator":Path(__file__).name,"version":"2.0.0","role":role,"anatomy_standard":"NpcHumanV2",
@@ -767,7 +697,7 @@ def build_phase_two(args,assets,sources):
     if not args.validate_only:
         # Preserve stable Unity identities without guessing serialized importer
         # defaults. The editor setup explicitly configures units and 2D atlases.
-        generated=[assets/(role+suffix) for role in LIFE_ROLES for suffix in (".fbx",".json","Atlas.png")]
+        generated=[assets/(role+suffix) for role in PUBLISHED_LIFE_ROLES for suffix in (".fbx",".json","Atlas.png")]
         generated += [assets/("VillageResidentLifeActions"+suffix) for suffix in (".fbx",".json")]
         for asset in generated:
             meta=asset.with_name(asset.name+".meta")
@@ -873,10 +803,10 @@ def main():
     parser.add_argument("--models-only",action="store_true")
     parser.add_argument("--model-dir",type=Path,default=ROOT/"Assets/Resources/VillageLife")
     parser.add_argument("--source-dir",type=Path,default=ROOT/"ArtSource/VillageLife")
-    parser.add_argument("--preview-role",choices=ROLE_NAMES+LIFE_ROLES)
+    parser.add_argument("--preview-role",choices=ROLE_NAMES+PUBLISHED_LIFE_ROLES)
     parser.add_argument("--phase-two",action="store_true")
     parser.add_argument("--preview-only",action="store_true")
-    parser.add_argument("--body-only-role",choices=LIFE_ROLES)
+    parser.add_argument("--body-only-role",choices=PUBLISHED_LIFE_ROLES)
     parser.add_argument("--review-neck",action="store_true")
     parser.add_argument("--workroom",action="store_true")
     parser.add_argument("--workroom-probe",action="store_true")

@@ -67,9 +67,9 @@ namespace BarPromenade
             Apply(action, elapsedSeconds);
             VillageWorkroomFrame frame = SampleWorkroomProps(action, elapsedSeconds);
             if (frame.RightContactWeight >= .9999f)
-                ApplyHandContacts(transform.position + transform.rotation * frame.RightContact, null, frame.RightContactWeight);
+                SolveArm(false, transform.position + transform.rotation * frame.RightContact, frame.RightContactWeight, rightHand.rotation, true);
             if (frame.LeftContactWeight >= .9999f)
-                ApplyHandContacts(null, transform.position + transform.rotation * frame.LeftContact, frame.LeftContactWeight);
+                SolveArm(true, transform.position + transform.rotation * frame.LeftContact, frame.LeftContactWeight, leftHand.rotation, true);
         }
 
         private static Vector3 Point(float[] p) => new Vector3(p[0], p[1], p[2]);

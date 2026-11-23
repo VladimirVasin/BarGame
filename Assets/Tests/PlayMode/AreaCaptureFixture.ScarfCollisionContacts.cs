@@ -307,7 +307,7 @@ namespace BarPromenade.Tests.PlayMode
                 return Math.Abs(solidAngle) > 2d * Math.PI;
             }
 
-            private static bool Crosses(Vector3 start, Vector3 end, Vector3 a, Vector3 b, Vector3 c)
+            public static bool Crosses(Vector3 start, Vector3 end, Vector3 a, Vector3 b, Vector3 c)
             {
                 Vector3 direction = end - start;
                 float length = direction.magnitude;

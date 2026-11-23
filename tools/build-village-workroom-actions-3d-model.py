@@ -19,17 +19,17 @@ CLIPS=(("RepairTakeTool",3.,False),("RepairWork",4.,True),("RepairPutTool",3.,Fa
 HAMMER_STRIKE=Vector((-.095,.265,0))
 CHAIR_JOINT=Vector((-.16,.90,.48))
 CHAIR_SUPPORT=Vector((-.27,.90,.48))
-BOX_TABLE=Vector((.37,.666,.35))
+BOX_TABLE=Vector((.43,.666,.51))
 BOX_REST=Vector((.55,.46,.12))
-CLOTH_TABLE=Vector((0,.674,.38))
-BOX_PACKET=Vector((-.09,.04,0))
+CLOTH_TABLE=Vector((-.065,.674,.405))
+BOX_PACKET=Vector((-.09,.086,0))
 MITTEN_PACKET=Vector((.08,.016,0))
 MITTEN_GRIP=Vector((-.065,.015,0))
-MITTEN_WORK=Vector((-.035,.695,.38))
-BOX_GRIPS={"L":Vector((-.14,.10,-.16)),"R":Vector((.14,.10,-.16))}
+MITTEN_WORK=Vector((-.10,.695,.405))
+BOX_GRIPS={"L":Vector((-.132,.10,-.15)),"R":Vector((.222,.104,-.075))}
 PACKET_GRIPS={"L":Vector((.15,.0475,-.08)),"R":Vector((.15,.0475,.08))}
-HINGE=Vector((0,.15,.18))
-LID_GRIP=Vector((0,.015,-.31))
+HINGE=Vector((0,.15,.16))
+LID_GRIP=Vector((.191,.010,-.126))
 FOLD_HINGE=Vector((0,.025,0))
 FOLD_GRIP=Vector((-.15,-.0225,-.08))
 CONTACT={"None":0,"Hammer":1,"Chair":2,"Mitten":3,"Cloth":4,"Box":5,"BoxLid":6,"ClothFlap":7,"Thread":8}
@@ -68,18 +68,46 @@ def lap(f):
     for side,sign in (("L",-1),("R",1)):contact(f,side,(sign*.14,.57,.11),"None",1.)
 
 
+LEFT_TABLE = Vector((-.20,.697,.346))
+
+
 def box_hands(f,weight=1.):
-    contact(f,"L",(-.14,.57,.11),"None")
+    contact(f,"L",LEFT_TABLE,"None")
     contact(f,"R",point(f["box"],BOX_GRIPS["R"]),"Box",weight)
 
 
+def reach_box_pull(f, progress):
+    start = Vector((.14,.57,.11))
+    corner = point(f["box"],(.231,.14,-.243))
+    grip = point(f["box"],BOX_GRIPS["R"])
+    target = lerp(start,corner,between(progress,0,.53)) if progress < .53 else lerp(corner,grip,between(progress,.53,1))
+    lap(f)
+    contact(f,"L",lerp((-.14,.57,.11),LEFT_TABLE,smooth(progress)),"None")
+    contact(f,"R",target,"Box" if progress>=1. else "None")
+
+
+def transfer_packet(box, progress):
+    # Clear the rim vertically before turning the folded bundle across it.
+    inside = pose(point(box,BOX_PACKET), box[1])
+    raised = pose(inside[0] + Vector((0,.108,0)), box[1])
+    clear = pose(CLOTH_TABLE + Vector((0,.108,0)))
+    if progress < .27:
+        return mix_pose(inside,raised,between(progress,0,.27))
+    if progress < .78:
+        return mix_pose(raised,clear,between(progress,.27,.78))
+    return mix_pose(clear,pose(CLOTH_TABLE),between(progress,.78,1.))
+
+
 def packet_hands(f,weight=1.):
-    for side in ("L","R"):contact(f,side,point(f["cloth"],PACKET_GRIPS[side]),"Cloth",weight)
+    # The packet is light enough for one hand. The other supports her on
+    # the near edge instead of reaching across her own chest into the box.
+    contact(f,"L",LEFT_TABLE,"None")
+    contact(f,"R",point(f["cloth"],PACKET_GRIPS["R"]),"Cloth",weight)
 
 
 def lid_hand(f,weight=1.):
     contact(f,"R",point(f["box"],HINGE+rot(f["lid_degrees"]) @ LID_GRIP),"BoxLid",weight)
-    contact(f,"L",(-.14,.57,.11),"None")
+    contact(f,"L",LEFT_TABLE,"None")
 
 
 def flap_hand(f,weight=1.):
@@ -94,11 +122,14 @@ def work_hands(f,time=0.):
     contact(f,"R",point(f["mitten"],(.055,.030+.035*pull,.020+.025*pull)),"Thread")
 
 
-def move_hands(f,first,last,weight):
+def move_hands(f,first,last,weight,over_rim=False):
     first(f);initial={s:f[s+"_contact"].copy() for s in ("left","right")}
     last(f)
     for side in ("left","right"):
-        f[side+"_contact"]=lerp(initial[side],f[side+"_contact"],weight)
+        travel = between(weight,.13,.87) if over_rim else weight
+        f[side+"_contact"]=lerp(initial[side],f[side+"_contact"],travel)
+        if over_rim and side == "right":
+            f[side+"_contact"].y += .085 * math.sin(math.pi * weight)
         f[side+"_weight"]=1.
         if weight<.9999:f[side+"_kind"]=0
 
@@ -155,19 +186,18 @@ def _sample(name,t):
     if name=="SewingUnpack":
         f["_reach_wrist"]=between(t,1.25,1.4)*(1-between(t,2.1,2.7))
         f["_lean"]=14+16*between(t,0,.5)
-        f["_side"]=20*between(t,0,.5)*(1-between(t,3.,4.))
+        f["_side"]=14*between(t,0,.5)*(1-between(t,3.,4.))
         f["box"]=pose(lerp(BOX_REST,BOX_TABLE,between(t,.5,1.25)),rot(y=90))
         f["lid_degrees"]=105*between(t,1.4,2.1)
-        box_packet=pose(point(f["box"],BOX_PACKET),f["box"][1])
-        f["cloth"]=mix_pose(box_packet,pose(CLOTH_TABLE),between(t,2.7,3.65))
+        f["cloth"]=transfer_packet(f["box"],max(0,min(1,(t-2.7)/.95)))
         f["fold_degrees"]=-180*(1-between(t,4.,4.8))
         f["mitten"]=mix_pose(pose(point(f["cloth"],MITTEN_PACKET),f["cloth"][1]),pose(MITTEN_WORK),between(t,5.2,6.))
         f["box_held"]=.5<=t<1.25;f["cloth_held"]=2.7<=t<3.65;f["mitten_held"]=t>=5.2
-        if t<.5:box_hands(f,between(t,0,.5))
+        if t<.5:reach_box_pull(f,t/.5)
         elif t<1.25:box_hands(f)
         elif t<1.4:move_hands(f,box_hands,lid_hand,between(t,1.25,1.4))
         elif t<2.1:lid_hand(f)
-        elif t<2.7:move_hands(f,lid_hand,packet_hands,between(t,2.1,2.7))
+        elif t<2.7:move_hands(f,lid_hand,packet_hands,between(t,2.1,2.7),True)
         elif t<3.65:packet_hands(f)
         elif t<4.:move_hands(f,packet_hands,flap_hand,between(t,3.65,4.))
         elif t<4.8:flap_hand(f)
@@ -177,20 +207,20 @@ def _sample(name,t):
         return f
     if name=="SewingStow":
         f["_reach_wrist"]=between(t,1.3,1.8)*(1-between(t,2.55,3.3))
-        f["_side"]=20*between(t,0,1.)*(1-between(t,4.3,5.))
+        f["_side"]=14*between(t,0,1.)*(1-between(t,4.3,5.))
         f["_lean"]=30-16*between(t,4.3,5.)
         f["box"]=pose(lerp(BOX_TABLE,BOX_REST,between(t,3.3,4.3)),rot(y=90))
-        f["cloth"]=mix_pose(pose(CLOTH_TABLE),pose(point(f["box"],BOX_PACKET),f["box"][1]),between(t,0,1.3))
+        f["cloth"]=transfer_packet(f["box"],1-max(0,min(1,t/1.3)))
         f["mitten"]=pose(point(f["cloth"],MITTEN_PACKET),f["cloth"][1])
         f["fold_degrees"]=-180.;f["lid_degrees"]=105*(1-between(t,1.8,2.55))
         f["cloth_held"]=t<1.3;f["box_held"]=3.3<=t<4.3
         if t<1.3:packet_hands(f)
-        elif t<1.8:move_hands(f,packet_hands,lid_hand,between(t,1.3,1.8))
+        elif t<1.8:move_hands(f,packet_hands,lid_hand,between(t,1.3,1.8),True)
         elif t<2.55:lid_hand(f)
         elif t<3.3:move_hands(f,lid_hand,box_hands,between(t,2.55,3.3))
         elif t<4.3:box_hands(f)
         else:
-            move_hands(f,box_hands,lap,between(t,4.3,5.))
+            reach_box_pull(f,1-max(0,min(1,(t-4.3)/.7)))
         return f
     raise ValueError(name)
 
@@ -223,12 +253,12 @@ def author_frame(v,result,name,seconds,overrides=None):
     if overrides:f.update(overrides)
     scale=v.LIFE_HEIGHTS["RepairNeighbor" if repair else "SewingWoman"]/1.75
     body=dict(base.CITIZEN_HANGING_ARMS)
-    body["spine"]=base.BonePose(rotation_degrees=(f["_lean"],0,f["_side"]))
+    body["spine"]=base.BonePose(rotation_degrees=(f["_lean"] if repair else f["_lean"]*1.12,0,f["_side"]))
     body["neck"]=base.BonePose(rotation_degrees=(6 if repair else 4,0,0))
     base.reset_pose(rig);base.apply_pose(rig,body)
     if not repair and f["_sit"]>0:
         pelvis=rig.pose.bones["pelvis"];m=pelvis.matrix.copy()
-        target=v.world_target((0,.50,-.20),scale)
+        target=v.world_target((0,.50,-.155),scale)
         m.translation=m.translation.lerp(target,f["_sit"]);pelvis.matrix=m;bpy.context.view_layer.update()
         for side in ("L","R"):
             solve_leg(base,rig,side,rig.data.bones["foot."+side].head_local.copy())
@@ -272,8 +302,85 @@ def author_frame(v,result,name,seconds,overrides=None):
                     else:hi=mid
                 hand.matrix=Matrix.Translation(hand.head.copy()) @ q.slerp(aimed,hi).to_matrix().to_4x4()
                 bpy.context.view_layer.update()
-        v.solve_grips(rig,{side:target},weight>=.9999)
+        pole = None if repair else (Vector((1.20,-.65,-.70)) if side=="L" else Vector((-1.4,.20,-.80)))
+        v.solve_grips(rig,{side:target},weight>=.9999,pole=pole)
     return f,scale
+
+
+def catalogue_rig(v, repair=False, preview=False):
+    """Read the actual catalogue rest rig and soles, without the legacy household bodies."""
+    stem = "VillageLife/StationWorker" if repair else "City/Residents/OrdinaryWoman"
+    data = json.loads((v.ROOT / ("Assets/Resources/" + stem + ".json")).read_text())
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    bpy.context.preferences.filepaths.save_version=0
+    path = v.ROOT / ("ArtSource/" + stem + ".blend")
+    equipped = ({"shirt.warm","headwear.everyday","apron.work","trousers.work","boots.work"} if repair else
+                {"shirt.everyday","outerwear.cardigan","trousers.work","boots.everyday","hair.braid"})
+    with bpy.data.libraries.load(str(path), link=False) as (source, target):
+        if preview:
+            wardrobe = data.get("wardrobe", data)
+            items = wardrobe["items"]
+            hidden = {part for item in items for part in item["renderers"]}
+            visible = {part for item in items if item["id"] in equipped for part in item["renderers"]}
+            hidden -= visible
+            hidden.update(part for item in items if item["id"] in equipped for part in item["covered_renderers"])
+            names = {p["name"] for p in data["parts"]} - hidden
+        else:
+            names = {n for n in source.objects if "Sole" in n}
+        target.objects = [n for n in source.objects if n in names or n in ("ROOT_Player","RIG_Player")]
+    for obj in target.objects:
+        bpy.context.scene.collection.objects.link(obj)
+    rig = next(o for o in target.objects if o.type == "ARMATURE")
+    root = rig.parent
+    root.scale = (1.,1.,1.)
+    rig.animation_data_clear()
+    for action in list(bpy.data.actions):
+        bpy.data.actions.remove(action)
+    parts = [v.base.PartRecord(o, o.get("bp_bone",""), o.get("bp_role",""), o.get("bp_palette",""), (1,1,1,1))
+             for o in target.objects if o.type == "MESH"]
+    if not any(p.bone.startswith("foot.") for p in parts):
+        raise RuntimeError("Catalogue shoe soles have no foot binding: " + str([(p.obj.name,p.bone) for p in parts]))
+    return v.base.BuildResult(root, rig, bpy.context.scene.collection, parts[0].obj.data.materials[0], parts)
+
+
+def dress_preview(v, result, repair):
+    stem = "VillageLife/StationWorker" if repair else "City/Residents/OrdinaryWoman"
+    model = v.ROOT / "Assets/Resources" / stem
+    data = json.loads(model.with_suffix(".json").read_text())
+    palette = {part["name"]: part["color"] for part in data["parts"]}
+    faces = data["faces"]["items"] if repair else data["faces"]
+    face_map = faces[0]["texture"]
+    clothing_map = data.get("clothing_atlas", face_map)
+    atlases = {}
+    for part in result.parts:
+        obj = part.obj
+        filename = face_map if obj.name == "GEO_FaceSurface" else clothing_map
+        if filename not in atlases:
+            mat = bpy.data.materials.new(filename)
+            mat.use_nodes = True
+            nodes, links = mat.node_tree.nodes, mat.node_tree.links
+            base = nodes.get("Principled BSDF")
+            texture = nodes.new("ShaderNodeTexImage")
+            texture.image = bpy.data.images.load(str(model.parent / filename))
+            tint = nodes.new("ShaderNodeObjectInfo")
+            mix = nodes.new("ShaderNodeMixRGB")
+            mix.blend_type = "MULTIPLY"
+            mix.inputs[0].default_value = 1
+            links.new(tint.outputs["Color"], mix.inputs[1])
+            links.new(texture.outputs["Color"], mix.inputs[2])
+            links.new(mix.outputs[0], base.inputs["Base Color"])
+            base.inputs["Roughness"].default_value = .88
+            atlases[filename] = mat
+        color = palette[obj.name]
+        if "Cardigan" in obj.name:
+            color = (.14,.145,.145,1) if "Cuff" in obj.name else (.074,.10,.136,1)
+        elif "Apron" in obj.name:
+            color = (.12,.125,.068,1) if "Pocket" in obj.name else (.165,.097,.048,1)
+        elif "Hair" in obj.name or "Braid" in obj.name:
+            color = (.23,.21,.18,1)
+        obj.color = color
+        obj.data.materials.clear()
+        obj.data.materials.append(atlases[filename])
 
 
 def render_previews(v,assets,sources):
@@ -287,9 +394,10 @@ def render_previews(v,assets,sources):
     conversion=Matrix(((-1,0,0),(0,0,-1),(0,1,0))).to_4x4()
     def matrix(p):return Matrix.Translation(p[0]) @ p[1].to_matrix().to_4x4()
     for action,seconds,label in (("RepairWork",.8,"RepairStrike"),("RepairWork",.35,"RepairLift"),
-            ("SewingWork",.5,"SewingWork"),("SewingFold",2.,"SewingFold"),("SewingStow",3.8,"SewingBox")):
-        repair=action.startswith("Repair");role="RepairNeighbor" if repair else "SewingWoman"
-        result=v.LifeResidentBuilder(role).build();frame,scale=author_frame(v,result,action,seconds)
+            ("SewingWork",.5,"SewingWork"),("SewingFold",2.,"SewingFold"),("SewingStow",2.05,"SewingBox")):
+        repair=action.startswith("Repair")
+        result=catalogue_rig(v,repair,preview=True);frame,scale=author_frame(v,result,action,seconds)
+        dress_preview(v,result,repair)
         result.root.scale=(scale,scale,scale)
         selected=("Workbench","ChairFrame","RepairRail","RepairClamp","Hammer","HammerHead") if repair else (
             "SewingTable","SewingSeat","BoxShelf","Box","BoxLid","Cloth","ClothFlap","Mitten","Thread")
@@ -313,13 +421,8 @@ def render_previews(v,assets,sources):
             for mat in obj.data.materials:
                 mat.use_nodes=True;shader=mat.node_tree.nodes.get("Principled BSDF")
                 if shader:shader.inputs["Base Color"].default_value=mat.diffuse_color;shader.inputs["Roughness"].default_value=.9
-        mat=result.material;nodes=mat.node_tree.nodes;shader=next(n for n in nodes if n.type=="BSDF_PRINCIPLED")
-        tint=nodes.new("ShaderNodeObjectInfo");texture=nodes.new("ShaderNodeTexImage")
-        texture.image=bpy.data.images.load(str(assets/(role+"Atlas.png")));texture.interpolation="Closest"
-        mix=nodes.new("ShaderNodeMixRGB");mix.blend_type="MULTIPLY";mix.inputs[0].default_value=1
-        mat.node_tree.links.new(tint.outputs["Color"],mix.inputs[1]);mat.node_tree.links.new(texture.outputs["Color"],mix.inputs[2])
-        mat.node_tree.links.new(mix.outputs[0],shader.inputs["Base Color"])
         scene=bpy.context.scene;scene.render.resolution_x=960;scene.render.resolution_y=960
+        if scene.world is None: scene.world=bpy.data.worlds.new("Workshop review")
         scene.world.color=(.22,.24,.26)
         for location,power,size in (((-3,-4,5),800,5),((3,-1,3),500,4),((0,3,3),700,3)):
             light=bpy.data.lights.new("ReviewSoftbox","AREA");light.energy=power;light.shape="DISK";light.size=size
@@ -338,7 +441,7 @@ def build(v,args,assets,sources):
         render_previews(v,assets,sources)
         return
     if getattr(args,"workroom_probe",False):
-        result=v.LifeResidentBuilder("SewingWoman").build()
+        result=catalogue_rig(v)
         for lean in (14,24,36,48):
             for side in (-45,-30,0,30,45):
                 try:author_frame(v,result,"SewingUnpack",.5,{"_lean":lean,"_side":side});error="OK"
@@ -346,11 +449,11 @@ def build(v,args,assets,sources):
                 shoulder=result.rig.pose.bones["upper_arm.L"].head
                 print("Probe",lean,side,"LShoulder",tuple(round(a,4) for a in shoulder),error,flush=True)
         return
-    protected=[assets/(role+suffix) for role in v.ROLE_NAMES+v.LIFE_ROLES for suffix in (".fbx",".json","Atlas.png")]
+    protected=[assets/(role+suffix) for role in v.ROLE_NAMES+v.PUBLISHED_LIFE_ROLES for suffix in (".fbx",".json","Atlas.png")]
     protected += [assets/(bank+suffix) for bank in ("VillageResidentActions","VillageResidentLifeActions") for suffix in (".fbx",".json")]
-    protected += [sources/(role+suffix) for role in v.ROLE_NAMES+v.LIFE_ROLES for suffix in (".blend",".png")]
+    protected += [sources/(role+suffix) for role in v.ROLE_NAMES+v.PUBLISHED_LIFE_ROLES for suffix in (".blend",".png")]
     hashes={str(p.relative_to(v.ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in protected}
-    result=v.LifeResidentBuilder("SewingWoman").build();rig=result.rig;curves=[];tracks=[];samples=0;grip_error=0.;floor_error=0.
+    result=catalogue_rig(v);rig=result.rig;curves=[];tracks=[];samples=0;grip_error=0.;floor_error=0.
     for name,duration,loop in CLIPS:
         action=bpy.data.actions.new(name);action.use_fake_user=True;action.use_frame_range=True
         end=round(duration*24);action.frame_start=0;action.frame_end=end;action.use_cyclic=loop

@@ -12,8 +12,9 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--validate-only", action="store_true")
     parser.add_argument("--layout-only", action="store_true")
+    parser.add_argument("--workroom-only", action="store_true", help="Repaint house 08 in the shipped atlas")
     args = parser.parse_args(sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else [])
-    result = prepare(args.validate_only, args.layout_only)
+    result = prepare(args.validate_only, args.layout_only, args.workroom_only)
     print("VILLAGE UNIQUE SURFACES OK: " + result["uv_signature"], flush=True)
 
 

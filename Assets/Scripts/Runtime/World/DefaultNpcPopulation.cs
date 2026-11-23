@@ -12,6 +12,20 @@ namespace BarPromenade
         public const string CanneryRetort = "cannery.retort";
         public const string DeliveryDriver = "cannery.delivery-driver";
         public const string VillageStationWorker = "village.station-worker";
+        public const string Severin = "village.repair-neighbor";
+        public const string Marta = "village.sewing-woman";
+        private static readonly Dictionary<string, Color> CarpenterDyes = new Dictionary<string, Color>
+        {
+            ["CLO_ApronPanel"] = new Color32(113, 88, 62, 255), ["CLO_ApronPocket"] = new Color32(97, 99, 74, 255),
+            ["CLO_ApronStrap.L"] = new Color32(83, 66, 49, 255), ["CLO_ApronStrap.R"] = new Color32(83, 66, 49, 255)
+        };
+        private static readonly Dictionary<string, Color> SeamstressDyes = new Dictionary<string, Color>
+        {
+            ["CLO_Cardigan"] = new Color32(77, 89, 103, 255), ["CLO_CardiganPlacket"] = new Color32(119, 111, 103, 255),
+            ["CLO_CardiganSleeve.L"] = new Color32(77, 89, 103, 255), ["CLO_CardiganSleeve.R"] = new Color32(77, 89, 103, 255),
+            ["CLO_CardiganCuff.L"] = new Color32(104, 106, 105, 255), ["CLO_CardiganCuff.R"] = new Color32(104, 106, 105, 255),
+            ["CLO_CardiganCollar"] = new Color32(95, 100, 103, 255)
+        };
         // Added after existing allocation identities: preserve their appearances.
         public static string CafeCharacterId(MountainRoadCafeCastRole role) => role switch
         {
@@ -465,6 +479,16 @@ namespace BarPromenade
                 new SlotConstraint("scarf", "scarf.warm"), new SlotConstraint("headwear", new string[] { null }),
                 new SlotConstraint("trousers", "trousers.everyday"), new SlotConstraint("boots", "boots.everyday"),
                 new SlotConstraint("gloves", new string[] { null })));
+            roster.Add(new CharacterDefinition(Severin, model, false,
+                new SlotConstraint("shirt", "shirt.warm"), new SlotConstraint("outerwear", new string[] { null }),
+                new SlotConstraint("headwear", "headwear.everyday"), new SlotConstraint("apron", "apron.work"),
+                new SlotConstraint("gloves", new string[] { null }), new SlotConstraint("scarf", new string[] { null }),
+                new SlotConstraint("boots", "boots.work"), new SlotConstraint("trousers", "trousers.work")));
+            roster.Add(new CharacterDefinition(Marta, DefaultNpcCatalog.OrdinaryWoman, false,
+                new SlotConstraint("outerwear", "outerwear.cardigan"), new SlotConstraint("hair", "hair.braid"),
+                new SlotConstraint("headwear", new string[] { null }), new SlotConstraint("scarf", new string[] { null }),
+                new SlotConstraint("gloves", new string[] { null }), new SlotConstraint("shirt", "shirt.everyday"),
+                new SlotConstraint("trousers", "trousers.work"), new SlotConstraint("boots", "boots.everyday")));
             return roster.ToArray();
 
             void RegisterCafeMan(MountainRoadCafeCastRole role, string coat, string hat, string apron) =>
@@ -598,7 +622,7 @@ namespace BarPromenade
             bool parkPlayer = character.Id == ParkChessPlayer || character.Id == ParkCheckersPlayer;
             string[] faces = parkPlayer ? new[] { character.Id == ParkChessPlayer ? "face-02" : "face-03" } :
                 transit ? model.TransitFaces : model.Faces;
-            var dimensions = new List<string[]> { faces, parkPlayer ? new[] { "gray" } : model.HairColors };
+            var dimensions = new List<string[]> { faces, (parkPlayer || character.Id == Severin || character.Id == Marta) ? new[] { "gray" } : model.HairColors };
             int outerwearDimension = -1;
             var addedOuterwear = new List<string>();
             var constraints = new Dictionary<string, SlotConstraint>(StringComparer.Ordinal);
@@ -800,6 +824,8 @@ namespace BarPromenade
             if (appearance == null) throw new InvalidOperationException("The default NPC has no appearance owner.");
             var bodyShape = actor.GetComponent<DefaultNpcBodyShape>();
             if (bodyShape == null) throw new InvalidOperationException("The default NPC has no body-shape owner.");
+            actor.GetComponent<NpcWardrobe>().SetGarmentDyes(assignment.CharacterId == Severin ? CarpenterDyes :
+                assignment.CharacterId == Marta ? SeamstressDyes : null);
             appearance.ApplySelection(assignment.CharacterId, assignment.FaceId, assignment.HairColorId, assignment.ItemIds);
             if (assignment.UsesRandomBody) bodyShape.Apply(assignment.HeightCm, assignment.Build);
             else bodyShape.PreserveAuthoredAnatomy();

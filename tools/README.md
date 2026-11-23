@@ -91,15 +91,13 @@ Close Unity. Hero export → portraits, scarf, lamp and
 `refresh-default-npc-damage.py --hero` → `HeroDerivedAssetSetup.RebuildBatch`.
 Worker: `DefaultMaleAnatomy.blend` → `refresh-default-npc-damage --npc-head`.
 Both rebuild Walks. Staging: `--model-dir` / `--source-dir`.
-Residents:WoodWoman/actions;`--phase-two`:four;prebuild imports props/doors.
+Residents: WoodWoman/actions; `--phase-two`: two bodies and shared actions. House 08 uses the default cast.
 
 ```powershell
 python tools/run-blender.py tools/build-village-life-props-3d-model.py --expect Assets/Resources/VillageLife/VillageLifeProps3D.fbx --expect Assets/Resources/VillageLife/VillageLifeProps3D.json -- --no-preview
 python tools/run-blender.py tools/build-default-npc-3d-model.py --expect Assets/Resources/VillageLife/StationWorker.fbx --expect Assets/Resources/VillageLife/StationWorker.json -- --no-preview
 python tools/run-blender.py tools/build-village-residents-3d-model.py --expect Assets/Resources/VillageLife/WoodWoman.fbx --expect Assets/Resources/VillageLife/VillageResidentActions.fbx --expect Assets/Resources/VillageLife/VillageResidentActions.json -- --no-preview
 python tools/run-blender.py tools/build-village-residents-3d-model.py `
-  --expect Assets/Resources/VillageLife/RepairNeighbor.fbx `
-  --expect Assets/Resources/VillageLife/SewingWoman.fbx `
   --expect Assets/Resources/VillageLife/SnowNeighbor.fbx `
   --expect Assets/Resources/VillageLife/BasketVisitor.fbx `
   --expect Assets/Resources/VillageLife/VillageResidentLifeActions.fbx `
