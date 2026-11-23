@@ -451,7 +451,13 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(light.type, Is.EqualTo(LightType.Spot));
                 Assert.That(light.shadows, Is.EqualTo(LightShadows.Hard));
                 Assert.That(light.range, Is.InRange(5f, 6.5f));
-                Assert.That(Vector3.Dot(light.transform.forward, Vector3.down), Is.GreaterThan(.8f));
+                if (canopy)
+                {
+                    Vector3 door = city.World.EastExitPlan.BoothPosition + new Vector3(.48f, 1.27f, -1.68f);
+                    Assert.That(Vector3.Angle(light.transform.forward, door - light.transform.position),
+                        Is.LessThan(light.spotAngle * .5f));
+                }
+                else Assert.That(Vector3.Dot(light.transform.forward, Vector3.down), Is.GreaterThan(.8f));
                 CityLightHalo halo = light.GetComponentInChildren<CityLightHalo>(true);
                 Assert.That(halo != null && halo.IsVisible, Is.True, "Every local fixture keeps its small daytime fog halo.");
                 Transform fixture = light.transform.parent;

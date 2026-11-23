@@ -5,7 +5,7 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-23
 
-CitySouthTunnel covers masonry, drain, rain and return. CityTrawlerVisit checks hull/cargo. CityPort's road assertion expects an enabled source mesh. CityBoatRentalStation covers sign UVs, rests and return. ImageGenCityMap_PreservesPlanAndLivePlaces checks the redraw. CityRiverEmbankments covers walks/03. validate_mooring_feet checks contact.
+CityCheckpointFinishes checks door/road illumination, closed boom, dry gravel and both E replies. CitySouthTunnel covers masonry, drain, rain and return. CityTrawlerVisit checks hull/cargo. CityPort's road assertion expects an enabled source mesh. CityBoatRentalStation covers sign UVs, rests and return. ImageGenCityMap_PreservesPlanAndLivePlaces checks the redraw. CityRiverEmbankments covers walks/03. validate_mooring_feet checks contact.
 CityParkBandstand checks seats, corner clicks, one lamp and resident outfits.
 
 CityCanneryFinishes checks the rebuilt bay, work surfaces, dispatch and the equipped apron panels in pose.
@@ -16,8 +16,7 @@ CityAsphaltPaving shows staggered runs, sealed joints and fine aggregate under s
 CityGroceryStreetFinishes checks the surveyed curb and running bond. BeerCanFinishFollowsTheHeldParts checks sleeve fibres, grip polish and lid marks in hand.
 CityGrocerySignFromStreet checks both approaches and overlapping night lights.
 CityWaterworksPaving checks stone, trough, spout and caged lamp.
-The column, zinc bypass, worn wheel and drains share a metallic atlas. The City misc Blender
-generator checks the remaining catalogue against the previous revision.
+Column, bypass, wheel and drains share an atlas. The City misc Blender generator checks the catalogue against its previous revision.
 CityClosedCinema checks the prints on both mirrored facades. CityLastRouteIsland checks the raised stone against the common ground, sit dock and bin clearance. Folded roofs, a chipped mast and empty departure tracks read from both approaches.
 The focused City publisher checks the new sheets. The older
 BuildingOldTownFacadePrimary dimension mismatch remains.
@@ -38,8 +37,7 @@ covers boarding and transfers.
 
 Placed bins by service yards and phones by public approaches. The hero opens
 the lid, inspects wet cardboard and dials with the extended right index.
-Esc/Q hang up and walk out from any view. The lid, door, cradle and moving
-keys play generated mechanical contacts in the world mix.
+Esc/Q exit any view. Lid, door, cradle and keys play mechanical world sounds.
 `LiveCity_StreetUtilitiesWalkOpenCallAndLeave` verified public approaches,
 rendered index contact, physical key travel, both keyboard exits and audible cues. The Blender FBX check reads
 the keys from the caller's side and measures the cardboard against all walls.

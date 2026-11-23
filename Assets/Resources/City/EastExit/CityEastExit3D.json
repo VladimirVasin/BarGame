@@ -1,8 +1,8 @@
 {
   "generator": "tools/build-city-east-exit-3d-model.py",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "design_id": "city_civilian_east_exit_v1",
-  "signature": "e9a9a2b12569dcfc76fb7006418e84169cd78a6d137c8d65a205a68127feb87e",
+  "signature": "462d7683eda2d35e2a6312cb2ca118831723838072acc938313eb21a9afadb76",
   "export_settings": {
     "axis_forward": "-Z",
     "axis_up": "Y",
@@ -22,9 +22,14 @@
   "barrier_clearance_below_grille": 0.095,
   "anchors": {
     "Lamp/LightAnchor": [
-      0.32,
-      3.335,
-      0
+      -0.550000011920929,
+      5.820000171661377,
+      0.550000011920929
+    ],
+    "Lamp/RoadAim": [
+      -0.6394869089126587,
+      4.974845886230469,
+      1.0769784450531006
     ]
   },
   "assemblies": [
@@ -107,16 +112,16 @@
         {
           "mesh": "EEX_Booth_Stone",
           "role": "Stone",
-          "vertex_count": 128,
-          "triangle_count": 224,
+          "vertex_count": 512,
+          "triangle_count": 896,
           "bounds_min_unity": [
-            -1.655,
+            -1.59,
             0.0,
             -2.165
           ],
           "bounds_max_unity": [
-            1.655,
-            1.225,
+            1.59,
+            0.5575,
             1.79
           ]
         },
@@ -139,24 +144,24 @@
         {
           "mesh": "EEX_Booth_Glass",
           "role": "Glass",
-          "vertex_count": 48,
-          "triangle_count": 84,
+          "vertex_count": 80,
+          "triangle_count": 140,
           "bounds_min_unity": [
-            -1.4375,
-            1.295,
+            -1.4365,
+            1.273,
             -1.6725
           ],
           "bounds_max_unity": [
-            1.4375,
-            2.205,
-            0.865
+            1.4365,
+            2.215,
+            0.877
           ]
         },
         {
           "mesh": "EEX_Booth_Metal",
           "role": "Metal",
-          "vertex_count": 272,
-          "triangle_count": 476,
+          "vertex_count": 320,
+          "triangle_count": 560,
           "bounds_min_unity": [
             -1.73,
             0.084311,
@@ -171,17 +176,33 @@
         {
           "mesh": "EEX_Booth_Dark",
           "role": "Dark",
-          "vertex_count": 128,
-          "triangle_count": 224,
+          "vertex_count": 256,
+          "triangle_count": 448,
           "bounds_min_unity": [
-            -1.31,
+            -1.459,
             0.17,
             -1.792
           ],
           "bounds_max_unity": [
-            1.31,
-            1.577,
+            1.459,
+            2.21,
             1.51
+          ]
+        },
+        {
+          "mesh": "EEX_Booth_Zinc",
+          "role": "Zinc",
+          "vertex_count": 128,
+          "triangle_count": 224,
+          "bounds_min_unity": [
+            -1.6835,
+            1.1225,
+            -1.015
+          ],
+          "bounds_max_unity": [
+            1.6835,
+            1.2325,
+            1.015
           ]
         },
         {
@@ -199,6 +220,22 @@
             3.094839,
             1.92
           ]
+        },
+        {
+          "mesh": "EEX_Booth_Bright",
+          "role": "Bright",
+          "vertex_count": 40,
+          "triangle_count": 72,
+          "bounds_min_unity": [
+            0.899,
+            0.49,
+            -1.772825
+          ],
+          "bounds_max_unity": [
+            0.947,
+            1.93,
+            -1.727175
+          ]
         }
       ]
     },
@@ -211,7 +248,7 @@
       ],
       "bounds_max_unity": [
         0.25,
-        1.2825,
+        1.307,
         3.37
       ],
       "parts": [
@@ -227,24 +264,56 @@
           ],
           "bounds_max_unity": [
             0.25,
-            0.2,
+            0.19,
             3.37
+          ]
+        },
+        {
+          "mesh": "EEX_Barrier_Zinc",
+          "role": "Zinc",
+          "vertex_count": 240,
+          "triangle_count": 420,
+          "bounds_min_unity": [
+            -0.185,
+            0.187,
+            -3.315
+          ],
+          "bounds_max_unity": [
+            0.185,
+            1.297,
+            3.315
+          ]
+        },
+        {
+          "mesh": "EEX_Barrier_Bright",
+          "role": "Bright",
+          "vertex_count": 136,
+          "triangle_count": 232,
+          "bounds_min_unity": [
+            -0.225,
+            0.2295,
+            -3.288187
+          ],
+          "bounds_max_unity": [
+            0.1975,
+            1.273,
+            3.288187
           ]
         },
         {
           "mesh": "EEX_Barrier_Metal",
           "role": "Metal",
-          "vertex_count": 528,
-          "triangle_count": 924,
+          "vertex_count": 480,
+          "triangle_count": 840,
           "bounds_min_unity": [
-            -0.16,
-            0.095,
-            -3.36
+            -0.175,
+            0.096,
+            -3.285
           ],
           "bounds_max_unity": [
-            0.25,
-            1.2825,
-            3.285
+            0.175,
+            1.307,
+            3.245
           ]
         },
         {
@@ -253,14 +322,14 @@
           "vertex_count": 16,
           "triangle_count": 28,
           "bounds_min_unity": [
-            -0.08,
-            1.1,
-            -3.08
+            -0.0805,
+            1.0865,
+            -3.28
           ],
           "bounds_max_unity": [
-            0.08,
-            1.28,
-            3.08
+            0.0805,
+            1.2935,
+            3.18
           ]
         }
       ]
@@ -297,8 +366,8 @@
         {
           "mesh": "EEX_Fence_Metal",
           "role": "Metal",
-          "vertex_count": 416,
-          "triangle_count": 728,
+          "vertex_count": 480,
+          "triangle_count": 840,
           "bounds_min_unity": [
             -0.07,
             0.1,
@@ -315,7 +384,7 @@
     {
       "name": "Gate",
       "bounds_min_unity": [
-        -0.125,
+        -0.1465,
         0.0,
         -0.825
       ],
@@ -344,10 +413,10 @@
         {
           "mesh": "EEX_Gate_Metal",
           "role": "Metal",
-          "vertex_count": 224,
-          "triangle_count": 392,
+          "vertex_count": 288,
+          "triangle_count": 504,
           "bounds_min_unity": [
-            -0.095,
+            -0.089,
             0.1,
             -0.77
           ],
@@ -355,6 +424,38 @@
             0.07,
             1.855,
             0.77
+          ]
+        },
+        {
+          "mesh": "EEX_Gate_Zinc",
+          "role": "Zinc",
+          "vertex_count": 48,
+          "triangle_count": 84,
+          "bounds_min_unity": [
+            -0.123,
+            0.3315,
+            -0.69
+          ],
+          "bounds_max_unity": [
+            -0.0395,
+            1.5285,
+            0.7085
+          ]
+        },
+        {
+          "mesh": "EEX_Gate_Bright",
+          "role": "Bright",
+          "vertex_count": 56,
+          "triangle_count": 100,
+          "bounds_min_unity": [
+            -0.1465,
+            0.291,
+            -0.675679
+          ],
+          "bounds_max_unity": [
+            -0.054,
+            1.569,
+            0.7
           ]
         }
       ]
@@ -519,14 +620,14 @@
     {
       "name": "Lamp",
       "bounds_min_unity": [
-        -0.23,
+        -0.929103,
         0.0,
         -0.23
       ],
       "bounds_max_unity": [
-        0.555,
-        3.495,
-        0.23
+        0.23,
+        6.089694,
+        0.700447
       ],
       "parts": [
         {
@@ -546,19 +647,51 @@
           ]
         },
         {
-          "mesh": "EEX_Lamp_Metal",
-          "role": "Metal",
-          "vertex_count": 48,
-          "triangle_count": 84,
+          "mesh": "EEX_Lamp_Zinc",
+          "role": "Zinc",
+          "vertex_count": 52,
+          "triangle_count": 92,
           "bounds_min_unity": [
-            -0.061,
-            0.11,
-            -0.14
+            -0.905631,
+            0.22,
+            -0.16
           ],
           "bounds_max_unity": [
-            0.555,
-            3.495,
-            0.14
+            0.16,
+            6.004676,
+            0.700447
+          ]
+        },
+        {
+          "mesh": "EEX_Lamp_Bright",
+          "role": "Bright",
+          "vertex_count": 48,
+          "triangle_count": 80,
+          "bounds_min_unity": [
+            -0.144,
+            0.269,
+            -0.140785
+          ],
+          "bounds_max_unity": [
+            0.144,
+            0.299,
+            0.140785
+          ]
+        },
+        {
+          "mesh": "EEX_Lamp_Metal",
+          "role": "Metal",
+          "vertex_count": 80,
+          "triangle_count": 144,
+          "bounds_min_unity": [
+            -0.929103,
+            0.24,
+            -0.078
+          ],
+          "bounds_max_unity": [
+            0.078,
+            6.089694,
+            0.694571
           ]
         },
         {
@@ -567,18 +700,18 @@
           "vertex_count": 16,
           "triangle_count": 28,
           "bounds_min_unity": [
-            0.15,
-            3.3425,
-            -0.095
+            -0.861082,
+            5.728207,
+            0.397943
           ],
           "bounds_max_unity": [
-            0.49,
-            3.3675,
-            0.095
+            -0.234265,
+            5.955742,
+            0.674654
           ]
         }
       ]
     }
   ],
-  "triangle_count": 6744
+  "triangle_count": 9284
 }

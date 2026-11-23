@@ -520,10 +520,10 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   flood route on a narrow embedded trace — and the fourth runs through the open
   tunnel forecourt. Fringe dressing adds no destination, Light or world bounds;
   the eastern valley is a separate passive panorama;
-- Default `CityEastExitPlanner`: actual compact eastern street→post `12 m`
-  setback; the imported profile joins that same datum, with the real road
-  ending `32 m` past the post. Flat first `10 m`; `5/4 m` apron/blend;
-  booth/barrier/gate/fences close map/physics.
+- `CityEastExitPlanner`: post `12 m` off street; real road ends `32 m` beyond.
+  Shared datum; flat first `10 m`, `5/4 m` apron/blend. Booth, boom, gate
+  and fences close map/physics. Framed windows, masonry plinth and pivot share
+  a finish atlas. Canopy shelters rain and gravel, with a wet drip edge.
   `CityEastGroundTransition*`: grass-soil `3–5 m` in `8 m`, shared UVs/edge/footsteps.
   `CityEast{Swale,Relief,Tree}Plan`: graded hollow/level crossings, seeded
   metre relief/fixed edges/pads; shared render/physics/map; sparse `3–5 m`
@@ -536,12 +536,12 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   catalog sparse city-wide: sidewalk edges, lot bands at walls, tide line, ≤6
   by park benches/paths; off roads/crossings/scenes/yards/cemetery/church/bar
   yard; `1.5 m` gaps, same variant ≥`18/45/90 m`; one instancer.
-  Fixed lamp + canopy/shed Spots: day floor/halos/hard shadows.
+  Road optic spans junction to boom; canopy washes door. Canopy/shed Spots: day floor/halos/shadows.
   `CityEastRoadProfile`: shared road/land/car/lamp datum; `RoadGroundCuts` bends.
   First mast keeps a fixed Light; later shells/lenses/halos/pools are passive.
   East valley skyline/windows/glow fade 12–30m from post. Far-depth (.20m)
   panorama and traffic fade on entering either southern hill over 12m.
-  The checkpoint uses the lowland visibility band.
+  Post uses lowland visibility.
   2 cars: exported lanes/session phase/pause/time guard;
   no gameplay/Light/physics/shadow/audio;
 - `CityEastGuardDuty`: one home, one three-point out-and-back patrol; swap

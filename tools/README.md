@@ -14,10 +14,9 @@ staged `--model-dir`/`--source-dir`/`--texture-dir`, `--no-preview`.
 `PawnshopAssetSetup.EnsureAssetsReady`:import/bounds/materials.
 Bench:`build-city-bench-{access-stair,pigeon-statue,flowerbed}-3d-model.py`
 
-`build-city-east-{exit,guards}-3d-model.py`: `--near-only`, `--distance-only`
-(`city_east_distance.py`), `--dressing-only`; `Assets/Resources/City/EastExit`,
-source `ArtSource/City/EastExit`.
-`build-city-east-ground-texture.py --verify`: grass/soil seam.
+`build-city-east-{exit,guards}-3d-model.py`: EastExit in Resources/City and ArtSource/City.
+Exit: `--near-only`, `--distance-only`, `--dressing-only`.
+`build-east-checkpoint-finishes.py --check`: atlas; `build-city-east-ground-texture.py --verify`: verge.
 
 `build-city-{buildings,coastal-infrastructure,street-profile,terrace,misc}-3d-model.py`:
 launcher/`--validate-only`. Buildings: `Assets/City/Models/CityBuildings3D.{fbx,json}`;

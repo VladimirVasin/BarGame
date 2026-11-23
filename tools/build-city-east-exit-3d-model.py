@@ -21,11 +21,14 @@ sys.path.insert(0, str(ROOT / "tools"))
 import interior_kit as kit
 import bar_parts as bp
 import city_east_distance as mainland
+import east_checkpoint_uv as finish
 import bpy
 from mathutils import Vector
 
-VERSION = "1.1.1"
-DRESSING_VERSION = "1.2.0"
+VERSION = "1.2.0"
+DRESSING_VERSION = "1.3.0"
+ROAD_LENS = Vector((-.55, 5.82, .55))
+ROAD_BEAM = Vector((-.09, -.85, .53)).normalized()
 EXPORT_SETTINGS = {
     "axis_forward": "-Z", "axis_up": "Y",
     "apply_scale_options": "FBX_SCALE_NONE", "bake_space_transform": False,
@@ -39,6 +42,7 @@ COLORS = {
     "Wall": (.53, .49, .38, 1), "Roof": (.18, .22, .20, 1),
     "Metal": (.22, .29, .26, 1), "Glass": (.12, .21, .22, 1),
     "Dark": (.065, .080, .072, 1), "Wood": (.25, .22, .16, 1),
+    "Zinc": (.44, .45, .39, 1), "Bright": (.40, .42, .39, 1),
     "Glow": (1.0, .64, .27, 1), "Foliage": (.27, .31, .20, 1),
 }
 PITCH = {"Ground": 12, "Asphalt": 12, "Paint": 2, "Stone": 2,
@@ -245,16 +249,24 @@ def make_dressing():
     for x in (-1.55, 0, 1.55):
         add("Shelter", "Metal", beam((x, roof_height(-1.54) - .025, -1.54),
             (x, roof_height(1.54) - .025, 1.54), .06, .045))
-    roof = box((0, 0, 0), (3.60, .045, 3.20), .007)
-    roof = ([tuple((x, y + roof_height(z), z)) for x, y, z in roof[0]], roof[1])
-    add("Shelter", "Roof", roof)
-    for x in (-1.25, -.63, .02, .65, 1.28):
-        add("Shelter", "Roof", beam((x, roof_height(-1.57) + .024, -1.57),
-            (x, roof_height(1.57) + .024, 1.57), .025, .018))
-    add("Shelter", "Metal", beam((-1.79, 2.487, -1.585), (1.79, 2.487, -1.585), .04, .08),
-        box((0, 2.586, 1.565), (3.48, .128, .07), .008))
-    for x in (-1.5, -.5, .5, 1.5):
-        add("Shelter", "Metal", box((x, 2.532, 1.57), (.09, .23, .06), .006))
+    # Individual turned-down trays seat on the two purlins. The flashing
+    # overlaps the booth wall, and the front lip sheds rain beyond the posts.
+    for bay in range(6):
+        x = -1.8 + (bay + .5) * .6
+        sheet = box((x, 0, 0), (.594, .035, 3.20), .006)
+        add("Shelter", "Roof", ([(a, b + roof_height(c), c) for a,b,c in sheet[0]], sheet[1]))
+        add("Shelter", "Zinc", beam((x-.29,roof_height(-1.58)+.020,-1.58),
+                                    (x-.29,roof_height(1.59)+.020,1.59),.028,.035))
+    add("Shelter", "Zinc", box((0,2.617,1.57),(3.5,.082,.080),.007),
+        box((0,2.482,-1.58),(3.60,.085,.042),.006))
+    for x in (-1.55,1.55):
+        for z in (-1.30,1.48):
+            add("Shelter","Metal",box((x,roof_height(z)-.10,z),(.21,.15,.064),.010))
+        add("Shelter","Metal",box((x,.158,-1.3),(.21,.030,.21),.008))
+    # The existing lamp anchor sits below this screwed-on support strap.
+    add("CanopyLamp","Zinc",box((0,.076,0),(.51,.055,.15),.008))
+    for x in (-.19,.19):
+        add("CanopyLamp","Metal",cylinder((x,.040,0),.023,.022,8))
 
     # Worn slats with real gaps, eased corners and a slightly reclining back.
     for x in (-.70, .70):
@@ -511,16 +523,22 @@ def make_assemblies():
     door_opening = kit.Opening(center=.48, width=.94, sill=0, head=2.22)
     add("Booth", "Wall", move(wall(2.64, [door_opening]), (0, 0, -1.61)),
         move(wall(2.64), (0, 0, 1.61)))
-    # The window plane sits 7cm behind the outer wall, not on its face.
-    for side in (-1, 1):
-        x = side * 1.425
-        add("Booth", "Glass", box((x, 1.75, 0), (.025, .91, 1.73), .003))
-        for z in (-.915, .915):
-            add("Booth", "Metal", box((side * 1.46, 1.75, z), (.055, 1.08, .07), .008))
-        for y in (1.21, 2.29):
-            add("Booth", "Metal", box((side * 1.46, y, 0), (.06, .07, 1.90), .008))
-        add("Booth", "Metal", box((side * 1.46, 1.75, .28), (.065, 1.01, .055), .005))
-        add("Booth", "Stone", box((side * 1.52, 1.19, 0), (.27, .07, 2.03), .015))
+    # Double rebates around two opaque panes; folded zinc sill with a real drip.
+    for side in (-1,1):
+        for low,high in [(-.877,.219),(.277,.877)]:
+            add("Booth","Glass",box((side*1.423,1.744,(low+high)*.5),
+                (.027,.942,high-low),.004))
+        for z in (-.917,.248,.917):
+            add("Booth","Metal",box((side*1.460,1.747,z),(.083,1.075,.071),.009))
+        for y in (1.235,2.265):
+            add("Booth","Metal",box((side*1.475,y,0),(.11,.078,1.90),.010))
+        for z in (-.862,.197,.301,.864):
+            add("Booth","Dark",box((side*1.449,1.75,z),(.020,.92,.012),.003))
+        add("Booth","Zinc",bp.u_rotated_about(box((side*1.531,1.185,0),
+            (.30,.046,2.03),.007),(0,0,-side*7),(side*1.531,1.185,0)),
+            box((side*1.671,1.15,0),(.025,.055,2.03),.006))
+        for z in (-.992,.992):
+            add("Booth","Zinc",box((side*1.539,1.196,z),(.28,.073,.028),.006))
     add("Booth", "Dark", box((0, .2, 0), (2.62, .06, 3.02), .008))
     # Door is closed, recessed, with pressed lower panel and actual handle hardware.
     add("Booth", "Metal", box((.48, 1.27, -1.62), (.85, 2.18, .065), .018),
@@ -538,26 +556,50 @@ def make_assemblies():
         add("Booth", "Roof", beam((-1.70, 3.086, z), (1.70, 2.962, z), .034, .018))
     add("Booth", "Metal", cylinder((1.48, 1.45, 1.66), .042, 2.6),
         beam((1.48, .19, 1.66), (1.65, .12, 1.76), .08))
-    # Worn lower courses and one old repair: geometry lives away from wall planes.
-    for x, z, sx, sz in ((-1.514, -.70, .016, .65), (-1.514, .84, .016, .45),
-                          (.90, -1.714, .34, .016), (-.85, -1.714, .56, .016)):
-        add("Booth", "Stone", box((x, .33, z), (sx, .25, sz), .003))
+    # Two courses wrap the original slab. The door threshold interrupts them.
+    for sign in (-1,1):
+        for course in range(2):
+            y=.255+course*.205
+            cuts = [-1.68,-.86,-.04,.82,1.68] if course==0 else [-1.68,-1.27,-.43,.40,1.24,1.68]
+            for lo,hi in zip(cuts,cuts[1:]):
+                add("Booth","Stone",box((sign*1.526,y,(lo+hi)*.5),(.079,.195,hi-lo-.012),.013))
+            for lo,hi in [(-1.49,-.80),(-.785,-.05),(.987,1.49)] if sign<0 else [(-1.49,-.52),(-.50,.49),(.51,1.49)]:
+                add("Booth","Stone",box(((lo+hi)*.5,y,sign*1.72),(hi-lo,.195,.056),.012))
+    for x in (-.004,.964):
+        add("Booth","Metal",box((x,1.249,-1.711),(.065,2.17,.085),.010))
+    add("Booth","Metal",box((.48,2.328,-1.711),(1.034,.063,.085),.009))
+    for y in (.55,1.87):
+        add("Booth","Bright",cylinder((.923,y,-1.75),.024,.12,10))
     add("Booth", "Metal", box((-.76, 1.42, -1.73), (.36, .52, .10), .02))
     for y in (1.25, 1.33, 1.41, 1.49, 1.57):
         add("Booth", "Dark", box((-.76, y, -1.787), (.26, .014, .01), .001))
 
     # Civilian boom with a hanging barred skirt; closure is readable below the beam.
-    for z in (-3.12, 3.12):
-        add("Barrier", "Stone", box((0, .10, z), (.50, .20, .50), .04))
-        add("Barrier", "Metal", box((0, .69, z), (.32, 1.18, .33), .03))
-    add("Barrier", "Paint", box((0, 1.19, 0), (.16, .18, 6.16), .014))
-    add("Barrier", "Metal", box((0, .13, 0), (.07, .07, 6.10), .009))
+    for z in (-3.12,3.12):
+        add("Barrier","Stone",box((0,.095,z),(.50,.19,.50),.025))
+        add("Barrier","Zinc",box((0,.21,z),(.37,.046,.39),.010))
+        for x in (-.14,.14):
+            for dz in (-.15,.15):
+                add("Barrier","Bright",cylinder((x,.245,z+dz),.021,.031,6))
+    # Offset cheeks expose the axle on the city side. The tip sits in a U saddle.
+    add("Barrier","Metal",box((0,.62,-3.12),(.28,.80,.33),.026),
+        box((0,.62,3.12),(.23,.80,.25),.018))
+    for x in (-.141,.141):
+        add("Barrier","Metal",box((x,1.082,-3.12),(.068,.45,.27),.019))
+        add("Barrier","Zinc",box((x,1.136,3.12),(.044,.20,.18),.008))
+    add("Barrier","Zinc",box((0,1.050,3.12),(.32,.05,.21),.008))
+    axle = cylinder((0,0,0),.083,.395,14)
+    add("Barrier","Bright",move(bp.u_rotated(axle,(0,0,90)),(0,1.19,-3.12)))
+    add("Barrier","Bright",move(bp.u_rotated(cylinder((0,0,0),.057,.034,6),(0,0,90)),(-.208,1.19,-3.12)))
+    add("Barrier","Paint",box((0,1.19,-.05),(.161,.207,6.46),.018))
+    add("Barrier","Metal",box((0,.13,0),(.065,.068,6.10),.007))
     for i in range(25):
-        z = -3 + i * .25
-        add("Barrier", "Metal", box((0, .64, z), (.055, 1.02, .045), .005))
-    for z in (-2.2, -.6, 1.0, 2.6):
-        add("Barrier", "Metal", box((-.086, 1.19, z), (.014, .185, .52), .002))
-    add("Barrier", "Metal", box((.13, 1.08, -3.12), (.24, .34, .48), .028))
+        z = -3+i*.25
+        add("Barrier","Metal",box((0,.607,z),(.041,.92,.032),.006))
+        if i%4==0:
+            add("Barrier","Zinc",box((-.048,1.059,z),(.065,.14,.073),.008))
+    for z in (-2.61,0,2.64):
+        add("Barrier","Zinc",box((0,1.19,z),(.176,.214,.043),.004))
 
     for group, length in (("Fence", 4), ("Gate", 1.4)):
         for z in (-length / 2, length / 2):
@@ -570,9 +612,17 @@ def make_assemblies():
         for i in range(1, count):
             z = -length / 2 + length * i / count
             add(group, "Metal", box((0, .94, z), (.035, 1.47, .035), .004))
+        for z in (-length/2+.09,length/2-.09):
+            for y in (.25,1.62):
+                add(group,"Metal",box((-.042,y,z),(.042,.09,.18),.008))
         if group == "Gate":
-            add(group, "Metal", beam((.04, .23, -.58), (.04, 1.64, .58), .035),
-                box((-.05, 1.01, .45), (.09, .06, .21), .006))
+            add(group,"Metal",beam((.04,.23,-.58),(.04,1.64,.58),.035))
+            for y in (.37,1.49):
+                add(group,"Zinc",box((-.061,y,-.57),(.043,.077,.24),.007))
+                add(group,"Bright",cylinder((-.081,y,-.65),.027,.158,10))
+            add(group,"Metal",box((-.064,1.00,.49),(.050,.14,.23),.012))
+            add(group,"Bright",box((-.113,1.035,.57),(.067,.042,.26),.008))
+            add(group,"Zinc",box((-.091,1.031,.685),(.064,.125,.047),.008))
 
     add("DrainCover", "Stone", box((0, -.095, 0), (1.2, .19, 8), .015))
     add("DrainCover", "Dark", box((0, .006, 0), (.83, .025, 7.74), .004))
@@ -597,12 +647,24 @@ def make_assemblies():
         foliage = kit.scaled(berm(), (.19, .56, .25))
         add("Shrub", "Foliage", move(foliage, (endpoint[0], endpoint[1] - .25, endpoint[2])))
 
-    # One hooded practical: small warm downward lens, no spotlight tower.
+    # Wide road optic on the original footing. Its visible glass and aim marker
+    # use the same basis, with bolts, a collar and a short arm carrying the head.
     add("Lamp", "Stone", box((0, .11, 0), (.46, .22, .46), .035))
-    add("Lamp", "Metal", cylinder((0, 1.78, 0), .061, 3.34),
-        beam((0, 3.35, 0), (.33, 3.44, 0), .07),
-        box((.32, 3.43, 0), (.47, .13, .28), .035))
-    add("Lamp", "Glow", box((.32, 3.355, 0), (.34, .025, .19), .008))
+    add("Lamp", "Zinc", box((0, .246, 0), (.32, .052, .32), .012),
+        cylinder((0, 3.42, 0), .084, .16, 10))
+    for x in (-.12, .12):
+        for z in (-.12, .12):
+            add("Lamp", "Bright", cylinder((x, .284, z), .024, .03, 6))
+    add("Lamp", "Metal", cylinder((0, 1.82, 0), .078, 3.16, 12),
+        cylinder((0, 4.69, 0), .061, 2.62, 12),
+        beam((0, 5.79, 0), (-.55, 5.99, .48), .082))
+    tilt = Vector((0, -1, 0)).rotation_difference(ROAD_BEAM)
+    def optic(role, center, size, bevel):
+        vertices, faces = box(center, size, bevel)
+        add("Lamp", role, ([tuple(ROAD_LENS + tilt @ Vector(v)) for v in vertices], faces))
+    optic("Metal", (0, .106, 0), (.76, .13, .41), .032)
+    optic("Zinc", (0, .048, 0), (.71, .042, .38), .012)
+    optic("Glow", (0, .026, 0), (.62, .024, .30), .012)
     return {group: {role: kit.merge_all(items) for role, items in roles.items()}
             for group, roles in assemblies.items()}
 
@@ -631,7 +693,7 @@ def manifest_for(assemblies):
             "colliders": False, "lights": False, "animation_count": 0,
             "road_asphalt_width": 6, "road_shoulder_width": 8, "road_unit_length": 10,
             "barrier_clearance_below_grille": .095,
-            "anchors": {"Lamp/LightAnchor": [.32, 3.335, 0]},
+            "anchors": {"Lamp/LightAnchor": list(ROAD_LENS), "Lamp/RoadAim": list(ROAD_LENS + ROAD_BEAM)},
             "assemblies": records,
             "triangle_count": sum(p["triangle_count"] for r in records for p in r["parts"])}
 
@@ -753,6 +815,35 @@ def validate_dressing(assemblies, manifest):
         raise ValueError("The inspection grate must remain low and embedded")
 
 
+def authoring_finish():
+    material = bpy.data.materials.new("East checkpoint finishes")
+    material.use_nodes = True
+    nodes = material.node_tree.nodes
+    links = material.node_tree.links
+    shader = nodes.get("Principled BSDF")
+    for suffix in ("Albedo", "Normal", "Mask"):
+        image = bpy.data.images.load(str(ROOT / "Assets/Resources/City/Surfaces" / ("EastCheckpoint" + suffix + ".png")), check_existing=True)
+        image.colorspace_settings.name = "sRGB" if suffix == "Albedo" else "Non-Color"
+        texture = nodes.new("ShaderNodeTexImage")
+        texture.image = image
+        if suffix == "Albedo":
+            links.new(texture.outputs["Color"], shader.inputs["Base Color"])
+        elif suffix == "Normal":
+            bump = nodes.new("ShaderNodeNormalMap")
+            links.new(texture.outputs["Color"], bump.inputs["Color"])
+            links.new(bump.outputs["Normal"], shader.inputs["Normal"])
+        else:
+            separate = nodes.new("ShaderNodeSeparateColor")
+            links.new(texture.outputs["Color"], separate.inputs["Color"])
+            links.new(separate.outputs["Red"], shader.inputs["Metallic"])
+            invert = nodes.new("ShaderNodeMath")
+            invert.operation = 'SUBTRACT'
+            invert.inputs[0].default_value = 1
+            links.new(texture.outputs["Alpha"], invert.inputs[1])
+            links.new(invert.outputs[0], shader.inputs["Roughness"])
+    return material
+
+
 def build_scene(assemblies, root_name="ROOT_CityEastExit3D"):
     bpy.ops.object.select_all(action="SELECT")
     bpy.ops.object.delete(use_global=False)
@@ -780,17 +871,25 @@ def build_scene(assemblies, root_name="ROOT_CityEastExit3D"):
             obj["role"] = material_role
             pitch = PITCH.get(material_role, DRESSING_PITCH.get(material_role))
             uv = mesh.uv_layers.new(name="UVMap")
+            atlas = group in finish.GROUPS and material_role != "Glow"
+            bounds = finish.solid_bounds(*geometry) if atlas else None
             for polygon in mesh.polygons:
                 axis = max(range(3), key=lambda i: abs(polygon.normal[i]))
                 axes = ((1, 2), (0, 2), (0, 1))[axis]
                 for loop in polygon.loop_indices:
-                    point = mesh.vertices[mesh.loops[loop].vertex_index].co
-                    uv.data[loop].uv = (point[axes[0]] / pitch, point[axes[1]] / pitch)
+                    index = mesh.loops[loop].vertex_index
+                    if atlas:
+                        uv.data[loop].uv = finish.chart(group, material_role, geometry[0][index],
+                            (0,2,1)[axis], bounds[index])
+                    else:
+                        point = mesh.vertices[index].co
+                        uv.data[loop].uv = (point[axes[0]] / pitch, point[axes[1]] / pitch)
     if "Lamp" in groups:
-        anchor = bpy.data.objects.new("LightAnchor", None)
-        scene.collection.objects.link(anchor)
-        anchor.parent = groups["Lamp"]
-        anchor.location = (.32, 0, 3.335)
+        for name, (x, y, z) in (("LightAnchor", ROAD_LENS), ("RoadAim", ROAD_LENS + ROAD_BEAM)):
+            anchor = bpy.data.objects.new(name, None)
+            scene.collection.objects.link(anchor)
+            anchor.parent = groups["Lamp"]
+            anchor.location = (x, z, y)
     for group, (x, y, z) in DRESSING_LIGHT_ANCHORS.items():
         if group not in groups:
             continue
@@ -918,6 +1017,22 @@ def run_distance(args):
     print(f"CITY EAST DISTANCE BUILD OK: {manifest['triangle_count']} triangles; {manifest['signature']}")
 
 
+def save_kit_source(path):
+    for image in bpy.data.images:
+        if image.name.startswith("EastCheckpoint") and image.filepath:
+            image.filepath = bpy.path.relpath(image.filepath, start=str(path.parent))
+    bpy.context.preferences.filepaths.save_version = 0
+    bpy.ops.wm.save_as_mainfile(filepath=str(path), check_existing=False, relative_remap=False)
+
+
+def bind_authoring_finish(groups):
+    material = authoring_finish()
+    for group in finish.GROUPS.intersection(groups):
+        for obj in groups[group].children:
+            if obj.type == "MESH" and obj.get("role") != "Glow":
+                obj.data.materials.append(material)
+
+
 def preview(groups, output):
     scene = bpy.context.scene
     materials = {}
@@ -961,7 +1076,8 @@ def preview(groups, output):
             obj = child.copy()
             obj.data = child.data.copy()
             obj.parent = None
-            obj.data.materials.append(materials[child["role"]])
+            if not obj.data.materials:
+                obj.data.materials.append(materials[child["role"]])
             obj.location = (position[0], position[2], position[1])
             obj.rotation_euler.z = -math.radians(yaw)
             stage.objects.link(obj)
@@ -1014,10 +1130,10 @@ def run_dressing(args):
     validate_dressing(assemblies, manifest)
     manifest_path = args.model_dir / "CityEastExitDressing3D.json"
     if args.preview_only:
-        root, groups = build_scene(assemblies, "ROOT_CityEastExitDressing3D")
+        _, groups = build_scene(assemblies, "ROOT_CityEastExitDressing3D")
+        bind_authoring_finish(groups)
         preview(groups, args.source_dir / "CityEastExitDressing3D.png")
-        bpy.context.preferences.filepaths.save_version = 0
-        bpy.ops.wm.save_as_mainfile(filepath=str(args.source_dir / "CityEastExitDressing3D.blend"), check_existing=False)
+        save_kit_source(args.source_dir / "CityEastExitDressing3D.blend")
         return
     if args.validate_only:
         if not manifest_path.is_file() or json.loads(manifest_path.read_text(encoding="utf-8")) != manifest:
@@ -1045,10 +1161,10 @@ def run_dressing(args):
         guid = hashlib.md5(("City/EastExit/CityEastExitDressing3D." + extension).encode()).hexdigest()
         lines = ["guid: " + guid if line.startswith("guid:") else line for line in template.splitlines()]
         meta_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    bind_authoring_finish(groups)
     if not args.no_preview:
         preview(groups, args.source_dir / "CityEastExitDressing3D.png")
-    bpy.context.preferences.filepaths.save_version = 0
-    bpy.ops.wm.save_as_mainfile(filepath=str(args.source_dir / "CityEastExitDressing3D.blend"), check_existing=False)
+    save_kit_source(args.source_dir / "CityEastExitDressing3D.blend")
     print(f"CITY EAST DRESSING BUILD OK: {manifest['triangle_count']} triangles; {manifest['signature']}")
     for record in manifest["assemblies"]:
         print(record["name"], record["bounds_min_unity"], record["bounds_max_unity"], flush=True)
@@ -1113,13 +1229,13 @@ def main():
         bake_space_transform=EXPORT_SETTINGS["bake_space_transform"], add_leaf_bones=False,
         bake_anim=False, use_mesh_modifiers=True, mesh_smooth_type="FACE", use_custom_props=True)
     manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    bind_authoring_finish(groups)
     if not args.no_preview:
         preview(groups, args.source_dir / "CityEastExit3D.png")
     if not args.near_only:
         export_distance(distance, args.model_dir / "CityEastDistance3D.fbx")
-    distance_manifest_path.write_text(json.dumps(distance_payload, indent=2) + "\n", encoding="utf-8")
-    bpy.context.preferences.filepaths.save_version = 0
-    bpy.ops.wm.save_as_mainfile(filepath=str(args.source_dir / "CityEastExit3D.blend"), check_existing=False)
+        distance_manifest_path.write_text(json.dumps(distance_payload, indent=2) + "\n", encoding="utf-8")
+    save_kit_source(args.source_dir / "CityEastExit3D.blend")
     print(f"CITY EAST EXIT BUILD OK: {manifest['triangle_count']} triangles; {manifest['signature']}")
 
 

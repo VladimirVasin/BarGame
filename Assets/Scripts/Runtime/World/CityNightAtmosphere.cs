@@ -1132,8 +1132,12 @@ namespace BarPromenade
         {
             switch (kind)
             {
-                case CityFringeYardKind.WestStoneTerraces:
                 case CityFringeYardKind.EastUtilityEdge:
+                    // One raised road optic covers the full junction-to-boom width.
+                    return new PracticalLightProfile(new Color(1f, .82f, .61f),
+                        230f, 23f, 158f, 122f, .62f, 1.8f,
+                        new Color(2.6f, 1.8f, .95f, .14f), new Color(1.3f, 1f, .62f, .035f));
+                case CityFringeYardKind.WestStoneTerraces:
                     return new PracticalLightProfile(
                         new Color(1f, 0.63f, 0.32f),
                         18f,

@@ -8,20 +8,22 @@ namespace BarPromenade
 {
     public sealed class CityEastExitWorldResult
     {
-        internal CityEastExitWorldResult(GameObject root, CityFringePracticalAnchor practical)
-        { Root = root; Practical = practical; }
+        internal CityEastExitWorldResult(GameObject root, CityFringePracticalAnchor practical, Collider rainShelter)
+        { Root = root; Practical = practical; RainShelter = rainShelter; }
         public GameObject Root { get; }
         public CityFringePracticalAnchor Practical { get; }
+        public Collider RainShelter { get; }
     }
 
     /// <summary>Imported passive geometry; the plan owns all placement and collision.</summary>
     public static class CityEastExitWorldBuilder
     {
+        private static Material checkpointFinish;
         public const string ResourcePath = "City/EastExit/CityEastExit3D";
         public const string RootName = "Eastern Mainland Exit";
         public const string CanopyLightName = "Checkpoint Canopy Work Light";
         public const string ServiceLightName = "Checkpoint Service Shed Light";
-        public const float CanopyNightIntensity = 9.5f;
+        public const float CanopyNightIntensity = 17f;
         public const float ServiceNightIntensity = 10.5f;
 
         public static CityEastExitWorldResult Build(Transform parent, CityEastExitPlan plan,
@@ -103,15 +105,18 @@ namespace BarPromenade
                 new Vector3(drainX, plan.SampleRoadTop(drainX) + .015f, plan.CheckpointPosition.z),
                 Quaternion.identity, Vector3.one);
 
-            CityEastExitDressingWorldBuilder.Build(root, plan, dressing, templates);
+            CityEastExitDressingWorldBuilder.Build(root, plan, dressing, templates, out Collider rainShelter);
             BuildSiteLights(root, dressing, fringePlan, templates);
             Transform lamp = Place(templates, root, "Lamp", "Checkpoint Practical", plan.LampPosition,
                 Quaternion.identity, Vector3.one);
-            Transform lightAnchor = null;
+            Transform lightAnchor = null, roadAim = null;
             foreach (Transform part in lamp.GetComponentsInChildren<Transform>())
-                if (part.name == "LightAnchor") { lightAnchor = part; break; }
-            if (lightAnchor == null) throw new InvalidOperationException("Checkpoint lamp lacks its measured LightAnchor.");
-            lightAnchor.rotation = Quaternion.LookRotation(new Vector3(.32f, -1f, .35f), Vector3.up);
+            {
+                if (part.name == "LightAnchor") lightAnchor = part;
+                if (part.name == "RoadAim") roadAim = part;
+            }
+            if (lightAnchor == null || roadAim == null) throw new InvalidOperationException("Checkpoint road optic lacks its lens or aim.");
+            lightAnchor.rotation = Quaternion.LookRotation(roadAim.position - lightAnchor.position, Vector3.up);
             // Dressing embeds gravel into these meshes after their road
             // profile has been fitted. Snapshot their final material regions.
             foreach (MeshRenderer renderer in root.GetComponentsInChildren<MeshRenderer>(true))
@@ -126,7 +131,7 @@ namespace BarPromenade
             // This is the fifth eligible location for the existing last
             // street Spot; it never creates another realtime Light.
             return new CityEastExitWorldResult(root.gameObject,
-                new CityFringePracticalAnchor(CityFringeYardKind.EastUtilityEdge, lightAnchor));
+                new CityFringePracticalAnchor(CityFringeYardKind.EastUtilityEdge, lightAnchor), rainShelter);
         }
 
         private static void BuildSiteLights(Transform root, CityEastExitDressingPlan dressing,
@@ -136,11 +141,13 @@ namespace BarPromenade
             foreach (CityEastExitDressingPart part in dressing.Parts)
             {
                 if (part.Id != "Booth Shelter") continue;
-                // The mounting plate touches the existing roof underside.
-                // Use the actual shelter plan, including its level support pad.
+                // Wash the door from the front lip of the sloping canopy. The leaf centre
+                // lines up with the lens; the upper panel sits in the broad feather, while
+                // the more distant kick plate and threshold receive the core of the beam.
                 Transform fixture = Place(templates, root, "CanopyLamp", "Checkpoint Canopy Fixture",
-                    part.Position + part.Rotation * new Vector3(0f, 2.44f, .15f), part.Rotation, Vector3.one);
-                AddSiteLight(fixture, CanopyLightName, Vector3.down, CanopyNightIntensity, 5.2f, 120f, 88f);
+                    part.Position + part.Rotation * new Vector3(.48f, 2.39f, -1.41f), part.Rotation, Vector3.one);
+                AddSiteLight(fixture, CanopyLightName, part.Rotation * new Vector3(0, -1f, 1f),
+                    CanopyNightIntensity, 6.4f, 152f, 32f);
                 canopyFound = true;
                 break;
             }
@@ -258,15 +265,34 @@ namespace BarPromenade
             clone.localRotation = template.rotation;
             clone.localScale = template.lossyScale;
             if (assembly == "Road" || assembly == "Booth") ValidatePlacedAssembly(placement, assembly);
+            bool usesAtlas = assembly is "Booth" or "Barrier" or "Gate" or "Fence" or "RepairedFence" or
+                "Shelter" or "Bench" or "UtilityCabinet" or "CanopyLamp" or "Lamp";
             foreach (Renderer renderer in clone.GetComponentsInChildren<Renderer>(true))
             {
                 renderer.shadowCastingMode = assembly == "Booth" || assembly == "Lamp" || assembly == "Shelter" ||
-                    assembly == "Bench" || assembly == "UtilityCabinet"
+                    assembly == "Bench" || assembly == "UtilityCabinet" || assembly == "Gate" || assembly == "Barrier"
                     ? ShadowCastingMode.On : ShadowCastingMode.Off;
                 renderer.receiveShadows = true;
                 string[] words = renderer.name.Split('_');
                 string role = words.Length >= 3 ? words[2] : "Metal";
-                ApplyAppearance(renderer, role);
+                if (usesAtlas && role != "Glow")
+                {
+                    if (checkpointFinish == null)
+                        checkpointFinish = Resources.Load<Material>("City/Surfaces/EastCheckpoint");
+                    if (checkpointFinish == null) throw new InvalidOperationException("Missing eastern checkpoint finish atlas.");
+                    renderer.sharedMaterial = checkpointFinish;
+                    if (assembly != "CanopyLamp")
+                    {
+                        CityWetSurfaceKind exposure = role switch
+                        {
+                            "Wood" => CityWetSurfaceKind.WeatheredTimber,
+                            "Wall" or "Stone" => CityWetSurfaceKind.Sidewalk,
+                            _ => CityWetSurfaceKind.PaintedSteel
+                        };
+                        CityWetSurfaceRegistry.Register(renderer, exposure, Color.white);
+                    }
+                }
+                else ApplyAppearance(renderer, role);
             }
             return placement;
         }

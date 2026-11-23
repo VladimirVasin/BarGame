@@ -425,6 +425,7 @@ namespace BarPromenade
             if (world.Gazebo != null) rainShelters.AddRange(world.Gazebo.RainShelters);
             if (laundry != null) rainShelters.AddRange(laundry.RainShelters);
             if (world.CafeRainShelter != null) rainShelters.Add(world.CafeRainShelter);
+            if (world.EastExit?.RainShelter != null) rainShelters.Add(world.EastExit.RainShelter);
             rainShelters.AddRange(world.KioskRainShelters);
             foreach (var terraceAnchors in world.Root.GetComponentsInChildren<CityTerraceWorldAnchors>())
                 if (terraceAnchors.RainShelter != null) rainShelters.Add(terraceAnchors.RainShelter);

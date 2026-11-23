@@ -25,10 +25,11 @@ namespace BarPromenade
         }
 
         internal static Transform Build(Transform parent, CityEastExitPlan exit, CityEastExitDressingPlan plan,
-            IDictionary<string, Transform> templates)
+            IDictionary<string, Transform> templates, out Collider rainShelter)
         {
             // Timed apart: the embedding and the support index scale with the
             // yard's triangle count, the placing with the kit, the fitting with both.
+            rainShelter = null;
             var total = System.Diagnostics.Stopwatch.StartNew();
             EmbedPostGround(parent, exit, plan, templates);
             double embedMs = total.Elapsed.TotalMilliseconds;
@@ -87,7 +88,16 @@ namespace BarPromenade
                             collider.size = new Vector3(solid.Size.x / part.Scale.x, solid.Size.y / part.Scale.y, solid.Size.z / part.Scale.z);
                         }
                 if (part.Assembly == "Shelter")
+                {
                     CityEastExitWorldBuilder.AddBox(placed, new Vector3(0, 2.57f, 0), new Vector3(3.6f, .16f, 3.2f));
+                    var volume = new GameObject("Canopy rain volume");
+                    volume.transform.SetParent(placed, false);
+                    var trigger = volume.AddComponent<BoxCollider>();
+                    trigger.isTrigger = true;
+                    trigger.center = new Vector3(0f, 1.30f, 0f);
+                    trigger.size = new Vector3(part.Size.x, 2.60f, part.Size.z);
+                    rainShelter = trigger;
+                }
                 // The banks and grass roots belong to the yard's earth.
                 // Their former generic soil role carried a different tile
                 // and tint, producing separate dark islands in the field.
@@ -145,8 +155,11 @@ namespace BarPromenade
             CityEastExitDressingPlan plan, IDictionary<string, Transform> templates)
         {
             var masks = new List<GroundMask>();
+            Rect canopy = default;
+            GroundMask apron = null;
             foreach (CityEastExitDressingPart part in plan.Parts)
             {
+                if (part.Assembly == "Shelter") canopy = part.Footprint;
                 if (!IsEmbeddedGroundPart(part)) continue;
                 if (!templates.TryGetValue(part.Assembly, out Transform template))
                     throw new InvalidOperationException("Missing post-ground outline " + part.Assembly);
@@ -163,7 +176,9 @@ namespace BarPromenade
                         faces.Add(new Vector2(point.x, point.z));
                     }
                 }
-                masks.Add(new GroundMask(part.Footprint, faces));
+                var mask = new GroundMask(part.Footprint, faces);
+                masks.Add(mask);
+                if (part.Assembly == "CanopyApron") apron = mask;
             }
             HomeSurfaceRecipe recipe = CityFringeYardSurfaceAppearance.GetRecipe(CityFringeYardSurfaceKind.ForefieldGround);
             foreach (MeshFilter filter in exitRoot.parent.GetComponentsInChildren<MeshFilter>(true))
@@ -180,6 +195,8 @@ namespace BarPromenade
                 int originalSlots = source.subMeshCount;
                 var ordinary = new List<int>[originalSlots];
                 var embedded = new List<int>();
+                var sheltered = new List<int>();
+                var apronRim = new List<int>();
                 for (int slot = 0; slot < originalSlots; slot++)
                 {
                     int[] triangles = source.GetTriangles(slot);
@@ -191,15 +208,17 @@ namespace BarPromenade
                         Vector3 worldB = filter.transform.TransformPoint(positions[b]);
                         Vector3 worldC = filter.transform.TransformPoint(positions[c]);
                         Vector3 center = (worldA + worldB + worldC) / 3f;
+                        Vector2 point = new Vector2(center.x, center.z);
+                        bool nearRoof = canopy.Contains(point) || (apron != null && apron.Contains(point));
                         bool covered = false;
                         // Imported road bevels share smoothed vertex normals
                         // with their top. Only the actual upward face carries
                         // standing ground; a side/skirt must never be painted.
                         if (Vector3.Cross(worldB - worldA, worldC - worldA).normalized.y > .7f)
                         {
-                            covered = yard && exit.Swale.IsBed(new Vector2(center.x, center.z));
+                            covered = nearRoof || (yard && exit.Swale.IsBed(point));
                             foreach (GroundMask mask in masks)
-                                if (mask.Contains(new Vector2(center.x, center.z))) { covered = true; break; }
+                                if (covered || mask.Contains(point)) { covered = true; break; }
                         }
                         if (!covered)
                         {
@@ -209,31 +228,38 @@ namespace BarPromenade
                         // Reuse whole terrain triangles: the existing half-
                         // metre detail follows the worn outline without any
                         // added T-junction, raised sheet or hidden collision.
+                        var receiving = !nearRoof ? embedded : IsUnderDripLine(canopy, center) ? sheltered : apronRim;
                         for (int corner = 0; corner < 3; corner++)
                         {
                             int original = triangles[index + corner];
                             Vector3 world = filter.transform.TransformPoint(positions[original]);
-                            embedded.Add(vertices.Count);
+                            receiving.Add(vertices.Count);
                             vertices.Add(positions[original]); normals.Add(sourceNormals[original]);
                             uv.Add(new Vector2(world.x / recipe.MetersPerTile, world.z / recipe.MetersPerTile));
                         }
                     }
                 }
-                if (embedded.Count == 0) continue;
+                if (embedded.Count + apronRim.Count + sheltered.Count == 0) continue;
+                int drySlot = originalSlots;
+                int rimSlot = drySlot + (sheltered.Count > 0 ? 1 : 0);
+                int gravelSlot = rimSlot + (apronRim.Count > 0 ? 1 : 0);
+                int slots = gravelSlot + (embedded.Count > 0 ? 1 : 0);
                 Mesh mesh = Object.Instantiate(source);
                 mesh.name = source.name + EmbeddedGroundMeshSuffix;
                 if (vertices.Count > ushort.MaxValue) mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
                 mesh.SetVertices(vertices); mesh.SetNormals(normals); mesh.SetUVs(0, uv);
-                mesh.subMeshCount = originalSlots + 1;
+                mesh.subMeshCount = slots;
                 for (int slot = 0; slot < originalSlots; slot++) mesh.SetTriangles(ordinary[slot], slot, false);
-                mesh.SetTriangles(embedded, originalSlots, false);
+                if (embedded.Count > 0) mesh.SetTriangles(embedded, gravelSlot, false);
+                if (apronRim.Count > 0) mesh.SetTriangles(apronRim, rimSlot, false);
+                if (sheltered.Count > 0) mesh.SetTriangles(sheltered, drySlot, false);
                 mesh.bounds = source.bounds;
                 filter.sharedMesh = mesh;
                 filter.gameObject.AddComponent<RuntimeGeneratedMeshOwner>().Initialize(mesh);
 
                 Renderer renderer = filter.GetComponent<Renderer>();
                 Material[] previous = renderer.sharedMaterials;
-                var materials = new Material[originalSlots + 1];
+                var materials = new Material[slots];
                 var blocks = new MaterialPropertyBlock[originalSlots];
                 var global = new MaterialPropertyBlock(); renderer.GetPropertyBlock(global);
                 for (int slot = 0; slot < originalSlots; slot++)
@@ -242,7 +268,7 @@ namespace BarPromenade
                     blocks[slot] = new MaterialPropertyBlock(); renderer.GetPropertyBlock(blocks[slot], slot);
                     if (blocks[slot].isEmpty) blocks[slot] = global;
                 }
-                materials[originalSlots] = RuntimePrimitiveFactory.DefaultMaterial;
+                for (int slot = originalSlots; slot < slots; slot++) materials[slot] = RuntimePrimitiveFactory.DefaultMaterial;
                 renderer.sharedMaterials = materials;
                 renderer.SetPropertyBlock(null);
                 for (int slot = 0; slot < originalSlots; slot++) renderer.SetPropertyBlock(blocks[slot], slot);
@@ -253,8 +279,24 @@ namespace BarPromenade
                 gravel.SetColor("_BaseColor", tint); gravel.SetColor("_Color", tint);
                 gravel.SetVector("_BaseMap_ST", new Vector4(1f, 1f, 0f, -exit.YardBounds.yMin / recipe.MetersPerTile));
                 gravel.SetFloat("_Smoothness", recipe.Smoothness); gravel.SetFloat("_Metallic", recipe.Metallic);
-                renderer.SetPropertyBlock(gravel, originalSlots);
+                for (int slot = originalSlots; slot < slots; slot++)
+                {
+                    renderer.SetPropertyBlock(gravel, slot);
+                    if (slot < gravelSlot)
+                        CityWetSurfaceRegistry.Register(renderer, sheltered.Count > 0 && slot == drySlot
+                            ? CityWetSurfaceKind.ShelteredGround : CityWetSurfaceKind.Ground, tint, slot);
+                }
             }
+        }
+
+        private static bool IsUnderDripLine(Rect roof, Vector3 point)
+        {
+            if (!roof.Contains(new Vector2(point.x, point.z))) return false;
+            float edge = Mathf.Min(Mathf.Min(point.x - roof.xMin, roof.xMax - point.x),
+                Mathf.Min(point.z - roof.yMin, roof.yMax - point.z));
+            float splash = .18f + .09f * Mathf.Sin((point.x - roof.xMin) * 8f)
+                + .06f * Mathf.Sin((point.z - roof.yMin) * 5f);
+            return edge > splash;
         }
 
         private sealed class GroundMask

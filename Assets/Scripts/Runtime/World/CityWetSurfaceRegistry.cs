@@ -13,7 +13,8 @@ namespace BarPromenade
         Puddle = 4,
         WeatheredTimber = 5,
         PaintedSteel = 6,
-        DressedGranite = 7
+        DressedGranite = 7,
+        ShelteredGround = 8
     }
 
     internal readonly struct CityWetSurfaceSample
@@ -77,6 +78,10 @@ namespace BarPromenade
         {
             switch (kind)
             {
+                case CityWetSurfaceKind.ShelteredGround:
+                    drySmoothness = wetSmoothness = CityExteriorAppearance.GroundSmoothness;
+                    wetTint = Color.white;
+                    return;
                 case CityWetSurfaceKind.Ground:
                     drySmoothness =
                         CityExteriorAppearance.GroundSmoothness;
@@ -399,7 +404,7 @@ namespace BarPromenade
             Properties.SetColor(BaseColorId, displayedTint);
             Properties.SetColor(ColorId, displayedTint);
             Properties.SetFloat(SmoothnessId, sample.Smoothness);
-            Properties.SetFloat(GroundSurfaceAppearance.WetnessId, currentWetness);
+            Properties.SetFloat(GroundSurfaceAppearance.WetnessId, entry.Kind == CityWetSurfaceKind.ShelteredGround ? 0f : currentWetness);
             GroundSurfaceAppearance.WriteProperties(entry.Renderer, Properties, entry.MaterialIndex);
         }
 

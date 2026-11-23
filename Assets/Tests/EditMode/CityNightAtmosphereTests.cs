@@ -207,8 +207,13 @@ namespace BarPromenade.Tests.EditMode
             float expectedInnerSpotAngle;
             switch (practical.Kind)
             {
-                case CityFringeYardKind.WestStoneTerraces:
                 case CityFringeYardKind.EastUtilityEdge:
+                    expectedIntensity = 230f;
+                    expectedRange = 23f;
+                    expectedSpotAngle = 158f;
+                    expectedInnerSpotAngle = 122f;
+                    break;
+                case CityFringeYardKind.WestStoneTerraces:
                     expectedIntensity = 18f;
                     expectedRange = 8f;
                     expectedSpotAngle = 65f;
