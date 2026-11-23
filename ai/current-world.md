@@ -68,12 +68,12 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   DOF, outside the locked room. Fresh E starts prepared time and ordinary seated
   wake;3s recovery/6.8s return while seated, idle until fresh E Stand2.8s. Startup
   keeps initial appearance and plays no nightmare/corruption cue.
-  Debug retains time07:40→12starts(9roots+docks/cannery/lodge), village default,
+  Debug time 07:40, then location (village first),
   combat/lab/vocalizer/back. Back retains time; closed Bar rejects before mutation.
   `NewGameStartService`: areas use AreaLoading, six interiors direct; no travel
   illustration/door/prologue/ride/cabin/arrival.
 - Village:lane foot/2m above stationthreshold→mother;Lodge:3m beforeentry→door.
-  Else rootspawn;City home-return/docks-cannery pedestrian-clear.
+  City: supermarket sidewalk. Ridge: home sidewalk. Docks/cannery: clear pedestrian arrivals.
   City-Bar-lodge arrival1x/laterspawns kept;day1 mother quest-mapmarker;
   door-map-start inside closes/no village signpost;
 - CombatTest:3floors/9rooms/4flights:L3gap/R3only/fanwell/9sets-signs;ground:A*/partial/gate;

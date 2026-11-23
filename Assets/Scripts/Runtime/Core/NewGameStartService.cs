@@ -157,14 +157,17 @@ namespace BarPromenade
             location = pendingLocation;
             position = Vector3.zero;
             forward = Vector3.forward;
-            if (location != NewGameLocation.City && location != NewGameLocation.Docks &&
-                location != NewGameLocation.Cannery)
-                return false;
-            if (!TryConsumeArrival(location)) return false;
+            if (PendingCityLocation == null || !TryConsumeArrival(location)) return false;
 
             switch (location)
             {
                 case NewGameLocation.City:
+                    if (world.Supermarket == null || layout.Supermarket == null)
+                        throw new InvalidOperationException("The lower city start needs the supermarket sidewalk.");
+                    position = world.Supermarket.ReturnPosition;
+                    forward = layout.Supermarket.FacadeForward;
+                    break;
+                case NewGameLocation.Ridge:
                     if (world.PlayerHome != null && layout.PlayerHome != null)
                     {
                         position = world.PlayerHome.ReturnPosition;
@@ -195,15 +198,15 @@ namespace BarPromenade
             return true;
         }
 
-        internal static bool HasLowerCityLaunch => (pendingLocation == NewGameLocation.Docks ||
-            pendingLocation == NewGameLocation.Cannery) && !string.IsNullOrEmpty(pendingOperationId) &&
+        private static bool IsCurrentOperation => !string.IsNullOrEmpty(pendingOperationId) &&
             string.Equals(pendingOperationId, SceneTransitionService.CurrentOperationId, StringComparison.Ordinal);
+
+        internal static NewGameLocation? PendingCityLocation => IsCurrentOperation &&
+            NewGameLocationCatalog.SceneName(pendingLocation) == SceneIds.City ? pendingLocation : null;
 
         internal static bool TryConsumeArrival(NewGameLocation location)
         {
-            if (pendingLocation != location || string.IsNullOrEmpty(pendingOperationId) ||
-                !string.Equals(pendingOperationId, SceneTransitionService.CurrentOperationId,
-                    StringComparison.Ordinal) ||
+            if (pendingLocation != location || !IsCurrentOperation ||
                 SceneManager.GetActiveScene().name != NewGameLocationCatalog.SceneName(location))
                 return false;
             ResetStatics();

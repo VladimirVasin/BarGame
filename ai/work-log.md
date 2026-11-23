@@ -5,6 +5,10 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-23
 
+Split the Debug City and Ridge starts at the supermarket and home sidewalks.
+`DebugWorldStart_SelectedLocationUsesItsNormalArrivalWithoutTheHomeOpening`
+checks the selected district and the hero's position after loading.
+
 Build the arrival district first. Near either approach, prepare adjacent
 terrain and joints off-thread and publish scene objects in steps. Release
 distant district objects, keep shared clocks, hero and Line 03 seats.

@@ -104,7 +104,7 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         private static readonly NewGameLocation[] SelectedStarts =
-            { NewGameLocation.Cannery, NewGameLocation.Home, NewGameLocation.SkiLodge };
+            { NewGameLocation.City, NewGameLocation.Ridge, NewGameLocation.Cannery, NewGameLocation.Home, NewGameLocation.SkiLodge };
 
         [UnityTest]
         public IEnumerator DebugWorldStart_SelectedLocationUsesItsNormalArrivalWithoutTheHomeOpening(
@@ -149,7 +149,22 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(GameSessionState.GameDayNumber, Is.EqualTo(1));
             Assert.That(GameSessionState.IsGameTimeRunning, Is.True);
 
-            if (location == NewGameLocation.Cannery)
+            if (location == NewGameLocation.City || location == NewGameLocation.Ridge)
+            {
+                Assert.That(sawAreaLoading, Is.True);
+                CityGameRoot city = Object.FindAnyObjectByType<CityGameRoot>();
+                Assert.That(city.IsInitialized, Is.True);
+                bool ridge = location == NewGameLocation.Ridge;
+                Assert.That(city.RidgeDistrictReady, Is.EqualTo(ridge));
+                Assert.That(city.LowerDistrictReady, Is.EqualTo(!ridge));
+                Vector3 expected = ridge ? city.World.PlayerHome.ReturnPosition : city.World.Supermarket.ReturnPosition;
+                Vector3 position = city.Player.GameObject.transform.position;
+                Assert.That(Vector3.Distance(position, expected), Is.LessThan(.5f));
+                Assert.That(new CityDistrictStreamingPlan(city.Layout).IsRidge(position), Is.EqualTo(ridge));
+                Assert.That(city.World.WalkableArea.Contains(position, .32f), Is.True);
+                Assert.That(NewGameStartService.TryConsumeArrival(location), Is.False);
+            }
+            else if (location == NewGameLocation.Cannery)
             {
                 Assert.That(sawAreaLoading, Is.True, "City points use the shared area composition overlay.");
                 CityGameRoot city = Object.FindAnyObjectByType<CityGameRoot>();

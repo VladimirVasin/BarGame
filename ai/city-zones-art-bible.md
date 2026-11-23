@@ -4149,10 +4149,9 @@ gameplay-модификатор морали.
 
 ### Область действия
 
-Outside accepted cases,world/camera/light/material/format/sound/rules/input/text
-stay.`640x360` stays readable in dark/intoxicated composites.
-Loading keeps painterly viewport/fitted proportions/bottom strip.Soot/old paper/
-ruler/air balance text/frame/image.
+Outside accepted cases keep world/camera/light/material/format/sound/rules/input/text.
+Dark/intoxicated UI legible at 640×360. Start rows separate City and Ridge.
+Loading: fitted painting, bottom strip. Soot/old paper/ruler/air balance text/frame/image.
 Shop/kiosk browser:small card↙/cash↗ at actual viewport corners;small arrows,whole-word wrap;Retro.
 Kiosks:one E/Vendor(default)/Pie/Beer/Vodka;actual vendor/goods;3D receipt;Ridge-only speech.
 

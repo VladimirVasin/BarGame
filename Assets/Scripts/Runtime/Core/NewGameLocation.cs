@@ -7,16 +7,17 @@ namespace BarPromenade
         AlpineVillage = 0,
         MothersHouse = 1,
         City = 2,
-        Docks = 3,
-        Cannery = 4,
-        MountainRoad = 5,
-        Home = 6,
-        Stairwell = 7,
-        Bar = 8,
-        Supermarket = 9,
-        Church = 10,
-        SkiLodge = 11,
-        Count = 12
+        Ridge = 3,
+        Docks = 4,
+        Cannery = 5,
+        MountainRoad = 6,
+        Home = 7,
+        Stairwell = 8,
+        Bar = 9,
+        Supermarket = 10,
+        Church = 11,
+        SkiLodge = 12,
+        Count = 13
     }
 
     /// <summary>Launch choices, independent of travel areas and build indices.</summary>
@@ -50,6 +51,7 @@ namespace BarPromenade
                 case NewGameLocation.AlpineVillage: return "opening.location.village";
                 case NewGameLocation.MothersHouse: return "opening.location.mothers_house";
                 case NewGameLocation.City: return "opening.location.city";
+                case NewGameLocation.Ridge: return "opening.location.ridge";
                 case NewGameLocation.Docks: return "opening.location.docks";
                 case NewGameLocation.Cannery: return "opening.location.cannery";
                 case NewGameLocation.MountainRoad: return "opening.location.mountain_road";
@@ -71,6 +73,7 @@ namespace BarPromenade
                 case NewGameLocation.SkiLodge: return SceneIds.AlpineVillage;
                 case NewGameLocation.MothersHouse: return SceneIds.MothersHouseInterior;
                 case NewGameLocation.City:
+                case NewGameLocation.Ridge:
                 case NewGameLocation.Docks:
                 case NewGameLocation.Cannery: return SceneIds.City;
                 case NewGameLocation.MountainRoad: return SceneIds.MountainRoad;

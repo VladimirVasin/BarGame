@@ -38,8 +38,8 @@ namespace BarPromenade
             new Rect(218f, 195f, 204f, 22f);
         internal static Rect DebugBackRect =>
             new Rect(218f, 221f, 204f, 22f);
-        internal static Rect LocationPanelRect => new Rect(166f, 18f, 308f, 324f);
-        internal static Rect LocationOptionRect(int index) => new Rect(178f, 54f + index * 20f, 284f, 18f);
+        internal static Rect LocationPanelRect => new Rect(166f, 8f, 308f, 344f);
+        internal static Rect LocationOptionRect(int index) => new Rect(178f, 44f + index * 20f, 284f, 18f);
         internal static Rect StartTimePanelRect => new Rect(166f, 76f, 308f, 208f);
         internal static Rect StartTimeOptionRect(StartTimeOption option) => new Rect(178f,
             option < StartTimeOption.Continue ? 140f + (int)option * 28f :
@@ -472,7 +472,7 @@ namespace BarPromenade
         {
             RetroUiTheme.DrawPanel(LocationPanelRect, RetroUiTheme.PanelInset, RetroUiTheme.FrameOuter,
                 false, 0f, 1f);
-            GUI.Label(new Rect(178f, 26f, 284f, 22f),
+            GUI.Label(new Rect(178f, 16f, 284f, 22f),
                 string.Format(LocalizationService.Get("opening.choose_location_at"),
                     model.SelectedStartMinuteOfDay / 60, model.SelectedStartMinuteOfDay % 60), titleStyle);
             Vector2 mouse = logicalPointerPosition;
@@ -496,7 +496,7 @@ namespace BarPromenade
                 }
             }
             if (!string.IsNullOrEmpty(model.AvailabilityMessageKey))
-                GUI.Label(new Rect(178f, 316f, 284f, 22f),
+                GUI.Label(new Rect(178f, 326f, 284f, 22f),
                     LocalizationService.Get(model.AvailabilityMessageKey), descriptionStyle);
         }
 

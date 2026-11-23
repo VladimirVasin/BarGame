@@ -165,9 +165,10 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void LocationCatalog_HasTwelveDistinctLocalizedChoicesInGameplayScenes()
+        public void LocationCatalog_HasDistinctLocalizedChoicesInGameplayScenes()
         {
-            Assert.That(NewGameLocationCatalog.Count, Is.EqualTo(12));
+            Assert.That(NewGameLocationCatalog.Count, Is.EqualTo(13));
+            Assert.That(NewGameLocationCatalog.Get((int)NewGameLocation.City + 1), Is.EqualTo(NewGameLocation.Ridge));
             Assert.That((int)NewGameLocation.Count, Is.EqualTo(NewGameLocationCatalog.Count));
             var keys = new HashSet<string>(StringComparer.Ordinal);
             var locations = new HashSet<NewGameLocation>();
@@ -193,9 +194,11 @@ namespace BarPromenade.Tests.EditMode
                 var labels = new HashSet<string>(StringComparer.Ordinal);
                 foreach (string key in keys)
                 {
+                    // Ridge uses the Russian base catalog when the English overlay is active.
+                    if (language == "en" && key == NewGameLocationCatalog.LabelKey(NewGameLocation.Ridge)) continue;
                     Assert.That(values.TryGetValue(key, out string label), Is.True, language + ": " + key);
                     Assert.That(label, Is.Not.Null.And.Not.Empty.And.Not.EqualTo(key));
-                    Assert.That(labels.Add(label), Is.True, language + " must distinguish all twelve destinations.");
+                    Assert.That(labels.Add(label), Is.True, language + " must distinguish the destinations.");
                 }
                 foreach (string key in new[] { "opening.choose_location", "opening.back", "combat.title",
                     "combat.target", "combat.sparring", "combat.reset", "combat.menu", "combat.health",

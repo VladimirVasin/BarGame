@@ -473,7 +473,7 @@
   `HomeOpeningCameraSequence`:five6s views/2.4s eased moves/shared
   `ContextualCameraDirector`/saved DOF, outside locked room. E starts clock/
   same-rig seated wake/recovery/return/idle→fresh E Stand/slow exit.
-  Nightmare/decay/Horror/stinger/prologue/act/lore0. Debug07:40/twelve places/
+  Nightmare/decay/Horror/stinger/prologue/act/lore0. Debug07:40/locations/
   combat-lab-vocalizer-back;legacy05:59 API-only. All24 owners/noon coverage
   stay;camera/DOF only, new lights/passes0. Bounded shots/leases;cost unmeasured.
 
@@ -1760,11 +1760,11 @@
   loading; traffic free. `CityCanneryInspectionPlan`/`CityFishSupplyCycle`.
 
 - **Accepted architecture exception — 2026-09-11, selectable Debug start:**
-  Twelve starts: nine roots+City docks/cannery+lodge; village default. Back keeps
+  Nine roots plus the Ridge, docks, cannery and lodge. Village first. Back keeps
   time; mouse/keyboard/existing pad. Admission starts selected day1 minute
   without needs aging, per2026-10-25. No prologue/ride/arrival/lore/new route;
   §6/16/21/art§16/legacy waking stay. `NewGameLocationCatalog`/`NewGameStartService`
-  consume City/Bar/lodge arrival markers once: home return/clear docks/cannery/
+  consume City/Bar/lodge arrival markers once: City at supermarket, Ridge at home, clear docks/cannery/
   lodge3m before door. Six interiors load directly; Home Normal/Stair StreetDoor,
   real Bar exit context. Mother's-house start closes its quest.
 

@@ -493,6 +493,10 @@
       "value": "Город"
     },
     {
+      "key": "opening.location.ridge",
+      "value": "Гребень"
+    },
+    {
       "key": "opening.location.docks",
       "value": "Доки"
     },

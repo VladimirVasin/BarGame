@@ -73,7 +73,8 @@ namespace BarPromenade
                 return districtPlan.IsRidge(SessionCheckpointService.ResolvePlayerSpawn(SceneName, Layout.StandingSpawnPosition));
             if (GameSessionState.TryGetCityReturnKind(out CityReturnKind kind))
                 return kind == CityReturnKind.PlayerHome || kind == CityReturnKind.Pawnshop;
-            if (NewGameStartService.HasLowerCityLaunch) return false;
+            if (NewGameStartService.PendingCityLocation is { } location)
+                return location == NewGameLocation.Ridge;
             if (AreaTravelService.PendingRequest is { } request)
                 return request.HasArrivalPosition && districtPlan.IsRidge(request.ArrivalPosition);
             return districtPlan.IsRidge(Layout.StandingSpawnPosition);

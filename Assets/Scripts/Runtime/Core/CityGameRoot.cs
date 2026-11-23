@@ -398,10 +398,11 @@ namespace BarPromenade
             CityGenerationSettings settings = CityGenerationSettings.Default;
             CityBlueprint blueprint = CityBlueprintCatalog.Resolve(
                 GameSessionState.CityBlueprintId);
-            bool homeReturn = stagedComposition && blueprint.Id == CityBlueprintCatalog.DefaultBlueprintId &&
+            bool ridgeArrival = stagedComposition && blueprint.Id == CityBlueprintCatalog.DefaultBlueprintId &&
                 (GameSessionState.ReturnKind == CityReturnKind.PlayerHome ||
-                 GameSessionState.ReturnKind == CityReturnKind.Pawnshop);
-            if (homeReturn)
+                 GameSessionState.ReturnKind == CityReturnKind.Pawnshop ||
+                 NewGameStartService.PendingCityLocation == NewGameLocation.Ridge);
+            if (ridgeArrival)
                 Layout = CityLayoutCache.GetLayoutForBarSelection(blueprint, settings, GameSessionState.CitySeed);
             else
             {
