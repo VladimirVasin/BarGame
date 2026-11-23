@@ -17,6 +17,7 @@ CityGrocerySignFromStreet checks the enamel print from both approaches and the o
 CityWaterworksPaving checks the cut-stone court, new trough, spout over the water and caged lamp.
 The column, zinc bypass, worn wheel and drains share a metallic atlas. The City misc Blender
 generator checks the remaining catalogue against the previous revision.
+CityClosedCinema checks street-facing prints on both mirrored facades. Closed shutters, boarded doors and dead enamel share a chunk atlas with the film bills.
 The focused City publisher checks the new sheets. The older
 BuildingOldTownFacadePrimary dimension mismatch remains.
 

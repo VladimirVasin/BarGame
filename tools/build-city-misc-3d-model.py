@@ -47,12 +47,13 @@ sys.dont_write_bytecode = True
 sys.path.insert(0, str(ROOT / "tools"))
 
 import interior_kit as kit  # noqa: E402
+import city_cinema_model as cinema
 import city_waterworks_model as waterworks
 import city_river_parts as river_parts  # noqa: E402
 import city_coastal_site_parts as coastal_site_parts  # noqa: E402
 
 
-GENERATOR_VERSION = "4.17.0"
+GENERATOR_VERSION = "4.18.0"
 DESIGN_ID = "city_misc_citywide_v4"
 DISPLAY_NAME = (
     "City Misc Citywide Catalog + Church Courtyard + Nightlife Shelter + "
@@ -61,13 +62,13 @@ DISPLAY_NAME = (
 )
 V2_GENERATOR_VERSION = "2.0.0"
 V2_DESIGN_ID = "city_misc_all_decor_v2"
-# Deliberately advances for the accepted 2026-10-27 park remodel. The separate
-# unaffected-v2 pin proves that only the gazebo and fountain statue changed.
+# The park and closed cinema remodels advance the aggregate. The independent
+# baseline fingerprint covers every other original v2 assembly.
 V2_COMPATIBILITY_SIGNATURE = (
-    "4fe66c218ebe7baee512ef1b6ce418fe7ea3e180590024888d9502463c5810b3"
+    "0b951c55cd3c74c264b2749a6cf101a8edb6c48d98aab13bb449332fb0a9cc50"
 )
 V2_UNCHANGED_COMPATIBILITY_SIGNATURE = (
-    "3fc0a3e9d4787aee15f27f9d529c1d3a856ca5d4a9f8742c20bbf3f404f6c739"
+    "dfd569e900927755388dc8674ddc36cd76e8518b04707334d704001bf09d9aaf"
 )
 WAVE1_COMPATIBILITY_SIGNATURE = (
     "dd2e814d906fd2c7a7855c6d75ee54fe912ebb90f7cd02633c95c558d752f9f6"
@@ -2189,53 +2190,9 @@ def build_nightlife_fire_escape() -> AssemblySpec:
 
 def build_nightlife_cinema(variant: int) -> AssemblySpec:
     kind = "NightlifeCinema"
-    mirror = 1.0 if variant == 0 else -1.0
     width = 9.50
-    street: list[Geometry] = [
-        recipe_box(0.0, 3.20, 0.65,
-                   width, 0.65, 1.45, chamfer=0.07),
-    ]
-    neon: list[Geometry] = [recipe_box(
-        0.0, 3.14, 1.39,
-        width * 0.88, 0.18, 0.06, chamfer=0.012)]
-    masonry: list[Geometry] = []
-    sign_x = mirror * width * 0.36
-    street.append(recipe_box(
-        sign_x, 6.25, 0.10, 1.10, 5.60, 0.32, chamfer=0.055))
-    for line in range(3):
-        neon.append(recipe_box(
-            sign_x, 4.55 + line * 1.45, 0.28,
-            0.72, 0.18, 0.05, chamfer=0.01))
-    for side in (-1, 1):
-        pillar_x = side * width * 0.36
-        masonry.append(recipe_box(
-            pillar_x, 1.42, 0.08,
-            0.48, 2.84, 0.48, chamfer=0.055))
-        poster_x = side * width * 0.18
-        street.append(recipe_box(
-            poster_x, 1.35, 0.22,
-            1.65, 2.20, 0.18, chamfer=0.035))
-        neon.append(recipe_box(
-            poster_x, 1.35, 0.32,
-            1.28, 1.75, 0.05, chamfer=0.012))
-        street.extend((
-            recipe_box(poster_x - side * 0.19, 1.58, 0.35,
-                       0.46, 0.88, 0.02, chamfer=0.004),
-            recipe_box(poster_x + side * 0.28, 1.30, 0.35,
-                       0.34, 0.40, 0.02, chamfer=0.004),
-            recipe_box(poster_x, 0.86, 0.35,
-                       0.96, 0.10, 0.02, chamfer=0.004),
-        ))
-    masonry.append(recipe_box(
-        0.0, 8.72, 0.0,
-        width * 0.92, 0.28, 0.52, chamfer=0.045))
     return AssemblySpec(
-        kind, variant,
-        (
-            make_part(kind, variant, "Street", *street),
-            make_part(kind, variant, "Neon", *neon),
-            make_part(kind, variant, "Masonry", *masonry),
-        ),
+        kind, variant, cinema.build(sys.modules[__name__], variant),
         canonical_reference=(("resolved_width", width),),
         scale_parameters=(
             scale_parameter("resolved_width", ("X",), width, 6.0, 9.5),),
@@ -6019,7 +5976,7 @@ EXPECTED_ROLES = {
     ("NightlifeBillboard", 0): ("Street", "Neon"),
     ("NightlifeFireEscape", 0): ("Industrial", "Street"),
     **{("NightlifeCinema", index):
-       ("Street", "Neon", "Masonry") for index in range(2)},
+       ("Street", "Fixture", "Masonry") for index in range(2)},
     ("ParkFountainAndStatue", 0):
         ("Masonry_Stone", "Street_Stone"),
     ("ParkBandstand", 0): (
@@ -7008,7 +6965,7 @@ def validate_assemblies(assemblies: Sequence[AssemblySpec]) -> None:
             f"{v2_signature} != {V2_COMPATIBILITY_SIGNATURE}")
     if v2_unchanged_compatibility_signature(assemblies) != \
             V2_UNCHANGED_COMPATIBILITY_SIGNATURE:
-        problems.append("v2 catalog changed outside the approved park remodel")
+        problems.append("v2 catalog changed outside the park and cinema remodels")
     total_triangles = sum(
         triangle_count(part.geometry)
         for assembly in assemblies for part in assembly.parts)
@@ -7141,7 +7098,7 @@ def v2_unchanged_compatibility_signature(
 ) -> str:
     unchanged = tuple(assembly for assembly in assemblies[:37]
                       if assembly.kind not in {
-                          "ParkBandstand", "ParkFountainAndStatue"})
+                          "ParkBandstand", "ParkFountainAndStatue", "NightlifeCinema"})
     encoded = json.dumps(signature_payload(
         unchanged, generator_version=V2_GENERATOR_VERSION,
         design_id=V2_DESIGN_ID), sort_keys=True,

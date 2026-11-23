@@ -1,0 +1,18 @@
+{
+  "medium": "ImageGen",
+  "format": "2:3 portrait municipal cinema prints, primitive angular screen print on faded opaque paper",
+  "images": [
+    {
+      "file": "FirstShift.png",
+      "title": "ПЕРВАЯ СМЕНА",
+      "subject": "A tram conductor opens a folding depot door at dawn. Brick red, ochre, parchment and olive-black ink.",
+      "sha256": "f46276c7d70a0002954b563630a2c2a7e956a8e4db666caa82f0993b35b7f01a"
+    },
+    {
+      "file": "BalconySeat.png",
+      "title": "МЕСТО НА БАЛКОНЕ",
+      "subject": "An empty folding chair at a balcony railing, stage light below. Petrol teal, faded mauve, parchment and charcoal.",
+      "sha256": "e6e809ad611678cf00539038fc6731b73158c33e7edf0dbcd56c6f0c1ce5507b"
+    }
+  ]
+}

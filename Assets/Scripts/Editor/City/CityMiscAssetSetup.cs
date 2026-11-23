@@ -32,9 +32,9 @@ namespace BarPromenade.Editor
         // The accepted 2026-10-27 gazebo/statue remodel deliberately advances
         // this pin. The generator separately protects every unaffected v2 part.
         private const string V2CompatibilitySignature =
-            "4fe66c218ebe7baee512ef1b6ce418fe7ea3e180590024888d9502463c5810b3";
+            "0b951c55cd3c74c264b2749a6cf101a8edb6c48d98aab13bb449332fb0a9cc50";
         private const string V2UnchangedCompatibilitySignature =
-            "3fc0a3e9d4787aee15f27f9d529c1d3a856ca5d4a9f8742c20bbf3f404f6c739";
+            "dfd569e900927755388dc8674ddc36cd76e8518b04707334d704001bf09d9aaf";
 
         private static readonly ExpectedPart[] ExpectedParts =
             CreateExpectedParts();

@@ -1473,9 +1473,8 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   yard, lighthouse island, drained-lake block,
   tunnel forecourt, flood works and stone terraces hang nothing by
   authored rule;
-- frontage-aware windows and facade details now face each lot's actual road.
-  Decoration geometry is shadowless, reuses the two packaged shared materials
-  and combines at most six style batches per `48 m` chunk. A deterministic
+- Windows and details face each lot's road. Decorations batch by style per 48 m.
+  The boarded cinema casts canopy shadows; its dead enamel and faded film bills share an opaque atlas. A deterministic
   `None`/`Detail`/`Blocking` catalog gives grounded structural and bulky
   recipes one to four simple box proxies, while rooftop, hanging and small
   narrative details stay non-physical. Park benches/hedges, the home mailbox

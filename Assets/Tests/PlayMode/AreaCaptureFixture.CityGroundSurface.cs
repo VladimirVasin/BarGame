@@ -13,6 +13,71 @@ namespace BarPromenade.Tests.PlayMode
 {
     public sealed partial class AreaCaptureFixture
     {
+        [UnityTest, Explicit("Inspect the closed cinema from the street and read both old prints at eye level.")]
+        public IEnumerator CityClosedCinema()
+        {
+            GameSessionState.BeginNewGame();
+            GameSessionState.PrepareSupermarketReturn();
+            Assert.That(GameSessionState.TryStartGameTimeAt(12 * 60), Is.True);
+            CityGameRoot city = null;
+            yield return Capture(SceneIds.City, () =>
+            {
+                city = Object.FindAnyObjectByType<CityGameRoot>();
+                return city != null && city.IsInitialized ? city : null;
+            }, () =>
+            {
+                var facade = city.World.DecorationPlan.Descriptors.First(d => d.Kind == CityDecorationKind.NightlifeCinema);
+                CityDecorationWorldBuilder.GetDecorationFrame(city.Layout, facade, out var origin, out var across, out var forward);
+                Vector3 At(float x, float y, float z) => origin + across * x + Vector3.up * y + forward * z;
+                Assert.That(facade.TryResolveLot(city.Layout, out var lot), Is.True);
+                float frontage = Mathf.Abs(forward.x) > .5f ? lot.Size.y : lot.Size.x;
+                float scale = Mathf.Clamp(frontage * .72f, 6f, 9.5f) / 9.5f;
+                float mirror = (facade.Variant & 1) == 0 ? 1f : -1f;
+                float shift = -1.73f * mirror * scale, balcony = 2.11f * mirror * scale;
+                var frontageMaterial = Resources.Load<Material>("City/Surfaces/ClosedCinema");
+                var shell = city.World.DecorationRoot.GetComponentsInChildren<MeshRenderer>()
+                    .First(r => r.name == "Imported Closed Cinema" && r.bounds.Contains(At(0, 2f, .41f)));
+                Assert.That(shell.sharedMaterial, Is.SameAs(frontageMaterial));
+                Assert.That(frontageMaterial.IsKeywordEnabled("_EMISSION"), Is.False);
+                Assert.That(frontageMaterial.GetTexture("_BaseMap").name, Is.EqualTo("ClosedCinemaAlbedo"));
+                Assert.That(frontageMaterial.GetTexture("_MetallicGlossMap").name, Is.EqualTo("ClosedCinemaMask"));
+                // On each actual street-facing paper face, increasing atlas U must go to camera right.
+                var provider = CityMiscAssetProvider.LoadOrThrow();
+                for (int variant = 0; variant < 2; variant++)
+                {
+                    var fixture = provider.GetPartOrThrow(CityMiscKind.NightlifeCinema, variant, 1).Mesh;
+                    var vertices = fixture.vertices;
+                    var uv = fixture.uv;
+                    foreach (float u0 in new[] { 0f, .25f })
+                    {
+                        var face = Enumerable.Range(0, vertices.Length).Where(i =>
+                            vertices[i].z > .565f && uv[i].x > u0 && uv[i].x < u0 + .25f && uv[i].y > .25f).ToArray();
+                        Assert.That(face.Length, Is.GreaterThanOrEqualTo(4));
+                        int left = face.OrderBy(i => uv[i].x).First(), right = face.OrderByDescending(i => uv[i].x).First();
+                        Assert.That(vertices[left].x - vertices[right].x, Is.GreaterThan(1.1f));
+                        int bottom = face.OrderBy(i => uv[i].y).First(), top = face.OrderByDescending(i => uv[i].y).First();
+                        Assert.That(vertices[top].y - vertices[bottom].y, Is.GreaterThan(1.8f));
+                    }
+                }
+                city.Player.Motor.Teleport(At(0, PlayerFactory.GroundedRootOffset, 4));
+                bool Night()
+                {
+                    if (GameSessionState.GameTimeOfDayMinutes < 21 * 60)
+                        GameSessionState.AdvanceGameTime((float)((22 * 60 - GameSessionState.GameTimeOfDayMinutes) /
+                            GameTimeState.GameMinutesPerRealSecond));
+                    city.DayNight.ApplyCurrentTime(true);
+                    return true;
+                }
+                return new[] {
+                    Shot.At("closed-cinema-street", At(-2.3f, EyeHeight, 9), At(0, 3.7f, .2f), 69f),
+                    Shot.At("closed-cinema-entry", At(.6f, EyeHeight, 4.8f), At(0, 1.6f, .35f), 73f),
+                    Shot.At("closed-cinema-left-print", At(shift, EyeHeight, 2.7f), At(shift, 1.54f, .55f), 62f),
+                    Shot.At("closed-cinema-right-print", At(balcony, EyeHeight, 2.7f), At(balcony, 1.54f, .55f), 62f),
+                    Shot.At("closed-cinema-night", At(1.7f, EyeHeight, 7.5f), At(0, 3.1f, .2f), 70f, readyWhen: Night)
+                };
+            });
+        }
+
         [UnityTest, Explicit("Inspect the complete waterworks and its cut-stone court in the composed City.")]
         public IEnumerator CityWaterworksPaving()
         {

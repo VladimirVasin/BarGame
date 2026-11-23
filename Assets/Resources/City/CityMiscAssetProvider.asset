@@ -465,10 +465,10 @@ MonoBehaviour:
     mesh: {fileID: -2759687157565793217, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
   - kind: 21
     variant: 0
-    component: Neon
-    role: 3
+    component: Fixture
+    role: 9
     surface: 0
-    mesh: {fileID: -1872678755081629387, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+    mesh: {fileID: 2299726972849130087, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
   - kind: 21
     variant: 0
     component: Masonry
@@ -483,10 +483,10 @@ MonoBehaviour:
     mesh: {fileID: 5081838739075095190, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
   - kind: 21
     variant: 1
-    component: Neon
-    role: 3
+    component: Fixture
+    role: 9
     surface: 0
-    mesh: {fileID: 3439049418161743045, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+    mesh: {fileID: -8732803868198388668, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
   - kind: 21
     variant: 1
     component: Masonry
@@ -1873,4 +1873,4 @@ MonoBehaviour:
     role: 2
     surface: 1
     mesh: {fileID: 8952813868899882856, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
-  buildSignature: eeea8a4d70e068bf9f5c06527255ae39f2e40d48b6177091f6c89ce98173d1ab
+  buildSignature: 0c487a53d6a6dc608ff1d2ad8e71ae0b3cd34c3768d71da9c8e3aacca071fb3d

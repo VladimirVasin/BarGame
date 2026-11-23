@@ -174,10 +174,10 @@ namespace BarPromenade.Tests.EditMode
             Part(CityMiscKind.NightlifeFireEscape, 0, CityMiscMeshRole.Industrial),
             Part(CityMiscKind.NightlifeFireEscape, 0, CityMiscMeshRole.Street),
             Part(CityMiscKind.NightlifeCinema, 0, CityMiscMeshRole.Street),
-            Part(CityMiscKind.NightlifeCinema, 0, CityMiscMeshRole.Neon),
+            Part(CityMiscKind.NightlifeCinema, 0, CityMiscMeshRole.Fixture),
             Part(CityMiscKind.NightlifeCinema, 0, CityMiscMeshRole.Masonry),
             Part(CityMiscKind.NightlifeCinema, 1, CityMiscMeshRole.Street),
-            Part(CityMiscKind.NightlifeCinema, 1, CityMiscMeshRole.Neon),
+            Part(CityMiscKind.NightlifeCinema, 1, CityMiscMeshRole.Fixture),
             Part(CityMiscKind.NightlifeCinema, 1, CityMiscMeshRole.Masonry),
             Part(CityMiscKind.ParkFountainAndStatue, 0, "Masonry_Stone", CityMiscMeshRole.Masonry, CityMiscSurfaceKind.Stone),
             Part(CityMiscKind.ParkFountainAndStatue, 0, "Street_Stone", CityMiscMeshRole.Street, CityMiscSurfaceKind.Stone),
@@ -419,7 +419,7 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo("city_misc_citywide_v4"));
             Assert.That(
                 CityMiscAssetProvider.GeneratorVersion,
-                Is.EqualTo("4.17.0"));
+                Is.EqualTo("4.18.0"));
             Assert.That(
                 CityMiscAssetProvider.SupportedKindCount,
                 Is.EqualTo(104));
@@ -506,11 +506,11 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(manifest.animation_count, Is.Zero);
             Assert.That(manifest.mesh_count, Is.EqualTo(310));
             Assert.That(manifest.assembly_count, Is.EqualTo(145));
-            Assert.That(manifest.triangle_count, Is.EqualTo(61694));
+            Assert.That(manifest.triangle_count, Is.EqualTo(66102));
             Assert.That(
                 manifest.build_signature,
                 Is.EqualTo(
-                    "eeea8a4d70e068bf9f5c06527255ae39f2e40d48b6177091f6c89ce98173d1ab"));
+                    "0c487a53d6a6dc608ff1d2ad8e71ae0b3cd34c3768d71da9c8e3aacca071fb3d"));
             Assert.That(
                 manifest.wave1_compatibility_signature,
                 Is.EqualTo(
@@ -518,11 +518,11 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 manifest.v2_compatibility_signature,
                 Is.EqualTo(
-                    "4fe66c218ebe7baee512ef1b6ce418fe7ea3e180590024888d9502463c5810b3"));
+                    "0b951c55cd3c74c264b2749a6cf101a8edb6c48d98aab13bb449332fb0a9cc50"));
             Assert.That(
                 manifest.v2_unchanged_compatibility_signature,
                 Is.EqualTo(
-                    "3fc0a3e9d4787aee15f27f9d529c1d3a856ca5d4a9f8742c20bbf3f404f6c739"));
+                    "dfd569e900927755388dc8674ddc36cd76e8518b04707334d704001bf09d9aaf"));
             Assert.That(manifest.root_contract, Is.Not.Null);
             Assert.That(
                 manifest.root_contract.origin,

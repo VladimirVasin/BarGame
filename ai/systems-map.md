@@ -38,7 +38,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | City diner placement | Whole lot/level entry/threshold/shelter/map; existing cast/menu/light. | `CityCafePlan`, `CityWorldBuilder`, `CityGameRoot` | Current |
 | City diner cast | Four-role cast: pair dialogue/refills and occasional husband interjection; attendant stays silent. | `MountainRoadCafe*`, `MountainRoadCafeConversation*` | Current |
 | City diner menu | Physical menu selection/rest/reopen works. Gap: no order, payment, food/drink or story consequence. | `MountainRoadCafeMenu{Model,Controller,Presentation,HintView}`, `CounterMenu*` | Partial |
-| City Blender misc catalog | Shared street/park/river/coastal meshes; plans retain placement/collision. | `CityMiscAssetProvider{,.LateCatalog}`, `CityMiscAssetSetup` | Current |
+| City Blender misc catalog | Street, closed cinema, park, river and coast. Plans own placement/collision. | `CityMiscAssetProvider{,.LateCatalog}`, `CityMiscAssetSetup`, `city_cinema_model.py` | Current |
 | Nightlife arch shelter | A traversable fixed shelter: passive residents who talk among themselves, a causal barrel fire, roof-only rain cover. | `CityArchShelter{Plan,Placement,Planner,Validator,WorldBuilder,Presentation,SurfaceAppearance,Resident*,Conversation*}` | Current |
 | City ground water network | Flush municipal ironwork on `Roadside`: a gutter grate every `~52 m`, a welded standpipe every `~150 m`. | `CityDecorationPlanner`, `CityDecorationWorldBuilder` | Current |
 | City ground | Height-aware joints, sectors and local grave/sand. | `CityGroundSurfaceSystem`, `GroundJointTopology` | Current |

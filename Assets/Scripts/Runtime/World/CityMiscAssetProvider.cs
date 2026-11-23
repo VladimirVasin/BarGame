@@ -206,7 +206,7 @@ namespace BarPromenade
     public sealed partial class CityMiscAssetProvider : ScriptableObject
     {
         public const string ResourcePath = "City/CityMiscAssetProvider";
-        public const string GeneratorVersion = "4.17.0";
+        public const string GeneratorVersion = "4.18.0";
         public const string DesignId = "city_misc_citywide_v4";
         public const int ExpectedAssemblyCount = 145;
         public const int ExpectedMeshCount = 310;
@@ -448,10 +448,10 @@ namespace BarPromenade
             P("Masonry", CityMiscMeshRole.Masonry)
         };
 
-        private static readonly ExpectedPartSpec[] StreetNeonMasonryParts =
+        private static readonly ExpectedPartSpec[] CinemaParts =
         {
             P("Street", CityMiscMeshRole.Street),
-            P("Neon", CityMiscMeshRole.Neon),
+            P("Fixture", CityMiscMeshRole.Fixture),
             P("Masonry", CityMiscMeshRole.Masonry)
         };
 
@@ -1271,7 +1271,7 @@ namespace BarPromenade
                 case CityMiscKind.NightlifeFireEscape:
                     return IndustrialStreetOnlyParts;
                 case CityMiscKind.NightlifeCinema:
-                    return StreetNeonMasonryParts;
+                    return CinemaParts;
                 case CityMiscKind.ParkFountainAndStatue:
                     return FountainParts;
                 case CityMiscKind.ParkBandstand:

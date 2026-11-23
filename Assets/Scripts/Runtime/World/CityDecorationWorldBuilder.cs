@@ -8,7 +8,8 @@ namespace BarPromenade
     public static class CityDecorationWorldBuilder
     {
         private const float SpatialChunkSize = 48f;
-        private const int BatchStyleCount = 8;
+        private const int BatchStyleCount = 9;
+        private static Material closedCinemaMaterial;
 
         private static readonly Color MasonryColor =
             new Color(0.27f, 0.22f, 0.17f);
@@ -162,12 +163,13 @@ namespace BarPromenade
                         BuildPhoneBoothLightAnchor(root, layout, descriptor, homeContext);
                     continue;
                 }
-                bool imported = homeContext == null &&
+                bool imported = (homeContext == null || descriptor.Kind == CityDecorationKind.NightlifeCinema) &&
                     TryAppendImportedDecoration(
                         root,
                         chunks,
                         layout,
                         descriptor,
+                        homeContext,
                         ref importedProvider);
                 if (!imported)
                 {
@@ -265,6 +267,7 @@ namespace BarPromenade
             IDictionary<ChunkCoordinate, ChunkGeometry> chunks,
             CityLayout layout,
             CityDecorationDescriptor descriptor,
+            HomeExteriorContextPlan homeContext,
             ref CityMiscAssetProvider provider)
         {
             if (!TryResolveImportedKind(descriptor.Kind, out CityMiscKind kind))
@@ -304,19 +307,28 @@ namespace BarPromenade
                 return false;
             }
 
+            Vector3 origin = context.Origin, forward = context.Forward;
+            if (homeContext != null)
+            {
+                origin = PlayerHomeBalconyGeometry.ToHomeLocal(homeContext.PlayerHome, origin);
+                forward = PlayerHomeBalconyGeometry.ToHomeLocalDirection(homeContext.PlayerHome, forward);
+                // At a crossing, keep the same bounds-clipped silhouette policy as the host building.
+                Vector3 right = Vector3.Cross(Vector3.up, forward);
+                float halfWidthX = Mathf.Abs(right.x) * 4.77f * scale.x;
+                float nearX = origin.x - halfWidthX + Mathf.Min(-.25f * forward.x, 1.51f * forward.x);
+                if (nearX < HomeExteriorViewBuilder.ExteriorMinimumX)
+                    return false;
+            }
             var coordinate = new ChunkCoordinate(
-                Mathf.FloorToInt(context.Origin.x / SpatialChunkSize),
-                Mathf.FloorToInt(context.Origin.z / SpatialChunkSize));
+                Mathf.FloorToInt(origin.x / SpatialChunkSize), Mathf.FloorToInt(origin.z / SpatialChunkSize));
             if (!chunks.TryGetValue(coordinate, out ChunkGeometry geometry))
             {
                 geometry = new ChunkGeometry();
                 chunks.Add(coordinate, geometry);
             }
 
-            Quaternion rotation = Quaternion.LookRotation(
-                context.Forward,
-                Vector3.up);
-            Vector3 center = context.Origin - coordinate.Origin;
+            Quaternion rotation = Quaternion.LookRotation(forward, Vector3.up);
+            Vector3 center = origin - coordinate.Origin;
             int partCount = CityMiscAssetProvider.GetPartCount(kind);
             for (int partIndex = 0; partIndex < partCount; partIndex++)
             {
@@ -766,6 +778,12 @@ namespace BarPromenade
             out BatchStyle style,
             out CityParkSurfaceKind? surface)
         {
+            if (part.Kind == CityMiscKind.NightlifeCinema)
+            {
+                style = BatchStyle.ClosedCinema;
+                surface = null;
+                return;
+            }
             switch (part.Role)
             {
                 case CityMiscMeshRole.Industrial:
@@ -1660,50 +1678,15 @@ namespace BarPromenade
             RecipeContext c,
             ICollection<DecorationPart> parts)
         {
-            float width = Mathf.Clamp(c.Width * 0.72f, 6.0f, 9.5f);
-            Add(parts, c, BatchStyle.Street, 0f, 3.20f, 0.65f,
-                width, 0.65f, 1.45f);
-            Add(parts, c, c.Neon, 0f, 3.14f, 1.39f,
-                width * 0.88f, 0.18f, 0.06f);
-            Add(parts, c, BatchStyle.Street, c.Mirror * width * 0.36f,
-                6.25f, 0.10f, 1.10f, 5.60f, 0.32f);
-            for (int line = 0; line < 3; line++)
-            {
-                Add(parts, c, c.Neon, c.Mirror * width * 0.36f,
-                    4.55f + line * 1.45f, 0.28f,
-                    0.72f, 0.18f, 0.05f);
-            }
-
-            Add(parts, c, BatchStyle.Masonry, -width * 0.36f, 1.42f, 0.08f,
-                0.48f, 2.84f, 0.48f);
-            Add(parts, c, BatchStyle.Masonry, width * 0.36f, 1.42f, 0.08f,
-                0.48f, 2.84f, 0.48f);
-            Add(parts, c, BatchStyle.Street, -width * 0.18f, 1.35f, 0.22f,
-                1.65f, 2.20f, 0.18f);
-            Add(parts, c, BatchStyle.Street, width * 0.18f, 1.35f, 0.22f,
-                1.65f, 2.20f, 0.18f);
-            // Backlit movie posters carry a dark figure block and
-            // title strokes over the glow, so the lightboxes read as
-            // printed one-sheets instead of bare glowing panes.
-            for (int side = -1; side <= 1; side += 2)
-            {
-                float posterX = side * width * 0.18f;
-                Add(parts, c, c.Neon, posterX, 1.35f, 0.32f,
-                    1.28f, 1.75f, 0.05f);
-                Add(parts, c, BatchStyle.Street,
-                    posterX - side * 0.19f, 1.58f, 0.35f,
-                    0.46f, 0.88f, 0.02f);
-                Add(parts, c, BatchStyle.Street,
-                    posterX + side * 0.28f, 1.30f, 0.35f,
-                    0.34f, 0.40f, 0.02f);
-                Add(parts, c, BatchStyle.Street, posterX, 0.86f, 0.35f,
-                    0.96f, 0.10f, 0.02f);
-                Add(parts, c, BatchStyle.Street,
-                    posterX + side * 0.06f, 0.68f, 0.35f,
-                    0.74f, 0.08f, 0.02f);
-            }
-            Add(parts, c, BatchStyle.Masonry, 0f, 8.72f, 0f,
-                width * 0.92f, 0.28f, 0.52f);
+            // Only the balcony cut plane uses these clipped volumes. The complete facade uses the FBX.
+            float width = Mathf.Clamp(c.Width * .72f, 6f, 9.5f);
+            float horizontalScale = width / 9.5f;
+            Add(parts, c, BatchStyle.Masonry, .88f * c.Mirror * horizontalScale, 1.45f, .105f,
+                7.13f * horizontalScale, 2.90f, .28f);
+            Add(parts, c, BatchStyle.Street, 0, 3.17f, .70f, width, .56f, 1.56f);
+            Add(parts, c, BatchStyle.Street, 3.42f * c.Mirror * horizontalScale, 6.22f, .27f,
+                1.09f * horizontalScale, 5.58f, .44f);
+            Add(parts, c, BatchStyle.Masonry, 0, 8.73f, 0, 8.77f * horizontalScale, .24f, .46f);
         }
 
         private static void BuildDumpster(
@@ -2384,6 +2367,18 @@ namespace BarPromenade
             bool emissive,
             Material emissiveMaterial)
         {
+            if (style == BatchStyle.ClosedCinema)
+            {
+                if (closedCinemaMaterial == null)
+                    closedCinemaMaterial = Resources.Load<Material>("City/Surfaces/ClosedCinema");
+                if (closedCinemaMaterial == null)
+                    throw new InvalidOperationException("Missing closed cinema finish.");
+                renderer.sharedMaterial = closedCinemaMaterial;
+                renderer.SetPropertyBlock(null);
+                renderer.shadowCastingMode = ShadowCastingMode.On;
+                renderer.receiveShadows = true;
+                return;
+            }
             renderer.shadowCastingMode = ShadowCastingMode.Off;
             renderer.receiveShadows = false;
             if (!emissive)
@@ -2497,6 +2492,8 @@ namespace BarPromenade
                     return "Cyan Emissive Details";
                 case BatchStyle.BacklitSign:
                     return "Backlit Sign Details";
+                case BatchStyle.ClosedCinema:
+                    return "Closed Cinema";
                 case BatchStyle.ClockFace:
                     return "Clock Dial Details";
                 default:
@@ -2522,6 +2519,8 @@ namespace BarPromenade
                     return CyanGlow;
                 case BatchStyle.BacklitSign:
                     return BacklitSignGlow;
+                case BatchStyle.ClosedCinema:
+                    return Color.white;
                 case BatchStyle.ClockFace:
                     return ClockFaceColor;
                 default:
@@ -2565,7 +2564,8 @@ namespace BarPromenade
             NeonMagenta = 4,
             NeonCyan = 5,
             BacklitSign = 6,
-            ClockFace = 7
+            ClockFace = 7,
+            ClosedCinema = 8
         }
 
         private readonly struct RecipeContext
