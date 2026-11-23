@@ -26,7 +26,7 @@ namespace BarPromenade
     /// reads its host clip's phase, never its own timer.
     ///
     /// Owned by the City root and polled, like the weighbridge needle
-    /// and the cemetery mourner; the two staged prefabs stay passive.
+    /// and the cemetery mourner; both seated residents stay passive.
     /// </summary>
     [DefaultExecutionOrder(320)]
     [DisallowMultipleComponent]

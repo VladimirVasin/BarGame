@@ -165,6 +165,7 @@ namespace BarPromenade
             var slots = new SortedDictionary<string, List<string>>(StringComparer.Ordinal);
             foreach (ItemBinding item in items)
             {
+                if (DefaultNpcPopulation.IsParkWardrobeItem(item.Id)) continue;
                 if (!slots.TryGetValue(item.Slot, out List<string> choices))
                     slots.Add(item.Slot, choices = new List<string>());
                 choices.Add(item.Id);

@@ -146,6 +146,7 @@ namespace BarPromenade
             active.Match.Status == BoardGameStatus.Playing &&
             active.Match.SideToMove == active.Table.HeroSide &&
             !WaitingForOpponent;
+        internal Vector2Int HoveredSquare => new Vector2Int(hoverFile, hoverRank);
         public int SelectedFile => selectedFile;
         public int SelectedRank => selectedRank;
 
@@ -366,6 +367,7 @@ namespace BarPromenade
             pointerDrivesHover = true;
             cameraYawOffset = 0f;
             cameraPitch = CityBoardGamePlan.BasePitchDegrees;
+            GameCursor.Capture(this, CursorLockMode.None, true, 4);
             BeginCameraBlend(CameraPhase.Entering);
             SetHeroHeadHidden(true);
             heroHasMoved = false;
@@ -396,6 +398,7 @@ namespace BarPromenade
                 return;
             }
 
+            GameCursor.Release(this);
             active.Pieces?.CancelTurn();
             active.Pieces?.Sync(active.Match.Pieces);
             active.Markers?.Clear();
@@ -517,7 +520,7 @@ namespace BarPromenade
             Vector2 look =
                 cameraFollow.SampleOrbitInputDegrees(
                     deltaTime,
-                    includeKeyboard: false);
+                    includeKeyboard: false, contextualRightDrag: true);
             cameraYawOffset = Mathf.Clamp(
                 cameraYawOffset + look.x,
                 -CityBoardGamePlan.MaximumYawOffsetDegrees,
@@ -1008,7 +1011,7 @@ namespace BarPromenade
                     Vector3.Distance(
                         cameraBlendPosition,
                         active.Table.BoardCenter),
-                    4f);
+                    16f);
             }
         }
 

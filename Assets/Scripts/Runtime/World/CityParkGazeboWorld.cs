@@ -10,6 +10,11 @@ namespace BarPromenade
     /// </summary>
     public sealed class CityParkGazeboWorld : MonoBehaviour
     {
+        private static Material finish;
+        internal static Material Finish => finish != null ? finish :
+            finish = Resources.Load<Material>("City/Surfaces/ParkBandstand") ??
+                throw new System.InvalidOperationException("Missing park bandstand finish.");
+
         private readonly List<Collider> rainShelters = new List<Collider>(1);
         public IReadOnlyList<Collider> RainShelters => rainShelters;
         public CityDecorationDescriptor Descriptor { get; private set; }
@@ -38,32 +43,14 @@ namespace BarPromenade
                     world.rainShelters.Add(trigger);
                     continue;
                 }
-                CityParkSurfaceKind kind = part.Surface == CityMiscSurfaceKind.Timber
-                    ? CityParkSurfaceKind.Timber : part.Surface == CityMiscSurfaceKind.PaintedMetal
-                        ? CityParkSurfaceKind.PaintedMetal : CityParkSurfaceKind.Stone;
-                Color tint = kind == CityParkSurfaceKind.Timber ? new Color(0.31f, 0.29f, 0.24f)
-                    : kind == CityParkSurfaceKind.PaintedMetal ? new Color(0.25f, 0.32f, 0.30f)
-                    : new Color(0.42f, 0.43f, 0.39f);
-                var placements = new[] { new RuntimeMeshPlacement(part.Mesh, Vector3.zero, Quaternion.identity) };
-                GameObject surface = RuntimePrimitiveFactory.CreateCombinedMeshes(
-                    part.Component, root, placements,
-                    tint, false, CityParkSurfaceAppearance.GetRecipe(kind).MetersPerTile,
-                    CityParkSurfaceAppearance.GetUvMode(kind));
-                Renderer renderer = surface.GetComponent<Renderer>();
-                CityParkSurfaceAppearance.ApplyCombined(renderer, kind, tint);
+                var surface = new GameObject(part.Component);
+                surface.transform.SetParent(root, false);
+                surface.AddComponent<MeshFilter>().sharedMesh = part.Mesh;
+                var renderer = surface.AddComponent<MeshRenderer>();
+                renderer.sharedMaterial = Finish;
                 renderer.shadowCastingMode = ShadowCastingMode.On;
                 renderer.receiveShadows = true;
-                // Adding a MeshCollider beside the visual MeshFilter would
-                // first auto-bind its combined mesh, whose CPU data is gone.
-                // Keep exact imported collision on a host with no MeshFilter.
-                var collisionHost = new GameObject("Source Collision")
-                {
-                    layer = surface.layer,
-                    tag = surface.tag
-                };
-                collisionHost.transform.SetParent(surface.transform, false);
-                MeshCollider collider = collisionHost.AddComponent<MeshCollider>();
-                collider.sharedMesh = part.Mesh;
+                surface.AddComponent<MeshCollider>().sharedMesh = part.Mesh;
                 FootstepGround.Stamp(surface,
                     part.Surface == CityMiscSurfaceKind.Timber
                         ? FootstepGroundKind.Wood : FootstepGroundKind.Stone);

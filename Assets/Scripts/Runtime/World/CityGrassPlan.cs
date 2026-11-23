@@ -103,14 +103,15 @@ namespace BarPromenade
             return $"{habitat}: faces={list.Count}; centre={p}; kind={f.Kind}; top={top}/{actual.Kind}; blocker={LastBlocker}";
         }
         internal Rect Bounds { get; private set; }
-        internal CityGrassSurface(CityLayout city, HomeExteriorContextPlan home = null, CitySeacoastPlan shore = null)
+        internal CityGrassSurface(CityLayout city, HomeExteriorContextPlan home = null, CitySeacoastPlan shore = null,
+            IReadOnlyList<CityDecorationDescriptor> decorations = null)
         {
             layout = city; Home = home; coast = shore;
             garden=CityWorldPlans.GetOrCreate(city).Church?.Grounds??default;
             foreach(var road in CityHillsideStreetPlan.ForLayout(city).Routes)
                 ridge.Add(CityHillsideNeighborhoodPlan.TerrainBounds(road));
             ridge.Add(CityHillsideQuarterPlan.ForLayout(city).TerrainBounds);
-            ReserveWalkways(city);
+            ReserveWalkways(city, decorations ?? home?.NearbyDecorations);
         }
         internal void SetExcavation(CityCemeteryGroundExcavation owner,Rect bounds)
         {excavation=owner;cemetery=bounds;}
@@ -178,8 +179,32 @@ namespace BarPromenade
             IndexObstacle(new Obstacle(bounds, preciseShape));
         }
 
-        private void ReserveWalkways(CityLayout city)
+        private void ReserveWalkways(CityLayout city, IReadOnlyList<CityDecorationDescriptor> decorations)
         {
+            if (decorations != null)
+                foreach (var gazebo in decorations)
+                {
+                    if (gazebo.Kind != CityDecorationKind.ParkBandstand) continue;
+                    var ring = new Vector2[12];
+                    for (int i = 0; i < ring.Length; i++)
+                    {
+                        float a = i * (2f * Mathf.PI / ring.Length);
+                        Vector3 p = CityParkGazeboGeometry.ToWorld(gazebo, new Vector3(
+                            CityParkGazeboGeometry.PlinthRadiusX*Mathf.Cos(a), 0f,
+                            CityParkGazeboGeometry.PlinthRadiusZ*Mathf.Sin(a)));
+                        ring[i] = new Vector2(p.x, p.z);
+                    }
+                    Reserve(ring);
+                    var steps = new Vector2[4];
+                    for (int i = 0; i < steps.Length; i++)
+                    {
+                        Vector3 p = CityParkGazeboGeometry.ToWorld(gazebo, new Vector3(
+                            i == 0 || i == 3 ? -1.2f : 1.2f, 0f, i < 2 ? 3.4f : 4.90f));
+                        steps[i] = new Vector2(p.x,p.z);
+                    }
+                    Reserve(steps);
+                    break;
+                }
             if (RidgeParkingPlan.ForLayout(city) is { } parking) ReserveRect(parking.SurfaceBounds);
             // Some path tops are separate models, and Home omits their
             // collision entirely. Reserve their same contours in City space.

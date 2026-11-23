@@ -253,13 +253,10 @@ namespace BarPromenade.Tests.EditMode
                 ParkCheckersPlayerPlan.Create(layout, decorations).Stance;
 
             Assert.That(lamp.IsPresent, Is.True);
-            Assert.That(lamp.LitPendant.IsLit, Is.True);
-            Assert.That(lamp.DeadPendant.IsLit, Is.False,
-                "Exactly one lamp on the wire burns.");
             Assert.That(
                 Vector3.Distance(
                     checkers.SeatTopCenter + (Vector3.up * 0.7f),
-                    lamp.LitPendant.ShadeCenter),
+                    lamp.Pendant.ShadeCenter),
                 Is.LessThan(CityParkChessLampWorldBuilder.LightRange),
                 "The second man sits inside the one lit circle too.");
         }

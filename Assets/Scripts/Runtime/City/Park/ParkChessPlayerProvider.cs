@@ -2,11 +2,7 @@ using UnityEngine;
 
 namespace BarPromenade
 {
-    /// <summary>
-    /// The one serialized reference that carries the staged Park Chess
-    /// Player prefab into a build — the fisherman/watchman provider
-    /// pattern. The prefab itself deliberately lives outside Resources.
-    /// </summary>
+    /// <summary>Shared seated and speaking clips for this park resident.</summary>
     [CreateAssetMenu(
         fileName = "ParkChessPlayerProvider",
         menuName = "Bar Promenade/Park Chess Player Provider")]
@@ -16,9 +12,10 @@ namespace BarPromenade
             "City/ParkChessPlayerProvider";
         public const string DesignId = "park_chess_player_v1";
 
-        [SerializeField] private GameObject stagedPrefab;
-
-        public GameObject StagedPrefab => stagedPrefab;
+        [SerializeField] private AnimationClip idleClip;
+        [SerializeField] private AnimationClip actionClip;
+        public AnimationClip IdleClip => idleClip;
+        public AnimationClip ActionClip => actionClip;
 
         public static ParkChessPlayerProvider Load()
         {

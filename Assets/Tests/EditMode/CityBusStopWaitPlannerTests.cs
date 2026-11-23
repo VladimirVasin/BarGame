@@ -295,7 +295,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 residentRiders,
                 Is.EqualTo(2),
-                "Two of the six ordinary residents declare a ride.");
+                "Two of the ordinary library residents declare a ride.");
             Assert.That(
                 CityPedestrianResources.TryGetArchetype(
                     CityPedestrianResources.HelmetLampDesignId,

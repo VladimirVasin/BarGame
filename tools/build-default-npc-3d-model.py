@@ -68,6 +68,8 @@ ITEM_FINISHES = {
     "trousers.everyday": "slacks", "trousers.work": "workTrousers", "trousers.warm": "winterTrousers",
     "boots.everyday": "shoe", "boots.work": "workBoot", "boots.warm": "winterBoot",
     "headwear.everyday": "cap", "headwear.work": "rib", "headwear.warm": "woolCoat",
+    "headwear.parkKing": "woolCoat", "headwear.parkDisc": "cap",
+    "scarf.parkChecks": "scarf", "scarf.parkSpots": "scarf",
     "headwear.transit": "uniform", "scarf.warm": "scarf", "gloves.work": "glove", "apron.work": "apron",
 }
 HAIR_COLORS = {"gray":"64625A", "brunette":"423023", "blond":"AE9668"}
@@ -807,6 +809,66 @@ class WorkerBuilder(base.PedestrianBuilder):
             for side,sign in (("L",1),("R",-1)):
                 self.add(prefix+"EarFlap."+side,base.make_ellipsoid((sign*.113,.001,1.601),(.025,.061,.068),12,6),"head",color)
 
+    def park_players(self):
+        # The raised crown and the raked double lip are readable from the path.
+        # Each cap carries the grey locks it actually exposes at its brim.
+        for chess in (True, False):
+            label = "King" if chess else "Disc"
+            prefix = "CLO_Park" + label
+            self.item("headwear.park" + label, ["HAIR_Crown", "HAIR_Sides"])
+            rows = ((1.664, .109, .114, -.014), (1.685, .121, .128, -.014),
+                    (1.738, .077, .080, -.010), (1.750, .085, .086, -.010),
+                    (1.766, .048, .049, -.010)) if chess else (
+                    (1.662, .108, .112, -.010), (1.694, .113, .117, -.010))
+            self.add(prefix + "Band", base.make_vertical_shell(rows, 14), "head", "cap_work")
+            if chess:
+                cross = base.combine_geometry(
+                    base.make_tapered_box((0, -.012, 1.762), (.018, -.015, 1.824),
+                                          (.023,.023,0), (.019,.021,0)),
+                    base.make_box((.011,-.014,1.801), (.067,.023,.015)))
+                self.add(prefix + "Cross", cross, "head", "trim", smooth=False)
+            else:
+                axis = Vector((.17,.35,.92)).normalized()
+                start = Vector((-.003,-.003,1.700))
+                profile = [(0.,.147),(.009,.151),(.019,.141),(.033,.142),(.043,.151),(.050,.145)]
+                def disc(lo, hi, r1, r2):
+                    return base.make_frustum_between(start + axis * lo, start + axis * hi, r1, r2, 14)
+                for i, ((lo,r1),(hi,r2)) in enumerate(zip(profile, profile[1:])):
+                    self.add(prefix + "Turn" + str(i), disc(lo,hi,r1,r2), "head",
+                             "cap_everyday" if i in (0,3,4) else "trim")
+                self.add(prefix + "TurnedCentre", disc(.050,.057,.054,.046), "head", "cap_everyday")
+            locks = []
+            for side in (-1,1):
+                for i in range(3):
+                    y = -.041 + i*.048
+                    locks.append(tube(((side*.097,y,1.682), (side*.104,y+.006,1.638),
+                                       (side*(.097-i*.003), y+(.014 if chess else .035),
+                                        1.606-i*(.014 if chess else .022))),
+                                      (.015,.021,.008), 6, .74))
+            self.add(prefix + "TempleHair", base.combine_geometry(*locks), "head", "hair", "hair")
+            self.item("scarf.park" + ("Checks" if chess else "Spots"), ["GEO_Neck"])
+            self.add(prefix + "ScarfRoll", base.make_vertical_shell((
+                (1.395,.119,.112,-.008),(1.421,.117,.117,-.012),(1.458,.091,.087,-.016)),14),
+                "neck", "scarf")
+            panels, marks = [], []
+            for sign in (-1,1):
+                def point(u, t, relief=0.):
+                    return (sign*(.072+.019*t+u), -.119-.060*t-relief, 1.411-.189*t)
+                def patch(u0,u1,t0,t1):
+                    return cloth_panel(([point(u0,t0),point(u1,t0),point(u1,t1),point(u0,t1)],
+                                         [(0,1,2,3)]), .004)
+                panels.append(patch(-.030,.030,0,1))
+                for row in range(6):
+                    t = (row+.5)/6
+                    u = -.015 if row%2 else .015
+                    marks.append(base.make_ellipsoid(point(u,t,.004), (.013,.004,.013),8,3)
+                                 if not chess else cloth_panel(([
+                                     point(u+du,t+dt,.006) for du,dt in
+                                     ((-.015,-1/12),(.015,-1/12),(.015,1/12),(-.015,1/12))],
+                                     [(0,1,2,3)]),.002))
+            self.add(prefix + "Lapels", base.combine_geometry(*panels), "chest", "transit_binding")
+            self.add(prefix + "ScarfPattern", base.combine_geometry(*marks), "chest", "scarf")
+
     def transit_uniform(self,covered):
         """A short uniform coat that hangs clear of the seated thighs."""
         self.item("outerwear.transit",covered)
@@ -995,7 +1057,9 @@ class WorkerBuilder(base.PedestrianBuilder):
             self.item("boots."+outfit,covers);self.boots(outfit)
         for outfit in OUTFITS:
             self.item("headwear."+outfit,["HAIR_Crown"]);self.headwear(outfit)
-        self.accessories();self.active_item=None
+        self.accessories()
+        self.park_players()
+        self.active_item=None
         for part in self.result.parts:self.uv(part)
         bpy.context.view_layer.update()
         base.npc_joint_surfaces.correct_continuous(self.result)

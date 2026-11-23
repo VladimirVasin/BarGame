@@ -12,4 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 177e8c70e84e25b478548ca1439cae5e, type: 3}
   m_Name: ParkChessPlayerProvider
   m_EditorClassIdentifier: BarPromenade.Runtime::BarPromenade.ParkChessPlayerProvider
-  stagedPrefab: {fileID: 5351877950848271160, guid: 60076a74e6fe5de49a7dde3a0c6dfbd9, type: 3}
+  idleClip: {fileID: -7580549948884677068, guid: 005737cb93f0f804cb25d506467be7ba, type: 3}
+  actionClip: {fileID: -5634711903878476947, guid: 005737cb93f0f804cb25d506467be7ba, type: 3}

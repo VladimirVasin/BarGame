@@ -3,22 +3,7 @@ using UnityEngine;
 
 namespace BarPromenade
 {
-    /// <summary>
-    /// Instantiates the one authored park chess player. There is no
-    /// pool, no director and no spawn band: he keeps his plank for as
-    /// long as the City lives — the watchman and fisherman pattern
-    /// applied to the chess set.
-    ///
-    /// He also claims his seat. The chess benches are real sittable
-    /// furniture: the hero can sit on them and `CityBenchNpcRestController`
-    /// walks pedestrians over to rest on them. Claiming through the
-    /// shared registry is what stops a walker lowering himself onto the
-    /// man already there and takes the hero's prompt off that plank.
-    ///
-    /// Nothing is added into the staged prefab, which is validated
-    /// passive with no collider, light, audio or interaction anywhere in
-    /// it; whatever this factory raises hangs off its own root.
-    /// </summary>
+    /// <summary>Seats the assigned default resident and claims his bench.</summary>
     public static class ParkChessPlayerFactory
     {
         public const string RuntimeRootName = "Park Chess Player";
@@ -79,7 +64,7 @@ namespace BarPromenade
                 return null;
             }
 
-            if (provider == null || provider.StagedPrefab == null)
+            if (provider == null || provider.IdleClip == null)
             {
                 GameLog.Warning(
                     "city",
@@ -97,9 +82,9 @@ namespace BarPromenade
             Transform root = new GameObject(RuntimeRootName).transform;
             root.SetParent(parent, false);
 
-            GameObject instance = UnityEngine.Object.Instantiate(
-                provider.StagedPrefab,
-                root);
+            VillageResidentPresentation actor = DefaultNpcFactory.CreateForCharacter(
+                root, DefaultNpcPopulation.ParkChessPlayer, initializeLocomotion: false);
+            GameObject instance = actor.gameObject;
             instance.name = "Chess Player";
 
             // Horizontal placement only carries the perch across the
@@ -111,24 +96,13 @@ namespace BarPromenade
                     (facing * PerchForwardOffsetMeters),
                 Quaternion.LookRotation(facing, Vector3.up));
 
-            var registry = instance
-                .GetComponentInChildren<CityPedestrianAssetRegistry>(
-                    true);
-            if (registry == null)
-            {
-                UnityEngine.Object.Destroy(root.gameObject);
-                throw new InvalidOperationException(
-                    "The staged chess player prefab requires a " +
-                    nameof(CityPedestrianAssetRegistry) + ".");
-            }
-
             ValidatePassivePresentation(instance);
 
             var presentation = instance
                 .AddComponent<ParkChessPlayerPresentation>();
-            presentation.Initialize(registry, stance);
+            presentation.Initialize(actor, provider, stance);
             NpcNameplateTarget.Attach(
-                instance, "npc.name.chess_player", registry.HeadAnchor, "chess_player").SetHeadClearance(0.5f);
+                instance, "npc.name.chess_player", actor.Head, "chess_player").SetHeadClearance(0.5f);
 
             // Colliderless like every staged NPC.
             var magnet = instance.AddComponent<PlayerAttentionMagnet>();
@@ -155,9 +129,7 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// The staged prefab is authored passive on purpose.
-        /// Instantiating it must not smuggle in physics, audio, light or
-        /// interaction.
+        /// The board owns interactions and the resident only presents the seated pose.
         /// </summary>
         private static void ValidatePassivePresentation(
             GameObject instance)
@@ -169,7 +141,7 @@ namespace BarPromenade
                 instance.GetComponentInChildren<Camera>(true) != null)
             {
                 throw new InvalidOperationException(
-                    "The staged chess player presentation must stay passive.");
+                    "The chess player presentation must stay passive.");
             }
         }
     }

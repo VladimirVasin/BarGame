@@ -8,12 +8,10 @@ namespace BarPromenade
     {
         public CityParkChessLampPendant(
             Vector3 mountPoint,
-            Vector3 shadeRimCenter,
-            bool isLit)
+            Vector3 shadeRimCenter)
         {
             MountPoint = mountPoint;
             ShadeRimCenter = shadeRimCenter;
-            IsLit = isLit;
         }
 
         public Vector3 MountPoint { get; }
@@ -22,11 +20,10 @@ namespace BarPromenade
             Vector3.up * (CityParkChessLampPlan.ShadeHeightMeters * 0.5f);
         public Vector3 BulbCenter => ShadeRimCenter +
             Vector3.up * CityParkChessLampPlan.BulbCenterHeightMeters;
-        public bool IsLit { get; }
     }
 
     /// <summary>
-    /// Two beam-mounted shades over the two tables, one still burning.
+    /// One broad pendant centered between the two tables.
     /// The chess descriptor's origin is the walkable gazebo deck, so lamp,
     /// furniture and occupants share that datum even on the sloping lawn.
     /// No tree search, freestanding pole or cable above the roof is needed.
@@ -41,30 +38,26 @@ namespace BarPromenade
         private static readonly CityParkChessLampPlan AbsentPlan =
             new CityParkChessLampPlan(
                 default,
-                default,
                 Vector3.zero,
                 Vector3.forward,
                 Vector3.right,
                 false);
 
         private CityParkChessLampPlan(
-            CityParkChessLampPendant lit,
-            CityParkChessLampPendant dead,
+            CityParkChessLampPendant pendant,
             Vector3 origin,
             Vector3 forward,
             Vector3 tangent,
             bool isPresent)
         {
-            LitPendant = lit;
-            DeadPendant = dead;
+            Pendant = pendant;
             Origin = origin;
             Forward = forward;
             Tangent = tangent;
             IsPresent = isPresent;
         }
 
-        public CityParkChessLampPendant LitPendant { get; }
-        public CityParkChessLampPendant DeadPendant { get; }
+        public CityParkChessLampPendant Pendant { get; }
         public Vector3 Origin { get; }
         public Vector3 Forward { get; }
         public Vector3 Tangent { get; }
@@ -90,40 +83,11 @@ namespace BarPromenade
                 return AbsentPlan;
             }
 
-            CityParkChessLampPendant lit = DescribePendant(
-                origin,
-                tangent,
-                -CityChessBoardGeometry.TableOffsetMeters,
-                true);
-            CityParkChessLampPendant dead = DescribePendant(
-                origin,
-                tangent,
-                CityChessBoardGeometry.TableOffsetMeters,
-                false);
-            return new CityParkChessLampPlan(
-                lit,
-                dead,
-                origin,
-                forward,
-                tangent,
-                true);
-        }
-
-        private static CityParkChessLampPendant DescribePendant(
-            Vector3 origin,
-            Vector3 tangent,
-            float tableOffset,
-            bool isLit)
-        {
-            float beamAboveDeck =
-                CityParkGazeboGeometry.BeamUndersideHeightMeters -
+            float beamAboveDeck = CityParkGazeboGeometry.BeamUndersideHeightMeters -
                 CityParkGazeboGeometry.DeckHeightMeters;
-            Vector3 mount = origin + tangent * tableOffset +
-                Vector3.up * beamAboveDeck;
-            return new CityParkChessLampPendant(
-                mount,
-                mount - Vector3.up * MountToRimMeters,
-                isLit);
+            Vector3 mount = origin + Vector3.up * beamAboveDeck;
+            var pendant = new CityParkChessLampPendant(mount, mount - Vector3.up * MountToRimMeters);
+            return new CityParkChessLampPlan(pendant, origin, forward, tangent, true);
         }
 
         private static bool TryFindChessBasis(

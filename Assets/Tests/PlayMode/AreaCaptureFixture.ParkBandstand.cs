@@ -5,6 +5,7 @@ using System.IO;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
+using UnityEngine.InputSystem;
 using Object = UnityEngine.Object;
 
 namespace BarPromenade.Tests.PlayMode
@@ -14,6 +15,8 @@ namespace BarPromenade.Tests.PlayMode
         public void Setup()
         {
 #if UNITY_EDITOR
+            Type.GetType("BarPromenade.Editor.DefaultNpcAssetSetup, BarPromenade.Editor", true)
+                .GetMethod("ValidateOrThrow", Type.EmptyTypes).Invoke(null, null);
             Type.GetType("BarPromenade.Editor.CityMiscAssetSetup, BarPromenade.Editor", true)
                 .GetMethod("BuildOrThrow", Type.EmptyTypes).Invoke(null, null);
 #endif
@@ -33,6 +36,7 @@ namespace BarPromenade.Tests.PlayMode
         public IEnumerator CityParkBandstand()
         {
             GameSessionState.BeginNewGame();
+            GameSessionState.PrepareSupermarketReturn();
             GameSessionState.TryStartGameTimeFromWake();
             GameSessionState.AdvanceGameTime((float)(360f / GameTimeState.GameMinutesPerRealSecond));
             CityGameRoot city = null;
@@ -86,6 +90,7 @@ namespace BarPromenade.Tests.PlayMode
                 Physics.SyncTransforms();
                 AssertParkFloorAndOccupants(city, stand);
                 AssertParkLampAndShelter(city, stand);
+                CheckBoardLighting(city, camera, "day");
                 AssertAndCaptureParkFurniture(city, camera);
                 Vector3 entry = CityParkGazeboGeometry.ToWorld(stand, new Vector3(0f, 0f, 5.6f));
                 Assert.That(Physics.Raycast(entry + Vector3.up * 2f, Vector3.down,
@@ -108,6 +113,7 @@ namespace BarPromenade.Tests.PlayMode
                     city.Player.Interactor.SetInputEnabled(true);
                     Assert.That(activeSeat.CanInteract(city.Player.Interactor), Is.True);
                     Assert.That(activeSeat.Controller.BeginExternalClock(externalOwner), Is.True);
+                    follow.enabled = true;
                     activeSeat.Interact(city.Player.Interactor);
                     for (int frame = 0; frame < 160 && !activeSeat.IsSeated; frame++)
                     {
@@ -123,6 +129,7 @@ namespace BarPromenade.Tests.PlayMode
                     activeSeat.Controller.RefreshActiveClipAlignment();
                     Assert.That(Vector3.Distance(hero.Registry.Anchors.Pelvis.position, activeSeat.Plan.ActionHipPosition),
                         Is.LessThan(.035f), "The same hero must meet the real plank on the raised deck.");
+                    yield return PointAtBothNearCorners(city.BoardGames, table, camera);
                     Vector3 view = table.SeatTopCenter - table.SeatFacing * 2.8f + table.Tangent * 1.6f + Vector3.up * .8f;
                     ParkFrame(camera, "park-04-seated-" + table.Game, view, table.BoardCenter + Vector3.up * .1f, 65f);
                     Assert.That(activeSeat.RequestExit(), Is.True);
@@ -137,6 +144,7 @@ namespace BarPromenade.Tests.PlayMode
                     Assert.That(city.Player.Motor.transform.position.y,
                         Is.EqualTo(activeSeat.Plan.EntryRootPosition.y).Within(.04f));
                     activeSeat = null;
+                    follow.enabled = false;
                 }
                 yield return WalkParkLeg(city, CityParkGazeboGeometry.ToWorld(stand,
                     new Vector3(0f, CityParkGazeboGeometry.DeckHeightMeters, 1.7f)), "back to the central entrance");
@@ -150,6 +158,7 @@ namespace BarPromenade.Tests.PlayMode
                     GameTimeState.GameMinutesPerRealSecond));
                 city.DayNight.ApplyCurrentTime(true);
                 for (int frame = 0; frame < SettleFrames; frame++) yield return null;
+                CheckBoardLighting(city, camera, "night");
                 ParkFrame(camera, "park-05-night", origin + forward * 9f + tangent * 4.5f + Vector3.up * EyeHeight,
                     origin + Vector3.up * 1.5f, 62f);
                 city.Weather.enabled = false;
@@ -179,6 +188,67 @@ namespace BarPromenade.Tests.PlayMode
                 camera.fieldOfView = fov; camera.aspect = aspect;
                 if (follow != null) follow.enabled = followEnabled;
             }
+        }
+
+        private static IEnumerator PointAtBothNearCorners(CityBoardGameController game,
+            CityBoardGameTable table, Camera camera)
+        {
+            yield return new WaitForSecondsRealtime(CityBoardGameController.CameraBlendSeconds + .1f);
+            for (int frame = 0; frame < 160 && !game.HeroToMove; frame++) yield return null;
+            Assert.That(game.HeroToMove, Is.True, table.Game.ToString());
+            Assert.That(Cursor.lockState, Is.EqualTo(CursorLockMode.None));
+            Assert.That(Cursor.visible, Is.True);
+            var input = new InputTestFixture();
+            input.Setup();
+            try
+            {
+                var mouse = InputSystem.AddDevice<Mouse>();
+                int rank = Vector3.Dot(table.SquareCenter(0,7) - table.SquareCenter(0,0),
+                    table.SeatFacing) > 0 ? 0 : 7;
+                foreach (float aspect in new[] { 4f/3f, 16f/9f })
+                {
+                    camera.aspect = aspect;
+                    foreach (int file in new[] { 0, 7 })
+                    {
+                        // Opening rooks and back-row draughts are blocked. First
+                        // select a mobile piece so a corner click has an observable result.
+                        var action = game.ActiveMatch.LegalActions[0];
+                        yield return Point(action.FromFile, action.FromRank);
+                        yield return Click();
+                        Assert.That(new Vector2Int(game.SelectedFile, game.SelectedRank),
+                            Is.EqualTo(new Vector2Int(action.FromFile, action.FromRank)));
+                        int plies = game.ActiveMatch.PliesPlayed;
+                        yield return Point(file, rank);
+                        yield return Click();
+                        Assert.That(game.SelectedFile, Is.EqualTo(-1), "A click on a blocked or empty corner clears selection.");
+                        Assert.That(game.ActiveMatch.PliesPlayed, Is.EqualTo(plies));
+                    }
+                }
+                ParkFrame(camera, "park-04-player-eye-" + table.Game, camera.transform.position,
+                    camera.transform.position + camera.transform.forward, camera.fieldOfView);
+
+                IEnumerator Point(int file, int row)
+                {
+                    Vector3 pixel = camera.WorldToScreenPoint(table.SquareCenter(file,row));
+                    Assert.That(pixel.z, Is.Positive);
+                    Assert.That(camera.pixelRect.Contains(pixel), Is.True, $"{table.Game} {file},{row} off screen at {pixel}.");
+                    input.Set(mouse.position, (Vector2)pixel, queueEventOnly: true);
+                    yield return null;
+                    yield return null;
+                    Assert.That(game.HoveredSquare, Is.EqualTo(new Vector2Int(file,row)),
+                        $"{table.Game} {camera.aspect} pointer {mouse.position.ReadValue()}, target {pixel}");
+                }
+
+                IEnumerator Click()
+                {
+                    input.Press(mouse.leftButton, queueEventOnly: true);
+                    yield return null;
+                    yield return null;
+                    input.Release(mouse.leftButton, queueEventOnly: true);
+                    yield return null;
+                }
+            }
+            finally { input.TearDown(); }
         }
 
         private static void AppendParkAuditShots(CityGameRoot city, List<Shot> shots)
@@ -338,6 +408,18 @@ namespace BarPromenade.Tests.PlayMode
                     Is.EqualTo(deckY + PlayerFactory.GroundedRootOffset).Within(.002f));
                 AssertParkFloorHit(city.World.Gazebo, stand, seat.Plan.EntryRootPosition, deckY, table.Game + " entry dock");
             }
+            foreach (Component resident in new Component[] {city.ParkChessPlayer, city.ParkCheckersPlayer})
+            {
+                bool chess = resident == city.ParkChessPlayer;
+                var appearance = resident.GetComponent<DefaultNpcAppearance>();
+                var wardrobe = resident.GetComponent<NpcWardrobe>();
+                Assert.That(appearance.AppearanceKey, Is.EqualTo(chess ? DefaultNpcPopulation.ParkChessPlayer :
+                    DefaultNpcPopulation.ParkCheckersPlayer));
+                Assert.That(appearance.CurrentHairColorId, Is.EqualTo("gray"));
+                Assert.That(wardrobe.IsEquipped(chess ? "headwear.parkKing" : "headwear.parkDisc"), Is.True);
+                Assert.That(wardrobe.IsEquipped(chess ? "scarf.parkChecks" : "scarf.parkSpots"), Is.True);
+                Assert.That(resident.GetComponent<VillageResidentPresentation>(), Is.Not.Null);
+            }
             Assert.That(city.ParkChessPlayer.SeatPelvisY,
                 Is.EqualTo(deckY + CityChessBoardGeometry.BenchSeatTopY + ParkChessPlayerPresentation.PerchPelvisLiftMeters).Within(.002f));
             Assert.That(city.ParkCheckersPlayer.SeatPelvisY,
@@ -369,18 +451,27 @@ namespace BarPromenade.Tests.PlayMode
                     "Park paths retain darkness between gates; only the gazebo pendant lights the park.");
             CityParkChessLampPlan lamp = CityParkChessLampPlan.Create(city.Layout, city.World.DecorationPlan);
             Assert.That(lamp.IsPresent, Is.True);
-            Assert.That(lamp.LitPendant.IsLit && !lamp.DeadPendant.IsLit, Is.True);
-            foreach (CityParkChessLampPendant pendant in new[] { lamp.LitPendant, lamp.DeadPendant })
-            {
-                Assert.That(pendant.MountPoint.y - stand.Position.y,
-                    Is.EqualTo(CityParkGazeboGeometry.BeamUndersideHeightMeters).Within(.002f));
-                Vector3 local = pendant.MountPoint - stand.Position;
-                Assert.That(Mathf.Abs(Vector3.Dot(local, lamp.Tangent)),
-                    Is.EqualTo(CityChessBoardGeometry.TableOffsetMeters).Within(.002f));
-                Assert.That(Vector3.Dot(local, lamp.Forward), Is.EqualTo(0f).Within(.002f),
-                    "Each pendant mounts to the real cross-beam above its table.");
-            }
-            Assert.That(city.ParkChessLamp.GetComponentsInChildren<Light>(true).Length, Is.EqualTo(1));
+            CityParkChessLampPendant pendant = lamp.Pendant;
+            Assert.That(pendant.MountPoint.y - stand.Position.y,
+                Is.EqualTo(CityParkGazeboGeometry.BeamUndersideHeightMeters).Within(.002f));
+            Assert.That(city.ParkChessLamp.transform.childCount, Is.EqualTo(1));
+            Light[] lamps = city.ParkChessLamp.GetComponentsInChildren<Light>(true);
+            Assert.That(lamps.Length, Is.EqualTo(1));
+            Light light = lamps[0];
+            Assert.That(light.type, Is.EqualTo(LightType.Spot));
+            Assert.That(Vector3.Distance(light.transform.position, pendant.BulbCenter), Is.LessThan(.002f));
+            var tables = CityBoardGamePlan.Create(city.Layout,city.World.DecorationPlan);
+            Vector3 midpoint = (tables[0].BoardCenter + tables[1].BoardCenter)*.5f;
+            Assert.That(Vector3.Distance(Vector3.ProjectOnPlane(midpoint - light.transform.position, Vector3.up),
+                Vector3.zero), Is.LessThan(.002f), "The bulb must be equidistant from both game boards.");
+            foreach (var table in tables)
+                foreach (int file in new[] {0,7})
+                    foreach (int rank in new[] {0,7})
+                    {
+                        Vector3 ray = table.SquareCenter(file,rank) - light.transform.position;
+                        Assert.That(Vector3.Angle(light.transform.forward,ray), Is.LessThan(light.innerSpotAngle*.5f));
+                        Assert.That(ray.magnitude, Is.LessThan(light.range));
+                    }
             bool found = false;
             foreach (Collider shelter in city.Rain.LocalShelters)
             {
@@ -397,6 +488,42 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(found, Is.True, "The actual rain field must register the gazebo roof.");
             Assert.That(city.Rain.Particles.trigger.enabled, Is.True);
             Assert.That(city.Rain.Particles.trigger.inside, Is.EqualTo(ParticleSystemOverlapAction.Kill));
+        }
+
+        private static void CheckBoardLighting(CityGameRoot city, Camera camera, string time)
+        {
+            float firstLight = -1f, firstDark = -1f;
+            foreach (var table in CityBoardGamePlan.Create(city.Layout,city.World.DecorationPlan))
+            {
+                CityBoardGamePlan.EvaluateCamera(table, 0, CityBoardGamePlan.BasePitchDegrees, out var eye, out var rotation);
+                ParkFrame(camera, "park-board-" + time + "-" + table.Game, eye, eye + rotation * Vector3.forward,
+                    CityBoardGamePlan.FieldOfView, pixels =>
+                    {
+                        var light = new List<float>();
+                        var dark = new List<float>();
+                        // Middle ranks have open squares in both opening positions.
+                        // A median rejects the occasional pawn or checker after the opening move.
+                        for (int rank = 3; rank <= 4; rank++)
+                            for (int file = 0; file < 8; file++)
+                            {
+                                Vector3 uv = camera.WorldToViewportPoint(table.SquareCenter(file,rank));
+                                Color colour = pixels.GetPixelBilinear(uv.x, uv.y);
+                                (((file+rank)&1) == 0 ? light : dark).Add(colour.grayscale);
+                            }
+                        light.Sort(); dark.Sort();
+                        float maple = (light[3]+light[4])*.5f, walnut = (dark[3]+dark[4])*.5f;
+                        TestContext.WriteLine($"{table.Game} {time}: light squares {maple:F3}, dark {walnut:F3}");
+                        Assert.That(maple, Is.LessThan(.92f), "The pale inlay must retain headroom below white.");
+                        Assert.That(maple - walnut, Is.GreaterThan(.09f), "Both inlays must read at the player's seat.");
+                        if (firstLight >= 0)
+                        {
+                            Assert.That(maple, Is.EqualTo(firstLight).Within(.14f), "Comparable light on both tables.");
+                            Assert.That(walnut, Is.EqualTo(firstDark).Within(.14f));
+                        }
+                        firstLight = maple;
+                        firstDark = walnut;
+                    });
+            }
         }
 
         private static void AssertAndCaptureParkFurniture(CityGameRoot city, Camera camera)
@@ -442,7 +569,8 @@ namespace BarPromenade.Tests.PlayMode
             return null;
         }
 
-        private static void ParkFrame(Camera camera, string name, Vector3 position, Vector3 target, float fov)
+        private static void ParkFrame(Camera camera, string name, Vector3 position, Vector3 target, float fov,
+            Action<Texture2D> inspect = null)
         {
             camera.transform.SetPositionAndRotation(position, Quaternion.LookRotation(target - position));
             camera.fieldOfView = fov;
@@ -457,6 +585,7 @@ namespace BarPromenade.Tests.PlayMode
                 pixels.ReadPixels(new Rect(0, 0, Width, Height), 0, 0);
                 pixels.Apply();
                 Assert.That(IsBlank(pixels), Is.False, name);
+                inspect?.Invoke(pixels);
                 string folder = Path.Combine(Directory.GetCurrentDirectory(), "Captures", "City");
                 Directory.CreateDirectory(folder);
                 File.WriteAllBytes(Path.Combine(folder, name + ".png"), pixels.EncodeToPNG());

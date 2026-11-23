@@ -139,8 +139,8 @@
     }
   },
   "wave1_compatibility_signature": "dd2e814d906fd2c7a7855c6d75ee54fe912ebb90f7cd02633c95c558d752f9f6",
-  "v2_compatibility_signature": "0b951c55cd3c74c264b2749a6cf101a8edb6c48d98aab13bb449332fb0a9cc50",
-  "v2_unchanged_compatibility_signature": "dfd569e900927755388dc8674ddc36cd76e8518b04707334d704001bf09d9aaf",
+  "v2_compatibility_signature": "9eefa332afde8c882c8047f1735d092f4b0256ef0bf71fbdcb287b3f7a6ad529",
+  "v2_unchanged_compatibility_signature": "e64bbeb173893c5b59c45219c999995c2e7ad741e2c25dc453d971c5c5cfe5fa",
   "colliders": false,
   "lights": false,
   "cameras": false,
@@ -149,7 +149,7 @@
   "animation_count": 0,
   "mesh_count": 310,
   "assembly_count": 145,
-  "triangle_count": 77006,
+  "triangle_count": 80946,
   "assemblies": [
     {
       "kind": "IndustrialStacksAndTanks",
@@ -1715,7 +1715,7 @@
       "bounds_max_source": [
         4.7,
         4.9,
-        5.6
+        5.612638
       ],
       "bounds_min_unity": [
         -4.7,
@@ -1724,7 +1724,7 @@
       ],
       "bounds_max_unity": [
         4.7,
-        5.6,
+        5.612638,
         4.9
       ]
     },
@@ -1757,23 +1757,23 @@
       ],
       "bounds_min_source": [
         -2.57,
-        -1.31,
+        -1.308,
         0.0
       ],
       "bounds_max_source": [
         2.57,
-        1.31,
+        1.308,
         1.0
       ],
       "bounds_min_unity": [
         -2.57,
         0.0,
-        -1.31
+        -1.308
       ],
       "bounds_max_unity": [
         2.57,
         1.0,
-        1.31
+        1.308
       ]
     },
     {
@@ -9958,12 +9958,12 @@
         4.9
       ],
       "uv_min": [
-        0.0,
-        0.0
+        0.005,
+        0.255
       ],
       "uv_max": [
-        1.0,
-        1.0
+        0.245,
+        0.495
       ]
     },
     {
@@ -9975,8 +9975,8 @@
       "tint_role": "Residential_Timber",
       "placement_mode": "recipe_local_rigid",
       "normalized_height_m": null,
-      "vertices": 64,
-      "triangles": 116,
+      "vertices": 826,
+      "triangles": 1396,
       "bounds_min_source": [
         -4.7,
         -4.1,
@@ -9998,12 +9998,12 @@
         4.1
       ],
       "uv_min": [
-        0.0,
-        0.0
+        0.0074,
+        0.755
       ],
       "uv_max": [
-        1.0,
-        1.0
+        0.995,
+        0.995
       ]
     },
     {
@@ -10015,8 +10015,8 @@
       "tint_role": "Masonry_Timber",
       "placement_mode": "recipe_local_rigid",
       "normalized_height_m": null,
-      "vertices": 200,
-      "triangles": 352,
+      "vertices": 328,
+      "triangles": 576,
       "bounds_min_source": [
         -2.937716,
         -2.513452,
@@ -10038,12 +10038,12 @@
         2.513452
       ],
       "uv_min": [
-        0.0,
-        0.0
+        0.505,
+        0.755
       ],
       "uv_max": [
-        1.0,
-        1.0
+        0.995,
+        0.995
       ]
     },
     {
@@ -10055,35 +10055,35 @@
       "tint_role": "Street_PaintedMetal",
       "placement_mode": "recipe_local_rigid",
       "normalized_height_m": null,
-      "vertices": 206,
-      "triangles": 364,
+      "vertices": 494,
+      "triangles": 844,
       "bounds_min_source": [
-        -4.6,
-        -4.0,
+        -4.606397,
+        -4.007183,
         0.54
       ],
       "bounds_max_source": [
-        4.6,
-        4.0,
-        5.6
+        4.606397,
+        4.007183,
+        5.612638
       ],
       "bounds_min_unity": [
-        -4.6,
+        -4.606397,
         0.54,
-        -4.0
+        -4.007183
       ],
       "bounds_max_unity": [
-        4.6,
-        5.6,
-        4.0
+        4.606397,
+        5.612638,
+        4.007183
       ],
       "uv_min": [
-        0.0,
-        0.0
+        0.255,
+        0.005
       ],
       "uv_max": [
-        1.0,
-        1.0
+        0.745,
+        0.495
       ]
     },
     {
@@ -10135,12 +10135,12 @@
       "tint_role": "Masonry_Stone",
       "placement_mode": "recipe_local_rigid",
       "normalized_height_m": null,
-      "vertices": 32,
-      "triangles": 56,
+      "vertices": 64,
+      "triangles": 112,
       "bounds_min_source": [
         -2.57,
         -0.72,
-        0.76
+        0.725
       ],
       "bounds_max_source": [
         2.57,
@@ -10149,7 +10149,7 @@
       ],
       "bounds_min_unity": [
         -2.57,
-        0.76,
+        0.725,
         -0.72
       ],
       "bounds_max_unity": [
@@ -10158,12 +10158,12 @@
         0.72
       ],
       "uv_min": [
-        0.0,
-        0.0
+        0.005,
+        0.255
       ],
       "uv_max": [
-        1.0,
-        1.0
+        0.245,
+        0.495
       ]
     },
     {
@@ -10198,12 +10198,12 @@
         0.6
       ],
       "uv_min": [
-        0.0,
-        0.0
+        0.505,
+        0.505
       ],
       "uv_max": [
-        1.0,
-        1.0
+        0.72295,
+        0.745
       ]
     },
     {
@@ -10238,12 +10238,12 @@
         0.67
       ],
       "uv_min": [
-        0.0,
-        0.0
+        0.255,
+        0.505
       ],
       "uv_max": [
-        1.0,
-        1.0
+        0.995,
+        0.995
       ]
     },
     {
@@ -10278,12 +10278,12 @@
         0.33
       ],
       "uv_min": [
-        0.0,
-        0.0
+        0.005,
+        0.255
       ],
       "uv_max": [
-        1.0,
-        1.0
+        0.245,
+        0.495
       ]
     },
     {
@@ -10318,12 +10318,12 @@
         0.17
       ],
       "uv_min": [
-        0.0,
-        0.0
+        0.005,
+        0.255
       ],
       "uv_max": [
-        1.0,
-        1.0
+        0.245,
+        0.495
       ]
     },
     {
@@ -10335,35 +10335,35 @@
       "tint_role": "Street_Timber",
       "placement_mode": "recipe_local_rigid",
       "normalized_height_m": null,
-      "vertices": 64,
-      "triangles": 112,
+      "vertices": 576,
+      "triangles": 1008,
       "bounds_min_source": [
         -2.41,
-        -1.31,
+        -1.308,
         0.38
       ],
       "bounds_max_source": [
         2.41,
-        1.31,
+        1.308,
         0.54
       ],
       "bounds_min_unity": [
         -2.41,
         0.38,
-        -1.31
+        -1.308
       ],
       "bounds_max_unity": [
         2.41,
         0.54,
-        1.31
+        1.308
       ],
       "uv_min": [
-        0.0,
-        0.0
+        0.005,
+        0.005
       ],
       "uv_max": [
-        1.0,
-        1.0
+        0.745,
+        0.995
       ]
     },
     {
@@ -10398,12 +10398,12 @@
         0.22
       ],
       "uv_min": [
-        0.0,
-        0.0
+        0.005,
+        0.255
       ],
       "uv_max": [
-        1.0,
-        1.0
+        0.245,
+        0.495
       ]
     },
     {
@@ -10438,12 +10438,12 @@
         0.17
       ],
       "uv_min": [
-        0.0,
-        0.0
+        0.005,
+        0.255
       ],
       "uv_max": [
-        1.0,
-        1.0
+        0.245,
+        0.495
       ]
     },
     {
@@ -17735,8 +17735,8 @@
       "tint_role": "Street_PaintedMetal",
       "placement_mode": "recipe_local_rigid",
       "normalized_height_m": null,
-      "vertices": 132,
-      "triangles": 256,
+      "vertices": 536,
+      "triangles": 1068,
       "bounds_min_source": [
         -0.17,
         -0.17,
@@ -17745,7 +17745,7 @@
       "bounds_max_source": [
         0.17,
         0.17,
-        0.22
+        0.182
       ],
       "bounds_min_unity": [
         -0.17,
@@ -17754,16 +17754,16 @@
       ],
       "bounds_max_unity": [
         0.17,
-        0.22,
+        0.182,
         0.17
       ],
       "uv_min": [
-        0.0,
-        0.0
+        0.005,
+        0.005
       ],
       "uv_max": [
-        1.0,
-        1.0
+        0.995,
+        0.495
       ]
     },
     {
@@ -17775,35 +17775,35 @@
       "tint_role": "Street",
       "placement_mode": "recipe_local_rigid",
       "normalized_height_m": null,
-      "vertices": 14,
-      "triangles": 24,
+      "vertices": 104,
+      "triangles": 196,
       "bounds_min_source": [
-        -0.010724,
-        -0.009911,
-        0.22
+        -0.071,
+        -0.071,
+        0.175
       ],
       "bounds_max_source": [
-        0.010724,
-        0.011,
+        0.071,
+        0.071,
         0.7
       ],
       "bounds_min_unity": [
-        -0.010724,
-        0.22,
-        -0.009911
+        -0.071,
+        0.175,
+        -0.071
       ],
       "bounds_max_unity": [
-        0.010724,
+        0.071,
         0.7,
-        0.011
+        0.071
       ],
       "uv_min": [
-        0.0,
-        0.0
+        0.505,
+        0.005
       ],
       "uv_max": [
-        1.0,
-        1.0
+        0.995,
+        0.495
       ]
     },
     {
@@ -17815,8 +17815,8 @@
       "tint_role": "Neon",
       "placement_mode": "recipe_local_rigid",
       "normalized_height_m": null,
-      "vertices": 40,
-      "triangles": 76,
+      "vertices": 50,
+      "triangles": 96,
       "bounds_min_source": [
         -0.025,
         -0.023776,
@@ -17825,7 +17825,7 @@
       "bounds_max_source": [
         0.025,
         0.023776,
-        0.08
+        0.101
       ],
       "bounds_min_unity": [
         -0.025,
@@ -17834,7 +17834,7 @@
       ],
       "bounds_max_unity": [
         0.025,
-        0.08,
+        0.101,
         0.023776
       ],
       "uv_min": [
@@ -19047,5 +19047,5 @@
       ]
     }
   ],
-  "build_signature": "983fff21ef6c9a6cbf5fe528798736b34f367767f83962fcc5719b66d1fcd40f"
+  "build_signature": "d82f1622548e1ad64fd11f04fdcc59070a8b58630430f671d2e91ec4fb5ba549"
 }

@@ -8,7 +8,7 @@ namespace BarPromenade
     public static class CityDecorationWorldBuilder
     {
         private const float SpatialChunkSize = 48f;
-        private const int BatchStyleCount = 9;
+        private const int BatchStyleCount = 10;
         private static Material closedCinemaMaterial;
 
         private static readonly Color MasonryColor =
@@ -778,6 +778,12 @@ namespace BarPromenade
             out BatchStyle style,
             out CityParkSurfaceKind? surface)
         {
+            if (part.Kind == CityMiscKind.ParkChessTables)
+            {
+                style = BatchStyle.ParkBoardTables;
+                surface = null;
+                return;
+            }
             if (part.Kind == CityMiscKind.NightlifeCinema)
             {
                 style = BatchStyle.ClosedCinema;
@@ -2367,6 +2373,14 @@ namespace BarPromenade
             bool emissive,
             Material emissiveMaterial)
         {
+            if (style == BatchStyle.ParkBoardTables)
+            {
+                renderer.sharedMaterial = CityParkGazeboWorld.Finish;
+                renderer.SetPropertyBlock(null);
+                renderer.shadowCastingMode = ShadowCastingMode.On;
+                renderer.receiveShadows = true;
+                return;
+            }
             if (style == BatchStyle.ClosedCinema)
             {
                 if (closedCinemaMaterial == null)
@@ -2492,6 +2506,8 @@ namespace BarPromenade
                     return "Cyan Emissive Details";
                 case BatchStyle.BacklitSign:
                     return "Backlit Sign Details";
+                case BatchStyle.ParkBoardTables:
+                    return "Park Game Tables";
                 case BatchStyle.ClosedCinema:
                     return "Closed Cinema";
                 case BatchStyle.ClockFace:
@@ -2519,6 +2535,7 @@ namespace BarPromenade
                     return CyanGlow;
                 case BatchStyle.BacklitSign:
                     return BacklitSignGlow;
+                case BatchStyle.ParkBoardTables:
                 case BatchStyle.ClosedCinema:
                     return Color.white;
                 case BatchStyle.ClockFace:
@@ -2565,7 +2582,8 @@ namespace BarPromenade
             NeonCyan = 5,
             BacklitSign = 6,
             ClockFace = 7,
-            ClosedCinema = 8
+            ClosedCinema = 8,
+            ParkBoardTables = 9
         }
 
         private readonly struct RecipeContext

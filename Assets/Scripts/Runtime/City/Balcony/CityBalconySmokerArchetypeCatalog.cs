@@ -7,7 +7,7 @@ namespace BarPromenade
 {
     /// <summary>
     /// Technical eligibility for reusing Hero V2 SmokeLoop. Every accepted
-    /// design is one of the library's six ordinary residents - the street
+    /// design is one of the library's ordinary residents - the street
     /// set until 2026-09-16, when the pavement went to the default NPC
     /// catalog and the balconies kept these bodies - with the exact shared
     /// Avatar, both foot anchors and the canonical mouth/right-hand sockets,

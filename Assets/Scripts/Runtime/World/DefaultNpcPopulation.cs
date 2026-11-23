@@ -26,6 +26,8 @@ namespace BarPromenade
         public const string CityDogParkSeatedOwner = "zzzzz.city.dog-park.seated";
         // Append after every existing identity to retain their allocated looks.
         public const string CityResidentialCourtyardCarrier = "zzzzzz.city.residential-courtyard.carrier";
+        public const string ParkChessPlayer = "park.chess-player";
+        public const string ParkCheckersPlayer = "park.checkers-player";
         public const string LastRouteFerryman = "last-route.ferryman";
         public static string AmbientDriverId(int index)
         {
@@ -443,7 +445,20 @@ namespace BarPromenade
                         new SlotConstraint("scarf", new string[] { null }),
                         new SlotConstraint("apron", new string[] { null })));
             RegisterAmbientDriver(AmbientTrafficRules.CirculatingCapacity);
+            RegisterParkPlayer(ParkChessPlayer, "parkKing", "parkChecks", "outerwear.coat");
+            RegisterParkPlayer(ParkCheckersPlayer, "parkDisc", "parkSpots", "outerwear.cardigan");
             return roster.ToArray();
+
+            void RegisterParkPlayer(string id, string hat, string scarf, string coat) =>
+                roster.Add(new CharacterDefinition(id, model, false,
+                    new SlotConstraint("headwear", "headwear." + hat),
+                    new SlotConstraint("scarf", "scarf." + scarf),
+                    new SlotConstraint("outerwear", coat),
+                    new SlotConstraint("boots", "boots.everyday"),
+                    new SlotConstraint("shirt", "shirt.warm"),
+                    new SlotConstraint("trousers", "trousers.everyday"),
+                    new SlotConstraint("gloves", new string[] { null }),
+                    new SlotConstraint("apron", new string[] { null })));
 
             void RegisterAmbientDriver(int index) => roster.Add(new CharacterDefinition(AmbientDriverId(index), model, false,
                 new SlotConstraint("outerwear", "outerwear.work", "outerwear.everyday"),
@@ -555,7 +570,10 @@ namespace BarPromenade
                 : character.ModelId;
             ModelDefinition model = models[modelId];
             bool transit = character.Id.StartsWith(BusDriverIdPrefix, StringComparison.Ordinal);
-            var dimensions = new List<string[]> { transit ? model.TransitFaces : model.Faces, model.HairColors };
+            bool parkPlayer = character.Id == ParkChessPlayer || character.Id == ParkCheckersPlayer;
+            string[] faces = parkPlayer ? new[] { character.Id == ParkChessPlayer ? "face-02" : "face-03" } :
+                transit ? model.TransitFaces : model.Faces;
+            var dimensions = new List<string[]> { faces, parkPlayer ? new[] { "gray" } : model.HairColors };
             int outerwearDimension = -1;
             var addedOuterwear = new List<string>();
             var constraints = new Dictionary<string, SlotConstraint>(StringComparer.Ordinal);
@@ -584,7 +602,9 @@ namespace BarPromenade
                     if (slot.Key == "outerwear")
                         choices = Array.FindAll(choices, id => id != FerrymanCoatItem && id != "outerwear.transit");
                     if (slot.Key == "headwear")
-                        choices = Array.FindAll(choices, id => id != "headwear.transit");
+                        choices = Array.FindAll(choices, id => id != "headwear.transit" && !IsParkWardrobeItem(id));
+                    if (slot.Key == "scarf")
+                        choices = Array.FindAll(choices, id => !IsParkWardrobeItem(id));
                 }
                 if (modelId == DefaultNpcCatalog.OrdinaryWorker && slot.Key == "outerwear")
                 {
@@ -629,6 +649,9 @@ namespace BarPromenade
             return new Assignment(character, modelId, chosen[0], chosen[1], equipped.ToArray(), finalSignature,
                 model.ReferenceHeightCm, model.MinHeightCm, model.MaxHeightCm);
         }
+
+        internal static bool IsParkWardrobeItem(string id) => id.StartsWith("headwear.park", StringComparison.Ordinal) ||
+            id.StartsWith("scarf.park", StringComparison.Ordinal);
 
         private static bool IsAddedOuterwear(string id) => id == "outerwear.cardigan" || id == "outerwear.coat" || id == "outerwear.overshirt";
 

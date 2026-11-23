@@ -57,14 +57,6 @@ namespace BarPromenade.Editor
             "Assets/Pedestrians/Staged/Models/LakeFisherman3D.fbx";
         public const string LakeFishermanManifestPath =
             "Assets/Pedestrians/Staged/Models/LakeFisherman3D.json";
-        public const string ParkChessPlayerModelPath =
-            "Assets/Pedestrians/Staged/Models/ParkChessPlayer3D.fbx";
-        public const string ParkChessPlayerManifestPath =
-            "Assets/Pedestrians/Staged/Models/ParkChessPlayer3D.json";
-        public const string ParkCheckersPlayerModelPath =
-            "Assets/Pedestrians/Staged/Models/ParkCheckersPlayer3D.fbx";
-        public const string ParkCheckersPlayerManifestPath =
-            "Assets/Pedestrians/Staged/Models/ParkCheckersPlayer3D.json";
         public const string PlayerModelPath =
             "Assets/Player3D/V2/Models/PlayerCharacter3DV2.fbx";
         public const string AnimationPath =
@@ -105,14 +97,6 @@ namespace BarPromenade.Editor
             "Assets/Pedestrians/Staged/Prefabs/LakeFisherman3D.prefab";
         public const string SeacoastFishermanProviderPath =
             "Assets/Resources/City/SeacoastFishermanProvider.asset";
-        public const string ParkChessPlayerPrefabPath =
-            "Assets/Resources/Pedestrians/ParkChessPlayer3D.prefab";
-        public const string ParkChessPlayerProviderPath =
-            "Assets/Resources/City/ParkChessPlayerProvider.asset";
-        public const string ParkCheckersPlayerPrefabPath =
-            "Assets/Resources/Pedestrians/ParkCheckersPlayer3D.prefab";
-        public const string ParkCheckersPlayerProviderPath =
-            "Assets/Resources/City/ParkCheckersPlayerProvider.asset";
         public const string KettleHatDetailAtlasPath =
             "Assets/Pedestrians/Textures/KettleHatDetailAtlas.png";
 
@@ -202,7 +186,15 @@ namespace BarPromenade.Editor
         /// more for the single design that also has to get off a car, and a
         /// second idle/walk pair for each promoted resident that also roams.
         /// </summary>
-        private static int ExpectedLocomotionClipCount => Descriptors.Sum(descriptor =>
+        private static readonly Dictionary<string, (string design, float duration)> ParkSeatedClips = new()
+        {
+            { "ChessBrood", (ParkChessPlayerProvider.DesignId, 12f) },
+            { "ChessJeer", (ParkChessPlayerProvider.DesignId, 2f) },
+            { "CheckersMull", (ParkCheckersPlayerProvider.DesignId, 12f) },
+            { "CheckersJeer", (ParkCheckersPlayerProvider.DesignId, 2f) }
+        };
+
+        private static int ExpectedLocomotionClipCount => ParkSeatedClips.Count + Descriptors.Sum(descriptor =>
             2 + (descriptor.RidesBus ? 1 : 0) + (descriptor.HasAction ? 1 : 0) +
             (descriptor.HasDismount ? 1 : 0) + (descriptor.HasAmbientGait ? 2 : 0));
 
@@ -438,61 +430,6 @@ namespace BarPromenade.Editor
                 ambientIdleDuration: 2f,
                 ambientWalkDuration: 1f,
                 detailAtlasPath: OrdinaryCharacterDetailAtlas.AssetPath),
-            // The park chess player: the idle slot carries the brooding
-            // loop and the walk slot a park trudge kept for a later
-            // pass. Staged like the fisherman — authored with the shared
-            // art library, outside Resources and the runtime catalog.
-            // He is the only design whose idle is seated on world
-            // furniture, so his loop is proved against the drawn bench
-            // rather than against the pavement.
-            new PedestrianDescriptor(
-                "Park Chess Player",
-                "ParkChessPlayer3D",
-                "park_chess_player_v1",
-                ParkChessPlayerModelPath,
-                ParkChessPlayerManifestPath,
-                ParkChessPlayerPrefabPath,
-                "ChessBrood",
-                "ChessTrudge",
-                12f,
-                1.5f,
-                1800,
-                2400,
-                isStaged: true,
-                ambientIdleClipName: "ChessStreetIdle",
-                ambientWalkClipName: "ChessStreetWalk",
-                ambientIdleDuration: 2f,
-                ambientWalkDuration: 1f,
-                actionClipName: "ChessJeer",
-                actionDuration: 2f),
-            // The park checkers player: the second man at the same set,
-            // on the seat opposite-and-across from the chess player's.
-            // Staged the same way, and the second design whose idle is
-            // seated on world furniture, so his loop is proved against
-            // the same drawn bench rather than against the pavement.
-            // The clip durations and the triangle band below must stay
-            // equal to the ArchetypeSpec in the art generator;
-            // ValidateDescriptor fails on a drift.
-            new PedestrianDescriptor(
-                "Park Checkers Player",
-                "ParkCheckersPlayer3D",
-                "park_checkers_player_v1",
-                ParkCheckersPlayerModelPath,
-                ParkCheckersPlayerManifestPath,
-                ParkCheckersPlayerPrefabPath,
-                "CheckersMull",
-                "CheckersTrudge",
-                12f,
-                1.5f,
-                1800,
-                2500,
-                isStaged: true,
-                ambientIdleClipName: "CheckersStreetIdle",
-                ambientWalkClipName: "CheckersStreetWalk",
-                ambientIdleDuration: 2f,
-                ambientWalkDuration: 1f,
-                actionClipName: "CheckersJeer",
-                actionDuration: 2f),
         };
 
         private static bool isBuilding;
@@ -571,22 +508,6 @@ namespace BarPromenade.Editor
         {
             BuildLakeFishermanOrThrow();
             Debug.Log("Staged Lake Fisherman prefab rebuilt and bound.");
-        }
-
-        [MenuItem(
-            "Bar Promenade/City Pedestrian 3D/Rebuild Staged Park Chess Player")]
-        public static void RunParkChessPlayer()
-        {
-            BuildParkChessPlayerOrThrow();
-            Debug.Log("Staged Park Chess Player prefab rebuilt and bound.");
-        }
-
-        [MenuItem(
-            "Bar Promenade/City Pedestrian 3D/Rebuild Staged Park Checkers Player")]
-        public static void RunParkCheckersPlayer()
-        {
-            BuildParkCheckersPlayerOrThrow();
-            Debug.Log("Staged Park Checkers Player prefab rebuilt and bound.");
         }
 
         /// <summary>
@@ -822,7 +743,7 @@ namespace BarPromenade.Editor
             //
             // A staged design used to be defined by ABSENCE from the roaming
             // catalog, and this gate enforced that absence. Since 2026-09-02
-            // six ordinary residents are BOTH placed and resolvable by path:
+            // ordinary library residents are BOTH placed and resolvable by path:
             // the babushka beats her carpet in the drying yard where the yard
             // planner places her by reference, and the runtime catalog also
             // loads the same prefab by `Resources.Load` - for the street
@@ -1254,16 +1175,6 @@ namespace BarPromenade.Editor
                     string.Equals(
                         candidate.DesignId,
                         CemeteryWatchmanProvider.DesignId,
-                        StringComparison.Ordinal)));
-                BindParkChessPlayerProvider(Descriptors.Single(candidate =>
-                    string.Equals(
-                        candidate.DesignId,
-                        ParkChessPlayerProvider.DesignId,
-                        StringComparison.Ordinal)));
-                BindParkCheckersPlayerProvider(Descriptors.Single(candidate =>
-                    string.Equals(
-                        candidate.DesignId,
-                        ParkCheckersPlayerProvider.DesignId,
                         StringComparison.Ordinal)));
                 BindSeacoastFishermanProvider(Descriptors.Single(candidate =>
                     string.Equals(
@@ -1703,240 +1614,6 @@ namespace BarPromenade.Editor
             {
                 isBuilding = false;
             }
-        }
-
-        public static void BuildParkChessPlayerOrThrow()
-        {
-            if (isBuilding)
-            {
-                return;
-            }
-
-            if (!SourcesExist())
-            {
-                throw new InvalidOperationException(
-                    "The staged Park Chess Player build requires its " +
-                    "model, manifest, locomotion library, production " +
-                    "Hero/NPC V2 model and shared Player3DLit material.");
-            }
-
-            PedestrianDescriptor descriptor = Descriptors.Single(candidate =>
-                string.Equals(
-                    candidate.DesignId,
-                    ParkChessPlayerProvider.DesignId,
-                    StringComparison.Ordinal));
-            isBuilding = true;
-            try
-            {
-                EnsureFolderForAsset(descriptor.PrefabPath);
-                AssetDatabase.ImportAsset(
-                    PlayerModelPath,
-                    ImportAssetOptions.ForceUpdate |
-                    ImportAssetOptions.ForceSynchronousImport);
-                AssetDatabase.ImportAsset(
-                    descriptor.ModelPath,
-                    ImportAssetOptions.ForceUpdate |
-                    ImportAssetOptions.ForceSynchronousImport);
-                AssetDatabase.ImportAsset(
-                    descriptor.ManifestPath,
-                    ImportAssetOptions.ForceUpdate |
-                    ImportAssetOptions.ForceSynchronousImport);
-                AssetDatabase.ImportAsset(
-                    AnimationManifestPath,
-                    ImportAssetOptions.ForceUpdate |
-                    ImportAssetOptions.ForceSynchronousImport);
-                AssetDatabase.ImportAsset(
-                    AnimationPath,
-                    ImportAssetOptions.ForceUpdate |
-                    ImportAssetOptions.ForceSynchronousImport);
-
-                CityPedestrianAnimationManifest animationManifest =
-                    LoadAndValidateAnimationManifest();
-                Material sharedMaterial =
-                    AssetDatabase.LoadAssetAtPath<Material>(
-                        SharedMaterialPath);
-                if (sharedMaterial == null)
-                {
-                    throw new InvalidOperationException(
-                        $"Shared Player3DLit material is missing at " +
-                        $"'{SharedMaterialPath}'.");
-                }
-
-                BuildDescriptor(
-                    descriptor,
-                    animationManifest,
-                    sharedMaterial);
-                BindParkChessPlayerProvider(descriptor);
-                AssetDatabase.SaveAssets();
-                ValidateDescriptor(descriptor, animationManifest);
-            }
-            finally
-            {
-                isBuilding = false;
-            }
-        }
-
-        /// <summary>
-        /// Creates or rewires the one Resources provider asset that
-        /// carries the staged park chess player prefab into a build —
-        /// the automated binding the babushka pass established.
-        /// </summary>
-        private static void BindParkChessPlayerProvider(
-            PedestrianDescriptor descriptor)
-        {
-            GameObject prefab =
-                AssetDatabase.LoadAssetAtPath<GameObject>(
-                    descriptor.PrefabPath);
-            if (prefab == null)
-            {
-                throw new InvalidOperationException(
-                    "Cannot bind the park chess player provider before " +
-                    "its prefab exists.");
-            }
-
-            ParkChessPlayerProvider provider =
-                AssetDatabase.LoadAssetAtPath<ParkChessPlayerProvider>(
-                    ParkChessPlayerProviderPath);
-            if (provider == null)
-            {
-                EnsureFolderForAsset(ParkChessPlayerProviderPath);
-                provider = ScriptableObject
-                    .CreateInstance<ParkChessPlayerProvider>();
-                AssetDatabase.CreateAsset(
-                    provider,
-                    ParkChessPlayerProviderPath);
-            }
-
-            var serialized = new SerializedObject(provider);
-            SerializedProperty prefabProperty =
-                serialized.FindProperty("stagedPrefab");
-            if (prefabProperty == null)
-            {
-                throw new InvalidOperationException(
-                    "ParkChessPlayerProvider has no serialized " +
-                    "'stagedPrefab' field.");
-            }
-
-            prefabProperty.objectReferenceValue = prefab;
-            serialized.ApplyModifiedPropertiesWithoutUndo();
-            EditorUtility.SetDirty(provider);
-        }
-
-        public static void BuildParkCheckersPlayerOrThrow()
-        {
-            if (isBuilding)
-            {
-                return;
-            }
-
-            if (!SourcesExist())
-            {
-                throw new InvalidOperationException(
-                    "The staged Park Checkers Player build requires its " +
-                    "model, manifest, locomotion library, production " +
-                    "Hero/NPC V2 model and shared Player3DLit material.");
-            }
-
-            PedestrianDescriptor descriptor = Descriptors.Single(candidate =>
-                string.Equals(
-                    candidate.DesignId,
-                    ParkCheckersPlayerProvider.DesignId,
-                    StringComparison.Ordinal));
-            isBuilding = true;
-            try
-            {
-                EnsureFolderForAsset(descriptor.PrefabPath);
-                AssetDatabase.ImportAsset(
-                    PlayerModelPath,
-                    ImportAssetOptions.ForceUpdate |
-                    ImportAssetOptions.ForceSynchronousImport);
-                AssetDatabase.ImportAsset(
-                    descriptor.ModelPath,
-                    ImportAssetOptions.ForceUpdate |
-                    ImportAssetOptions.ForceSynchronousImport);
-                AssetDatabase.ImportAsset(
-                    descriptor.ManifestPath,
-                    ImportAssetOptions.ForceUpdate |
-                    ImportAssetOptions.ForceSynchronousImport);
-                AssetDatabase.ImportAsset(
-                    AnimationManifestPath,
-                    ImportAssetOptions.ForceUpdate |
-                    ImportAssetOptions.ForceSynchronousImport);
-                AssetDatabase.ImportAsset(
-                    AnimationPath,
-                    ImportAssetOptions.ForceUpdate |
-                    ImportAssetOptions.ForceSynchronousImport);
-
-                CityPedestrianAnimationManifest animationManifest =
-                    LoadAndValidateAnimationManifest();
-                Material sharedMaterial =
-                    AssetDatabase.LoadAssetAtPath<Material>(
-                        SharedMaterialPath);
-                if (sharedMaterial == null)
-                {
-                    throw new InvalidOperationException(
-                        $"Shared Player3DLit material is missing at " +
-                        $"'{SharedMaterialPath}'.");
-                }
-
-                BuildDescriptor(
-                    descriptor,
-                    animationManifest,
-                    sharedMaterial);
-                BindParkCheckersPlayerProvider(descriptor);
-                AssetDatabase.SaveAssets();
-                ValidateDescriptor(descriptor, animationManifest);
-            }
-            finally
-            {
-                isBuilding = false;
-            }
-        }
-
-        /// <summary>
-        /// Creates or rewires the one Resources provider asset that
-        /// carries the staged park checkers player prefab into a build —
-        /// the automated binding the babushka pass established.
-        /// </summary>
-        private static void BindParkCheckersPlayerProvider(
-            PedestrianDescriptor descriptor)
-        {
-            GameObject prefab =
-                AssetDatabase.LoadAssetAtPath<GameObject>(
-                    descriptor.PrefabPath);
-            if (prefab == null)
-            {
-                throw new InvalidOperationException(
-                    "Cannot bind the park checkers player provider before " +
-                    "its prefab exists.");
-            }
-
-            ParkCheckersPlayerProvider provider =
-                AssetDatabase.LoadAssetAtPath<ParkCheckersPlayerProvider>(
-                    ParkCheckersPlayerProviderPath);
-            if (provider == null)
-            {
-                EnsureFolderForAsset(ParkCheckersPlayerProviderPath);
-                provider = ScriptableObject
-                    .CreateInstance<ParkCheckersPlayerProvider>();
-                AssetDatabase.CreateAsset(
-                    provider,
-                    ParkCheckersPlayerProviderPath);
-            }
-
-            var serialized = new SerializedObject(provider);
-            SerializedProperty prefabProperty =
-                serialized.FindProperty("stagedPrefab");
-            if (prefabProperty == null)
-            {
-                throw new InvalidOperationException(
-                    "ParkCheckersPlayerProvider has no serialized " +
-                    "'stagedPrefab' field.");
-            }
-
-            prefabProperty.objectReferenceValue = prefab;
-            serialized.ApplyModifiedPropertiesWithoutUndo();
-            EditorUtility.SetDirty(provider);
         }
 
         /// <summary>
@@ -3174,16 +2851,11 @@ namespace BarPromenade.Editor
             {
                 CityPedestrianAnimationManifestClip clip =
                     manifest.clips[index];
-                if (clip == null ||
-                    string.IsNullOrWhiteSpace(clip.name) ||
-                    !names.Add(clip.name) ||
-                    !clipOwners.TryGetValue(
-                        clip.name,
-                        out PedestrianDescriptor owner) ||
-                    !string.Equals(
-                        clip.archetype,
-                        owner.DesignId,
-                        StringComparison.Ordinal) ||
+                string clipName = clip?.name ?? string.Empty;
+                bool park = ParkSeatedClips.TryGetValue(clipName, out var parkClip);
+                if (clip == null || !names.Add(clipName) ||
+                    !clipOwners.TryGetValue(clipName, out PedestrianDescriptor owner) && !park ||
+                    !string.Equals(clip.archetype, park ? parkClip.design : owner.DesignId, StringComparison.Ordinal) ||
                     clip.loop == clip.one_shot ||
                     !clip.in_place ||
                     clip.keyed_bone_count != ExpectedBoneCount ||
@@ -3198,7 +2870,7 @@ namespace BarPromenade.Editor
                     clip.root_translation_range_m.Length != 3 ||
                     clip.root_translation_range_m.Any(component =>
                         Mathf.Abs(component) > 0.0001f) ||
-                    (owner.IsWheelchair &&
+                    (!park && owner.IsWheelchair &&
                      (clip.wheel_ground_min_m < -0.002f ||
                       clip.wheel_ground_max_contact_gap_m < 0f ||
                       clip.wheel_ground_max_contact_gap_m > 0.002f ||
@@ -3212,7 +2884,9 @@ namespace BarPromenade.Editor
                 }
 
                 float expectedDuration;
-                if (string.Equals(
+                if (park)
+                    expectedDuration = parkClip.duration;
+                else if (string.Equals(
                         clip.name,
                         owner.IdleClipName,
                         StringComparison.Ordinal))
@@ -3272,8 +2946,7 @@ namespace BarPromenade.Editor
                 }
             }
 
-            if (names.Count != clipOwners.Count ||
-                clipOwners.Keys.Any(name => !names.Contains(name)))
+            if (!names.SetEquals(clipOwners.Keys.Concat(ParkSeatedClips.Keys)))
             {
                 throw new InvalidOperationException(
                     "Locomotion manifest must contain exactly the approved " +
@@ -3303,11 +2976,11 @@ namespace BarPromenade.Editor
                     "__preview__",
                     StringComparison.Ordinal))
                 .ToArray();
-            if (importedClips.Length != clipOwners.Count)
+            if (importedClips.Length != ExpectedLocomotionClipCount)
             {
                 throw new InvalidOperationException(
                     $"Unity imported {importedClips.Length} pedestrian " +
-                    $"locomotion clips; expected {clipOwners.Count}.");
+                    $"locomotion clips; expected {ExpectedLocomotionClipCount}.");
             }
 
             GameObject animationAsset =

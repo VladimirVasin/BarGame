@@ -5297,8 +5297,8 @@
     "attachments": []
   },
   "height_scale": 1.0171428571428571,
-  "mesh_count": 217,
-  "triangle_count": 22220,
+  "mesh_count": 234,
+  "triangle_count": 23864,
   "bounds_min": [
     -0.78121,
     -0.252,
@@ -5307,7 +5307,7 @@
   "bounds_max": [
     0.78321,
     0.180215,
-    1.776
+    1.824
   ],
   "atlas_sha256": "497b841daf712138378666b6fcd7730753aa1b664140c8e69cce18d306ce88b6",
   "atlas_size": [
@@ -5519,7 +5519,24 @@
       "CLO_ApronPanel",
       "CLO_ApronStrap.L",
       "CLO_ApronStrap.R",
-      "CLO_ApronPocket"
+      "CLO_ApronPocket",
+      "CLO_ParkKingBand",
+      "CLO_ParkKingCross",
+      "CLO_ParkKingTempleHair",
+      "CLO_ParkKingScarfRoll",
+      "CLO_ParkKingLapels",
+      "CLO_ParkKingScarfPattern",
+      "CLO_ParkDiscBand",
+      "CLO_ParkDiscTurn0",
+      "CLO_ParkDiscTurn1",
+      "CLO_ParkDiscTurn2",
+      "CLO_ParkDiscTurn3",
+      "CLO_ParkDiscTurn4",
+      "CLO_ParkDiscTurnedCentre",
+      "CLO_ParkDiscTempleHair",
+      "CLO_ParkDiscScarfRoll",
+      "CLO_ParkDiscLapels",
+      "CLO_ParkDiscScarfPattern"
     ],
     "base_height_m": 1.7647429,
     "height_range_cm": [
@@ -7571,6 +7588,159 @@
         0.17464740365558504,
         1.0
       ]
+    },
+    {
+      "name": "CLO_ParkKingBand",
+      "color": [
+        0.13843161503245183,
+        0.15292615199615017,
+        0.12213877222960187,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_ParkKingCross",
+      "color": [
+        0.23455058216100522,
+        0.2232279573168085,
+        0.1651321945016676,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_ParkKingTempleHair",
+      "color": [
+        0.12743768043564743,
+        0.12213877222960187,
+        0.10224173308810132,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_ParkKingScarfRoll",
+      "color": [
+        0.33716361504833037,
+        0.2961382707983211,
+        0.19120168274079138,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_ParkKingLapels",
+      "color": [
+        0.05612849004960009,
+        0.0953074666309647,
+        0.09989872824711389,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_ParkKingScarfPattern",
+      "color": [
+        0.33716361504833037,
+        0.2961382707983211,
+        0.19120168274079138,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_ParkDiscBand",
+      "color": [
+        0.13843161503245183,
+        0.15292615199615017,
+        0.12213877222960187,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_ParkDiscTurn0",
+      "color": [
+        0.1301364766903643,
+        0.11443537382697373,
+        0.08021982031446832,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_ParkDiscTurn1",
+      "color": [
+        0.23455058216100522,
+        0.2232279573168085,
+        0.1651321945016676,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_ParkDiscTurn2",
+      "color": [
+        0.23455058216100522,
+        0.2232279573168085,
+        0.1651321945016676,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_ParkDiscTurn3",
+      "color": [
+        0.1301364766903643,
+        0.11443537382697373,
+        0.08021982031446832,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_ParkDiscTurn4",
+      "color": [
+        0.1301364766903643,
+        0.11443537382697373,
+        0.08021982031446832,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_ParkDiscTurnedCentre",
+      "color": [
+        0.1301364766903643,
+        0.11443537382697373,
+        0.08021982031446832,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_ParkDiscTempleHair",
+      "color": [
+        0.12743768043564743,
+        0.12213877222960187,
+        0.10224173308810132,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_ParkDiscScarfRoll",
+      "color": [
+        0.33716361504833037,
+        0.2961382707983211,
+        0.19120168274079138,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_ParkDiscLapels",
+      "color": [
+        0.05612849004960009,
+        0.0953074666309647,
+        0.09989872824711389,
+        1.0
+      ]
+    },
+    {
+      "name": "CLO_ParkDiscScarfPattern",
+      "color": [
+        0.33716361504833037,
+        0.2961382707983211,
+        0.19120168274079138,
+        1.0
+      ]
     }
   ],
   "wardrobe": {
@@ -8082,6 +8252,61 @@
           "CLO_ApronPocket"
         ],
         "covered_renderers": []
+      },
+      {
+        "id": "headwear.parkKing",
+        "slot": "headwear",
+        "renderers": [
+          "CLO_ParkKingBand",
+          "CLO_ParkKingCross",
+          "CLO_ParkKingTempleHair"
+        ],
+        "covered_renderers": [
+          "HAIR_Crown",
+          "HAIR_Sides"
+        ]
+      },
+      {
+        "id": "scarf.parkChecks",
+        "slot": "scarf",
+        "renderers": [
+          "CLO_ParkKingScarfRoll",
+          "CLO_ParkKingLapels",
+          "CLO_ParkKingScarfPattern"
+        ],
+        "covered_renderers": [
+          "GEO_Neck"
+        ]
+      },
+      {
+        "id": "headwear.parkDisc",
+        "slot": "headwear",
+        "renderers": [
+          "CLO_ParkDiscBand",
+          "CLO_ParkDiscTurn0",
+          "CLO_ParkDiscTurn1",
+          "CLO_ParkDiscTurn2",
+          "CLO_ParkDiscTurn3",
+          "CLO_ParkDiscTurn4",
+          "CLO_ParkDiscTurnedCentre",
+          "CLO_ParkDiscTempleHair"
+        ],
+        "covered_renderers": [
+          "HAIR_Crown",
+          "HAIR_Sides"
+        ]
+      },
+      {
+        "id": "scarf.parkSpots",
+        "slot": "scarf",
+        "renderers": [
+          "CLO_ParkDiscScarfRoll",
+          "CLO_ParkDiscLapels",
+          "CLO_ParkDiscScarfPattern"
+        ],
+        "covered_renderers": [
+          "GEO_Neck"
+        ]
       }
     ],
     "outfits": [
@@ -8172,19 +8397,20 @@
     "96447e30bd9f20fef7c7d592b8e7a058fed35b68fa2b5428cee4b081f93a0264",
     "d864c08eeb5dec1096bb148e81230dfe6b684d432042244613fd92a4bb544b73"
   ],
-  "geometry_signature": "4b5801eaa2b3e0db0138f6fe7db82faed08a09e46e92b6d252187a1ff36621e1",
+  "geometry_signature": "a40c65234da0885d7c9eee5af6838db8415bc431af114f11ec9b3b8ed38ea630",
   "validation": {
     "outfit_triangle_counts": {
       "everyday": 5048,
       "work": 4968,
       "warm": 4488
     },
-    "maximum_visible_triangles": 7384,
+    "maximum_visible_triangles": 7716,
     "maximum_visible_items": [
       "outerwear.ferryman",
       "trousers.work",
       "boots.everyday",
       "headwear.warm",
+      "scarf.parkSpots",
       "apron.work"
     ],
     "unchanged_bind_bones": 31,
@@ -8313,15 +8539,15 @@
         "BodyShape.Slim": {
           "minimum_front_y_m": -0.0734945,
           "waist_width_m": 0.2772,
-          "changed_vertices": 8315
+          "changed_vertices": 8715
         },
         "BodyShape.Chubby": {
           "minimum_front_y_m": -0.1246049,
           "waist_width_m": 0.34496,
-          "changed_vertices": 8320
+          "changed_vertices": 8720
         }
       },
-      "signature": "5bcfa28f7968c1fb7299c27f72d20749575e5e69a6201462c4108930c11f3144",
+      "signature": "de12aca14ceefe71c6b73ab4da04986851872c5200566c2b3513088dbadd55fb",
       "source_geometry_reused": true,
       "shared_skin_garment_field": true,
       "head_hair_hand_contact_preserved": true
@@ -8689,7 +8915,7 @@
       "sha256": "f132ba508add6de3bd0b8064c9db0445e5a3d578e5553485618dc0d20e04a144"
     }
   ],
-  "uv_signature": "400e445bacee09896bf55bde97b6451dba5e0a15ca65474c614c19f6e178e3cf",
+  "uv_signature": "b96961dcfe390a55a44c41b91d575112eac75cbb22d9b1f6e3ebada12ff783b7",
   "surfaces": {
     "schema": "default_npc_surfaces_v1",
     "item_finishes": {
@@ -8713,6 +8939,10 @@
       "headwear.everyday": "cap",
       "headwear.work": "rib",
       "headwear.warm": "woolCoat",
+      "headwear.parkKing": "woolCoat",
+      "headwear.parkDisc": "cap",
+      "scarf.parkChecks": "scarf",
+      "scarf.parkSpots": "scarf",
       "headwear.transit": "uniform",
       "scarf.warm": "scarf",
       "gloves.work": "glove",
@@ -10458,9 +10688,145 @@
           "y_px": 256,
           "width_px": 64,
           "height_px": 64
+        },
+        {
+          "name": "woolCoat",
+          "renderer": "CLO_ParkKingBand",
+          "x_px": 256,
+          "y_px": 384,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "woolCoat",
+          "renderer": "CLO_ParkKingCross",
+          "x_px": 256,
+          "y_px": 384,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "shortHair",
+          "renderer": "CLO_ParkKingTempleHair",
+          "x_px": 64,
+          "y_px": 448,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "scarf",
+          "renderer": "CLO_ParkKingScarfRoll",
+          "x_px": 192,
+          "y_px": 256,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "scarf",
+          "renderer": "CLO_ParkKingLapels",
+          "x_px": 192,
+          "y_px": 256,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "scarf",
+          "renderer": "CLO_ParkKingScarfPattern",
+          "x_px": 192,
+          "y_px": 256,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "cap",
+          "renderer": "CLO_ParkDiscBand",
+          "x_px": 64,
+          "y_px": 256,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "cap",
+          "renderer": "CLO_ParkDiscTurn0",
+          "x_px": 64,
+          "y_px": 256,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "cap",
+          "renderer": "CLO_ParkDiscTurn1",
+          "x_px": 64,
+          "y_px": 256,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "cap",
+          "renderer": "CLO_ParkDiscTurn2",
+          "x_px": 64,
+          "y_px": 256,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "cap",
+          "renderer": "CLO_ParkDiscTurn3",
+          "x_px": 64,
+          "y_px": 256,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "cap",
+          "renderer": "CLO_ParkDiscTurn4",
+          "x_px": 64,
+          "y_px": 256,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "cap",
+          "renderer": "CLO_ParkDiscTurnedCentre",
+          "x_px": 64,
+          "y_px": 256,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "shortHair",
+          "renderer": "CLO_ParkDiscTempleHair",
+          "x_px": 64,
+          "y_px": 448,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "scarf",
+          "renderer": "CLO_ParkDiscScarfRoll",
+          "x_px": 192,
+          "y_px": 256,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "scarf",
+          "renderer": "CLO_ParkDiscLapels",
+          "x_px": 192,
+          "y_px": 256,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "scarf",
+          "renderer": "CLO_ParkDiscScarfPattern",
+          "x_px": 192,
+          "y_px": 256,
+          "width_px": 64,
+          "height_px": 64
         }
       ]
     }
   },
-  "signature": "889b46855ffed9cd052ea389d06b8e591412204bbdd1fd647a436e60e88dd510"
+  "signature": "68471dce3d04facc4133b8f5150927bd39c1fcd307a6bac4fc7d99f59fc73b56"
 }

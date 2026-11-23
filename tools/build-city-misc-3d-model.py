@@ -46,6 +46,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(ROOT / "tools"))
 
+from park_bandstand_finishes import CHARTS as PARK_CHARTS
 import interior_kit as kit  # noqa: E402
 import city_last_route_model as last_route
 import city_cinema_model as cinema
@@ -66,10 +67,10 @@ V2_DESIGN_ID = "city_misc_all_decor_v2"
 # The park and closed cinema remodels advance the aggregate. The independent
 # baseline fingerprint covers every other original v2 assembly.
 V2_COMPATIBILITY_SIGNATURE = (
-    "0b951c55cd3c74c264b2749a6cf101a8edb6c48d98aab13bb449332fb0a9cc50"
+    "9eefa332afde8c882c8047f1735d092f4b0256ef0bf71fbdcb287b3f7a6ad529"
 )
 V2_UNCHANGED_COMPATIBILITY_SIGNATURE = (
-    "dfd569e900927755388dc8674ddc36cd76e8518b04707334d704001bf09d9aaf"
+    "e64bbeb173893c5b59c45219c999995c2e7ad741e2c25dc453d971c5c5cfe5fa"
 )
 WAVE1_COMPATIBILITY_SIGNATURE = (
     "dd2e814d906fd2c7a7855c6d75ee54fe912ebb90f7cd02633c95c558d752f9f6"
@@ -2257,6 +2258,68 @@ def build_park_fountain_and_statue() -> AssemblySpec:
     )
 
 
+def park_part(kind, suffix, role, surfaces, **options):
+    """Give each construction piece its own padded chart, including sawn ends."""
+    shapes, uvs = [], []
+    for index, (finish, shape) in enumerate(surfaces):
+        shapes.append(shape)
+        vertices, faces = shape
+        low, high = geometry_bounds(shape)
+        grain_axis = max(range(3), key=lambda a: high[a] - low[a])
+        for face in faces:
+            normal = face_normal(vertices, face)
+            axis = max(range(3), key=lambda a: abs(normal[a]))
+            axes = [a for a in range(3) if a != axis]
+            key = finish
+            if finish in ("deck", "deckGrey", "post", "bench", "rim"):
+                if axis == grain_axis:
+                    key = "cut"
+                elif axes[1] == grain_axis:
+                    axes.reverse()
+            if finish == "enamel" and normal[2] < -.25:
+                key = "lining"
+            chart = PARK_CHARTS.index(key)
+            for n in face:
+                u, v = [(vertices[n][a] - low[a]) / max(.00001, high[a] - low[a]) for a in axes]
+                # Stagger the grain window between boards cut from the same stock.
+                if key in ("deck", "deckGrey", "bench", "maple", "walnut"):
+                    u = .78*u + .21*((index*7) % 17)/16
+                    if index % 2: u = 1-u
+                uvs.append(((chart%4 + .02 + .96*u)/4, 1-(chart//4 + .02 + .96*v)/4))
+    return make_named_part(kind, 0, suffix, role, *shapes, authored_uvs=uvs, **options)
+
+
+def park_deck_boards(rx, ry, sides):
+    footprint = [(rx*math.cos(i*math.tau/sides), ry*math.sin(i*math.tau/sides)) for i in range(sides)]
+    def clip(poly, axis, limit, direction):
+        result = []
+        for a,b in zip(poly, poly[1:]+poly[:1]):
+            da, db = (a[axis]-limit)*direction, (b[axis]-limit)*direction
+            if da >= 0: result.append(a)
+            if (da < 0 < db) or (db < 0 < da):
+                t = da/(da-db)
+                result.append(tuple(a[j]+t*(b[j]-a[j]) for j in range(2)))
+        return result
+    boards = []
+    for row in range(31):
+        width = 2*ry/31
+        y = -ry + row*width
+        strip = clip(clip(footprint,1,y+.003,1),1,y+width-.003,-1)
+        seam = (-1.27, .89, -.62, 1.66)[row%4]
+        for side in (-1,1):
+            poly = clip(strip,0,seam+.003*side,side)
+            if len(poly)<3: continue
+            cx,cy = (sum(p[a] for p in poly)/len(poly) for a in range(2))
+            vertices = [(x+(cx-x)*inset, y+(cy-y)*inset, z)
+                        for z,inset in ((.514,0),(.537,0),(.54,.009)) for x,y in poly]
+            n=len(poly)
+            faces=[tuple(reversed(range(n))),tuple(range(2*n,3*n))]
+            for ring in (0,n):
+                faces.extend((ring+i,ring+(i+1)%n,ring+n+(i+1)%n,ring+n+i) for i in range(n))
+            boards.append(("deckGrey" if (row+side)%5==0 else "deck",(vertices,faces)))
+    return boards
+
+
 def build_park_bandstand() -> AssemblySpec:
     """Accessible twelve-sided gazebo, with the same runtime semantic parts.
 
@@ -2305,7 +2368,7 @@ def build_park_bandstand() -> AssemblySpec:
         stone.append((vertices, faces))
     residential_timber = [
         ring_solid_z(((0.36, 0.0, 0.0, deck_rx, deck_ry, 0.0),
-                      (0.54, 0.0, 0.0, deck_rx, deck_ry, 0.0)), sides),
+                      (0.514, 0.0, 0.0, deck_rx, deck_ry, 0.0)), sides),
         ring_solid_z(((4.00, 0.0, 0.0, 4.70, 4.10, 0.0),
                       (4.30, 0.0, 0.0, 4.55, 3.95, 0.0)), sides),
         # Pendant wire terminals meet a real beam underside at y4.00.
@@ -2336,11 +2399,25 @@ def build_park_bandstand() -> AssemblySpec:
     for x, forward in balustrade[1:-1]:
         painted.append(recipe_tube(
             (-x, 0.54, forward), (-x, 1.41, forward), 0.065, sides=7))
+    # Folded roof seams follow both slopes and terminate against the crown.
+    roof = [("roof", painted[0])]
+    for i in range(sides):
+        a = i*math.tau/sides
+        points = [(r*math.cos(a), d*math.sin(a), z) for r,d,z in
+                  ((4.60,4.00,4.29),(3.40,2.96,4.83),(.16,.14,5.60))]
+        roof.extend(("roof",tube_between(p,q,.018,.015,6)) for p,q in zip(points,points[1:]))
+    for degrees in column_degrees:
+        x,y=on_deck(degrees,stand_inset)
+        for axis in (0,1):
+            inward = -math.copysign(.52, (x,y)[axis])
+            masonry_timber.append(tube_between((x,y,3.53),
+                (x+(inward if axis==0 else 0), y+(inward if axis==1 else 0),4.03),.067,.067,8))
     return AssemblySpec(kind, variant, (
-        make_part(kind, variant, "Masonry_Stone", *stone),
-        make_part(kind, variant, "Residential_Timber", *residential_timber),
-        make_part(kind, variant, "Masonry_Timber", *masonry_timber),
-        make_part(kind, variant, "Street_PaintedMetal", *painted),
+        park_part(kind,"Masonry_Stone","Masonry_Stone",[("stone",g) for g in stone]),
+        park_part(kind,"Residential_Timber","Residential_Timber",
+                  [("post",g) for g in residential_timber]+park_deck_boards(deck_rx,deck_ry,sides)),
+        park_part(kind,"Masonry_Timber","Masonry_Timber",[("post",g) for g in masonry_timber]),
+        park_part(kind,"Street_PaintedMetal","Street_PaintedMetal",roof+[("iron",g) for g in painted[1:]]),
         # Passive convex trigger hull, deliberately excluded from rendering
         # by the park builder. Rain tests the roof instead of its rear rails.
         make_named_part(kind, variant, "RainShelter_Fixture", "Fixture",
@@ -2418,8 +2495,8 @@ def build_park_chess_lamp_pendant() -> AssemblySpec:
     # A closed thin shell swept around the full rim, open below the socket.
     # Profile goes up the outside and back down the inside, so there is no
     # filled cap occluding the bulb or the underside of the enamel cone.
-    profile = ((0.0, 0.170), (0.014, 0.170), (0.130, 0.045),
-               (0.130, 0.033), (0.014, 0.154), (0.0, 0.154))
+    profile = ((0.0,.164),(.003,.170),(.010,.170),(.014,.162),(.048,.143),
+               (.104,.087),(.134,.046),(.134,.035),(.099,.078),(.042,.135),(.009,.155),(.0,.158))
     sides = 16
     vertices = [(math.cos(i / sides * math.tau) * radius,
                  math.sin(i / sides * math.tau) * radius, height)
@@ -2432,22 +2509,25 @@ def build_park_chess_lamp_pendant() -> AssemblySpec:
             faces.append((ring * sides + side, ring * sides + following,
                           following_ring * sides + following,
                           following_ring * sides + side))
-    shade: list[Geometry] = [(vertices, faces),
-        tube_between((0.0, 0.0, 0.082), (0.0, 0.0, 0.185),
-                     0.032, 0.029, 10),
-        tube_between((0.0, 0.0, 0.18), (0.0, 0.0, 0.22),
-                     0.020, 0.015, 8)]
-    cable = tube_between((0.0, 0.0, 0.22), (0.0, 0.0, 0.70),
-                         0.011, 0.011, 7)
+    shade = [("enamel",(vertices,faces)),
+             ("ceramic",outward_annulus_z((0,0,.132),.034,.023,.100,16)),
+             ("brass",outward_annulus_z((0,0,.111),.0235,.020,.052,16)),
+             ("brass",tube_between((0,0,.137),(0,0,.150),.021,.021,12))]
+    for h in (.099,.112,.125):
+        shade.append(("brass",outward_annulus_z((0,0,h),.021,.018,.003,16)))
+    cable = [("iron",tube_between((0,0,.175),(0,0,.222),.025,.016,12)),
+             ("wire",tube_between((0,0,.22),(0,0,.668),.009,.009,8)),
+             ("enamel",ring_solid_z(((.652,0,0,.023,.023,0),(.665,0,0,.033,.033,0),
+                 (.688,0,0,.071,.071,0),(.700,0,0,.071,.071,0)),16))]
     bulb = ring_solid_z((
         (0.030, 0.0, 0.0, 0.004, 0.004, 0.0),
         (0.043, 0.0, 0.0, 0.024, 0.024, 0.0),
         (0.061, 0.0, 0.0, 0.025, 0.025, 0.0),
-        (0.080, 0.0, 0.0, 0.014, 0.014, 0.0)), 10)
+        (0.080, 0.0, 0.0, 0.014, 0.014, 0.0),
+        (0.101, 0.0, 0.0, 0.017, 0.017, 0.0)), 10)
     return AssemblySpec(kind, 0, (
-        make_named_part(kind, 0, "ShadeAndSocket_Street_PaintedMetal",
-                        "Street_PaintedMetal", *shade),
-        make_named_part(kind, 0, "Cable_Street", "Street", cable),
+        park_part(kind, "ShadeAndSocket_Street_PaintedMetal", "Street_PaintedMetal", shade),
+        park_part(kind, "Cable_Street", "Street", cable),
         make_named_part(kind, 0, "Bulb_Neon", "Neon", bulb),
     ), canonical_reference=(("shade_rim_diameter_m", 0.34),
                             ("beam_contact_height_m", 0.70)),
@@ -2460,7 +2540,7 @@ def build_park_chess_tables() -> AssemblySpec:
     table_offset = 1.85
     table_slab: list[Geometry] = []
     board_light: list[Geometry] = []
-    board_dark: list[Geometry] = []
+    board_dark: list[tuple[str, Geometry]] = []
     # Terrain-following supports are exported as single archetypes at the
     # support-local origin. Unity instances them at every sampled support and
     # scales the two vertical archetypes from their normalized 1 m height.
@@ -2469,7 +2549,7 @@ def build_park_chess_tables() -> AssemblySpec:
     table_pedestal = [recipe_vertical_solid(
         0.0, 0.0, 1.0, 0.0, 0.17, 0.17,
         top_scale=0.84, sides=8)]
-    bench_seat: list[Geometry] = []
+    bench_seat: list[tuple[str, Geometry]] = []
     bench_pad = [recipe_box(
         0.0, 0.02, 0.0, 0.30, 0.04, 0.44, chamfer=0.012)]
     bench_leg = [recipe_box(
@@ -2488,7 +2568,7 @@ def build_park_chess_tables() -> AssemblySpec:
             for rank in range(8):
                 if ((file + rank) & 1) == 0:
                     continue
-                board_dark.append(recipe_box(
+                board_dark.append(("walnut", recipe_box(
                     x + (file - edge) * square_size,
                     0.9395,
                     (rank - edge) * square_size,
@@ -2496,43 +2576,40 @@ def build_park_chess_tables() -> AssemblySpec:
                     0.009,
                     square_size,
                     chamfer=0.002,
-                ))
+                )))
         rim_center = (field_size + 0.07) * 0.5
         rim_outer = field_size + 0.14
         for side in (-1, 1):
             board_dark.extend((
-                recipe_box(x, 0.944, side * rim_center,
-                           rim_outer, 0.018, 0.07, chamfer=0.004),
-                recipe_box(x + side * rim_center, 0.944, 0.0,
-                           0.07, 0.018, field_size, chamfer=0.004),
+                ("rim", recipe_box(x, 0.944, side * rim_center,
+                           rim_outer, 0.018, 0.07, chamfer=0.004)),
+                ("rim", recipe_box(x + side * rim_center, 0.944, 0.0,
+                           0.07, 0.018, field_size, chamfer=0.004)),
             ))
         for side in (-1, 1):
             forward = side * 1.10
-            bench_seat.append(recipe_box(
-                x, 0.46, forward, 1.12, 0.16, 0.42, chamfer=0.028))
+            for slat in (-1,0,1):
+                bench_seat.append(("bench",recipe_box(
+                    x,.502,forward+slat*.141,1.12,.076,.134,chamfer=.008)))
+            for bracket in (-.37,.37):
+                bench_seat.append(("iron",recipe_box(x+bracket,.422,forward,.12,.084,.396,chamfer=.009)))
+                for offset in (-.14,.14):
+                    bench_seat.append(("iron",recipe_tube((x+bracket,.535,forward+offset),
+                        (x+bracket,.540,forward+offset),.014,sides=8)))
+        table_slab.append(recipe_box(x,.743,0,.68,.036,.68,chamfer=.012))
     parts = (
-        make_named_part(kind, variant, "TableSlab_Masonry_Stone",
-                        "Masonry_Stone", *table_slab),
-        make_named_part(kind, variant, "BoardLight_Masonry_Timber",
-                        "Masonry_Timber", *board_light),
-        make_named_part(kind, variant, "BoardDarkAndRim_Street_Timber",
-                        "Street_Timber", *board_dark),
-        make_named_part(kind, variant, "TableFooting_Masonry_Stone",
-                        "Masonry_Stone", *table_footing,
-                        placement_mode="unity_per_support"),
-        make_named_part(kind, variant, "TablePedestal_Masonry_Stone",
-                        "Masonry_Stone", *table_pedestal,
-                        placement_mode="unity_per_support",
-                        normalized_height_m=1.0),
-        make_named_part(kind, variant, "BenchSeat_Street_Timber",
-                        "Street_Timber", *bench_seat),
-        make_named_part(kind, variant, "BenchPad_Masonry_Stone",
-                        "Masonry_Stone", *bench_pad,
-                        placement_mode="unity_per_support"),
-        make_named_part(kind, variant, "BenchLeg_Masonry_Stone",
-                        "Masonry_Stone", *bench_leg,
-                        placement_mode="unity_per_support",
-                        normalized_height_m=1.0),
+        park_part(kind,"TableSlab_Masonry_Stone","Masonry_Stone",[("stone",g) for g in table_slab]),
+        park_part(kind,"BoardLight_Masonry_Timber","Masonry_Timber",[("maple",g) for g in board_light]),
+        park_part(kind, "BoardDarkAndRim_Street_Timber", "Street_Timber", board_dark),
+        park_part(kind,"TableFooting_Masonry_Stone","Masonry_Stone",[("stone",g) for g in table_footing],
+                  placement_mode="unity_per_support"),
+        park_part(kind,"TablePedestal_Masonry_Stone","Masonry_Stone",[("stone",g) for g in table_pedestal],
+                  placement_mode="unity_per_support",normalized_height_m=1.0),
+        park_part(kind,"BenchSeat_Street_Timber","Street_Timber",bench_seat),
+        park_part(kind,"BenchPad_Masonry_Stone","Masonry_Stone",[("stone",g) for g in bench_pad],
+                  placement_mode="unity_per_support"),
+        park_part(kind,"BenchLeg_Masonry_Stone","Masonry_Stone",[("stone",g) for g in bench_leg],
+                  placement_mode="unity_per_support",normalized_height_m=1.0),
     )
     return AssemblySpec(
         kind, variant, parts,
@@ -7012,7 +7089,7 @@ def v2_unchanged_compatibility_signature(
 ) -> str:
     unchanged = tuple(assembly for assembly in assemblies[:37]
                       if assembly.kind not in {
-                          "ParkBandstand", "ParkFountainAndStatue", "NightlifeCinema"})
+                          "ParkBandstand", "ParkChessTables", "ParkChessLampPendant", "ParkFountainAndStatue", "NightlifeCinema"})
     encoded = json.dumps(signature_payload(
         unchanged, generator_version=V2_GENERATOR_VERSION,
         design_id=V2_DESIGN_ID), sort_keys=True,

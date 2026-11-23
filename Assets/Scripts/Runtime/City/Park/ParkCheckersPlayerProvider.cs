@@ -2,12 +2,7 @@ using UnityEngine;
 
 namespace BarPromenade
 {
-    /// <summary>
-    /// The one serialized reference that carries the staged Park Checkers
-    /// Player prefab into a build — the same provider pattern his
-    /// neighbour at the other table uses. The prefab itself deliberately
-    /// lives outside Resources.
-    /// </summary>
+    /// <summary>Shared seated and speaking clips for this park resident.</summary>
     [CreateAssetMenu(
         fileName = "ParkCheckersPlayerProvider",
         menuName = "Bar Promenade/Park Checkers Player Provider")]
@@ -17,9 +12,10 @@ namespace BarPromenade
             "City/ParkCheckersPlayerProvider";
         public const string DesignId = "park_checkers_player_v1";
 
-        [SerializeField] private GameObject stagedPrefab;
-
-        public GameObject StagedPrefab => stagedPrefab;
+        [SerializeField] private AnimationClip idleClip;
+        [SerializeField] private AnimationClip actionClip;
+        public AnimationClip IdleClip => idleClip;
+        public AnimationClip ActionClip => actionClip;
 
         public static ParkCheckersPlayerProvider Load()
         {

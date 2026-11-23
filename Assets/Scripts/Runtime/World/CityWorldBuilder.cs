@@ -485,7 +485,7 @@ namespace BarPromenade
             var ridgeVegetation = CityRidgeVegetationPlan.ForLayout(layout);
             if (partition == null) ridgeVegetation.Build(ridge);
             walkableArea.ExcludePolygons(ridgeVegetation.Trunks);
-            groundSurface.SetGrassContext(layout, seacoastPlan);
+            groundSurface.SetGrassContext(layout, seacoastPlan, decorations: decorationPlan);
             yield return groundSurface.FinalizeSurfaceSteps(partition != null);
             completed(new CityWorldResult(
                 world.gameObject,

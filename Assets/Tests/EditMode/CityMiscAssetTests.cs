@@ -518,11 +518,11 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 manifest.v2_compatibility_signature,
                 Is.EqualTo(
-                    "0b951c55cd3c74c264b2749a6cf101a8edb6c48d98aab13bb449332fb0a9cc50"));
+                    "9eefa332afde8c882c8047f1735d092f4b0256ef0bf71fbdcb287b3f7a6ad529"));
             Assert.That(
                 manifest.v2_unchanged_compatibility_signature,
                 Is.EqualTo(
-                    "dfd569e900927755388dc8674ddc36cd76e8518b04707334d704001bf09d9aaf"));
+                    "e64bbeb173893c5b59c45219c999995c2e7ad741e2c25dc453d971c5c5cfe5fa"));
             Assert.That(manifest.root_contract, Is.Not.Null);
             Assert.That(
                 manifest.root_contract.origin,

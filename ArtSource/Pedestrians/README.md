@@ -50,57 +50,8 @@ library:
   the stick is exactly what reads as a man pretending to fish. The line that
   falls from the tip is struck at runtime to the waterline the lake plan
   measured;
-- `Blender/ParkChessPlayer3D.blend`: **Park Chess Player**
-  (`park_chess_player_v1`), an old man perched on a plank of the Central Park
-  chess set with his elbows on the board and his head in both hands. The chess
-  reference runs on two independent channels, because colour alone is not
-  allowed to carry a read: a king's tulle worn where a hat would be — band,
-  tapering body, collar, knop and a crooked cross that sets the canonical
-  `1.75 m` — and a check on the scarf tails and both lapels, drawn as separate
-  light squares standing proud of the dark cloth for the same reason the table
-  board is 64 boxes. Nothing on him is white: the light square is the park's
-  cold bone at `0.615`, kept there deliberately because he sits under the one
-  burning lamp, which is exactly where the fisherman's slicker clipped. The
-  coat stops just below the hips — a stiff skirt rides the pelvis and cannot
-  follow a knee, and this design spends its life with both knees folded. He is
-  the first design to declare `perch_seat_height_m`, and both his loops are
-  reviewed in the seated stance rather than in the bind A-pose;
-- `Blender/ParkCheckersPlayer3D.blend`: **Park Checkers Player**
-  (`park_checkers_player_v1`), the second man at the same set, on the seat
-  that is his neighbour's rotated 180 degrees about the middle of it.
-  Everything below the neck is the chess player's geometry to the millimetre,
-  and that is a requirement rather than a saving: his six arm angles are a
-  solve against an elbow on a board at `0.90` and a palm under a cheek, and
-  both tables draw the same board over the same plank, so the solve transfers
-  only while the coat, the hips, the legs and the skull stay identical. What
-  changes is the read, and both channels are re-derived from the piece because
-  chess and draughts share one board — a check would say "board" twice and
-  distinguish nothing. The silhouette wears one thick draught, worn flat and
-  raked back over a dark band, with two dark rim lips that stop short of each
-  other so the pale body shows between them as a turned groove, and a turned
-  centre on the face. Its rake is derived, not chosen: given the radius and
-  where the piece beds on the band there is exactly one angle whose raised
-  edge lands on the canonical `1.750`, so where the king's cross takes the
-  envelope standing up, the draught takes it lying down. The radius is set by
-  the face rather than by the read — a bench sitter's head is below the
-  player's eye, and a wider plate curtains him from the only angle the game
-  offers. The cloth answers squares with circles run on the diagonal, on the
-  same lattice and in the same cold bone, and the circle is smaller than the
-  neighbour's square on purpose: squares tile and may touch, circles of the
-  same size fuse into a chain of blobs. His coat takes the park's sandy
-  grey-brown where the neighbour took its black-green. Both men own a third
-  Action beyond their idle and their held-back trudge: `ChessJeer` and
-  `CheckersJeer`, two seconds each, the shout they throw across the set.
-  The head comes out from under the hands and turns `64` degrees to the
-  neighbour, the left arm is thrown up and held, and it falls back slower
-  than it rose while the right elbow never leaves the board rim. Both keys
-  at `0.0` and `1.0` are the design's own brooding base pose, taken from
-  `chess_player_base_pose()` rather than re-typed, so the runtime can mix
-  the beat in and out over a tenth of a second and the loop validator still
-  reads zero. The pose is **not** mirrored between the two men: their seats
-  are a 180-degree rotation of each other, which puts each one's neighbour
-  ahead and to his own left, so the same body-relative turn sends each of
-  them at the other;
+- The park players wear reserved items from the ordinary worker wardrobe.
+  The shared bone-only library carries their seated loops and jeers.
 - `Blender/CityPedestrianLocomotion.blend` also owns its two staged Actions.
   `PipebackIdle` keeps the head level over a slow body breath that pumps the
   bellows under the pipe load; `PipebackRoll` is an in-place two-handed lever
@@ -131,24 +82,9 @@ stay clear of.
 
 Each model has an adjacent deterministic review PNG.
 `Blender/CityPedestrianLocomotionContactSheet.png` shows, left to right, Idle
-and two opposite locomotion phases, with one row per authored design:
-Lampshade, Chair Carrier, Kettle Hat, Long-Arm, Helmet Lamp, then the staged
-designs, ending with the Park Chess Player and the Park Checkers Player. The
-sheet grows a row automatically when an authored design is
-added; appearing here does not register a staged design with the runtime pool.
-The sheet is three tiles wide and shows locomotion only, so the two park
-players' `ChessJeer`/`CheckersJeer` beat is not on it: review that one with a
-throwaway script that samples the Action directly, the way the arm throw was
-fitted in the first place.
-
-Three designs are previewed posed rather than in the bind A-pose, because their
-whole content is a posture: the Pipeback Roller, who would otherwise stand
-through his own chair, and the two park board players, who would otherwise be
-men staring at nothing with their arms out. A perched design is additionally
-set down onto the review floor, since in the world it is a bench that carries
-him. The posture a perched design is previewed in is looked up per archetype
-rather than assumed from the contract — `perch_seat_height_m` says a model sits
-on world timber, not how, and there is more than one of them now.
+and two opposite locomotion phases for each authored pedestrian. The Pipeback
+Roller is reviewed seated in its chair. CityParkBandstand checks the two
+ordinary park players with the actual boards, benches and lights.
 
 Rebuild from the repository root with Blender 5:
 
@@ -161,7 +97,7 @@ Add `-- --archetype kettle_hat` to iterate on one design without rebuilding the
 shared library or the contact sheet. Add `-- --locomotion-only` to rebuild only
 the shared `CityPedestrianLocomotion` clip bank and its contact sheet, leaving
 every body, atlas and prop untouched; `-- --personal-space-only` does the same
-for the six roaming designs' guard/shove bank, which is built on the street
+for the resident guard/shove bank, which is built on the street
 idle's first key and so must be rebuilt after any change to the citizen gait.
 
 The generator validates each `1.75 m` grounded silhouette, its
@@ -204,18 +140,8 @@ The staged Lake Fisherman takes the same separate branch:
   provider asset it once carried no longer exists; the prefab is bound through
   the staged-resident path like its neighbours.
 
-So do the staged Park Chess Player and Park Checkers Player, into
-`Assets/Resources/City/ParkChessPlayerProvider.asset` and
-`Assets/Resources/City/ParkCheckersPlayerProvider.asset`. Their manifests carry
-one field no other design has, `perch_seat_height_m`, and carry the same band —
-they sit at one set, on planks the same recipe draws at the same height. A bench sitter is neither
-sole-grounded — his hips are higher than his boots — nor cabin-seated, since a
-park bench has no roof to measure headroom against, so what the build proves
-instead is the distance from the underside of his hips to his soles: it has to
-equal the height of the plank the chess recipe draws (`0.540 m`). The validator
-also reports which part actually reaches the ground, because a seated design
-has two candidate feet and they are not interchangeable — if the tucked foot
-outreaches the planted one the pose reads as a man balanced on one toe.
+The park providers reference only the seated and jeering actions. Their
+runtime factories obtain the bodies, faces and clothing from DefaultNpcPopulation.
 
 That prefab is passive like every other staged one — no collider, light, audio
 or interaction — which is exactly why its burning pipe and its fishing line are

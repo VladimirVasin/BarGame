@@ -5,24 +5,20 @@ using UnityEngine.Rendering;
 namespace BarPromenade
 {
     /// <summary>
-    /// Places two shared Blender pendants under the gazebo cross-beam.
-    /// Only the working fitting receives a bulb, light and depth-tested halo;
+    /// Places a single pendant at the centre of the gazebo cross-beam.
+    /// Its broad downlight covers both playing surfaces equally;
     /// the existing site-light and City lighting owners retain their budgets,
     /// day/night law, bounded air support and source-derived bounce.
     /// </summary>
     public static class CityParkChessLampWorldBuilder
     {
         public const string RootName = "Park Chess Lamp";
-        public const float LightNightIntensity = 52f;
-        public const float LightDayIntensity = 14f;
-        public const float LightRange = 10f;
+        public const float LightNightIntensity = 18f;
+        public const float LightDayIntensity = 6f;
+        public const float LightRange = 6.4f;
 
         private static readonly Color LampColor =
             new Color(1f, 0.78f, 0.52f, 1f);
-        private static readonly Color EnamelColor =
-            new Color(0.205f, 0.225f, 0.205f, 1f);
-        private static readonly Color WireColor =
-            new Color(0.052f, 0.056f, 0.052f, 1f);
 
         public static GameObject Build(
             Transform parent,
@@ -50,20 +46,17 @@ namespace BarPromenade
             root.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
             root.localScale = Vector3.one;
 
-            BuildPendant(root, provider, plan, plan.LitPendant, "Lit");
-            BuildPendant(root, provider, plan, plan.DeadPendant, "Dead");
+            BuildPendant(root, provider, plan);
             return root.gameObject;
         }
 
         private static void BuildPendant(
             Transform root,
             CityMiscAssetProvider provider,
-            CityParkChessLampPlan plan,
-            CityParkChessLampPendant pendant,
-            string label)
+            CityParkChessLampPlan plan)
         {
-            Transform fitting = new GameObject(
-                $"Chess Lamp Pendant {label}").transform;
+            CityParkChessLampPendant pendant = plan.Pendant;
+            Transform fitting = new GameObject("Chess Lamp Pendant").transform;
             fitting.SetParent(root, false);
             fitting.SetPositionAndRotation(
                 pendant.ShadeRimCenter,
@@ -78,13 +71,7 @@ namespace BarPromenade
                     0,
                     index);
                 bool bulb = part.Role == CityMiscMeshRole.Neon;
-                if (bulb && !pendant.IsLit)
-                {
-                    continue;
-                }
 
-                // Both fittings share imported meshes directly: there are no
-                // per-instance mesh copies or material instances to dispose.
                 var partObject = new GameObject(part.Component);
                 partObject.transform.SetParent(fitting, false);
                 partObject.AddComponent<MeshFilter>().sharedMesh = part.Mesh;
@@ -92,7 +79,7 @@ namespace BarPromenade
                     partObject.AddComponent<MeshRenderer>();
                 renderer.sharedMaterial = bulb
                     ? CityNightResources.EmissiveMaterial
-                    : RuntimePrimitiveFactory.DefaultMaterial;
+                    : CityParkGazeboWorld.Finish;
                 if (bulb)
                 {
                     // Keeping blue below one preserves the warm glass instead
@@ -103,22 +90,6 @@ namespace BarPromenade
                     renderer.shadowCastingMode = ShadowCastingMode.Off;
                     renderer.receiveShadows = false;
                 }
-                else if (part.Surface == CityMiscSurfaceKind.PaintedMetal)
-                {
-                    CityParkSurfaceAppearance.ApplyCombined(
-                        renderer,
-                        CityParkSurfaceKind.PaintedMetal,
-                        EnamelColor);
-                }
-                else
-                {
-                    RuntimePrimitiveFactory.SetColor(renderer, WireColor);
-                }
-            }
-
-            if (!pendant.IsLit)
-            {
-                return;
             }
 
             // Keep this name: the existing City practical owner uses it to
@@ -127,7 +98,10 @@ namespace BarPromenade
             emitter.transform.SetParent(fitting, false);
             emitter.transform.position = pendant.BulbCenter;
             Light light = emitter.AddComponent<Light>();
-            light.type = LightType.Point;
+            emitter.transform.rotation = Quaternion.LookRotation(Vector3.down, plan.Forward);
+            light.type = LightType.Spot;
+            light.spotAngle = 136f;
+            light.innerSpotAngle = 112f;
             light.color = LampColor;
             light.intensity = LightNightIntensity;
             light.range = LightRange;

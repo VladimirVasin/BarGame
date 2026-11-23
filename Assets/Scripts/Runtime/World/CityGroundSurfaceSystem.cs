@@ -44,6 +44,7 @@ namespace BarPromenade
         private CityLayout talusLayout;
         private bool sealedSurface;
         private CityLayout grassLayout;
+        private CityDecorationPlan grassDecorations;
         private CitySeacoastPlan grassCoast;
         private HomeExteriorContextPlan grassHome;
         private CityGrassSurface grassSupport;
@@ -70,8 +71,9 @@ namespace BarPromenade
             CityGroundSurfaceSystem system = renderer.GetComponentInParent<CityGroundSurfaceSystem>(true);
             if (system != null) system.jointScenery.Add(new Source(renderer, 0, false, false, null));
         }
-        internal void SetGrassContext(CityLayout layout, CitySeacoastPlan coast = null, HomeExteriorContextPlan home = null)
-        { grassLayout = layout; grassCoast = coast; grassHome = home; }
+        internal void SetGrassContext(CityLayout layout, CitySeacoastPlan coast = null, HomeExteriorContextPlan home = null,
+            CityDecorationPlan decorations = null)
+        { grassLayout = layout; grassCoast = coast; grassHome = home; grassDecorations = decorations; }
         internal int SourceCount => sources.Count;
         internal int SurfaceTriangleCount { get; private set; }
         internal int SectorCount { get; private set; }
@@ -259,7 +261,7 @@ namespace BarPromenade
             CityGrassSurface grass = null;
             if (grassLayout != null)
             {
-                grass = new CityGrassSurface(grassLayout, grassHome, grassCoast);
+                grass = new CityGrassSurface(grassLayout, grassHome, grassCoast, grassDecorations?.Descriptors);
                 grassSupport=grass;
                 int plantedFaces = 0;
                 foreach (Triangle triangle in surface)

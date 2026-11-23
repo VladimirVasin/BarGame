@@ -702,11 +702,10 @@
   games and same two inhabitants on its deck. `CityParkGazeboGeometry` shares
   deck/steps/structure dimensions with walkable collision and seat/NPC datums;
   entrance and both hero docks stay free. Roof joins bounded local rain shelters.
-  Art §10's tree wire becomes beam-mounted pendants, with the same weak warm
-  one-live/one-dead pair. Sparse imported bins, blank notice board and repaired
-  benches reuse park surfaces. No NPC/clip/text/story signal or Нельзя change;
-  no story §6 row, §16/21 and nine art checks bind. All24 effects reviewed:
-  contacts/shadows, timber/steel, pendants/pennant and rain use existing owners;
+  On 2026-11-23 the user chose one enamel pendant at beam centre for both boards.
+  Both men use the default resident rig with distinct reserved faces and garments.
+  Bins, the blank notice board and repaired benches reuse park surfaces. §16/21
+  and nine art checks bind. Contacts, timber/steel, light and rain use existing owners.
   GI/bounce, SSAO/fog/volumes/grade, probes/SSR/water, bevels/vertex response,
   wind/marks/particles/BRDF/outlines and eight post categories retain profiles.
   No global provider or measured gain.
@@ -4601,9 +4600,8 @@
   arithmetic. Keys own pelvis/spine/chest/head; idle zeros spine/chest/head.
   The design retains neck, plus idle pelvis/legs; clavicles reset to rest.
   Do not replace aim vectors with local X rotations: that abducts the A-pose
-  arms instead of swinging. Park players use `chess_player_stand_pose`, not
-  their board perch. Personal-space frames `0`/`24` match each of the six
-  street-idle first keys. `CityPedestrianStreetGaitTests` pins arm hang
+  arms instead of swinging. Personal-space frames `0`/`24` match each
+  resident’s first street-idle key. `CityPedestrianStreetGaitTests` pins arm hang
   (`<22°` idle, `<40°` walk), sideways share `<0.35`, fore/aft swing,
   heel-contact opposition and standing thighs. Rebuild via `--locomotion-only`.
 

@@ -12,4 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bbff9b4fde48468eb48a615ed13b781c, type: 3}
   m_Name: ParkCheckersPlayerProvider
   m_EditorClassIdentifier: BarPromenade.Runtime::BarPromenade.ParkCheckersPlayerProvider
-  stagedPrefab: {fileID: 5884732334134701832, guid: a79e8cea0b44579479f937bc24747fb3, type: 3}
+  idleClip: {fileID: 8502292523883359718, guid: 005737cb93f0f804cb25d506467be7ba, type: 3}
+  actionClip: {fileID: -7761338759945140009, guid: 005737cb93f0f804cb25d506467be7ba, type: 3}

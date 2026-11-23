@@ -92,7 +92,7 @@ def assign_chart(part, finish):
 def finish_for(part, item_finishes, item):
     name = part.obj.name
     if part.role == "hair":
-        return item_finishes[item] if item else "shortHair"
+        return item_finishes[item] if item and not item.startswith("headwear.") else "shortHair"
     if not item:
         return "skin"
     if "Sole" in name or "Sock" in name:

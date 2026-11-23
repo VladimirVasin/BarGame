@@ -592,10 +592,11 @@ namespace BarPromenade
         /// </summary>
         public Vector2 SampleOrbitInputDegrees(
             float unscaledDeltaTime,
-            bool includeKeyboard = true)
+            bool includeKeyboard = true,
+            bool contextualRightDrag = false)
         {
             if (!PrepareLookSample()) return Vector2.zero;
-            Vector2 degrees = ReadMouseLookDegrees();
+            Vector2 degrees = ReadMouseLookDegrees(contextualRightDrag);
 
             Gamepad gamepad = Gamepad.current;
             if (gamepad != null)
@@ -640,10 +641,11 @@ namespace BarPromenade
             return OrbitInputEnabled && !TargetLockActive && GameCursor.ApplicationFocused;
         }
 
-        private Vector2 ReadMouseLookDegrees()
+        private Vector2 ReadMouseLookDegrees(bool contextualRightDrag = false)
         {
             Mouse mouse = Mouse.current;
-            if (mouse != null && GameCursor.GameplayMouseInputAllowed && Time.frameCount > mouseLookResumeFrame)
+            if (mouse != null && Time.frameCount > mouseLookResumeFrame &&
+                (contextualRightDrag ? mouse.rightButton.isPressed : GameCursor.GameplayMouseInputAllowed))
             {
                 Vector2 delta = mouse.delta.ReadValue();
                 return new Vector2(delta.x * mouseYawSensitivity, -delta.y * mousePitchSensitivity);

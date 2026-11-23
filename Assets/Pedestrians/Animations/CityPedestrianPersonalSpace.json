@@ -1,7 +1,7 @@
 {
   "generator": "tools/build-city-pedestrian-3d-model.py",
   "generator_version": "4.5.2",
-  "blender_version": "5.0.1",
+  "blender_version": "5.2.3 LTS",
   "skeleton_source": "NpcHumanV2 compatible A-pose v4.0.0",
   "anatomy_standard": "NpcHumanV2",
   "rest_pelvis_height_m": 0.835,
@@ -9,7 +9,7 @@
   "fps": 24,
   "root_motion": false,
   "mesh_count": 0,
-  "clip_count": 12,
+  "clip_count": 8,
   "clips": [
     {
       "name": "yard_babushka_v1_PersonalSpaceGuard",
@@ -228,150 +228,6 @@
       "contact_upright_fingers_dot": 1.0
     },
     {
-      "name": "park_chess_player_v1_PersonalSpaceGuard",
-      "archetype": "park_chess_player_v1",
-      "duration_seconds": 1.0,
-      "frame_start": 0,
-      "frame_end": 24,
-      "loop": false,
-      "one_shot": true,
-      "in_place": true,
-      "authored_posture": "grounded standing personal-distance response, free left palm",
-      "gait": "quiet palm-held boundary",
-      "keyed_bone_count": 31,
-      "loop_max_error": 1e-06,
-      "root_translation_range_m": [
-        0.0,
-        0.0,
-        0.0
-      ],
-      "motion_beats": [
-        {
-          "name": "contact",
-          "normalized_time": 0.333333
-        }
-      ],
-      "ground_min_m": 0.0,
-      "ground_max_contact_gap_m": 0.0,
-      "contact_seconds": 0.3333333333333333,
-      "contact_frame": 8,
-      "contact_palm_blender_m": [
-        0.13,
-        -0.49,
-        1.349396
-      ],
-      "contact_forward_palm_dot": 1.0,
-      "contact_upright_fingers_dot": 1.0
-    },
-    {
-      "name": "park_chess_player_v1_PersonalSpaceShove",
-      "archetype": "park_chess_player_v1",
-      "duration_seconds": 1.0,
-      "frame_start": 0,
-      "frame_end": 24,
-      "loop": false,
-      "one_shot": true,
-      "in_place": true,
-      "authored_posture": "grounded standing personal-distance response, free left palm",
-      "gait": "brief shoulder-assisted push",
-      "keyed_bone_count": 31,
-      "loop_max_error": 1e-06,
-      "root_translation_range_m": [
-        0.0,
-        0.0,
-        0.0
-      ],
-      "motion_beats": [
-        {
-          "name": "contact",
-          "normalized_time": 0.333333
-        }
-      ],
-      "ground_min_m": 0.0,
-      "ground_max_contact_gap_m": 0.0,
-      "contact_seconds": 0.3333333333333333,
-      "contact_frame": 8,
-      "contact_palm_blender_m": [
-        0.13,
-        -0.62,
-        1.299718
-      ],
-      "contact_forward_palm_dot": 1.0,
-      "contact_upright_fingers_dot": 1.0
-    },
-    {
-      "name": "park_checkers_player_v1_PersonalSpaceGuard",
-      "archetype": "park_checkers_player_v1",
-      "duration_seconds": 1.0,
-      "frame_start": 0,
-      "frame_end": 24,
-      "loop": false,
-      "one_shot": true,
-      "in_place": true,
-      "authored_posture": "grounded standing personal-distance response, free left palm",
-      "gait": "quiet palm-held boundary",
-      "keyed_bone_count": 31,
-      "loop_max_error": 1e-06,
-      "root_translation_range_m": [
-        0.0,
-        0.0,
-        0.0
-      ],
-      "motion_beats": [
-        {
-          "name": "contact",
-          "normalized_time": 0.333333
-        }
-      ],
-      "ground_min_m": 0.0,
-      "ground_max_contact_gap_m": 0.0,
-      "contact_seconds": 0.3333333333333333,
-      "contact_frame": 8,
-      "contact_palm_blender_m": [
-        0.13,
-        -0.49,
-        1.349396
-      ],
-      "contact_forward_palm_dot": 1.0,
-      "contact_upright_fingers_dot": 1.0
-    },
-    {
-      "name": "park_checkers_player_v1_PersonalSpaceShove",
-      "archetype": "park_checkers_player_v1",
-      "duration_seconds": 1.0,
-      "frame_start": 0,
-      "frame_end": 24,
-      "loop": false,
-      "one_shot": true,
-      "in_place": true,
-      "authored_posture": "grounded standing personal-distance response, free left palm",
-      "gait": "brief shoulder-assisted push",
-      "keyed_bone_count": 31,
-      "loop_max_error": 1e-06,
-      "root_translation_range_m": [
-        0.0,
-        0.0,
-        0.0
-      ],
-      "motion_beats": [
-        {
-          "name": "contact",
-          "normalized_time": 0.333333
-        }
-      ],
-      "ground_min_m": 0.0,
-      "ground_max_contact_gap_m": 0.0,
-      "contact_seconds": 0.3333333333333333,
-      "contact_frame": 8,
-      "contact_palm_blender_m": [
-        0.13,
-        -0.62,
-        1.299718
-      ],
-      "contact_forward_palm_dot": 1.0,
-      "contact_upright_fingers_dot": 1.0
-    },
-    {
       "name": "cemetery_mourner_v1_PersonalSpaceGuard",
       "archetype": "cemetery_mourner_v1",
       "duration_seconds": 1.0,
@@ -444,5 +300,5 @@
       "contact_upright_fingers_dot": 1.0
     }
   ],
-  "build_signature": "e5fefd5b489c92e659631ce485163c11d6c32a79c95896bcf5aeb439ee695d7b"
+  "build_signature": "c6c47f40896909f75c8deae1730dcf7cb2eb7fbf0700f9f77a68575cfe709480"
 }

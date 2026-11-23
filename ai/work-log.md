@@ -5,16 +5,15 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-23
 
-CityCanneryFinishes checks the rebuilt bay, scale, cans, tray, bench and carton contacts through dispatch by day and night. The prep and packing workers' equipped apron panels are measured in pose.
+CityParkBandstand checks both seats, first-person corner clicks, planked floor, day/night board contrast under one central lamp and the default residents’ wardrobe. The staged bodies and their build paths are retired.
+
+CityCanneryFinishes checks the rebuilt bay, work surfaces, dispatch and the equipped apron panels in pose.
 
 The wristwatch colon switches with each real second. `PlayerWatchPlayModeTests`
 samples the LCD while the calendar is paused and captures the night dial.
 
 CityAsphaltPaving shows staggered runs, sealed joints and fine aggregate under street lights.
-At the grocery, metric flags end at the surveyed curb. The brick pier and darker plinth share
-a running bond. The held can uses a shared sleeve/body/lid atlas with grip polish.
-CityGroceryStreetFinishes checks the composed curb and masonry. BeerCanFinishFollowsTheHeldParts
-checks the equipped finish. Lid marks read in the hand view, finer paper fibres fall into shadow.
+CityGroceryStreetFinishes checks the surveyed curb and running bond. BeerCanFinishFollowsTheHeldParts checks sleeve fibres, grip polish and lid marks in hand.
 CityGrocerySignFromStreet checks the enamel print from both approaches and the overlapping pools of light at night.
 CityWaterworksPaving checks the cut-stone court, new trough, spout over the water and caged lamp.
 The column, zinc bypass, worn wheel and drains share a metallic atlas. The City misc Blender

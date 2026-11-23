@@ -141,28 +141,15 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(lamp.Origin.y - gazebo.Position.y,
                 Is.EqualTo(CityParkGazeboGeometry.DeckHeightMeters)
                     .Within(0.001f));
-            CityParkChessLampPendant[] pendants =
-                { lamp.LitPendant, lamp.DeadPendant };
-            for (int index = 0; index < pendants.Length; index++)
-            {
-                CityParkChessLampPendant pendant = pendants[index];
-                float table = index == 0 ? -TableOffset : TableOffset;
-                Assert.That(Vector3.Dot(
-                    pendant.MountPoint - lamp.Origin, lamp.Tangent),
-                    Is.EqualTo(table).Within(0.001f),
-                    "Each fitting hangs directly over its own table.");
-                Assert.That(Vector3.Dot(
-                    pendant.MountPoint - lamp.Origin, lamp.Forward),
-                    Is.EqualTo(0f).Within(0.001f));
-                Assert.That(pendant.MountPoint.y - gazebo.Position.y,
-                    Is.EqualTo(CityParkGazeboGeometry.BeamUndersideHeightMeters)
-                        .Within(0.001f),
-                    "The cable must end on the real cross-beam underside.");
-            }
+            Vector3 mount = lamp.Pendant.MountPoint;
+            Assert.That(Vector3.Dot(mount-lamp.Origin,lamp.Tangent), Is.EqualTo(0f).Within(.001f));
+            Assert.That(Vector3.Dot(mount-lamp.Origin,lamp.Forward), Is.EqualTo(0f).Within(.001f));
+            Assert.That(mount.y - gazebo.Position.y, Is.EqualTo(CityParkGazeboGeometry.BeamUndersideHeightMeters)
+                .Within(.001f), "The ceiling rose meets the middle of the cross-beam.");
         }
 
         [Test]
-        public void Lamp_BurnsOverOneTableAndStillReachesBothBoards()
+        public void Lamp_ReachesBothBoardsFromTheCentre()
         {
             CityLayout layout = CreateLayout();
             CityDecorationPlan decorations = CreatePlan(layout);
@@ -171,17 +158,15 @@ namespace BarPromenade.Tests.EditMode
             ParkChessPlayerPlan player =
                 ParkChessPlayerPlan.Create(layout, decorations);
 
-            Assert.That(lamp.LitPendant.IsLit, Is.True);
-            Assert.That(lamp.DeadPendant.IsLit, Is.False);
             Vector3 head = player.Stance.SeatTopCenter + Vector3.up * 0.7f;
-            Assert.That(Vector3.Distance(head, lamp.LitPendant.BulbCenter),
+            Assert.That(Vector3.Distance(head, lamp.Pendant.BulbCenter),
                 Is.LessThan(CityParkChessLampWorldBuilder.LightRange * 0.5f),
                 "The working pendant must model its seated chess player.");
             for (int table = -1; table <= 1; table += 2)
             {
                 Vector3 board = lamp.Origin + lamp.Tangent * (table * TableOffset) +
                     Vector3.up * TableTopHeight;
-                Assert.That(Vector3.Distance(board, lamp.LitPendant.BulbCenter),
+                Assert.That(Vector3.Distance(board, lamp.Pendant.BulbCenter),
                     Is.LessThan(CityParkChessLampWorldBuilder.LightRange * 0.5f),
                     "Both boards remain within the useful half of the one light's range.");
             }
@@ -194,21 +179,18 @@ namespace BarPromenade.Tests.EditMode
             CityDecorationPlan decorations = CreatePlan(layout);
             CityParkChessLampPlan lamp =
                 CityParkChessLampPlan.Create(layout, decorations);
-            foreach (CityParkChessLampPendant pendant in
-                     new[] { lamp.LitPendant, lamp.DeadPendant })
-            {
-                Assert.That(pendant.ShadeRimCenter.y - lamp.Origin.y,
-                    Is.GreaterThan(2.2f),
-                    "The lowest metal clears a standing player on the deck.");
-                Assert.That(pendant.MountPoint.y - pendant.ShadeRimCenter.y,
-                    Is.EqualTo(CityParkChessLampPlan.MountToRimMeters)
-                        .Within(0.001f));
-                Assert.That(pendant.BulbCenter.y,
-                    Is.LessThan(pendant.MountPoint.y - 0.5f),
-                    "The source belongs below the beam, never inside or above the roof.");
-                Assert.That(pendant.ShadeCenter.y - lamp.Origin.y - TableTopHeight,
-                    Is.GreaterThan(1f));
-            }
+            CityParkChessLampPendant pendant = lamp.Pendant;
+            Assert.That(pendant.ShadeRimCenter.y - lamp.Origin.y,
+                Is.GreaterThan(2.2f),
+                "The lowest metal clears a standing player on the deck.");
+            Assert.That(pendant.MountPoint.y - pendant.ShadeRimCenter.y,
+                Is.EqualTo(CityParkChessLampPlan.MountToRimMeters)
+                    .Within(0.001f));
+            Assert.That(pendant.BulbCenter.y,
+                Is.LessThan(pendant.MountPoint.y - 0.5f),
+                "The source belongs below the beam, never inside or above the roof.");
+            Assert.That(pendant.ShadeCenter.y - lamp.Origin.y - TableTopHeight,
+                Is.GreaterThan(1f));
         }
 
         private static CityBenchSeat FindSeat(

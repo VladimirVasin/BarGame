@@ -60,7 +60,8 @@ namespace BarPromenade
         public const float TauntBlendInSeconds = 0.10f;
         public const float TauntBlendOutSeconds = 0.18f;
 
-        private CityPedestrianAssetRegistry registry;
+        private VillageResidentPresentation actor;
+        private Transform pelvis;
         private PlayableGraph graph;
         private AnimationMixerPlayable mixer;
         private AnimationClipPlayable broodPlayable;
@@ -106,53 +107,24 @@ namespace BarPromenade
         /// <summary>Where a line of his belongs on screen: the live head
         /// bone, so the bubble rides up with the throw.</summary>
         public Transform SpeechAnchor =>
-            registry != null ? registry.HeadAnchor : null;
+            actor != null ? actor.Head : null;
 
-        /// <summary>Which voice writes his letters. Read off the
-        /// registry rather than named here, so renaming the design can
-        /// never leave him quietly speaking in somebody else's
-        /// tone.</summary>
+        /// <summary>The park character keeps his own voice on the shared resident rig.</summary>
         public string SpeechDesignId =>
-            registry != null ? registry.DesignId : string.Empty;
+            actor != null ? ParkChessPlayerProvider.DesignId : string.Empty;
 
-        public void Initialize(
-            CityPedestrianAssetRegistry assetRegistry,
+        public void Initialize(VillageResidentPresentation resident, ParkChessPlayerProvider clips,
             ParkChessPlayerStance stance)
         {
-            if (assetRegistry == null)
-            {
-                throw new ArgumentNullException(nameof(assetRegistry));
-            }
-
-            if (assetRegistry.Animator == null)
-            {
-                throw new InvalidOperationException(
-                    "The chess player prefab has no Animator.");
-            }
-
-            if (assetRegistry.ModelRoot == null ||
-                assetRegistry.PelvisAnchor == null)
-            {
-                throw new InvalidOperationException(
-                    "The chess player prefab needs a model root and a " +
-                    "pelvis anchor to be seated on its plank.");
-            }
-
-            // Idle slot carries the brooding loop — the same mapping the
-            // art build declares.
-            AnimationClip clip = assetRegistry.IdleClip;
-            if (clip == null)
-            {
-                throw new InvalidOperationException(
-                    "The chess player prefab is missing its brooding loop.");
-            }
-
-            registry = assetRegistry;
+            actor = resident;
+            pelvis = CityPedestrianHandProps.FindSocket(actor.ModelRoot, "pelvis");
+            if (pelvis == null || actor.Animator == null || clips.IdleClip == null)
+                throw new InvalidOperationException("The park player requires a seated clip, animator and pelvis.");
+            AnimationClip clip = clips.IdleClip;
             ActiveClip = clip;
-            TauntClip = assetRegistry.ActionClip;
+            TauntClip = clips.ActionClip;
             playbackSpeed = Mathf.Max(0.05f, stance.PlaybackSpeed);
-            modelBaseLocalPosition = registry.ModelRoot.localPosition;
-            registry.ApplyPaletteVariant(stance.PaletteVariant);
+            modelBaseLocalPosition = actor.ModelRoot.localPosition;
 
             seatPelvisY = stance.SeatTopCenter.y + PerchPelvisLiftMeters;
 
@@ -191,7 +163,7 @@ namespace BarPromenade
 
             AnimationPlayableOutput
                 .Create(graph, "Park Chess Player Pose",
-                    registry.Animator)
+                    actor.Animator)
                 .SetSourcePlayable(mixer);
             graph.Play();
             Evaluate(0f);
@@ -283,9 +255,9 @@ namespace BarPromenade
             // The seat correction is applied to the model root, so the
             // root has to go back to its authored basis before the clip
             // is sampled or every frame would add to the last one.
-            if (registry != null && registry.ModelRoot != null)
+            if (actor != null && actor.ModelRoot != null)
             {
-                registry.ModelRoot.localPosition = modelBaseLocalPosition;
+                actor.ModelRoot.localPosition = modelBaseLocalPosition;
             }
 
             if (hasTauntClip)
@@ -319,9 +291,9 @@ namespace BarPromenade
 
         private void AlignHipsToPlank()
         {
-            if (registry == null ||
-                registry.ModelRoot == null ||
-                registry.PelvisAnchor == null)
+            if (actor == null ||
+                actor.ModelRoot == null ||
+                pelvis == null)
             {
                 return;
             }
@@ -330,9 +302,9 @@ namespace BarPromenade
             // across the plank, and letting the clip's own forward lean
             // slide him over the timber would take his elbows off the
             // board rim they were fitted to.
-            Vector3 moved = registry.ModelRoot.position;
-            moved.y += seatPelvisY - registry.PelvisAnchor.position.y;
-            registry.ModelRoot.position = moved;
+            Vector3 moved = actor.ModelRoot.position;
+            moved.y += seatPelvisY - pelvis.position.y;
+            actor.ModelRoot.position = moved;
         }
 
         private void OnDestroy()

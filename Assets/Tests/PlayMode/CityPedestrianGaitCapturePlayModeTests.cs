@@ -9,7 +9,7 @@ using Object = UnityEngine.Object;
 namespace BarPromenade.Tests.PlayMode
 {
     /// <summary>
-    /// Photographs the six roaming designs on their STREET pair - the
+    /// Photographs the available library designs on their STREET pair - the
     /// shared citizen gait - through the production presentation: the
     /// line-up waiting (street idle), then walking at four phases of the
     /// hero's cycle, from the front, from three-quarters and from the
@@ -35,8 +35,6 @@ namespace BarPromenade.Tests.PlayMode
             CityPedestrianResources.BabushkaPrefabResourcePath,
             CityPedestrianResources.WeighAttendantPrefabResourcePath,
             CityPedestrianResources.WatchmanPrefabResourcePath,
-            CityPedestrianResources.ChessPlayerPrefabResourcePath,
-            CityPedestrianResources.CheckersPlayerPrefabResourcePath,
             CityPedestrianResources.MournerPrefabResourcePath
         };
 

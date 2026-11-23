@@ -8,7 +8,7 @@ namespace BarPromenade.Editor
 {
     /// <summary>
     /// Attach only the dedicated street reaction clips to existing models:
-    /// the library's six ordinary residents, who authored them. Since
+    /// the library's ordinary library residents, who authored them. Since
     /// 2026-09-16 they no longer roam; the pooled default NPCs borrow the
     /// clip donor's pair at runtime (`CityPedestrianResources.StreetClipDonorDesignId`).
     /// </summary>
@@ -140,7 +140,7 @@ namespace BarPromenade.Editor
                 manifest.clip_count != CityPedestrianResources.OrdinaryResidentArchetypes.Count * 2 ||
                 manifest.clips.Length != manifest.clip_count)
             {
-                throw new InvalidOperationException("Personal-space bank must contain only the six grounded bone-only pairs.");
+                throw new InvalidOperationException("Personal-space bank must contain only the grounded bone-only pairs for the library residents.");
             }
             foreach (CityPedestrianArchetype archetype in CityPedestrianResources.OrdinaryResidentArchetypes)
             {

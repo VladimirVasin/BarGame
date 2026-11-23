@@ -274,7 +274,7 @@ namespace BarPromenade
         public const string HelmetLampPrefabResourcePath =
             "Pedestrians/HelmetLampPedestrian3D";
 
-        // The six ordinary residents. Promoted to the street on 2026-09-02
+        // The ordinary library residents. Promoted to the street on 2026-09-02
         // and taken off it again on 2026-09-16, when the pool became the
         // default NPC catalog; each keeps its placed role - the babushka
         // still beats her carpet, the watchman still holds the gate - and the
@@ -289,12 +289,8 @@ namespace BarPromenade
         public const string WatchmanPrefabResourcePath =
             "Pedestrians/CemeteryWatchman3D";
         public const string ChessPlayerDesignId = "park_chess_player_v1";
-        public const string ChessPlayerPrefabResourcePath =
-            "Pedestrians/ParkChessPlayer3D";
         public const string CheckersPlayerDesignId =
             "park_checkers_player_v1";
-        public const string CheckersPlayerPrefabResourcePath =
-            "Pedestrians/ParkCheckersPlayer3D";
         public const string MournerDesignId = "cemetery_mourner_v1";
         public const string MournerPrefabResourcePath =
             "Pedestrians/CemeteryMourner3D";
@@ -431,7 +427,7 @@ namespace BarPromenade
         // stop, and the bus passes them by.
 
         /// <summary>
-        /// The six ordinary residents of the pedestrian library. They walked
+        /// The ordinary library residents of the pedestrian library. They walked
         /// the street from 2026-09-02, when the four strange walkers, the
         /// fisherman and the Chair Carrier came off it, until 2026-09-16, when
         /// the user closed the pool to everything but the default NPC catalog
@@ -471,20 +467,6 @@ namespace BarPromenade
                 CityPedestrianArchetype.UnlimitedPoolInstances,
                 0f,
                 WatchmanSeatedRide),
-            new CityPedestrianArchetype(
-                ChessPlayerDesignId,
-                ChessPlayerPrefabResourcePath,
-                0.86f,
-                0.98f,
-                0.92f,
-                1.00f),
-            new CityPedestrianArchetype(
-                CheckersPlayerDesignId,
-                CheckersPlayerPrefabResourcePath,
-                0.88f,
-                1.00f,
-                0.93f,
-                1.01f),
             new CityPedestrianArchetype(
                 MournerDesignId,
                 MournerPrefabResourcePath,
@@ -666,7 +648,7 @@ namespace BarPromenade
             (readOnlyArchetypes = Array.AsReadOnly(RoamingArchetypes));
 
         /// <summary>
-        /// The six library residents with a citizen gait, a seated ride and
+        /// The library residents with a citizen gait, a seated ride and
         /// a personal-space pair - the balcony smokers' bodies and the clip
         /// donor's table. Off the street since 2026-09-16.
         /// </summary>
@@ -697,7 +679,7 @@ namespace BarPromenade
             return TryFind(RoamingArchetypes, designId, out _);
         }
 
-        /// <summary>Whether a design is one of the six library residents.</summary>
+        /// <summary>Whether a design is one of the library residents.</summary>
         public static bool IsOrdinaryResident(string designId)
         {
             return TryFind(OrdinaryResidents, designId, out _);

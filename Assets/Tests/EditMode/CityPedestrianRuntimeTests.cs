@@ -52,12 +52,8 @@ namespace BarPromenade.Tests.EditMode
         //     had: an idle and a walk each, and a seated loop for all but
         //     the Helmet Lamp hopper, who never declared one.  4*2 + 3 = 11
         //   - The Pipeback Roller is staged and has never roamed.       2
-        //   - The SIX promoted residents still on the street each keep the
-        //     PLACED pair their own presentation plays - the babushka's
-        //     carpet beating, the mourner's graveside rite - on top of the
-        //     street pair counted through the catalog.            6*2 = 12
-        //   - The two park players add the shout they throw at each
-        //     other.                                                    2
+        //   - Four library residents retain their placed idle/walk pairs. 8
+        //   - Two default park residents each use a seated loop and a jeer. 4
         //   - The Lake Fisherman came off the street on 2026-09-02, so his
         //     four - the placed pair he leans on the мостки with and the
         //     street pair he no longer walks - now count here. They stay
@@ -67,7 +63,7 @@ namespace BarPromenade.Tests.EditMode
         //     his walk and the seated loop that used to be counted through
         //     the catalog's own ride tally.                             3
         private const int NonRoamingLocomotionClipCount =
-            11 + 2 + 12 + 2 + 4 + 3;
+            11 + 2 + 8 + 4 + 4 + 3;
 
         private const string LocomotionManifestPath =
             "Assets/Pedestrians/Animations/" +
@@ -215,17 +211,15 @@ namespace BarPromenade.Tests.EditMode
                     "FishermanLean",
                     "FishermanTrudge",
                     "ChessBrood",
-                    "ChessTrudge",
                     "ChessJeer",
                     "CheckersMull",
-                    "CheckersTrudge",
                     "CheckersJeer",
                     "LampshadeSit",
                     "ChairCarrierSit",
                     "KettleHatSit",
                     "LongArmSit",
                     // The two residents promoted onto Route 01. The other
-                    // five walk to the stop and watch the bus go: the
+                    // three walk to the stop and watch the bus go: the
                     // mourner's coat hem, the babushka's housecoat and the
                     // fisherman's shouldered rod all reach further below or
                     // above the pelvis bone than a cushion can absorb.
@@ -234,7 +228,7 @@ namespace BarPromenade.Tests.EditMode
                     // The ordinary street gait, one pair per promoted
                     // resident. It is the hero's own eight-key walk cycle
                     // merged onto each design's base pose, which is why
-                    // seven designs share one recipe and still keep their
+                    // these designs share one recipe and still keep their
                     // own coats and posture.
                     "BabushkaStreetIdle",
                     "BabushkaStreetWalk",
@@ -246,14 +240,10 @@ namespace BarPromenade.Tests.EditMode
                     "WatchmanStreetWalk",
                     "FishermanStreetIdle",
                     "FishermanStreetWalk",
-                    "ChessStreetIdle",
-                    "ChessStreetWalk",
-                    "CheckersStreetIdle",
-                    "CheckersStreetWalk",
                 },
                 locomotionClips.Select(
                     clip => NormalizeAnimationClipName(clip.name)));
-            // The six ordinary residents own two street clips each plus the
+            // The library residents own two street clips each plus the
             // rides they declare; everything else in the bank belongs to a
             // design that never roamed, or to the placed role of one that
             // did. The street pool itself is the default NPC catalog since
@@ -390,18 +380,6 @@ namespace BarPromenade.Tests.EditMode
             "MournerWalk",
             "MournerStreetIdle",
             "MournerStreetWalk")]
-        [TestCase(
-            CityPedestrianResources.ChessPlayerDesignId,
-            "ChessBrood",
-            "ChessTrudge",
-            "ChessStreetIdle",
-            "ChessStreetWalk")]
-        [TestCase(
-            CityPedestrianResources.CheckersPlayerDesignId,
-            "CheckersMull",
-            "CheckersTrudge",
-            "CheckersStreetIdle",
-            "CheckersStreetWalk")]
         public void PromotedResidents_KeepTheirPlacedRoleAndGainAStreetGait(
             string designId,
             string placedIdleClipName,
@@ -424,7 +402,7 @@ namespace BarPromenade.Tests.EditMode
                 CityPedestrianResources.IsOrdinaryResident(designId),
                 Is.True,
                 $"'{designId}' was promoted to the street on 2026-09-02 " +
-                "and is one of the six ordinary residents.");
+                "and is one of the ordinary library residents.");
             Assert.That(
                 CityPedestrianResources.Roams(designId),
                 Is.False,
@@ -802,7 +780,7 @@ namespace BarPromenade.Tests.EditMode
             // Since 2026-09-16 the street pool IS the default NPC catalog:
             // one street archetype per catalog model, derived rather than
             // registered, so a model added to the catalog is on the pavement
-            // with no edit here. The six ordinary residents and the five
+            // with no edit here. The library residents and the five
             // strange walkers still resolve, and none of them roams.
             IReadOnlyList<CityPedestrianArchetype> archetypes =
                 CityPedestrianResources.Archetypes;
@@ -837,11 +815,9 @@ namespace BarPromenade.Tests.EditMode
                         CityPedestrianResources.BabushkaDesignId,
                         CityPedestrianResources.WeighAttendantDesignId,
                         CityPedestrianResources.WatchmanDesignId,
-                        CityPedestrianResources.ChessPlayerDesignId,
-                        CityPedestrianResources.CheckersPlayerDesignId,
                         CityPedestrianResources.MournerDesignId
                     }),
-                "The six ordinary residents keep their stable order: the " +
+                "The library residents keep their stable order: the " +
                 "balcony smokers are seeded against it.");
             Assert.That(
                 residents.All(archetype =>

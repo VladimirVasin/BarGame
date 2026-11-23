@@ -5,7 +5,7 @@ using UnityEngine;
 namespace BarPromenade.Tests.EditMode
 {
     /// <summary>
-    /// The six designs that roam the street walk on the shared citizen
+    /// The available library designs walk on the shared citizen
     /// gait - the hero's own Idle and Walk merged onto each body. Until
     /// 2026-09-05 that recipe re-expressed the hero's upper-arm aims as
     /// bone-local X rotations and merged them OVER each design's base
@@ -36,8 +36,6 @@ namespace BarPromenade.Tests.EditMode
             CityPedestrianResources.BabushkaPrefabResourcePath,
             CityPedestrianResources.WeighAttendantPrefabResourcePath,
             CityPedestrianResources.WatchmanPrefabResourcePath,
-            CityPedestrianResources.ChessPlayerPrefabResourcePath,
-            CityPedestrianResources.CheckersPlayerPrefabResourcePath,
             CityPedestrianResources.MournerPrefabResourcePath
         };
 

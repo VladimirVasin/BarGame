@@ -207,7 +207,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(wardrobe.IsModular, Is.True);
             wardrobe.ValidateBindings();
             CollectionAssert.AreEquivalent(new[] { "everyday", "work", "warm" }, wardrobe.Presets.Select(p => p.Id));
-            Assert.That(wardrobe.Items.Count, Is.EqualTo(24));
+            Assert.That(wardrobe.Items.Count, Is.EqualTo(28));
             Assert.That(wardrobe.BodyRenderers, Is.Not.Empty);
             Assert.That(wardrobe.Items.Select(p => p.Id).Distinct().Count(), Is.EqualTo(wardrobe.Items.Count));
             DefaultNpcAppearance appearance = actor.GetComponent<DefaultNpcAppearance>();
