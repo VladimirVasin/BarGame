@@ -11,12 +11,18 @@ namespace BarPromenade
         internal const float Inside = .27f;
         internal const float BinStand = .83f;
         private Transform hinge, handle, receiver, key, firstCord, secondCord;
+        private Transform[] dialKeys;
+        private Vector3[] restKeys;
         private Quaternion closedRotation, receiverRotation;
         private Vector3 receiverRest;
         internal string SiteId { get; private set; }
         internal Vector3 Handle => handle.position;
         internal Vector3 Receiver => receiver.position;
         internal Vector3 Key => key.position;
+        internal Vector3 DialKey(int index) => transform.TransformPoint(restKeys[index]);
+        internal Vector3 KeyFace(int index) => dialKeys[index].position;
+        internal void SetKeyTravel(int index, float weight) =>
+            dialKeys[index].position = DialKey(index) - transform.forward * (.0035f * weight);
         internal bool Phone => receiver != null;
         internal float OpenAmount { get; private set; }
 
@@ -48,6 +54,8 @@ namespace BarPromenade
                 nodes["DoorGlass"].SetParent(model.hinge, true);
                 model.receiver = nodes["Receiver"];
                 model.key = nodes["Key"];
+                model.dialKeys = new[] { nodes["Key4"], nodes["Key5"], nodes["Key2"] };
+                model.restKeys = Array.ConvertAll(model.dialKeys, cap => root.InverseTransformPoint(cap.position));
                 model.receiverRest = root.InverseTransformPoint(model.receiver.position);
                 model.receiverRotation = Quaternion.Inverse(root.rotation) * model.receiver.rotation;
                 model.firstCord = Cord(nodes["UpperCord"]);

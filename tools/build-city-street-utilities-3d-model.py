@@ -162,10 +162,14 @@ def booth():
         for c in range(3):
             # The caller looks toward -Z, so the right side of the keypad is -X.
             x, y = .007-.061*c, 1.44-.058*r
-            box("Frame","edge",(x,y,-.277),(.046,.042,.027))
+            number = 3*r+c+1
+            group = f"Key{number}" if number in (2,4,5) else "Frame"
+            if group != "Frame":
+                m.anchors[group] = (x,y,-.261)
+            box(group,"edge",(x,y,-.277),(.046,.042,.027))
             for letter in digits[3*r+c]:
                 dx,dy,w,h = segments[ord(letter)-ord("a")]
-                box("Frame","rubber",(x-dx,y+dy,-.2617),(w,h,.0014),.00025)
+                box(group,"rubber",(x-dx,y+dy,-.2617),(w,h,.0014),.00025)
     for x in (-.106,-.082,-.058,-.034,-.010):
         box("Frame","inside",(x,1.565,-.266),(.010,.037,.0025),.0005)
     box("Frame","rubber",(.052,1.562,-.266),(.048,.006,.003),.0006)
@@ -270,19 +274,21 @@ def check_exports():
     # the seven segments in screen order: top, upper-right, lower-right, bottom,
     # lower-left, upper-left, middle. The two blank corners are checked as well.
     _, _, panel, finishes = imported_surface("PhoneBooth","Frame")
+    moving = {digit: imported_surface("PhoneBooth",f"Key{digit}")[2:] for digit in (2,4,5)}
     expected = ("0110000","1101101","1111001","0110011","1011011","1011111",
                 "1110000","1111111","1111011","0000000","1111110","0000000")
     probes = ((0,.010),(.008,.005),(.008,-.005),(0,-.010),
               (-.008,-.005),(-.008,.005),(0,0))
     for button, strokes in enumerate(expected):
         row, column = divmod(button,3)
+        surface, ink = moving.get(button+1,(panel,finishes))
         actual = ""
         for right, up in probes:
             origin = (.007-column*.061-right, -.22, 1.44-row*.058+up)
-            _, _, face, _ = panel.ray_cast(origin,(0,-1,0),.12)
+            _, _, face, _ = surface.ray_cast(origin,(0,-1,0),.12)
             if face is None:
                 raise ValueError(f"Missing face on key at row {row+1}, column {column+1}")
-            actual += "1" if finishes[face] == "rubber" else "0"
+            actual += "1" if ink[face] == "rubber" else "0"
         if actual != strokes:
             raise ValueError(f"Unreadable key at row {row+1}, column {column+1}: {actual}")
 

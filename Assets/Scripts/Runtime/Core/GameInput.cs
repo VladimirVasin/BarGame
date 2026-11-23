@@ -217,6 +217,8 @@ namespace BarPromenade
                     return Read(keyboard?.rightArrowKey, held) || Read(keyboard?.dKey, held);
                 case GameInputAction.PuzzleExit:
                     return Read(keyboard?.qKey, held);
+                case GameInputAction.LeavePhoneBooth:
+                    return Read(keyboard?.escapeKey, held) || Read(keyboard?.qKey, held);
                 case GameInputAction.Confirm:
                     return ReadAction(GameInputAction.Submit, held) ||
                            Read(keyboard?.spaceKey, held);

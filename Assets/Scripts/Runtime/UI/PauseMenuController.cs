@@ -415,6 +415,9 @@ namespace BarPromenade
             {
                 if (WasPauseTogglePressed())
                 {
+                    if (GameInput.WasPressed(GameInputAction.LeavePhoneBooth, GameInputContext.Contextual) &&
+                        player.GameObject && player.GameObject.TryGetComponent<CityStreetUtilitySession>(out var booth) &&
+                        booth.RequestBoothExit()) return;
                     Open();
                 }
 

@@ -94,6 +94,13 @@ namespace BarPromenade
         HomeBedExhale,
         HomeBedGasp,
         HawthornHealingSwell,
+        BinLidLift,
+        BinLidShut,
+        BoothUnlatch,
+        BoothLatch,
+        HandsetLift,
+        HandsetSeat,
+        PayphoneKey,
         Count
     }
 
@@ -932,7 +939,21 @@ namespace BarPromenade
             // A subjective swallow cue follows the red perception envelope. Dry UI bypasses
             // the world VHS bus; a presentation owner explicitly pauses this otherwise dry voice.
             new RetroSfxDefinition(RetroSfxId.HawthornHealingSwell, RetroSfxCategory.Ui,
-                HawthornHealingAudio.DurationSeconds, .38f, 0f, 1, 0f, 1, 4096, 1100f, 0f, 92)
+                HawthornHealingAudio.DurationSeconds, .38f, 0f, 1, 0f, 1, 4096, 1100f, 0f, 92),
+            new RetroSfxDefinition(RetroSfxId.BinLidLift, RetroSfxCategory.World,
+                .43f,.39f,1f,1,.12f,1,4096,4000f,.035f,85),
+            new RetroSfxDefinition(RetroSfxId.BinLidShut, RetroSfxCategory.World,
+                .48f,.55f,1f,1,.12f,1,4096,4350f,.035f,80),
+            new RetroSfxDefinition(RetroSfxId.BoothUnlatch, RetroSfxCategory.World,
+                .38f,.29f,1f,1,.12f,1,4096,3600f,.018f,91),
+            new RetroSfxDefinition(RetroSfxId.BoothLatch, RetroSfxCategory.World,
+                .24f,.38f,1f,1,.12f,1,4096,4200f,.025f,88),
+            new RetroSfxDefinition(RetroSfxId.HandsetLift, RetroSfxCategory.World,
+                .13f,.25f,.92f,1,.10f,1,4096,3500f,.02f,85),
+            new RetroSfxDefinition(RetroSfxId.HandsetSeat, RetroSfxCategory.World,
+                .19f,.34f,.92f,1,.10f,1,4096,3600f,.02f,85),
+            new RetroSfxDefinition(RetroSfxId.PayphoneKey, RetroSfxCategory.World,
+                .078f,.30f,.95f,2,.065f,1,4096,4900f,.035f,80,2)
         };
 
         public static int Count => definitions.Length - 1;
@@ -1353,6 +1374,14 @@ namespace BarPromenade
                         time,
                         duration,
                         ref noiseState);
+                case RetroSfxId.BinLidLift:
+                case RetroSfxId.BinLidShut:
+                case RetroSfxId.BoothUnlatch:
+                case RetroSfxId.BoothLatch:
+                case RetroSfxId.HandsetLift:
+                case RetroSfxId.HandsetSeat:
+                case RetroSfxId.PayphoneKey:
+                    return StreetUtilityContact(id,time,duration,ref noiseState,detune);
                 case RetroSfxId.RefrigeratorSeal:
                     return GenerateRefrigeratorSeal(
                         time,
@@ -1589,6 +1618,47 @@ namespace BarPromenade
                     return MetalModes(time, 2890f, detune) * .58f * Mathf.Exp(-38f * time) *
                         Envelope(time, duration, .0003f, 1f) + noise * .4f *
                         Envelope(time, .018f, .0003f, 4f);
+                default: return 0f;
+            }
+        }
+
+        private static float StreetUtilityContact(RetroSfxId id, float t, float duration, ref uint state, float detune)
+        {
+            float grain = NextNoise(ref state);
+            // A struck shell rings on several inharmonic modes. A short broadband
+            // attack gives plastic, a folded steel edge and a latch different contacts.
+            float Strike(float delay, float frequency, float decay, float grit)
+            {
+                float age = t-delay;
+                if (age < 0f) return 0f;
+                float attack = Mathf.Min(1f,age/.0012f);
+                return attack * (MetalModes(age,frequency,detune)*Mathf.Exp(-decay*age) +
+                    grit*grain*Mathf.Exp(-age*210f));
+            }
+            float Rub(float frequency, float sweep)
+            {
+                float phase = 2f*Mathf.PI*t*(frequency+sweep*t);
+                float pressure = Mathf.Sin(Mathf.PI*t/duration);
+                return pressure*pressure*(.20f*grain+.12f*Mathf.Sin(phase)+.05f*Mathf.Sin(2.27f*phase)) *
+                    (.74f+.26f*Mathf.Sin(92f*t));
+            }
+            switch (id)
+            {
+                case RetroSfxId.BinLidLift:
+                    return .35f*Strike(0f,385f,36f,.55f)+Rub(195f,375f);
+                case RetroSfxId.BinLidShut:
+                    return .63f*Strike(0f,136f,13f,.48f)+.26f*Strike(.017f,371f,24f,.64f)+
+                        .16f*Strike(.072f,645f,28f,.30f);
+                case RetroSfxId.BoothUnlatch:
+                    return .50f*Strike(0f,772f,100f,.75f)+.21f*Strike(.026f,425f,52f,.4f)+.62f*Rub(305f,-290f);
+                case RetroSfxId.BoothLatch:
+                    return .45f*Strike(0f,202f,32f,.5f)+.40f*Strike(.022f,906f,78f,.65f)+.10f*Strike(.049f,1350f,40f,.2f);
+                case RetroSfxId.HandsetLift:
+                    return .34f*Strike(0f,665f,76f,.7f)+.29f*Strike(.027f,1450f,140f,.6f);
+                case RetroSfxId.HandsetSeat:
+                    return .55f*Strike(0f,358f,45f,.51f)+.23f*Strike(.034f,792f,80f,.4f);
+                case RetroSfxId.PayphoneKey:
+                    return .54f*Strike(0f,1080f,145f,.75f)+.18f*Strike(.009f,530f,110f,.35f);
                 default: return 0f;
             }
         }

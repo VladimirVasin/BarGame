@@ -790,7 +790,7 @@
     },
     {
       "key": "interaction.leave_phone_booth",
-      "value": "E — выйти из будки"
+      "value": "E, Esc или Q — выйти из будки"
     },
     {
       "key": "interaction.close_dumpster",
@@ -798,7 +798,11 @@
     },
     {
       "key": "interaction.use_phone_booth",
-      "value": "E — позвонить"
+      "value": "E — позвонить · Esc / Q — выйти"
+    },
+    {
+      "key": "interaction.hang_up_phone",
+      "value": "Esc / Q — положить трубку и выйти"
     },
     {
       "key": "interaction.search_dumpster",

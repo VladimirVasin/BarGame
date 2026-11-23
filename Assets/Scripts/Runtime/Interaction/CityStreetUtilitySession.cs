@@ -7,7 +7,7 @@ namespace BarPromenade
     [DefaultExecutionOrder(365)]
     public sealed class CityStreetUtilitySession : MonoBehaviour
     {
-        public enum Step { Idle, Approach, Opening, Entering, Inspect, Call, Leaving, Closing, Return }
+        public enum Step { Idle, Approach, Opening, Entering, Inspect, Call, HangingUp, Leaving, Closing, Return }
         public Step Phase { get; private set; }
         private CityGameRoot city;
         private CityStreetUtilityInteraction source;
@@ -27,7 +27,15 @@ namespace BarPromenade
         private float initialLens, initialNear, elapsed, yaw, pitch;
         private int firstFrame;
         private bool feedback, ownsHands;
-        private Func<bool> use;
+        private bool exitRequested, exitKeyHeld, receiverOffHook;
+        private float receiverLift, receiverGrip, pointingWeight, hangLift, hangGrip, hangPoint;
+        private Vector3 indexPad, pointTarget;
+        private int activeKey = -1, nextClick;
+        private const float FirstPress = .88f, PressInterval = .34f;
+        internal Vector3 IndexTip => right.Tip(indexPad);
+        internal float WristBend => right.WristBend;
+        internal int DepressedKey => activeKey;
+        private Func<bool> use, leave;
 
         private readonly struct Arm
         {
@@ -47,6 +55,36 @@ namespace BarPromenade
                 LimbTwoBoneIk.Solve(upper,lower,hand,wrist.position,wrist.rotation,
                     upper.position + side*.24f + front*.16f - Vector3.up*.30f,
                     amount,LimbTwoBoneIk.DefaultReachFraction,true);
+            }
+            internal Vector3 Tip(Vector3 offset) => hand.position + hand.rotation * offset;
+            internal float WristBend => Vector3.Angle(hand.position-lower.position,hand.rotation*frame.FingerDirectionInHand);
+
+            internal void Point(Vector3 target, Vector3 index, Transform actor, float weight)
+            {
+                if (weight <= 0f) return;
+                // Treat the forearm and extended finger as one link. Removing the index's
+                // small sideways offset before solving keeps the wrist aligned as keys change.
+                float axial = Vector3.Dot(index,frame.FingerDirectionInHand);
+                Vector3 lateral = index - frame.FingerDirectionInHand*axial;
+                float humerus = Vector3.Distance(upper.position,lower.position);
+                float reach = Vector3.Distance(lower.position,hand.position)+axial;
+                Vector3 distal = actor.forward;
+                Vector3 elbow = lower.position;
+                Vector3 pole = actor.right*.16f - Vector3.up*.42f;
+                for (int i=0; i<3; i++)
+                {
+                    Quaternion aim = frame.ResolveHandRotation(Vector3.down,distal);
+                    Vector3 endpoint = target - aim*lateral;
+                    Vector3 axis = (endpoint-upper.position).normalized;
+                    float distance = Mathf.Max(.001f,Vector3.Distance(endpoint,upper.position));
+                    float along = Mathf.Clamp((humerus*humerus-reach*reach+distance*distance)/(2f*distance),-humerus,humerus);
+                    float bend = Mathf.Sqrt(Mathf.Max(0f,humerus*humerus-along*along));
+                    elbow = upper.position + axis*along + Vector3.ProjectOnPlane(pole,axis).normalized*bend;
+                    distal = (endpoint-elbow).normalized;
+                }
+                Quaternion rotation = frame.ResolveHandRotation(Vector3.down, distal);
+                Vector3 wrist = target - rotation*index;
+                LimbTwoBoneIk.Solve(upper,lower,hand,wrist,rotation,elbow,weight,.998f,true);
             }
         }
 
@@ -73,7 +111,8 @@ namespace BarPromenade
             model = source.Model;
             try
             {
-                if (!fingers.TryCaptureGrip(this, false, NpcHandGripKind.Cylindrical, exclusive:true) ||
+                var rightGrip = model.Phone ? NpcHandGripKind.Pointing : NpcHandGripKind.Cylindrical;
+                if (!fingers.TryCaptureGrip(this, false, rightGrip, exclusive:true) ||
                     !fingers.TryCaptureGrip(this, true, NpcHandGripKind.Cylindrical, exclusive:true))
                 {
                     ReleaseHands();
@@ -81,12 +120,18 @@ namespace BarPromenade
                     return;
                 }
                 ownsHands = true;
+                if (model.Phone) indexPad = fingers.ExtendedIndexPad(false);
+                exitRequested = receiverOffHook = false;
+                exitKeyHeld = GameInput.IsHeld(GameInputAction.LeavePhoneBooth,GameInputContext.Contextual);
+                receiverLift = receiverGrip = pointingWeight = 0f;
+                activeKey = -1;
                 entry = source.Dock.StandPosition + Vector3.up * PlayerFactory.GroundedRootOffset;
                 inside = model.transform.TransformPoint(new Vector3(0,PlayerFactory.GroundedRootOffset,CityStreetUtilityModel.Inside));
                 exit = entry;
                 facing = Quaternion.LookRotation(source.Dock.Facing);
                 yaw = pitch = 0f;
                 use ??= Use;
+                leave ??= RequestBoothExit;
                 enabled = true;
                 Change(Step.Approach);
             }
@@ -102,6 +147,7 @@ namespace BarPromenade
             visual.SetInteractionHandoffLocked(!walking);
             if (!walking) visual.SampleInteractionNeutralPose();
             city.Player.Interactor.PromptView?.SetPrompt(null);
+            if (next == Step.Call) city.Player.Interactor.PromptView?.SetPrompt("interaction.hang_up_phone",leave);
         }
 
         private void Update()
@@ -110,6 +156,13 @@ namespace BarPromenade
             if (!source || !source.isActiveAndEnabled || city.IsDormant || SceneTransitionService.IsTransitioning)
             { controller.CancelActiveInteraction(); return; }
             if (GameTimeScaleRuntime.IsPaused || PauseMenuController.IsAnyPaused || Time.frameCount <= firstFrame) return;
+            bool held = GameInput.IsHeld(GameInputAction.LeavePhoneBooth,GameInputContext.Contextual);
+            bool leavePressed = GameInput.WasPressed(GameInputAction.LeavePhoneBooth,GameInputContext.Contextual) ||
+                held && !exitKeyHeld;
+            exitKeyHeld = held;
+            if (leavePressed &&
+                RequestBoothExit() && (Phase == Step.Idle || firstFrame == Time.frameCount)) return;
+            float previous = elapsed;
             elapsed += Time.deltaTime;
             switch (Phase)
             {
@@ -125,10 +178,12 @@ namespace BarPromenade
                     }
                     break;
                 case Step.Opening:
+                    if (previous < .43f && elapsed >= .43f)
+                        RetroAudio.PlayAt(model.Phone ? RetroSfxId.BoothUnlatch : RetroSfxId.BinLidLift,model.Handle);
                     if (elapsed >= 1.16f)
                     {
                         model.SetOpen(1f);
-                        Change(model.Phone ? Step.Entering : Step.Inspect);
+                        Change(exitRequested ? Step.Closing : model.Phone ? Step.Entering : Step.Inspect);
                     }
                     break;
                 case Step.Entering:
@@ -142,17 +197,30 @@ namespace BarPromenade
                     if (GameInput.WasPressed(GameInputAction.Interact, GameInputContext.Contextual)) Use();
                     break;
                 case Step.Call:
-                    if (!feedback && elapsed >= 1.15f)
+                    if (!feedback && elapsed >= 1.85f)
                     {
                         feedback = true;
                         city.Player.Interactor.ShowFeedback(CityStreetUtilityInteraction.PhoneBoothPlaceholderKey,1.32f);
                     }
-                    if (elapsed >= 2.64f) Change(Step.Inspect);
+                    if (elapsed >= 2.88f)
+                    {
+                        ResetDial();
+                        Change(Step.Inspect);
+                    }
+                    break;
+                case Step.HangingUp:
+                    if (elapsed >= .38f)
+                    {
+                        ResetDial();
+                        Change(Step.Leaving);
+                    }
                     break;
                 case Step.Leaving:
                     if (Walk(exit, true)) Change(Step.Closing);
                     break;
                 case Step.Closing:
+                    if (previous < .70f && elapsed >= .70f)
+                        RetroAudio.PlayAt(model.Phone ? RetroSfxId.BoothLatch : RetroSfxId.BinLidShut,model.Handle);
                     if (elapsed >= .94f) { model.SetOpen(0f); Change(Step.Return); }
                     break;
                 case Step.Return:
@@ -185,9 +253,30 @@ namespace BarPromenade
             if (model.Phone && Mathf.Abs(yaw) <= 75f)
             {
                 feedback = false;
+                nextClick = 0;
                 Change(Step.Call);
             }
             else Change(model.Phone ? Step.Leaving : Step.Closing);
+            return true;
+        }
+
+        internal bool RequestBoothExit()
+        {
+            if (!model || !model.Phone || Phase == Step.Idle) return false;
+            exitRequested = true;
+            switch (Phase)
+            {
+                case Step.Approach: controller.CancelActiveInteraction(); break;
+                case Step.Inspect:
+                case Step.Entering: Change(Step.Leaving); break;
+                case Step.Call:
+                    hangLift = receiverLift;
+                    hangGrip = receiverGrip;
+                    hangPoint = pointingWeight;
+                    ReleaseKey();
+                    Change(Step.HangingUp);
+                    break;
+            }
             return true;
         }
 
@@ -202,7 +291,8 @@ namespace BarPromenade
             if (!walking)
             {
                 visual.SampleInteractionNeutralPose();
-                float lean = model.Phone ? 0f : 29f * opening;
+                float lean = model.Phone ? (Phase == Step.Call ? 11f*Ease(.36f,.76f)*(1f-Ease(1.82f,2.08f)) :
+                    Phase == Step.HangingUp ? 11f*hangPoint*(1f-Ease(0f,.30f)) : 0f) : 29f * opening;
                 spine.rotation = Quaternion.AngleAxis(lean, transform.right) * spine.rotation;
             }
             Vector3 eyes = (leftEye.position + rightEye.position)*.5f + transform.forward*.035f;
@@ -222,16 +312,24 @@ namespace BarPromenade
                     transform.forward, transform.right * (leftSide ? -1f : 1f), reach);
                 fingers.SetOwnedGrip(this,leftSide,reach*.83f);
             }
-            else if (Phase == Step.Call)
+            else if (Phase == Step.Call || Phase == Step.HangingUp)
             {
-                float lift = Ease(.26f,.72f)*(1f-Ease(2.02f,2.40f));
-                model.SetReceiver(eyes-transform.right*.115f-Vector3.up*.075f, lift);
-                float grip = Ease(0f,.25f)*(1f-Ease(2.40f,2.62f));
-                left.Reach(model.Receiver,Vector3.up,transform.forward,-transform.right,grip);
-                fingers.SetOwnedGrip(this,true,grip*.86f);
-                float press = Ease(.58f,.82f)*(1f-Ease(1.10f,1.34f));
-                right.Reach(model.Key-transform.forward*(.025f*Mathf.Abs(Mathf.Sin(elapsed*19f))),
-                    Vector3.up,transform.forward,transform.right,press);
+                bool hanging = Phase == Step.HangingUp;
+                receiverLift = hanging ? hangLift*(1f-Ease(0f,.28f)) : Ease(.26f,.72f)*(1f-Ease(2.23f,2.64f));
+                receiverGrip = hanging ? hangGrip*(1f-Ease(.27f,.37f)) : Ease(0f,.25f)*(1f-Ease(2.64f,2.86f));
+                model.SetReceiver(eyes-transform.right*.115f-Vector3.up*.075f,receiverLift);
+                if (!receiverOffHook && !hanging && elapsed < 1f && receiverLift > .04f)
+                {
+                    receiverOffHook = true;
+                    RetroAudio.PlayAt(RetroSfxId.HandsetLift,model.Receiver);
+                }
+                if (receiverOffHook && receiverLift < .025f) SeatReceiver();
+                left.Reach(model.Receiver,Vector3.up,transform.forward,-transform.right,receiverGrip);
+                fingers.SetOwnedGrip(this,true,receiverGrip*.86f);
+                pointingWeight = hanging ? hangPoint*(1f-Ease(0f,.28f)) : Ease(.45f,.76f)*(1f-Ease(1.75f,2.05f));
+                if (!hanging) SampleDial();
+                fingers.SetOwnedGrip(this,false,pointingWeight);
+                right.Point(pointTarget,indexPad,transform,pointingWeight);
             }
             if (DebugFreeCamera.IsAnyActive) { ShowHead(); return; }
             Pose wide = Phase == Step.Return ? follow.ResolveFollowPose(exit) : initialCamera;
@@ -251,6 +349,46 @@ namespace BarPromenade
         }
 
         private float Ease(float start,float end) => Mathf.SmoothStep(0f,1f,Mathf.InverseLerp(start,end,elapsed));
+
+        private void SampleDial()
+        {
+            int key = Mathf.Clamp(Mathf.FloorToInt((elapsed-FirstPress+.11f)/PressInterval),0,2);
+            float contact = FirstPress+key*PressInterval;
+            float stroke = Ease(contact-.09f,contact)*(1f-Ease(contact+.08f,contact+.17f));
+            float travel = Mathf.InverseLerp(.85f,1f,stroke);
+            if (activeKey != key) ReleaseKey();
+            activeKey = key;
+            model.SetKeyTravel(key,travel);
+            Vector3 face = model.KeyFace(key);
+            float move = key < 2 ? Ease(contact+.17f,contact+PressInterval-.11f) : 0f;
+            pointTarget = Vector3.Lerp(face,model.DialKey(Mathf.Min(key+1,2)),move) +
+                model.transform.forward * (.028f * (1f-Mathf.Clamp01(stroke/.85f)));
+            if (travel >= .65f && key >= nextClick)
+            {
+                nextClick = key+1;
+                RetroAudio.PlayAt(RetroSfxId.PayphoneKey,face);
+            }
+        }
+
+        private void SeatReceiver()
+        {
+            receiverOffHook = false;
+            RetroAudio.PlayAt(RetroSfxId.HandsetSeat,model.Receiver);
+        }
+        private void ReleaseKey()
+        {
+            if (activeKey >= 0) model.SetKeyTravel(activeKey,0f);
+            activeKey = -1;
+        }
+        private void ResetDial()
+        {
+            ReleaseKey();
+            model.SetReceiver(model.Receiver,0f);
+            if (receiverOffHook) SeatReceiver();
+            fingers.SetOwnedGrip(this,false,0f);
+            fingers.SetOwnedGrip(this,true,0f);
+            receiverLift = receiverGrip = pointingWeight = 0f;
+        }
         private void ShowHead() { hiddenHead?.Restore(); hiddenHead = null; }
         private void ReleaseHands() { fingers.ReleaseGrip(this,true); fingers.ReleaseGrip(this,false); ownsHands = false; }
 
@@ -263,7 +401,7 @@ namespace BarPromenade
         {
             if (model)
             {
-                if (model.Phone) model.SetReceiver(model.Receiver,0f);
+                if (model.Phone) { ReleaseKey(); model.SetReceiver(model.Receiver,0f); }
                 model.CloseWhenClear(transform);
             }
             if (ownsHands) ReleaseHands();
@@ -271,8 +409,8 @@ namespace BarPromenade
             ShowHead();
             if (cameraLoan != null)
             {
-                lens.nearClipPlane = initialNear;
-                if (!DebugFreeCamera.IsAnyActive)
+                if (lens) lens.nearClipPlane = initialNear;
+                if (lens && follow && !DebugFreeCamera.IsAnyActive)
                 {
                     var pose = follow.ResolveFollowPose(transform.position);
                     lens.transform.SetPositionAndRotation(pose.position,pose.rotation);

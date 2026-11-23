@@ -13,9 +13,11 @@ samples and drives the seated hero across both seams. `CityTerracePilotPlayModeT
 covers boarding and transfers.
 
 Placed bins by service yards and phones by public approaches. The hero opens
-the lid, inspects wet cardboard, enters the booth and tries the handset.
-`LiveCity_StreetUtilitiesWalkOpenCallAndLeave` exercised public approaches,
-first-person interactions and return to walking. The Blender FBX check reads
+the lid, inspects wet cardboard and dials with the extended right index.
+Esc/Q hang up and walk out from any view. The lid, door, cradle and moving
+keys play generated mechanical contacts in the world mix.
+`LiveCity_StreetUtilitiesWalkOpenCallAndLeave` verified public approaches,
+rendered index contact, physical key travel, both keyboard exits and audible cues. The Blender FBX check reads
 the keys from the caller's side and measures the cardboard against all walls.
 
 ## 2026-11-22

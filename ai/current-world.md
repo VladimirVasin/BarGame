@@ -428,7 +428,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   Two seven-tier climbs link coast, Lower Court and upper homes. Streamed
   Ridge/lowland districts share the hero, bus fleet and map.
   Bevelled stair cuts to tiers/court/crest. Soil blends at curbs, grass off paths/loft.
-  Home bench→truss/ravine/roofs. Yard bins open. Lit booths at loft/kiosk admit first-person calls.
+  Home bench→truss/ravine/roofs. Bins clang. Loft/kiosk booths: index dials, Esc/Q exits mid-call.
   West Lane6: (-24,-8)/4fl/X-99.2; (-25,-8)/3fl/X-84.
   `CityHillsideBenchPocketPlan`:pawnshop≤45mXZ;origins fixed;West11/13 face+Z/new docks.
   Plaza/stone1.6m по грунту с мягким краем→footways;West landing:AsphaltRoad/Concrete.

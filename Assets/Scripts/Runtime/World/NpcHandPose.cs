@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace BarPromenade
 {
-    public enum NpcHandGripKind { Cylindrical = 0, WineBowl = 1, SnifterBowl = 2, Cigarette = 3, Bottle = 4 }
+    public enum NpcHandGripKind { Cylindrical = 0, WineBowl = 1, SnifterBowl = 2, Cigarette = 3, Bottle = 4, Pointing = 5 }
 
     /// <summary>Neutral hand anatomy measured in rotation-only hand space, in metres.</summary>
     public readonly struct AnatomicalHandFrame
@@ -93,6 +93,7 @@ namespace BarPromenade
             => Hand(isLeft).GetVariantFrame(kind);
 
         public NpcHandGripKind GetGripKind(bool isLeft) => Hand(isLeft).Kind;
+        internal Vector3 ExtendedIndexPad(bool isLeft) => Hand(isLeft).ExtendedIndexPad();
 
         public static NpcHandGripKind GripKindForVessel(BarDrinkVesselKind vessel)
             => vessel == BarDrinkVesselKind.WineGlass ? NpcHandGripKind.WineBowl
@@ -106,6 +107,7 @@ namespace BarPromenade
             NpcHandGripKind.SnifterBowl => .046f,
             NpcHandGripKind.Cigarette => .00325f,
             NpcHandGripKind.Bottle => .0147796875f,
+            NpcHandGripKind.Pointing => 0f,
             _ => throw new ArgumentOutOfRangeException(nameof(kind))
         };
 
@@ -273,6 +275,7 @@ namespace BarPromenade
             private readonly Dictionary<NpcHandGripKind, AnatomicalHandFrame> variantFrames = new();
             private AnatomicalHandFrame anatomicalFrame;
             private bool hasAnatomicalFrame;
+            private Vector3? extendedPad;
 
             public AnatomicalHandFrame AnatomicalFrame
             {
@@ -414,6 +417,7 @@ namespace BarPromenade
                     foreach (KeyValuePair<NpcHandGripKind, int[]> variant in variantShapes)
                         variant.Value[part] = CharacterJointDeformation.FindShape(mesh, VariantName(variant.Key));
                     hasAnatomicalFrame = false;
+                    extendedPad = null;
                     variantFrames.Clear();
                 }
             }
@@ -442,7 +446,7 @@ namespace BarPromenade
 
             public AnatomicalHandFrame GetVariantFrame(NpcHandGripKind kind)
             {
-                if (kind == NpcHandGripKind.Cylindrical) return AnatomicalFrame;
+                if (kind == NpcHandGripKind.Cylindrical || kind == NpcHandGripKind.Pointing) return AnatomicalFrame;
                 if (kind == NpcHandGripKind.Bottle) return PlayerVodkaGripCatalog.Frame(AnatomicalFrame);
                 if (kind == NpcHandGripKind.Cigarette)
                 {
@@ -479,6 +483,7 @@ namespace BarPromenade
                 NpcHandGripKind.SnifterBowl => "SnifterBowlGrip",
                 NpcHandGripKind.Cigarette => "SmokingGrip",
                 NpcHandGripKind.Bottle => "BottleGrip",
+                NpcHandGripKind.Pointing => "PointingFist",
                 _ => throw new ArgumentOutOfRangeException(nameof(kind))
             };
 
@@ -542,6 +547,34 @@ namespace BarPromenade
 
             private Vector3 MeasureNeutralCentre(SkinnedMeshRenderer renderer)
             {
+                Vector3[] vertices = NeutralVerticesInHand(renderer);
+                Vector3 sum = Vector3.zero;
+                foreach (Vector3 vertex in vertices) sum += vertex;
+                return sum / vertices.Length;
+            }
+
+            public Vector3 ExtendedIndexPad()
+            {
+                Vector3 axis = AnatomicalFrame.FingerDirectionInHand;
+                if (extendedPad.HasValue) return extendedPad.Value;
+                foreach (var surface in Binding.Renderers)
+                {
+                    if (!surface.name.StartsWith("GEO_Finger0.", StringComparison.Ordinal)) continue;
+                    Vector3[] vertices = NeutralVerticesInHand(surface);
+                    float end = float.NegativeInfinity;
+                    foreach (Vector3 vertex in vertices) end = Mathf.Max(end, Vector3.Dot(vertex, axis));
+                    Vector3 sum = Vector3.zero;
+                    int count = 0;
+                    foreach (Vector3 vertex in vertices)
+                        if (Vector3.Dot(vertex, axis) >= end - .002f) { sum += vertex; count++; }
+                    extendedPad = sum / count;
+                    return extendedPad.Value;
+                }
+                throw new InvalidOperationException("Pointing needs the hero's index surface.");
+            }
+
+            private Vector3[] NeutralVerticesInHand(SkinnedMeshRenderer renderer)
+            {
                 Mesh mesh = renderer.sharedMesh;
                 Transform[] bones = renderer.bones;
                 int bone = Array.IndexOf(bones, Binding.Hand);
@@ -549,11 +582,10 @@ namespace BarPromenade
                     throw new InvalidOperationException("An anatomical hand mesh must retain its original hand bone.");
                 Matrix4x4 bindPose = mesh.bindposes[bone];
                 Vector3[] vertices = mesh.vertices;
-                Vector3 sum = Vector3.zero;
                 Quaternion inverse = Quaternion.Inverse(Binding.Hand.rotation);
                 for (int index = 0; index < vertices.Length; index++)
-                    sum += inverse * Binding.Hand.TransformVector(bindPose.MultiplyPoint3x4(vertices[index]));
-                return sum / vertices.Length;
+                    vertices[index] = inverse * Binding.Hand.TransformVector(bindPose.MultiplyPoint3x4(vertices[index]));
+                return vertices;
             }
         }
     }
