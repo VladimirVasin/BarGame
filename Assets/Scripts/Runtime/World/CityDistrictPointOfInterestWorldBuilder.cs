@@ -1166,10 +1166,15 @@ namespace BarPromenade
             recipe.SetParent(site,false);
             recipe.localPosition=origin;
             recipe.localRotation=Quaternion.LookRotation(forward);
+            Transform authoredBench = null;
             foreach(string part in new[]{"Yard","Hall"})
             {
                 GameObject model=CityCanneryAssetProvider.Create(part,recipe);
-                if(part=="Yard")CityCanneryAssetProvider.ConfigureYard(model,plan);
+                if(part=="Yard")
+                {
+                    CityCanneryAssetProvider.ConfigureYard(model,plan);
+                    authoredBench = CityCanneryAssetProvider.FindPart(model, "FactoryRestBench");
+                }
                 if(part=="Hall")
                 {
                     Transform anchor=CityCanneryAssetProvider.FindPart(model,"ANCHOR_Sign");
@@ -1209,24 +1214,24 @@ namespace BarPromenade
                 }
                 if(part=="Hall"&&!homeExterior)
                 {
-                    for(int i=0;i<4;i++)
+                    Vector3[] workPoints = { new Vector3(-5.3f,1.15f,-2.25f), new Vector3(-4.95f,1.48f,-.42f),
+                        new Vector3(-5.45f,1.45f,2f), new Vector3(-5.5f,1.22f,5.05f) };
+                    for(int i=0;i<workPoints.Length;i++)
                     {
                         Transform anchor=CityCanneryAssetProvider.FindPart(model,"ANCHOR_HallLight"+i);
                         var host=new GameObject("Cannery Ceiling Light "+i);
                         host.transform.SetParent(recipe,false);
                         // The existing practicals expose the people and their
                         // hands from the public aisle, above the machine tops.
-                        Vector3[] workPoints={new Vector3(-3.2f,1.4f,-5.9f),new Vector3(-6.65f,1.4f,-1.4f),
-                            new Vector3(-6.4f,1.45f,1.7f),new Vector3(-6.4f,1.35f,5.1f)};
                         host.transform.SetPositionAndRotation(anchor.position,
                             Quaternion.LookRotation(recipe.TransformPoint(workPoints[i])-anchor.position));
                         Light light=host.AddComponent<Light>();
                         light.type=LightType.Spot;
-                        light.color=new Color(.87f,1f,.90f);
+                        light.color=new Color(.97f,1f,.94f);
                         light.range=6;
-                        light.spotAngle=96;
-                        light.innerSpotAngle=65;
-                        light.intensity=4.5f;
+                        light.spotAngle=103;
+                        light.innerSpotAngle=72;
+                        light.intensity=5.4f;
                         light.shadows=LightShadows.Soft;
                         light.shadowBias=.025f;
                         light.shadowNormalBias=.1f;
@@ -1240,40 +1245,21 @@ namespace BarPromenade
                     renderer.receiveShadows=false;
                 }
             }
-            BuildCanneryWaitingBench(recipe, homeExterior);
+            BuildCanneryWaitingBench(recipe, authoredBench, homeExterior);
         }
 
-        private static void BuildCanneryWaitingBench(Transform parent, bool homeExterior)
+        private static void BuildCanneryWaitingBench(Transform parent, Transform authoredBench, bool homeExterior)
         {
-            // Reuse the metre-space Blender bench. Its narrow depth fits the
-            // facade pocket behind the crew, clear of both goods-door routes.
             var bench = new GameObject("Cannery Waiting Bench");
             bench.transform.SetParent(parent, false);
             bench.transform.localPosition = CityCanneryPlan.WaitingBenchLocalPosition;
             bench.transform.localRotation = Quaternion.LookRotation(Vector3.right);
-            CityMiscAssetProvider provider = CityMiscAssetProvider.LoadOrThrow();
-            Bounds bounds = default;
-            for (int i = 0; i < CityMiscAssetProvider.GetPartCount(CityMiscKind.YardBench); i++)
-            {
-                CityMiscMeshPart part = provider.GetPartOrThrow(CityMiscKind.YardBench, 0, i);
-                var model = new GameObject(part.Component);
-                model.transform.SetParent(bench.transform, false);
-                model.AddComponent<MeshFilter>().sharedMesh = part.Mesh;
-                var renderer = model.AddComponent<MeshRenderer>();
-                bool timber = part.Role == CityMiscMeshRole.Timber;
-                CityPointOfInterestSurfaceAppearance.Apply(renderer,
-                    timber ? CityPointOfInterestSurfaceKind.Timber : CityPointOfInterestSurfaceKind.PaintedMetal,
-                    SurfaceProjection.BoxXZ,
-                    timber ? new Color(.24f, .19f, .14f) : new Color(.19f, .20f, .19f));
-                ConfigureRenderer(model, homeExterior);
-                if (i == 0) bounds = part.Mesh.bounds;
-                else bounds.Encapsulate(part.Mesh.bounds);
-            }
+            authoredBench.SetParent(bench.transform, true);
             if (!homeExterior)
             {
                 var body = bench.AddComponent<BoxCollider>();
-                body.center = bounds.center;
-                body.size = bounds.size;
+                body.center = new Vector3(0, .26f, 0);
+                body.size = new Vector3(1.85f, .52f, .52f);
             }
         }
 

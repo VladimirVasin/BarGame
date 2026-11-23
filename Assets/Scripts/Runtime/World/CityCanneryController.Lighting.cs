@@ -15,10 +15,10 @@ namespace BarPromenade
             host.transform.SetPositionAndRotation(anchor.position, Quaternion.LookRotation(target - anchor.position));
             ServiceWorkLight = host.AddComponent<Light>();
             ServiceWorkLight.type = LightType.Spot;
-            ServiceWorkLight.color = new Color(1f, .84f, .63f);
+            ServiceWorkLight.color = new Color(1f, .86f, .68f);
             ServiceWorkLight.range = 4.8f;
-            ServiceWorkLight.spotAngle = 88f;
-            ServiceWorkLight.innerSpotAngle = 54f;
+            ServiceWorkLight.spotAngle = 96f;
+            ServiceWorkLight.innerSpotAngle = 62f;
             ServiceWorkLight.shadows = LightShadows.Hard;
             ServiceWorkLight.shadowBias = .018f;
             ServiceWorkLight.shadowNormalBias = .08f;

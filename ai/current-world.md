@@ -1198,7 +1198,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   Cramped blueprints retain nonoperational mol;
 - Cannery: `8 x 14 m` hall/`18 x 18 m` site/bay/public bypass.
   Side/public + west/staff openings; machines/glass stay.
-  `CityCanneryPlan`: ten Blender parts/five maps/port surfaces, fifteen cans/
+  `CityCanneryPlan`: ten Blender parts; fittings atlas, wash tile, resin, brushed steel, fifteen cans/
   three cartons/four workers/driver. `CanneryReceiverActor`: athletic `1.96 m`,
   Hat/3D glasses/painted face/arm ink/5 clips; free-hand adjustment.
   Unload→two-hand carry→outdoor scales→release/settle/nod→support; empty=0.

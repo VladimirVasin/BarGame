@@ -537,6 +537,31 @@ namespace BarPromenade.Tests.PlayMode
                     Is.True,root.name+" still renders "+renderer.name);
         }
 
+        private static void AssertCanneryCanPacking(CityCanneryController cannery)
+        {
+            cannery.ApplyAt(CanneryTime(cannery,CityCanneryProductionStage.Seal,.5f));
+            Assert.That(cannery.VisibleFilledCanCount,Is.EqualTo(15));
+            Assert.That(cannery.VisibleSealedCanCount,Is.InRange(1,14));
+            cannery.ApplyAt(CanneryTime(cannery,CityCanneryProductionStage.LoadRetort,.5f));
+            Assert.That(cannery.VisibleSealedCanCount,Is.EqualTo(15));
+            var units=new Transform[15];
+            for(int i=0;i<15;i++) units[i]=CityCanneryAssetProvider.FindPart(cannery.transform.gameObject,"CanUnit"+i.ToString("D2"));
+            cannery.ApplyAt(CanneryTime(cannery,CityCanneryProductionStage.Pack,.999f));
+            for(int i=0;i<15;i++)
+            {
+                Transform target=CityCanneryAssetProvider.FindPart(cannery.Equipment.gameObject,"ANCHOR_PackingCan"+i.ToString("D2"));
+                Assert.That(Vector3.Distance(units[i].position,target.position),Is.LessThan(.002f),"Same can reaches its carton slot "+i);
+                Assert.That(units[i].gameObject.activeInHierarchy,Is.True);
+                // Inspect rendered lid vertices: an imported can must stand
+                // upright, with its lid at the authored height above its base.
+                Transform lid=CityCanneryAssetProvider.FindPart(units[i].gameObject,"CanLid"+i.ToString("D2"));
+                foreach(MeshFilter mesh in lid.GetComponentsInChildren<MeshFilter>(true))
+                foreach(Vector3 vertex in mesh.sharedMesh.vertices)
+                    Assert.That(mesh.transform.TransformPoint(vertex).y-units[i].position.y,
+                        Is.InRange(.093f,.104f),"Upright can lid "+i);
+            }
+        }
+
         private static void ValidateCanneryVisualProducts(CityCanneryController cannery)
         {
             foreach(string role in new[]{"CanneryFloor","WetFloor","WashWall","Stainless","Insulation","Cardboard"})
@@ -566,27 +591,7 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(high.y-low.y,Is.GreaterThan(.35f),section+" hangs vertically");
                 Assert.That(high.z-low.z,Is.LessThan(.20f),section+" remains a thin garment");
             }
-            cannery.ApplyAt(CanneryTime(cannery,CityCanneryProductionStage.Seal,.5f));
-            Assert.That(cannery.VisibleFilledCanCount,Is.EqualTo(15));
-            Assert.That(cannery.VisibleSealedCanCount,Is.InRange(1,14));
-            cannery.ApplyAt(CanneryTime(cannery,CityCanneryProductionStage.LoadRetort,.5f));
-            Assert.That(cannery.VisibleSealedCanCount,Is.EqualTo(15));
-            var units=new Transform[15];
-            for(int i=0;i<15;i++) units[i]=CityCanneryAssetProvider.FindPart(cannery.transform.gameObject,"CanUnit"+i.ToString("D2"));
-            cannery.ApplyAt(CanneryTime(cannery,CityCanneryProductionStage.Pack,.999f));
-            for(int i=0;i<15;i++)
-            {
-                Transform target=CityCanneryAssetProvider.FindPart(cannery.Equipment.gameObject,"ANCHOR_PackingCan"+i.ToString("D2"));
-                Assert.That(Vector3.Distance(units[i].position,target.position),Is.LessThan(.002f),"Same can reaches its carton slot "+i);
-                Assert.That(units[i].gameObject.activeInHierarchy,Is.True);
-                // Inspect rendered lid vertices: an imported can must stand
-                // upright, with its lid at the authored height above its base.
-                Transform lid=CityCanneryAssetProvider.FindPart(units[i].gameObject,"CanLid"+i.ToString("D2"));
-                foreach(MeshFilter mesh in lid.GetComponentsInChildren<MeshFilter>(true))
-                foreach(Vector3 vertex in mesh.sharedMesh.vertices)
-                    Assert.That(mesh.transform.TransformPoint(vertex).y-units[i].position.y,
-                        Is.InRange(.093f,.104f),"Upright can lid "+i);
-            }
+            AssertCanneryCanPacking(cannery);
             cannery.ApplyAt(CanneryTime(cannery,CityCanneryProductionStage.Heat,.5f));
             Assert.That(cannery.RetortPressureFactor,Is.GreaterThan(.9f));
             Assert.That(cannery.SteamParticleCount,Is.Zero);

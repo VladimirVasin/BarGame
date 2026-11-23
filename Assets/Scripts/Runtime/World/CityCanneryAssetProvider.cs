@@ -47,7 +47,8 @@ namespace BarPromenade
                 renderer.shadowCastingMode = glass || lamp ? ShadowCastingMode.Off : ShadowCastingMode.On;
                 renderer.receiveShadows = !glass && !lamp;
                 renderer.lightProbeUsage = LightProbeUsage.BlendProbes;
-                renderer.reflectionProbeUsage = ReflectionProbeUsage.Off;
+                renderer.reflectionProbeUsage = FormedSurfaces.ContainsKey(role) ?
+                    ReflectionProbeUsage.BlendProbes : ReflectionProbeUsage.Off;
                 if (lamp) CityNightGlowRegistry.Register(renderer, new Color(1f, .72f, .47f) * 2.5f);
             }
             if (name == "Pallet")
@@ -170,8 +171,10 @@ namespace BarPromenade
                 else UnityEngine.Object.DestroyImmediate(glassMaterial);
             }
             glassMaterial = null;
-            foreach (Material surface in SurfaceMaterials.Values)
+            foreach (var entry in SurfaceMaterials)
             {
+                if (FormedSurfaces.ContainsKey(entry.Key)) continue;
+                Material surface = entry.Value;
                 if (surface == null) continue;
                 if (Application.isPlaying) UnityEngine.Object.Destroy(surface);
                 else UnityEngine.Object.DestroyImmediate(surface);

@@ -6,12 +6,12 @@
     {
       "name": "Hall",
       "bounds_min": [
-        -8.325,
+        -8.37,
         0.08,
         -7.275
       ],
       "bounds_max": [
-        0.325,
+        0.3975,
         5.24,
         7.275
       ],
@@ -201,8 +201,8 @@
           ]
         }
       ],
-      "triangles": 6256,
-      "geometry_signature": "e94d77244bdd8fbbd4e81723cb652c44e71e10abe94807c052a55f8933c6b9d0"
+      "triangles": 11116,
+      "geometry_signature": "9522ddc4ed55b94c2395ae819dda8f787bc091853bee2192fe23ee5ec4fc7d4f"
     },
     {
       "name": "Equipment",
@@ -214,7 +214,7 @@
       "bounds_max": [
         1.645,
         4.035,
-        7.75
+        7.768
       ],
       "anchors": [
         {
@@ -1298,8 +1298,8 @@
           ]
         }
       ],
-      "triangles": 34680,
-      "geometry_signature": "bcd725d568c9d50caf80249195e27fe15fb4e8f235c36f5613515a62168bdd1b"
+      "triangles": 34700,
+      "geometry_signature": "5b19a26d42be879f486f0713b36dc3e50c86f4f9ac99824d42fa95e5361ca2e3"
     },
     {
       "name": "Truck",
@@ -2043,8 +2043,8 @@
           ]
         }
       ],
-      "triangles": 11990,
-      "geometry_signature": "9d6ba5f6fa2f24a35851b748a6dd85e0697fd6e8871436f6f53714ab4d52fd6e",
+      "triangles": 12834,
+      "geometry_signature": "1b5a424aa3c2981e0b01584368c48bb174d608510467ef12e3cf87c92ce894f3",
       "folded_bounds_min": [
         -1.2,
         0.0,
@@ -2094,19 +2094,19 @@
           ]
         }
       ],
-      "triangles": 692,
-      "geometry_signature": "4a22c875239837f0b6ebf707b8c3e73bd241e267fd4041cc952dd2aba786df8b"
+      "triangles": 1196,
+      "geometry_signature": "7b9c2de86cd91c4a317f4ab1dfa0cd2159ce033104b9bd145a453f36c1b4547b"
     },
     {
       "name": "RetortBasket",
       "bounds_min": [
-        -0.49,
+        -0.495,
         0.0,
         -0.52
       ],
       "bounds_max": [
-        0.49,
-        0.62,
+        0.495,
+        0.62578,
         0.52
       ],
       "anchors": [
@@ -2127,8 +2127,8 @@
           ]
         }
       ],
-      "triangles": 468,
-      "geometry_signature": "967025e25fcb542eac7d7f543da5fdc7265a175faaa032296d3cc23ec12e82c1"
+      "triangles": 652,
+      "geometry_signature": "6647efe428d894e4a8a9016c436a3ef4f12ce22056be7a1e2359667a2303568d"
     },
     {
       "name": "CanTray",
@@ -2640,8 +2640,8 @@
           ]
         }
       ],
-      "triangles": 19168,
-      "geometry_signature": "ca81eee238a00000820723185d63ab57a1a1bf366603f4995303f1429e97901f"
+      "triangles": 14664,
+      "geometry_signature": "19133413d1bb85fed6173125988f0b6dc6ac8ace4bfa4158d6db0cd62f2e69b0"
     },
     {
       "name": "CartonStack",
@@ -2761,19 +2761,19 @@
           ]
         }
       ],
-      "triangles": 684,
-      "geometry_signature": "61074027db2f36b0740e1d0e64bde97f4deae8ee30c39ec45653f7212eee2031"
+      "triangles": 964,
+      "geometry_signature": "f49d4e5c044563383b871984ff1e3da3c68dfd18bd67ae5d0fe1eb2762d3f382"
     },
     {
       "name": "Trolley",
       "bounds_min": [
-        -0.38,
+        -0.384,
         0.0,
         -0.96
       ],
       "bounds_max": [
-        0.38,
-        1.11,
+        0.384,
+        1.11329,
         0.6
       ],
       "anchors": [
@@ -2834,8 +2834,8 @@
           ]
         }
       ],
-      "triangles": 312,
-      "geometry_signature": "434342991f92ded82ffec6d8cae32c038464ab19bd1eb897e4178c933d7a7a4c"
+      "triangles": 448,
+      "geometry_signature": "64fe7506cbc1a9e5522885c7da0f05dbfe6962ae2d9df5d910a584cdaf0ec59b"
     },
     {
       "name": "Yard",
@@ -2846,10 +2846,18 @@
       ],
       "bounds_max": [
         9.0,
-        0.18,
+        0.601,
         10.0
       ],
       "anchors": [
+        {
+          "name": "FactoryRestBench",
+          "position": [
+            0.65,
+            0.08,
+            -2.25
+          ]
+        },
         {
           "name": "YardDriveway",
           "position": [
@@ -2867,8 +2875,8 @@
           ]
         }
       ],
-      "triangles": 992,
-      "geometry_signature": "0d222d2e175550d1a66a9b37d8ec54ed60ac7873446030882dd2ceabbbebb4e2"
+      "triangles": 1864,
+      "geometry_signature": "fa0a76b5fd37ae9030ccc153957ef39e5fbfa708f85f0729f03981fc1dec1c00"
     },
     {
       "name": "Workwear",

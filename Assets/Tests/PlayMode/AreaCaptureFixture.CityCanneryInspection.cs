@@ -21,6 +21,73 @@ namespace BarPromenade.Tests.PlayMode
 
     public sealed partial class AreaCaptureFixture
     {
+        [UnityTest, Explicit("Read the working cannery from its public approaches and inspect the moving product and hardware.")]
+        public IEnumerator CityCanneryFinishes()
+        {
+            GameSessionState.BeginNewGame();
+            GameSessionState.PrepareSupermarketReturn();
+            Assert.That(GameSessionState.TryStartGameTimeAt(12 * 60), Is.True);
+            CityGameRoot city = null;
+            yield return Capture(SceneIds.City, () =>
+            {
+                city = UnityEngine.Object.FindAnyObjectByType<CityGameRoot>();
+                return city != null && city.IsInitialized ? city : null;
+            }, () =>
+            {
+                var factory = city.Cannery;
+                factory.AutoAdvance = false;
+                factory.ForcePresentation = true;
+                Vector3 At(float x, float y, float z) => factory.Plan.World(new Vector3(x, y, z));
+                city.Player.Motor.Teleport(At(-1.1f, .25f, .2f));
+                AssertCanneryWaitingBench(city, factory);
+                AssertCanneryShippingScale(factory);
+                var scaleFace = CityCanneryAssetProvider.FindPart(factory.Equipment.gameObject, "ScaleHeadAndDeck__CanneryFinish");
+                Material fittings = scaleFace.GetComponent<MeshRenderer>().sharedMaterial;
+                Assert.That(fittings, Is.SameAs(CityCanneryAssetProvider.GetSurfaceMaterial("CanneryFinish")));
+                var atlas = (Texture2D)fittings.GetTexture("_BaseMap");
+                Assert.That(atlas.width, Is.EqualTo(2048));
+                Assert.That(atlas.wrapMode, Is.EqualTo(TextureWrapMode.Clamp));
+                Assert.That(fittings.GetTexture("_MetallicGlossMap"), Is.Not.Null);
+                Assert.That(fittings.IsKeywordEnabled("_METALLICSPECGLOSSMAP"), Is.True);
+                bool Pose(double time)
+                {
+                    factory.ApplyAt(time);
+                    return true;
+                }
+                double weigh = InspectionTime(factory, CityCanneryInspectionStage.Settle, 0, .62d);
+                double seal = CanneryTime(factory, CityCanneryProductionStage.Seal, .52f);
+                double heat = CanneryTime(factory, CityCanneryProductionStage.Heat, .52f);
+                double truck = TransferTime(factory, CityFishSupplyStage.UnloadFish, 0, .49f);
+                bool Night()
+                {
+                    if (GameSessionState.GameTimeOfDayMinutes < 21 * 60)
+                        GameSessionState.AdvanceGameTime((float)((22 * 60 - GameSessionState.GameTimeOfDayMinutes) /
+                            GameTimeState.GameMinutesPerRealSecond));
+                    city.DayNight.ApplyCurrentTime(true);
+                    return Pose(seal);
+                }
+                return new[] {
+                    Shot.At("cannery-shipping-street", At(6.2f, 1.8f, 11.1f), At(-2.1f, 2.22f, 3.6f), 65f, readyWhen: () => Pose(weigh)),
+                    Shot.At("cannery-receiving", At(3.6f, 1.8f, -9.3f), At(-.6f, 1.85f, -5.4f), 62f, readyWhen: () => Pose(seal)),
+                    Shot.At("cannery-shipping-scale", At(2.68f, 1.80f, 8.07f), At(.62f, 1.19f, 7.35f), 58f, readyWhen: () => Pose(weigh)),
+                    Shot.At("cannery-wash", At(-3.35f, 1.78f, -3.62f), At(-5.7f, 1.08f, -2.05f), 62f, readyWhen: () => Pose(seal)),
+                    Shot.At("cannery-seamer", At(-3.26f, 1.70f, .48f), At(-4.75f, 1.44f, -.36f), 64f, readyWhen: () => Pose(seal)),
+                    Shot.At("cannery-retort", At(-3.0f, 1.74f, 4.56f), At(-5.07f, 1.36f, 2.19f), 66f, readyWhen: () => Pose(heat)),
+                    Shot.At("cannery-tail-lift", At(8.25f, 1.8f, -7.6f), At(4.9f, 1.28f, -3.3f), 66f, readyWhen: () => Pose(truck)),
+                    Shot.At("cannery-night-shift", At(-1.12f, 1.78f, -.05f), At(-6.10f, 1.50f, -.57f), 66f, readyWhen: Night)
+                };
+            });
+            var cannery = city.Cannery;
+            city.Player.Motor.Teleport(cannery.Plan.World(new Vector3(8f, .3f, -7f)));
+            cannery.FactoryConversation.Suspend();
+            cannery.ApplyLifeAt(100d);
+            AssertCanneryCanPacking(cannery);
+            var cartons = new Transform[CityFishSupplyCycle.HandlingUnits];
+            for (int i = 0; i < cartons.Length; i++) cartons[i] = cannery.FinishedBox(i);
+            for (int i = 0; i < cartons.Length; i++) AssertCanneryCartonInspection(cannery, cartons, i, 0);
+            AssertCanneryInspectedLoading(cannery);
+        }
+
         [UnityTest]
         [Explicit("Authored receiver: measured body, glasses, painted speech, three continuous cartons, real clearance, restoration and pause. Run without -batchmode.")]
         [PrebuildSetup(typeof(CanneryReceiverAssetsSetup))]

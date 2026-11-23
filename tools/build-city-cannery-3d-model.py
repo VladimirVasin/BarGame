@@ -19,6 +19,7 @@ from mathutils import Vector
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 import interior_kit as kit
+import city_cannery_finishes as finishes
 spec = importlib.util.spec_from_file_location("cannery_port_surface_kit", ROOT / "tools/build-city-port-3d-model.py")
 port = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(port)
@@ -68,17 +69,6 @@ def panel_frame(g, x, z, width, low=.78, high=3.15):
         chamfer(g, (x, (low+high)*.5, zz), (.09, high-low, .09), METAL, .012)
     for y in (low, 1.95, high):
         chamfer(g, (x, y, z), (.09, .065, width), METAL, .012)
-
-
-def dial_ticks(g, center, radius, normal=(0,0,1), count=9):
-    """Unnumbered mechanical divisions, real face geometry with no added text."""
-    normal=Vector(normal);vertical=Vector((0,1,0));horizontal=vertical.cross(normal)
-    center=Vector(center);previous=g.role;g.role=None
-    for i in range(count):
-        angle=math.radians(-125+250*i/(count-1))
-        direction=horizontal*math.sin(angle)+vertical*math.cos(angle)
-        g.rod(center+direction*(radius*.72),center+direction*radius,.006,DARK,6)
-    g.role=previous
 
 
 def hall(mat):
@@ -161,7 +151,7 @@ def hall(mat):
         g.box((-4.9,.187,z),(3.9,.014,.19),DARK)
         for i in range(25):g.box((-6.75+i*.155,.20,z),(.035,.018,.18),METAL)
     g.role="WetFloor"
-    for x,z,width,depth in ((-4.72,-2.46,.68,.32),(-5.68,2.26,.51,.27)):
+    for x,z,width,depth in ((-4.62,-2.48,2.58,1.47),(-5.33,2.22,1.59,.91)):
         outline=[(-.50,-.22),(-.30,-.50),(.20,-.43),(.50,-.12),(.40,.37),(.08,.50),(-.38,.32)]
         vertices=[(x+dx*width,y,z+dz*depth) for y in (.182,.184) for dx,dz in outline]
         count=len(outline)
@@ -200,6 +190,7 @@ def hall(mat):
     obj(g,"HallVisible",root,mat);obj(c,"COL_HallWalls",root,mat)
     obj(glass,"CanneryGlass",root,mat);obj(roof,"HallRoof",root,mat)
     obj(lamps,"CanneryLampGlass",root,mat)
+    finishes.hall(port,root,mat)
     return root
 
 
@@ -210,15 +201,28 @@ def legs(g,x,z,width,depth,top):
             chamfer(g,(xx,.205,zz),(.17,.05,.17),METAL,.014)
 
 
+def spun_can_sheet(g,x,y,z,profile):
+    sides=16
+    vertices=[(x+r*math.cos(i*math.tau/sides),y+h,z+r*math.sin(i*math.tau/sides))
+              for r,h in profile for i in range(sides)]
+    faces=[tuple(range(sides))]
+    for row in range(len(profile)-1):
+        for i in range(sides):
+            lo=row*sides; j=(i+1)%sides
+            faces.append((lo+j,lo+i,lo+i+sides,lo+j+sides))
+    faces.append(tuple(reversed(range(len(vertices)-sides,len(vertices)))))
+    g.add(vertices,faces,CABIN)
+
+
 def can_body(g,x,y,z):
     """A closed bottom and open double wall; an unfilled can is visibly empty."""
-    g.role="Stainless";g.rod((x,y,z),(x,y+.008,z),.052,CABIN,12)
-    for i in range(12):
-        a,b=i*math.tau/12,(i+1)*math.tau/12
-        vertices=[(x+r*math.cos(t),yy,z+r*math.sin(t))
-                  for yy in (y+.008,y+.095) for r in (.047,.052) for t in (a,b)]
-        g.add(vertices,[(0,1,3,2),(4,6,7,5),(0,4,5,1),(2,3,7,6),(0,2,6,4),(1,5,7,3)],CABIN)
-    for yy in (y+.009,y+.094):ring(g,(x,yy,z),.052,.0025,METAL,(0,1,0),12)
+    g.role="Stainless"
+    # One spun sheet, including its recessed foot, two stiffening beads,
+    # rolled lip, interior wall and bottom. No internal overlapping sectors.
+    profile=((.042,0),(.052,.002),(.053,.008),(.050,.013),(.050,.028),
+             (.052,.031),(.050,.034),(.050,.063),(.052,.066),(.050,.069),
+             (.050,.088),(.054,.092),(.054,.095),(.051,.0965),(.047,.093),(.047,.008))
+    spun_can_sheet(g,x,y,z,profile)
     g.role=None
 
 
@@ -234,10 +238,11 @@ def can_contents(g,x,y,z):
 
 def can_lid(g,x,y,z):
     g.role="Stainless"
-    g.rod((x,y+.095,z),(x,y+.102,z),.057,CABIN,12)
-    ring(g,(x,y+.099,z),.050,.002,METAL,(0,1,0),12)
-    # A pressed concentric bead reads as a manufactured lid, with no brand.
-    ring(g,(x,y+.100,z),.034,.0015,METAL,(0,1,0),12)
+    # A single stamped sheet with a rolled lip and two concentric beads.
+    profile=((.048,.095),(.054,.095),(.057,.097),(.057,.100),
+             (.054,.102),(.051,.101),(.049,.098),(.037,.098),
+             (.035,.100),(.032,.100),(.030,.098),(.012,.098))
+    spun_can_sheet(g,x,y,z,profile)
     g.role=None
 
 
@@ -316,7 +321,7 @@ def crew_service_dressing(root,mat):
 
     stool=Geometry();cx,cz=-7.52,.75
     stool.role="Timber"
-    chamfer(stool,(cx,.672,cz),(.42,.055,.40),WOOD,.035)
+    chamfer(stool,(cx,.653,cz),(.42,.028,.40),WOOD,.035)
     stool.role=None
     for dx in (-1,1):
         for dz in (-1,1):
@@ -370,21 +375,18 @@ def shipping_scale(root,mat):
     # the shipping opening. Rotate its original metre geometry as one object,
     # including the zero wheel and the dial, which now faces the worker east.
     scale=empty("ShippingScale",root);g=Geometry()
-    chamfer(g,(-3.5,.30,-5.45),(1.25,.24,1.45),METAL,.04)
+    chamfer(g,(-3.5,.275,-5.45),(1.25,.19,1.45),METAL,.04)
     g.rod((-4.1,.42,-5.95),(-4.1,1.62,-5.95),.045,METAL,8)
     # The physical adjustment wheel remains attached to the relocated stand.
     g.rod((-4.1,1.22,-5.95),(-3.947,1.22,-5.98),.018,METAL,8)
     ring(g,(-3.945,1.22,-5.98),.044,.015,METAL,(1,0,0),10)
     for offset in (-.03,.03):
         g.rod((-3.945,1.22,-5.98),(-3.945,1.22+offset,-5.98),.008,METAL,6)
-    g.rod((-4.11,1.67,-6.05),(-4.11,1.67,-5.93),.19,METAL,16)
-    g.rod((-4.11,1.67,-5.929),(-4.11,1.67,-5.915),.155,CABIN,16)
-    dial_ticks(g,(-4.11,1.67,-5.907),.132)
-    ring(g,(-4.11,1.67,-5.914),.17,.015,METAL,(0,0,1),16)
     for i,vertex in enumerate(g.vertices):
         x,y,z=source(vertex)
         g.vertices[i]=source((.92+(z+5.45),y-.10,6.95-(x+3.5)))
     obj(g,"ShippingScaleVisible",scale,mat)
+    finishes.scale(port,scale,mat)
     dial=empty("MOVE_ScaleNeedle",root,(.47,1.57,7.56));d=Geometry()
     d.rod((0,0,0),(0,.07,-.095),.009,DARK,6);obj(d,"ScaleNeedle",dial,mat)
     collision_box("ShippingScalePlatform",root,mat,(.92,.20,6.95),(1.45,.24,1.25))
@@ -522,13 +524,13 @@ def equipment(mat):
     g.rod((-4.35,1.9,1.28),(-4.2,1.9,1.28),.155,METAL,16)
     g.rod((-4.199,1.9,1.28),(-4.19,1.9,1.28),.133,CABIN,16)
     ring(g,(-4.19,1.9,1.28),.143,.012,METAL,(1,0,0),16)
-    dial_ticks(g,(-4.18,1.9,1.28),.114,(1,0,0))
     pressure=empty("MOVE_RetortPressureNeedle",root,(-4.17,1.9,1.28));needle=Geometry()
     needle.rod((0,-.012,0),(0,.085,.040),.007,DARK,6)
     needle.rod((-.009,0,0),(.009,0,0),.020,METAL,10)
     obj(needle,"RetortPressureNeedleVisible",pressure,mat)
     door=empty("MOVE_RetortDoor",root,(-5.82,1.35,2.91));d=Geometry()
     d.rod((.82,0,-.07),(.82,0,.07),.80,METAL,20)
+    finishes.retort_cover(port,door,mat)
     ring(d,(.82,0,.10),.63,.028,METAL,(0,0,1),20)
     ring(d,(.82,0,.16),.23,.023,METAL,(0,0,1),12)
     for angle in (0,math.pi*.5,math.pi,math.pi*1.5):
@@ -684,6 +686,8 @@ def equipment(mat):
     anchor("ConveyorBendNorth",root,(-3.1,1.19,3.95));anchor("ConveyorBasketMouth",root,(-5,1.19,3.95))
     anchor("ConveyorPackBend",root,(-5.75,1.19,3.95));anchor("RetortTrayDock",root,(-5,1.19,3.34))
     crew_service_dressing(root,mat)
+    finishes.crew(port,root,mat)
+    finishes.machines(port,root,mat)
     obj(g,"EquipmentVisible",root,mat)
     for name,center,size in (("Wash",(-5,.71,-2.05),(2.25,1.06,1.2)),
                              ("Seamer",(-5,1.17,-.35),(2.5,1.98,1.45)),
@@ -802,8 +806,8 @@ def truck(mat):
     # Closed insulated goods body; separate leaves expose the actual interior.
     g.role="Insulation"
     for center,size in (((0,1.15,.1),(2.4,.1,4.2)),((0,3.15,.1),(2.4,.1,4.2)),
-                        ((-1.16,2.175,.45),(.08,1.95,3.5)),((1.16,2.175,.45),(.08,1.95,3.5)),
-                        ((-1.16,2.335,-1.49),(.08,1.63,.38)),((1.16,2.335,-1.49),(.08,1.63,.38)),
+                        ((-1.16,2.175,.45),(.06,1.95,3.5)),((1.16,2.175,.45),(.06,1.95,3.5)),
+                        ((-1.16,2.335,-1.49),(.06,1.63,.38)),((1.16,2.335,-1.49),(.06,1.63,.38)),
                         ((0,2.175,2.18),(2.4,1.95,.08))):
         chamfer(g,center,size,CABIN,.024)
     g.role=None
@@ -960,6 +964,7 @@ def truck(mat):
         # Resize only the goods leaf; its mechanisms retain proper thickness.
         d.vertices=[(v[0]*1.01/1.15,v[1],v[2]*1.9/2.2) for v in d.vertices]
         obj(d,"RearDoorVisible"+side,pivot,mat)
+        finishes.doors(port,pivot,direction,mat)
     lift=empty("MOVE_TailLift",root,(0,1.2,-1.88));l=Geometry()
     l.role="Deck";chamfer(l,(0,-.055,-1),(2.24,.11,2),METAL,.02);l.role=None
     for x in (-.82,.82):
@@ -974,6 +979,11 @@ def truck(mat):
         anchor('LiftFoldTip'+side,lift,(x,-.08,-.35))
     for z in (-.1,-1.91):l.box((0,.006,z),(2.14,.012,.045),EDGE)
     obj(l,"TailLiftVisible",lift,mat);anchor("TailLiftLoad",lift,(0,.01,-.8))
+    tread=finishes.Batch(port)
+    for x in (-.92,.92):
+        tread.box("deck",(x,.004,-1),(.29,.008,1.71),.0016)
+    tread.publish(lift,"LiftTread",mat)
+    finishes.transport(port,root,mat)
     truck_tail_lift_mechanism(root,lift,mat)
     anchor("TruckDriver",root,(-.56,1.56,4.0+TRUCK_CAB_OFFSET));anchor("DriverLeftHand",root,(-.76,2.01,4.5+TRUCK_CAB_OFFSET))
     anchor("DriverRightHand",root,(-.36,2.01,4.5+TRUCK_CAB_OFFSET));anchor("DriverFoot",root,(-.55,1.17,4.55+TRUCK_CAB_OFFSET))
@@ -1037,12 +1047,14 @@ def small_part(name,mat):
         chamfer(body,(0,.008,0),(.255,.016,.70),WOOD,.004)
         for x in (-.1235,.1235):chamfer(body,(x,.15,0),(.008,.29,.70),WOOD,.003)
         for z in (-.346,.346):chamfer(body,(0,.15,z),(.239,.29,.008),WOOD,.003)
-        obj(body,"CartonBody",root,mat)
+        carton_body=obj(body,"CartonBody",root,mat)
+        finishes.carton(port,carton_body,mat)
         for name,sign in (("Left",-1),("Right",1)):
             flap=empty("MOVE_CartonFlap"+name,root,(sign*.1275,.300,0));panel=Geometry()
             panel.role="Cardboard"
             chamfer(panel,(-sign*.06375,0,0),(.1275,.008,.70),WOOD,.003)
             obj(panel,"CartonFlap"+name,flap,mat)
+            finishes.flap(port,flap,sign,mat)
         seal=Geometry();seal.role="Cardboard"
         seal.box((0,.306,0),(.035,.004,.69),ROPE)
         obj(seal,"CartonSeal",root,mat)
@@ -1063,7 +1075,9 @@ def small_part(name,mat):
         g.rod((-.38,1.08,-.88),(.38,1.08,-.88),.03,METAL,8)
         anchor("Load",root,(0,0,0));anchor("TrolleyHandleLeft",root,(-.32,1.08,-.88))
         anchor("TrolleyHandleRight",root,(.32,1.08,-.88));anchor("Handle",root,(0,1.08,-.88))
-    if g.faces:obj(g,name+"Visible",root,mat)
+    if g.faces:
+        obj(g,name+"Visible",root,mat)
+        finishes.goods(port,root,name,mat)
     return root
 
 
@@ -1157,7 +1171,10 @@ def yard(mat):
         for z,length in ((-3.2,.72),(-1.75,.51),(.7,.83),(2.6,.48)):
             chamfer(g,(x,.087,z),(.10,.003,length),METAL,.001)
     g.role=None
-    obj(g,"YardVisible",root,mat);return root
+    obj(g,"YardVisible",root,mat)
+    finishes.ramp(port,root,mat)
+    finishes.bench(port,root,mat)
+    return root
 
 
 def build(mat):
@@ -1457,11 +1474,7 @@ def preview(roots,path):
 
 def source_surface_materials(roots):
     """New albedos are packed in the editable source after deterministic FBX export."""
-    specs={"CanneryFloor":("Floor",(.61,.68,.65),.24,0),
-           "WetFloor":("Floor",(.43,.52,.49),.58,0),
-           "WashWall":("WashWall",(.74,.81,.76),.26,0),
-           "Stainless":("Stainless",(.87,.93,.90),.40,.32),
-           "Insulation":("Insulation",(.80,.85,.79),.21,0),
+    specs={"Insulation":("Insulation",(.80,.85,.79),.21,0),
            "Cardboard":("Cardboard",(.78,.78,.73),.04,0)}
     materials={}
     def linear(c):return c/12.92 if c<=.04045 else ((c+.055)/1.055)**2.4
@@ -1477,6 +1490,7 @@ def source_surface_materials(roots):
         links.new(tex.outputs['Color'],multiply.inputs[1]);links.new(multiply.outputs[0],shader.inputs['Base Color'])
         shader.inputs['Roughness'].default_value=1-smoothness;shader.inputs['Metallic'].default_value=metallic
         materials[role]=material
+    materials.update(finishes.source_materials(bpy,ROOT/"Assets/Resources/City/Surfaces"))
     for root in roots:
         for part in root.children_recursive:
             if part.type!='MESH' or '__' not in part.name:continue

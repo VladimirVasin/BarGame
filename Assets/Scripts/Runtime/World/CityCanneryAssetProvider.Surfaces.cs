@@ -16,18 +16,26 @@ namespace BarPromenade
         }
         private static readonly Dictionary<string, Surface> Surfaces = new Dictionary<string, Surface>
         {
-            { "CanneryFloor", new Surface("CanneryFloorAlbedo",new Color(.61f,.68f,.65f),.24f) },
-            { "WetFloor", new Surface("CanneryFloorAlbedo",new Color(.43f,.52f,.49f),.58f) },
-            { "WashWall", new Surface("CanneryWashWallAlbedo",new Color(.74f,.81f,.76f),.26f) },
-            { "Stainless", new Surface("CanneryStainlessAlbedo",new Color(.87f,.93f,.90f),.40f,.32f) },
             { "Insulation", new Surface("CanneryInsulationAlbedo",new Color(.80f,.85f,.79f),.21f) },
             { "Cardboard", new Surface("CanneryCardboardAlbedo",new Color(.78f,.78f,.73f),.04f) }
+        };
+        private static readonly Dictionary<string, string> FormedSurfaces = new Dictionary<string, string>
+        {
+            { "CanneryFinish", "CanneryFittings" }, { "Stainless", "CanneryWorkSteel" },
+            { "WashWall", "CanneryGlaze" }, { "CanneryFloor", "CanneryResin" }, { "WetFloor", "CanneryWetResin" }
         };
         private static readonly Dictionary<string, Material> SurfaceMaterials = new Dictionary<string, Material>();
         public static Material GetSurfaceMaterial(string role)
         {
+            if (SurfaceMaterials.TryGetValue(role,out Material material) && material != null) return material;
+            if (FormedSurfaces.TryGetValue(role,out string asset))
+            {
+                material = Resources.Load<Material>("City/Surfaces/" + asset);
+                if (material == null) throw new InvalidOperationException("Missing cannery material " + asset);
+                SurfaceMaterials[role] = material;
+                return material;
+            }
             if (!Surfaces.TryGetValue(role,out Surface definition)) return CityPortAssetProvider.GetSurfaceMaterial(role);
-            if (SurfaceMaterials.TryGetValue(role,out Material material)&&material!=null) return material;
             Texture2D texture=Resources.Load<Texture2D>(ResourceFolder+"Textures/"+definition.Texture);
             Shader shader=Resources.Load<Shader>("Shaders/Lit");
             if (texture==null||shader==null) throw new InvalidOperationException("Cannery surface is missing: "+role);
