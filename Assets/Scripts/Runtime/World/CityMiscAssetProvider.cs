@@ -206,7 +206,7 @@ namespace BarPromenade
     public sealed partial class CityMiscAssetProvider : ScriptableObject
     {
         public const string ResourcePath = "City/CityMiscAssetProvider";
-        public const string GeneratorVersion = "4.18.0";
+        public const string GeneratorVersion = "4.19.0";
         public const string DesignId = "city_misc_citywide_v4";
         public const int ExpectedAssemblyCount = 145;
         public const int ExpectedMeshCount = 310;

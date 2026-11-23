@@ -1419,7 +1419,6 @@ namespace BarPromenade.Tests.PlayMode
 
             string[] runtimeDetails =
             {
-                "Lost Scarf",
                 "Last Route Island Collision",
                 "Departure Board Collider",
                 "Empty Bench Collider",

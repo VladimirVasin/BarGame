@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-city-misc-3d-model.py",
-  "generator_version": "4.18.0",
+  "generator_version": "4.19.0",
   "blender_version": "5.2.3 LTS",
   "design_id": "city_misc_citywide_v4",
   "display_name": "City Misc Citywide Catalog + Church Courtyard + Nightlife Shelter + Residential Courtyard Life + Park Gazebo and Furniture + River Fittings + Cemetery Entrance and Closed Boat Station",
@@ -149,7 +149,7 @@
   "animation_count": 0,
   "mesh_count": 310,
   "assembly_count": 145,
-  "triangle_count": 66102,
+  "triangle_count": 77006,
   "assemblies": [
     {
       "kind": "IndustrialStacksAndTanks",
@@ -4085,7 +4085,6 @@
       ],
       "unity_owned_parts": [
         "Broken Canopy Segment * Rag Cloth",
-        "Lost Scarf",
         "Island Floodlight Lens",
         "Island Mast Floodlight Light",
         "Island Floodlight Source Halo",
@@ -4104,24 +4103,24 @@
         "GEO_CMM_PoiNightlifeLastRouteIslandShell_Variant01_Timber"
       ],
       "bounds_min_source": [
-        -5.58345,
-        -5.567284,
+        -5.843669,
+        -5.82085,
         0.0
       ],
       "bounds_max_source": [
-        5.567284,
-        5.4,
-        6.325
+        5.820642,
+        5.392742,
+        6.29
       ],
       "bounds_min_unity": [
-        -5.58345,
+        -5.843669,
         0.0,
-        -5.567284
+        -5.82085
       ],
       "bounds_max_unity": [
-        5.567284,
-        6.325,
-        5.4
+        5.820642,
+        6.29,
+        5.392742
       ]
     },
     {
@@ -13816,27 +13815,27 @@
       "tint_role": "Masonry",
       "placement_mode": "recipe_local_rigid",
       "normalized_height_m": null,
-      "vertices": 132,
-      "triangles": 252,
+      "vertices": 2590,
+      "triangles": 4664,
       "bounds_min_source": [
-        -5.4,
-        -5.4,
-        0.03
+        -5.392742,
+        -5.392742,
+        0.02
       ],
       "bounds_max_source": [
-        5.4,
-        5.4,
+        5.392742,
+        5.392742,
         0.275
       ],
       "bounds_min_unity": [
-        -5.4,
-        0.03,
-        -5.4
+        -5.392742,
+        0.02,
+        -5.392742
       ],
       "bounds_max_unity": [
-        5.4,
+        5.392742,
         0.275,
-        5.4
+        5.392742
       ],
       "uv_min": [
         0.0,
@@ -13856,35 +13855,35 @@
       "tint_role": "Street",
       "placement_mode": "recipe_local_rigid",
       "normalized_height_m": null,
-      "vertices": 480,
-      "triangles": 840,
+      "vertices": 3900,
+      "triangles": 6852,
       "bounds_min_source": [
-        -5.58345,
-        -5.567284,
+        -5.843669,
+        -5.82085,
         0.0
       ],
       "bounds_max_source": [
-        5.567284,
-        4.845045,
-        6.325
+        5.820642,
+        5.094423,
+        6.29
       ],
       "bounds_min_unity": [
-        -5.58345,
+        -5.843669,
         0.0,
-        -5.567284
+        -5.82085
       ],
       "bounds_max_unity": [
-        5.567284,
-        6.325,
-        4.845045
+        5.820642,
+        6.29,
+        5.094423
       ],
       "uv_min": [
-        0.0,
-        0.0
+        0.004883,
+        0.254883
       ],
       "uv_max": [
-        1.0,
-        1.0
+        0.995117,
+        0.745117
       ]
     },
     {
@@ -13896,35 +13895,35 @@
       "tint_role": "Residential",
       "placement_mode": "recipe_local_rigid",
       "normalized_height_m": null,
-      "vertices": 208,
-      "triangles": 364,
+      "vertices": 406,
+      "triangles": 760,
       "bounds_min_source": [
-        -4.673237,
-        -3.969385,
-        0.2155
+        -4.662926,
+        -3.941506,
+        0.22
       ],
       "bounds_max_source": [
-        4.872048,
-        3.885,
-        6.15
+        4.866789,
+        3.98416,
+        6.29
       ],
       "bounds_min_unity": [
-        -4.673237,
-        0.2155,
-        -3.969385
+        -4.662926,
+        0.22,
+        -3.941506
       ],
       "bounds_max_unity": [
-        4.872048,
-        6.15,
-        3.885
+        4.866789,
+        6.29,
+        3.98416
       ],
       "uv_min": [
-        0.0,
-        0.0
+        0.004883,
+        0.004883
       ],
       "uv_max": [
-        1.0,
-        1.0
+        0.995117,
+        0.994529
       ]
     },
     {
@@ -13936,35 +13935,35 @@
       "tint_role": "Timber",
       "placement_mode": "recipe_local_rigid",
       "normalized_height_m": null,
-      "vertices": 16,
-      "triangles": 28,
+      "vertices": 64,
+      "triangles": 112,
       "bounds_min_source": [
-        1.556162,
-        1.747956,
-        0.55
+        1.557286,
+        1.750737,
+        0.67
       ],
       "bounds_max_source": [
-        4.143838,
-        3.352044,
+        4.142714,
+        3.349263,
         0.77
       ],
       "bounds_min_unity": [
-        1.556162,
-        0.55,
-        1.747956
+        1.557286,
+        0.67,
+        1.750737
       ],
       "bounds_max_unity": [
-        4.143838,
+        4.142714,
         0.77,
-        3.352044
+        3.349263
       ],
       "uv_min": [
-        0.0,
-        0.0
+        0.004883,
+        0.254883
       ],
       "uv_max": [
-        1.0,
-        1.0
+        0.745117,
+        0.495117
       ]
     },
     {
@@ -19048,5 +19047,5 @@
       ]
     }
   ],
-  "build_signature": "0c487a53d6a6dc608ff1d2ad8e71ae0b3cd34c3768d71da9c8e3aacca071fb3d"
+  "build_signature": "983fff21ef6c9a6cbf5fe528798736b34f367767f83962fcc5719b66d1fcd40f"
 }

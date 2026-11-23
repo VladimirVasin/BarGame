@@ -116,6 +116,8 @@ namespace BarPromenade
         private const float WeighbridgeDeckHalfWidth = 1.80f;
         private const float WeighbridgeDeckHalfLength = 5.80f;
 
+        // Height of the radial paving course in front of the sitting dock.
+        private const float IslandBenchGroundHeight = .244f;
         private const float IslandBenchX = 2.85f;
         private const float IslandBenchSeatCenterY = 0.66f;
         private const float IslandBenchZ = 2.55f;
@@ -123,6 +125,8 @@ namespace BarPromenade
         private const float IslandBenchSeatThickness = 0.22f;
         private const float IslandBenchDepth = 0.72f;
         private const float IslandBenchYaw = 22f;
+        private const float IslandBinX = 4.70f;
+        private const float IslandBinZ = 1.28f;
 
         private static readonly Color OldTownPaving =
             new Color(0.255f, 0.235f, 0.190f);
@@ -808,7 +812,8 @@ namespace BarPromenade
                     worldSeatCenter.z),
                 localSeatSize.x * horizontalScale,
                 localSeatSize.z * horizontalScale,
-                descriptor.Center.y + PublicGroundHeight * 0.5f,
+                descriptor.Center.y + (descriptor.Kind == CityDistrictPointOfInterestKind.NightlifeLastRouteIsland
+                    ? IslandBenchGroundHeight : PublicGroundHeight * 0.5f),
                 faceDirection);
             return true;
         }
@@ -1488,6 +1493,8 @@ namespace BarPromenade
                         out CityPointOfInterestSurfaceKind? surface,
                         out SurfaceProjection projection);
                     bool waterworks = kind == CityDistrictPointOfInterestKind.OldTownWaterworksCourt;
+                    bool island = kind == CityDistrictPointOfInterestKind.NightlifeLastRouteIsland;
+                    bool islandStone = island && part.Role == CityMiscMeshRole.Masonry;
                     bool basinStone = waterworks && part.Role == CityMiscMeshRole.Masonry;
                     bool water = part.Role == CityMiscMeshRole.Water;
                     bool lamp = part.Role == CityMiscMeshRole.LampGlass;
@@ -1497,7 +1504,8 @@ namespace BarPromenade
                     GameObject chunk = RuntimePrimitiveFactory.CreateCombinedMeshes(
                         name, parent, new[] { new RuntimeMeshPlacement(part.Mesh, -anchor, Quaternion.identity) },
                         color,
-                        worldUvTileSize: basinStone ? CityPointOfInterestSurfaceAppearance.BasinStoneMetresPerTile : null,
+                        worldUvTileSize: basinStone ? CityPointOfInterestSurfaceAppearance.BasinStoneMetresPerTile :
+                            islandStone ? CityParkSurfaceAppearance.GetRecipe(CityParkSurfaceKind.Stone).MetersPerTile : null,
                         uvMode: RuntimeWorldUvMode.BoxProjected,
                         keepReadable: surface == CityPointOfInterestSurfaceKind.Paving);
                     chunk.transform.localPosition = anchor;
@@ -1507,6 +1515,10 @@ namespace BarPromenade
                         CityPointOfInterestSurfaceAppearance.ApplyBasinStone(renderer, color);
                     else if (waterworks && part.Role == CityMiscMeshRole.Street)
                         CityPointOfInterestSurfaceAppearance.ApplyWaterworksMetal(renderer);
+                    else if (islandStone)
+                        CityParkSurfaceAppearance.ApplyCombined(renderer, CityParkSurfaceKind.Stone, color);
+                    else if (island)
+                        CityPointOfInterestSurfaceAppearance.ApplyIslandFinish(renderer);
                     else if (lamp)
                     {
                         renderer.sharedMaterial = CityNightResources.EmissiveMaterial;
@@ -1523,7 +1535,8 @@ namespace BarPromenade
                     if (surface == CityPointOfInterestSurfaceKind.Paving)
                     {
                         FootstepGround.Stamp(chunk, FootstepGroundKind.Stone);
-                        CityGroundSurfaceSystem.Register(chunk, 40);
+                        // The raised flags take precedence over the public lot beneath them (40).
+                        CityGroundSurfaceSystem.Register(chunk, islandStone ? 41 : 40);
                     }
                 }
 
@@ -1716,11 +1729,6 @@ namespace BarPromenade
             bool colliders,
             bool homeExterior)
         {
-            AddBox(parent, "Lost Scarf", -0.35f, 0.292f, 1.05f,
-                1.10f, 0.025f, 0.34f, NightlifePosterRed, false,
-                homeExterior, -18f,
-                surface: CityPointOfInterestSurfaceKind.Cloth,
-                projection: SurfaceProjection.BoxXZ);
             if (!homeExterior)
             {
                 float[] segmentAngles = { 48f, 102f, 168f, 226f, 292f };
@@ -1791,7 +1799,7 @@ namespace BarPromenade
             AddObstacleCollider(
                 parent,
                 "Island Waste Bin Collider",
-                new Vector3(4.15f, 0.71f, 2.20f),
+                new Vector3(IslandBinX, 0.71f, IslandBinZ),
                 new Vector3(0.78f, 1.00f, 0.78f),
                 8f);
         }
@@ -1883,29 +1891,14 @@ namespace BarPromenade
                     return;
                 case CityDistrictPointOfInterestKind
                     .NightlifeLastRouteIsland:
-                    switch (part.Role)
+                    color = Color.white;
+                    if (part.Role == CityMiscMeshRole.Masonry)
                     {
-                        case CityMiscMeshRole.Masonry:
-                            color = NightlifeIsland;
-                            surface =
-                                CityPointOfInterestSurfaceKind.Paving;
-                            projection = SurfaceProjection.BoxXZ;
-                            return;
-                        case CityMiscMeshRole.Residential:
-                            color = NightlifeRoutePaper;
-                            surface = CityPointOfInterestSurfaceKind.Paper;
-                            return;
-                        case CityMiscMeshRole.Timber:
-                            color = NightlifeSeat;
-                            surface = CityPointOfInterestSurfaceKind.Timber;
-                            projection = SurfaceProjection.BoxXZ;
-                            return;
-                        default:
-                            color = NightlifeFrame;
-                            surface = CityPointOfInterestSurfaceKind
-                                .PaintedMetal;
-                            return;
+                        color = NightlifeIsland;
+                        surface = CityPointOfInterestSurfaceKind.Paving;
+                        projection = SurfaceProjection.BoxXZ;
                     }
+                    return;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(kind));
             }
@@ -2658,13 +2651,13 @@ namespace BarPromenade
                 0.38f, 0.66f, 0.48f, NightlifeFrame, false, homeExterior,
                 IslandBenchYaw,
                 surface: CityPointOfInterestSurfaceKind.PaintedMetal);
-            AddBox(parent, "Island Waste Bin", 4.15f, 0.71f, 2.20f,
+            AddBox(parent, "Island Waste Bin", IslandBinX, 0.71f, IslandBinZ,
                 0.72f, 1.00f, 0.72f, NightlifeWaste, false, homeExterior, 8f,
                 surface: CityPointOfInterestSurfaceKind.PaintedMetal);
-            AddBox(parent, "Island Waste Bin Rim", 4.15f, 1.23f, 2.20f,
+            AddBox(parent, "Island Waste Bin Rim", IslandBinX, 1.23f, IslandBinZ,
                 0.82f, 0.08f, 0.82f, NightlifeFrame, false, homeExterior, 8f,
                 surface: CityPointOfInterestSurfaceKind.PaintedMetal);
-            AddBox(parent, "Island Waste Bin Opening", 4.15f, 1.275f, 2.20f,
+            AddBox(parent, "Island Waste Bin Opening", IslandBinX, 1.275f, IslandBinZ,
                 0.54f, 0.018f, 0.50f, NightlifeRouteInk, false, homeExterior,
                 8f);
             AddCylinder(parent, "Discarded Bottle Standing", 2.08f, 0.31f,
@@ -2716,7 +2709,7 @@ namespace BarPromenade
                 AddObstacleCollider(
                     parent,
                     "Island Waste Bin Collider",
-                    new Vector3(4.15f, 0.71f, 2.20f),
+                    new Vector3(IslandBinX, 0.71f, IslandBinZ),
                     new Vector3(0.78f, 1.00f, 0.78f),
                     8f);
             }

@@ -186,14 +186,21 @@ namespace BarPromenade
         }
 
         private static Material waterworksMetal;
+        private static Material islandFinish;
 
-        internal static void ApplyWaterworksMetal(Renderer renderer)
+        internal static void ApplyWaterworksMetal(Renderer renderer) =>
+            ApplyAuthoredFinish(renderer, ref waterworksMetal, "City/Surfaces/WaterworksMetal");
+
+        internal static void ApplyIslandFinish(Renderer renderer) =>
+            ApplyAuthoredFinish(renderer, ref islandFinish, "City/Surfaces/LastRouteIsland");
+
+        private static void ApplyAuthoredFinish(Renderer renderer, ref Material material, string path)
         {
-            if (waterworksMetal == null)
-                waterworksMetal = Resources.Load<Material>("City/Surfaces/WaterworksMetal");
-            if (waterworksMetal == null)
-                throw new InvalidOperationException("Missing waterworks metal finish.");
-            renderer.sharedMaterial = waterworksMetal;
+            if (material == null)
+                material = Resources.Load<Material>(path);
+            if (material == null)
+                throw new InvalidOperationException($"Missing authored finish {path}.");
+            renderer.sharedMaterial = material;
             renderer.SetPropertyBlock(null);
         }
 
@@ -303,6 +310,8 @@ namespace BarPromenade
         private static void ResetCachedResources()
         {
             cachedTextures = new Texture2D[SurfaceCount];
+            islandFinish = null;
+            waterworksMetal = null;
         }
     }
 }

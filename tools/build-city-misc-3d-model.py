@@ -47,13 +47,14 @@ sys.dont_write_bytecode = True
 sys.path.insert(0, str(ROOT / "tools"))
 
 import interior_kit as kit  # noqa: E402
+import city_last_route_model as last_route
 import city_cinema_model as cinema
 import city_waterworks_model as waterworks
 import city_river_parts as river_parts  # noqa: E402
 import city_coastal_site_parts as coastal_site_parts  # noqa: E402
 
 
-GENERATOR_VERSION = "4.18.0"
+GENERATOR_VERSION = "4.19.0"
 DESIGN_ID = "city_misc_citywide_v4"
 DISPLAY_NAME = (
     "City Misc Citywide Catalog + Church Courtyard + Nightlife Shelter + "
@@ -3684,101 +3685,14 @@ def build_poi_industrial_weighbridge_shell() -> AssemblySpec:
 
 def build_poi_nightlife_last_route_island_shell() -> AssemblySpec:
     kind, variant = "PoiNightlifeLastRouteIslandShell", 0
-    masonry = [
-        local_vertical_solid(0.0, 0.03, 0.21, 0.0,
-                             5.40, 5.40, top_scale=1.0, sides=24),
-        local_vertical_solid(0.0, 0.20, 0.25, 0.0,
-                             3.60, 3.60, top_scale=1.0, sides=22),
-        local_vertical_solid(0.0, 0.235, 0.275, 0.0,
-                             2.10, 2.10, top_scale=1.0, sides=20),
-    ]
-    street: list[Geometry] = []
-    residential: list[Geometry] = []
-    for index, angle in enumerate((48.0, 102.0, 168.0, 226.0, 292.0)):
-        radians = math.radians(angle)
-        x = math.sin(radians) * 4.70
-        forward = math.cos(radians) * 4.70
-        street.extend((
-            local_vertical_solid(x, 0.0, 3.40, forward,
-                                 0.15, 0.15, top_scale=0.82, sides=8),
-            local_box(x, 3.36, forward,
-                      3.25, 0.26, 0.42, 0.035,
-                      yaw_up_degrees=angle),
-            local_box(x, 3.58, forward,
-                      3.45, 0.18, 1.25, 0.045,
-                      yaw_up_degrees=angle),
-        ))
-        if index in (1, 4):
-            plate_offset = 0.18
-            residential.append(local_box(
-                x + math.sin(radians) * plate_offset,
-                2.42,
-                forward + math.cos(radians) * plate_offset,
-                0.62, 0.44, 0.07, 0.014,
-                yaw_up_degrees=angle))
-    street.extend((
-        local_box(-2.75, 0.52, -1.25, 1.12, 0.78, 1.12, 0.055),
-        local_box(-2.75, 3.35, -1.25, 0.34, 5.70, 0.34, 0.045),
-        local_box(-2.75, 5.55, -1.25, 1.58, 1.55, 0.42, 0.06),
-        local_box(-2.75, 4.18, -0.99, 0.78, 0.48, 0.18, 0.035),
-        local_box(-2.75, 4.18, -0.885, 0.62, 0.32, 0.035, 0.008),
-        local_box(2.45, 2.10, -2.55, 2.65, 1.10, 0.28, 0.055,
-                  yaw_up_degrees=-12.0),
-        local_box(1.61, 0.885, -2.73, 0.20, 1.33, 0.24, 0.025,
-                  yaw_up_degrees=-12.0),
-        local_box(3.29, 0.885, -2.37, 0.20, 1.33, 0.24, 0.025,
-                  yaw_up_degrees=-12.0),
-        local_box(1.61, 0.27, -2.73, 0.48, 0.12, 0.46, 0.02,
-                  yaw_up_degrees=-12.0),
-        local_box(3.29, 0.27, -2.37, 0.48, 0.12, 0.46, 0.02,
-                  yaw_up_degrees=-12.0),
-        local_box(2.85, 0.33, 2.55, 0.38, 0.66, 0.48, 0.03,
-                  yaw_up_degrees=22.0),
-        local_box(4.15, 0.71, 2.20, 0.72, 1.00, 0.72, 0.04,
-                  yaw_up_degrees=8.0),
-        local_box(4.15, 1.23, 2.20, 0.82, 0.08, 0.82, 0.018,
-                  yaw_up_degrees=8.0),
-        local_box(-2.575, 4.42, -1.15, 0.14, 0.14, 0.60, 0.018,
-                  yaw_up_degrees=60.0),
-        local_box(-2.40, 4.42, -1.21, 0.46, 0.30, 0.38, 0.04,
-                  yaw_up_degrees=42.0),
-    ))
-    residential.extend((
-        local_box(-2.75, 5.55, -1.02, 1.28, 1.20, 0.04, 0.008),
-        local_box(-2.95, 5.66, -0.99, 0.64, 0.70, 0.025, 0.006,
-                  yaw_up_degrees=-4.0),
-        local_box(-2.52, 5.33, -0.98, 0.50, 0.43, 0.025, 0.006,
-                  yaw_up_degrees=6.0),
-        local_box(-2.71, 5.97, -0.97, 0.42, 0.20, 0.025, 0.006),
-        local_box(2.45, 2.10, -2.39, 2.30, 0.78, 0.035, 0.008,
-                  yaw_up_degrees=-12.0),
-        local_box(2.45, 2.30, -2.365, 1.78, 0.07, 0.025, 0.006,
-                  yaw_up_degrees=-12.0),
-        local_box(2.45, 2.10, -2.365, 1.42, 0.07, 0.025, 0.006,
-                  yaw_up_degrees=-12.0),
-        local_box(2.45, 1.90, -2.365, 1.92, 0.07, 0.025, 0.006,
-                  yaw_up_degrees=-12.0),
-        local_vertical_solid(2.08, 0.22, 0.40, 3.82,
-                             0.065, 0.065, top_scale=0.62, sides=8),
-        local_box(1.72, 0.255, 3.68, 0.34, 0.07, 0.12, 0.012,
-                  yaw_up_degrees=28.0),
-        local_box(-1.20, 0.228, -3.65, 0.72, 0.025, 0.50, 0.006,
-                  yaw_up_degrees=12.0),
-    ))
-    timber = [local_box(
-        2.85, 0.66, 2.55, 2.50, 0.22, 0.72, 0.035,
-        yaw_up_degrees=22.0)]
     canonical, parameters = poi_scale_metadata()
     return AssemblySpec(
         kind, variant,
-        (make_part(kind, variant, "Masonry", *masonry),
-         make_part(kind, variant, "Street", *street),
-         make_part(kind, variant, "Residential", *residential),
-         make_part(kind, variant, "Timber", *timber)),
+        last_route.build(sys.modules[__name__]),
         canonical_reference=canonical,
         scale_parameters=parameters,
         unity_owned_parts=(
-            "Broken Canopy Segment * Rag Cloth", "Lost Scarf",
+            "Broken Canopy Segment * Rag Cloth",
             "Island Floodlight Lens", "Island Mast Floodlight Light",
             "Island Floodlight Source Halo",
             "Ferryman Car Floodlight Assembly", "NPCs",

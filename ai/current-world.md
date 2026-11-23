@@ -1374,9 +1374,9 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   collision/avoidance,calendar phases/30Hz poses/distance sleep;pause/disable/unload cleanup.
   Dog bark reuses village synthesis;shared soft paws.No new light/text/quest/story;
 - one deterministic `city_misc_citywide_v4` mesh library at generator version
-  `4.15.0` supplies the passive visuals for the broad City misc pass: `104`
-  semantic kinds resolve to `145` assemblies, `306` role meshes and
-  `57,246` triangles. It covers the 24-family
+  `4.19.0` supplies the passive visuals for the broad City misc pass: `104`
+  semantic kinds resolve to `145` assemblies, `310` role meshes and
+  `77,006` triangles. It covers the 24-family
   decoration layer and park landmarks, street lamps and signal housings,
   bus shelters/poles, the eastern yard, cemetery graves and vegetation,
     the church-yard surfaces and planting plus the modified cemetery
@@ -1398,11 +1398,9 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   The working bank has a paved court with a cast standpipe, wheel, trough and grated drains. A public passage skirts the cannery.
   The residential bank has the drying yard and last-route island.
   Each has a distinct silhouette/movement grammar; Home reconstructs nearby
-  descriptors locally. The last-route island keeps its broken
-  canopy ring but uses no emissive strips: the old departure board is visibly
-  grounded on two supports and weathered route plates, layered posters, a
-  waste bin, bottles, a discarded timetable and a lost scarf replace the
-  repeated neon. Four scripted opaque POI albedos from
+  descriptors locally. On the island, radial flags meet a raised curb. Folded canopy sheets reveal
+  bare ribs. A chipped mast plate, two-legged departure board with empty tracks and torn bills,
+  slatted seat, open bin, bottles, timetable and scarf share the LastRouteIsland finish. Four scripted opaque POI albedos from
   `tools/build-city-poi-textures.py` (yard paving slabs, painted metal,
   laundry cloth, worn timber) ride the shared `RuntimePrimitiveLit`
   through `CityPointOfInterestSurfaceAppearance` property blocks with the

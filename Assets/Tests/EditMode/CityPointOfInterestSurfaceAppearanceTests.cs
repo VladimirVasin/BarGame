@@ -442,110 +442,27 @@ namespace BarPromenade.Tests.EditMode
                     root,
                     CityDistrictPointOfInterestKind
                         .NightlifeLastRouteIsland);
-                Texture pavingTexture =
-                    CityPointOfInterestSurfaceAppearance.GetTexture(
-                        CityPointOfInterestSurfaceKind.Paving);
-                Texture metalTexture =
-                    CityPointOfInterestSurfaceAppearance.GetTexture(
-                        CityPointOfInterestSurfaceKind.PaintedMetal);
-                Texture paperTexture =
-                    CityPointOfInterestSurfaceAppearance.GetTexture(
-                        CityPointOfInterestSurfaceKind.Paper);
-                Texture timberTexture =
-                    CityPointOfInterestSurfaceAppearance.GetTexture(
-                        CityPointOfInterestSurfaceKind.Timber);
-                Texture clothTexture =
-                    CityPointOfInterestSurfaceAppearance.GetTexture(
-                        CityPointOfInterestSurfaceKind.Cloth);
-                int pavingCount = 0;
-                int metalCount = 0;
-                int paperCount = 0;
-                int timberCount = 0;
-                int clothCount = 0;
-                int skinnedClothCount = 0;
-                foreach (Renderer renderer in
-                         island.GetComponentsInChildren<Renderer>(true))
+                var finish = Resources.Load<Material>("City/Surfaces/LastRouteIsland");
+                Assert.That(finish, Is.Not.Null);
+                Assert.That(finish.GetTexture("_BaseMap").name, Is.EqualTo("LastRouteIslandAlbedo"));
+                Assert.That(finish.GetTexture("_MetallicGlossMap").name, Is.EqualTo("LastRouteIslandMask"));
+                foreach (string component in new[] { "Street", "Residential", "Timber" })
                 {
-                    var properties = new MaterialPropertyBlock();
-                    renderer.GetPropertyBlock(properties);
-                    Texture texture = properties.GetTexture(BaseMapId);
-                    if (texture == null)
-                    {
-                        continue;
-                    }
-
-                    Vector4 transform =
-                        properties.GetVector(BaseMapTransformId);
-                    Assert.That(
-                        transform.x,
-                        Is.GreaterThan(0f),
-                        $"Invalid U tiling on {renderer.name}.");
-                    Assert.That(
-                        transform.y,
-                        Is.GreaterThan(0f),
-                        $"Invalid V tiling on {renderer.name}.");
-                    if (texture == pavingTexture)
-                    {
-                        pavingCount++;
-                    }
-                    else if (texture == metalTexture)
-                    {
-                        metalCount++;
-                    }
-                    else if (texture == paperTexture)
-                    {
-                        paperCount++;
-                    }
-                    else if (texture == timberTexture)
-                    {
-                        timberCount++;
-                    }
-                    else if (texture == clothTexture)
-                    {
-                        clothCount++;
-                        if (renderer is SkinnedMeshRenderer)
-                        {
-                            skinnedClothCount++;
-                            Assert.That(
-                                renderer.sharedMaterial,
-                                Is.SameAs(
-                                    ClothPanelFactory.TwoSidedMaterial),
-                                "Canopy rags keep the shared two-sided " +
-                                "panel material.");
-                        }
-                    }
+                    var shell = island.Find("Imported Nightlife Last Route Island " + component);
+                    Assert.That(shell.GetComponent<Renderer>().sharedMaterial, Is.SameAs(finish));
                 }
-
-                Assert.That(
-                    pavingCount,
-                    Is.EqualTo(1),
-                    "The authored island masonry shares one paving role " +
-                    "mesh.");
-                Assert.That(
-                    metalCount,
-                    Is.GreaterThanOrEqualTo(1),
-                    "The imported island fixtures must carry the " +
-                    "painted-metal sheet; the Ferryman lamp may add " +
-                    "runtime renderers.");
-                Assert.That(
-                    paperCount,
-                    Is.EqualTo(1),
-                    "All static island paper is one authored role mesh.");
-                Assert.That(timberCount, Is.EqualTo(1));
-                // Six simulated canopy rags plus the lost scarf.
-                Assert.That(clothCount, Is.EqualTo(7));
-                Assert.That(skinnedClothCount, Is.EqualTo(6));
-                foreach (string component in new[]
-                         {
-                             "Masonry", "Street", "Residential", "Timber"
-                         })
+                var paving = island.Find("Imported Nightlife Last Route Island Masonry").GetComponent<Renderer>();
+                var block = new MaterialPropertyBlock();
+                paving.GetPropertyBlock(block);
+                Assert.That(block.GetTexture(BaseMapId), Is.SameAs(CityParkSurfaceAppearance.GetTexture(CityParkSurfaceKind.Stone)));
+                var rags = island.GetComponentsInChildren<SkinnedMeshRenderer>(true);
+                Assert.That(rags.Length, Is.EqualTo(6));
+                foreach (var rag in rags)
                 {
-                    Assert.That(
-                        island.Find(
-                            "Imported Nightlife Last Route Island " +
-                            component),
-                        Is.Not.Null,
-                        $"Missing imported island {component} role mesh.");
+                    rag.GetPropertyBlock(block);
+                    Assert.That(rag.sharedMaterial, Is.SameAs(ClothPanelFactory.TwoSidedMaterial));
+                    Assert.That(block.GetTexture(BaseMapId), Is.SameAs(CityPointOfInterestSurfaceAppearance.GetTexture(
+                        CityPointOfInterestSurfaceKind.Cloth)));
                 }
             }
             finally

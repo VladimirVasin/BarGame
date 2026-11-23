@@ -13,6 +13,86 @@ namespace BarPromenade.Tests.PlayMode
 {
     public sealed partial class AreaCaptureFixture
     {
+        [UnityTest, Explicit("Inspect the last route island from both approaches, the empty bench and the old board.")]
+        public IEnumerator CityLastRouteIsland()
+        {
+            GameSessionState.BeginNewGame();
+            GameSessionState.PrepareSupermarketReturn();
+            Assert.That(GameSessionState.TryStartGameTimeAt(12 * 60), Is.True);
+            CityGameRoot city = null;
+            yield return Capture(SceneIds.City, () =>
+            {
+                city = Object.FindAnyObjectByType<CityGameRoot>();
+                return city != null && city.IsInitialized ? city : null;
+            }, () =>
+            {
+                const CityDistrictPointOfInterestKind kind = CityDistrictPointOfInterestKind.NightlifeLastRouteIsland;
+                var descriptor = city.Layout.DistrictPointsOfInterest.Single(site => site.Kind == kind);
+                var site = city.World.Root.transform.Find(CityDistrictPointOfInterestWorldBuilder.CityRootName)
+                    .Find(CityDistrictPointOfInterestWorldBuilder.GetSiteName(descriptor.Id));
+                var island = site.Find(CityDistrictPointOfInterestWorldBuilder.GetRecipeName(kind));
+                Vector3 At(float x, float y, float z) => island.TransformPoint(new Vector3(x, y, z));
+                var finish = Resources.Load<Material>("City/Surfaces/LastRouteIsland");
+                Assert.That(finish, Is.Not.Null);
+                Assert.That(finish.IsKeywordEnabled("_EMISSION"), Is.False);
+                Assert.That(finish.GetTexture("_MetallicGlossMap").name, Is.EqualTo("LastRouteIslandMask"));
+                foreach (string role in new[] { "Street", "Residential", "Timber" })
+                    Assert.That(island.Find("Imported Nightlife Last Route Island " + role)
+                        .GetComponent<Renderer>().sharedMaterial, Is.SameAs(finish));
+                var ground = city.World.Root.GetComponent<CityGroundSurfaceSystem>();
+                Physics.SyncTransforms();
+                foreach (float z in new[] { -4.57f, -2.25f, 0f, 2.25f, 4.57f })
+                {
+                    Vector3 position = At(.15f, 0, z);
+                    Assert.That(TryCommonGroundHit(ground, position, out RaycastHit hit), Is.True);
+                    Assert.That(hit.point.y - position.y, Is.InRange(.17f, .29f), $"Paving height at z={z}");
+                    Assert.That(hit.collider.GetComponent<FootstepGround>().ResolveKind(hit.triangleIndex), Is.EqualTo(FootstepGroundKind.Stone));
+                }
+                var seat = island.Find("Imported Nightlife Last Route Island Timber").GetComponent<Renderer>();
+                Assert.That(seat.bounds.max.y, Is.EqualTo(At(2.85f, .77f, 2.55f).y).Within(.015f));
+                Assert.That(CityDistrictPointOfInterestWorldBuilder.TryDescribeBenchSeat(descriptor, out var dock), Is.True);
+                // Project both actual contacts on the bench axis. Rotated world AABBs would
+                // lose the gap between its end and the basket on an oblique island.
+                var bench = island.Find("Empty Bench Collider").GetComponent<BoxCollider>();
+                var bin = island.Find("Island Waste Bin Collider").GetComponent<BoxCollider>();
+                float clearance = float.PositiveInfinity;
+                for (int x = -1; x <= 1; x += 2)
+                for (int z = -1; z <= 1; z += 2)
+                {
+                    var corner = bin.transform.TransformPoint(bin.center + new Vector3(x * bin.size.x, 0, z * bin.size.z) * .5f);
+                    clearance = Mathf.Min(clearance, bench.transform.InverseTransformPoint(corner).x - bench.size.x * .5f);
+                }
+                Assert.That(clearance, Is.GreaterThan(.40f), "The basket must clear the right end of the seat.");
+                var street = CityMiscAssetProvider.LoadOrThrow().GetPartOrThrow(CityMiscKind.PoiNightlifeLastRouteIslandShell, 0, 1).Mesh;
+                var rim = street.vertices.Where(v => v.y > 1.12f && v.y < 1.24f &&
+                    Vector2.Distance(new Vector2(v.x, v.z), new Vector2(bin.transform.localPosition.x, bin.transform.localPosition.z)) < .42f).ToArray();
+                Assert.That(rim, Is.Not.Empty, "The rendered basket must follow its collision proxy.");
+                float rimGap = rim.Min(v => bench.transform.InverseTransformPoint(island.TransformPoint(v)).x) - bench.size.x * .5f;
+                Assert.That(rimGap, Is.GreaterThan(.48f), "The authored rim must clear the seat planks.");
+                var contact = new CityBenchSitPlan(dock);
+                Assert.That(TryCommonGroundHit(ground, contact.EntryRootPosition - Vector3.up * PlayerFactory.GroundedRootOffset,
+                    out RaycastHit dockFloor), Is.True);
+                Assert.That(dock.GroundY, Is.EqualTo(dockFloor.point.y).Within(.02f));
+                city.Player.Motor.Teleport(At(0, PlayerFactory.GroundedRootOffset + .27f, 0));
+                bool Night()
+                {
+                    if (GameSessionState.GameTimeOfDayMinutes < 21 * 60)
+                        GameSessionState.AdvanceGameTime((float)((22 * 60 - GameSessionState.GameTimeOfDayMinutes) /
+                            GameTimeState.GameMinutesPerRealSecond));
+                    city.DayNight.ApplyCurrentTime(true);
+                    return true;
+                }
+                return new[] {
+                    Shot.At("last-route-front", At(.7f, EyeHeight, 9.6f), At(-.3f, 2.25f, -.65f), 69f),
+                    Shot.At("last-route-reverse", At(-3.6f, EyeHeight, -9f), At(.1f, 2.16f, .45f), 70f),
+                    Shot.At("last-route-board", At(1.38f, EyeHeight+.24f, .87f), At(2.45f, 2.02f, -2.55f), 58f),
+                    Shot.At("last-route-bench", At(1.45f, EyeHeight+.25f, -.12f), At(2.98f, .65f, 2.58f), 59f),
+                    Shot.At("last-route-mast", At(-.8f, EyeHeight+.24f, 2.23f), At(-2.75f, 4.38f, -1.25f), 69f),
+                    Shot.At("last-route-night", At(-4.2f, EyeHeight, 7.5f), At(.1f, 1.85f, -.55f), 73f, readyWhen: Night)
+                };
+            });
+        }
+
         [UnityTest, Explicit("Inspect the closed cinema from the street and read both old prints at eye level.")]
         public IEnumerator CityClosedCinema()
         {

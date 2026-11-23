@@ -419,7 +419,7 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo("city_misc_citywide_v4"));
             Assert.That(
                 CityMiscAssetProvider.GeneratorVersion,
-                Is.EqualTo("4.18.0"));
+                Is.EqualTo("4.19.0"));
             Assert.That(
                 CityMiscAssetProvider.SupportedKindCount,
                 Is.EqualTo(104));
@@ -506,11 +506,11 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(manifest.animation_count, Is.Zero);
             Assert.That(manifest.mesh_count, Is.EqualTo(310));
             Assert.That(manifest.assembly_count, Is.EqualTo(145));
-            Assert.That(manifest.triangle_count, Is.EqualTo(66102));
+            Assert.That(manifest.triangle_count, Is.EqualTo(77006));
             Assert.That(
                 manifest.build_signature,
                 Is.EqualTo(
-                    "0c487a53d6a6dc608ff1d2ad8e71ae0b3cd34c3768d71da9c8e3aacca071fb3d"));
+                    "983fff21ef6c9a6cbf5fe528798736b34f367767f83962fcc5719b66d1fcd40f"));
             Assert.That(
                 manifest.wave1_compatibility_signature,
                 Is.EqualTo(
