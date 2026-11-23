@@ -81,7 +81,7 @@ namespace BarPromenade.Tests.PlayMode
             city.Player.Motor.Teleport(cannery.Plan.World(new Vector3(8f, .3f, -7f)));
             cannery.FactoryConversation.Suspend();
             cannery.ApplyLifeAt(100d);
-            AssertCanneryCanPacking(cannery);
+            ValidateCanneryVisualProducts(cannery);
             var cartons = new Transform[CityFishSupplyCycle.HandlingUnits];
             for (int i = 0; i < cartons.Length; i++) cartons[i] = cannery.FinishedBox(i);
             for (int i = 0; i < cartons.Length; i++) AssertCanneryCartonInspection(cannery, cartons, i, 0);

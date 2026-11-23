@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -577,20 +578,8 @@ namespace BarPromenade.Tests.PlayMode
             cannery.ApplyAt(CanneryTime(cannery,CityCanneryProductionStage.Fill,.5f));
             Assert.That(cannery.VisibleFilledCanCount,Is.InRange(1,14));
             Assert.That(cannery.VisibleSealedCanCount,Is.Zero);
-            Transform preparation=cannery.transform.Find("Cannery Preparation Worker");
-            foreach(string section in new[]{"ApronBib","ApronSkirt"})
-            {
-                Transform apron=CityCanneryAssetProvider.FindPart(preparation.gameObject,section);
-                Vector3 low=Vector3.positiveInfinity,high=Vector3.negativeInfinity;
-                foreach(MeshFilter mesh in apron.GetComponentsInChildren<MeshFilter>(true))
-                foreach(Vector3 vertex in mesh.sharedMesh.vertices)
-                {
-                    Vector3 point=preparation.InverseTransformPoint(mesh.transform.TransformPoint(vertex));
-                    low=Vector3.Min(low,point); high=Vector3.Max(high,point);
-                }
-                Assert.That(high.y-low.y,Is.GreaterThan(.35f),section+" hangs vertically");
-                Assert.That(high.z-low.z,Is.LessThan(.20f),section+" remains a thin garment");
-            }
+            AssertCanneryWorkApron(cannery.GetFactoryWorker(1));
+            AssertCanneryWorkApron(cannery.GetFactoryWorker(3));
             AssertCanneryCanPacking(cannery);
             cannery.ApplyAt(CanneryTime(cannery,CityCanneryProductionStage.Heat,.5f));
             Assert.That(cannery.RetortPressureFactor,Is.GreaterThan(.9f));
@@ -603,6 +592,35 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(cannery.SteamParticleCount,Is.Zero);
             cannery.ApplyAt(vent);
             Assert.That(cannery.SteamParticleCount,Is.EqualTo(particles),"Seek restores only current vent particles.");
+        }
+
+        private static void AssertCanneryWorkApron(VillageResidentPresentation worker)
+        {
+            var wardrobe = worker.GetComponent<NpcWardrobe>();
+            Assert.That(wardrobe, Is.Not.Null, worker.name);
+            string equipped = wardrobe.GetEquippedItem("apron");
+            Assert.That(equipped, Is.EqualTo("apron.work"), worker.name);
+            var apron = wardrobe.Items.Single(item => item.Id == equipped);
+            foreach (var part in apron.Parts)
+            {
+                Renderer renderer = part.Renderer;
+                Assert.That(renderer, Is.Not.Null, worker.name + " apron binding");
+                Assert.That(renderer.enabled && renderer.gameObject.activeInHierarchy && !renderer.forceRenderingOff,
+                    Is.True, worker.name + " should show " + renderer.name);
+            }
+
+            // The current garment has one skinned panel from bib to hem. Its
+            // shoulder straps wrap around the back and have a different depth.
+            var panel = apron.Parts.Select(part => part.Renderer).OfType<SkinnedMeshRenderer>()
+                .SingleOrDefault(skin => skin.name == "CLO_ApronPanel");
+            Assert.That(panel, Is.Not.Null, worker.name + " apron panel");
+            Vector3[] vertices = DefaultNpcFactoryPlayModeTests.SkinDefaultNpcWorldVertices(panel);
+            Assert.That(vertices, Is.Not.Empty, worker.name + " apron mesh");
+            Vector3 forward = DefaultNpcFacing(worker);
+            float height = vertices.Max(p => p.y) - vertices.Min(p => p.y);
+            float depth = vertices.Max(p => Vector3.Dot(p, forward)) - vertices.Min(p => Vector3.Dot(p, forward));
+            Assert.That(height, Is.GreaterThan(.35f), worker.name + " apron hangs vertically");
+            Assert.That(depth, Is.LessThan(.20f), worker.name + " apron lies close to the body");
         }
 
         private static void ValidateCanneryCustody(CityFishSupplyCycle cycle)

@@ -5,7 +5,7 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-23
 
-CityCanneryFinishes exercises the rebuilt loading bay, scales, pressed cans, tray and bench. It checks carton contacts through dispatch and captures the working line in both lighting states.
+CityCanneryFinishes checks the rebuilt bay, scale, cans, tray, bench and carton contacts through dispatch by day and night. The prep and packing workers' equipped apron panels are measured in pose.
 
 The wristwatch colon switches with each real second. `PlayerWatchPlayModeTests`
 samples the LCD while the calendar is paused and captures the night dial.
