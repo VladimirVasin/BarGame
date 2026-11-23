@@ -47,12 +47,12 @@ source:`ArtSource/City/Cannery`;port maps/scale/`CartonStack`/contacts/truck/
 source/reviews `ArtSource/City/Cannery{Woman,Receiver}`. Five clips/shared rig,
 mesh/atlas hashes/layered clothes/hair-glasses contacts;launcher/`--validate-only`.
 
-`build-city-port-3d-model.py`:launcher/`--validate-only`;FBXs/manifest/wear PNG→
-`{Assets/Resources,ArtSource}/City/Port`;metre UVs/`PortAccessLayout.json`.
-12×512px ImageGen maps (sRGB/mipmap/repeat):
-`ArtSource/City/Port/Textures/generation.json`;mesh hashes separate;
-asphalt12m. `build-city-port-foreman-3d-model.py`:`Foreman/PortForeman`
-model/manifest/actions/atlas/lower-face/chin-jowl/mouth/export check.
+`build-city-port-3d-model.py`: launcher/`--validate-only`; FBX/JSON/wear →
+`{Assets/Resources,ArtSource}/City/Port`; `PortAccessLayout.json`.
+Port ImageGen 512px: `ArtSource/City/Port/Textures/generation.json`; asphalt 12m.
+`trawler_finishes.py [--check]`: 2K paint/response before Blender export.
+`build-city-port-foreman-3d-model.py`: `Foreman/PortForeman` mesh, actions,
+atlas, chin/jowls and mouth checks.
 `dialogue_face_atlas.py [--validate-only]`:face PNGs/manifest;no Blender.
 
 Sedan/coin/actions: `build-last-route-{car,coin}-3d-model.py`,

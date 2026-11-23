@@ -27,6 +27,7 @@ ROOT = Path(__file__).resolve().parents[1]
 ACCESS_LAYOUT_PATH = ROOT / "Assets/Resources/City/Port/PortAccessLayout.json"
 sys.path.insert(0, str(ROOT / "tools"))
 import interior_kit as kit
+import trawler_finishes
 
 spec = importlib.util.spec_from_file_location("offshore_art", ROOT / "tools/build-city-offshore-boats-3d-model.py")
 base = importlib.util.module_from_spec(spec)
@@ -119,6 +120,9 @@ def obj(geom, name, parent, mat):
             axes=((1,2),(0,2),(0,1))[axis]
             for loop in polygon.loop_indices:
                 v=part.data.vertices[part.data.loops[loop].vertex_index].co
+                if role in ("ShellPlates","HatchPaint","CabinPaint") or (name=="TrawlerVisible" and role=="Deck"):
+                    part.data.uv_layers.active.data[loop].uv=trawler_finishes.vessel_uv(role,v,normal)
+                    continue
                 part.data.uv_layers.active.data[loop].uv=(((PALETTE.index(color)+.5)/len(PALETTE),.5)
                     if role=="Plain" else (((v.x+ASPHALT_WORLD_ORIGIN[0])/SURFACE_TILES[role],
                     (v.y+ASPHALT_WORLD_ORIGIN[1])/SURFACE_TILES[role]) if role=="Asphalt" and axis==2
@@ -1014,32 +1018,43 @@ def access_road(mat):
 def trawler(mat):
     root=empty("Trawler")
     g=Geometry()
-    stations=[(-10,.66,1.6),(-9,.87,1.6),(-6,1,1.6),(0,1,1.6),(6,.93,1.7),(8,.6,2.0),(10,.025,2.45)]
+    # Full afterbody and flared bow. At the two cleats the deck sheer still
+    # shares the measured bearing plane used by the mooring animation.
+    stations=[(-10,1.60,1.60),(-9.65,1.98,1.60),(-9.05,2.28,1.60),
+              (-8.1,2.52,1.60),(-6,2.68,1.60),(-4.99,2.70,1.60),
+              (-3.01,2.72,1.60),(0,2.72,1.60),(3.01,2.70,1.60),
+              (4.99,2.63,1.60),(6,2.51,1.70),(7.3,2.07,1.895),
+              (8.25,1.56,2.06),(9,.98,2.22),(9.65,.43,2.40),(10,.085,2.54)]
     verts=[]
-    for z,w,y in stations:
-        w*=2.7
-        verts.extend([(-w,y,z),(-w,.1,z),(-w*.72,-1.05,z),(-w*.24,-1.5,z),
-                      (w*.24,-1.5,z),(w*.72,-1.05,z),(w,.1,z),(w,y,z)])
-    faces=[tuple(reversed(range(8)))]
-    for j in range(len(stations)-1):
-        for k in range(7):
-            a=j*8+k
-            faces.append((a,a+1,a+9,a+8))
-    faces.append(tuple(range((len(stations)-1)*8,len(stations)*8)))
+    for z,w,top in stations:
+        # The stem rakes forward above the water. The lower transom is tucked
+        # inwards; the midship deck rim has a rounded shoulder and bilge.
+        rake=.57*max(0,(z-6)/4)**1.7-.58*max(0,(-z-7)/3)**1.6
+        half=[(w-.025,top),(w,top-.065),(.985*w,.76),(.945*w,.05),
+              (.85*w,-.65),(.65*w,-1.13),(.35*w,-1.42),(.095*w,-1.51)]
+        for side,section in ((-1,half),(1,reversed(half))):
+            verts.extend((side*x,y,z-rake*(top-y)/(top+1.51)) for x,y in section)
+    n=16
+    faces=[tuple(reversed(range(n)))]
+    for row in range(len(stations)-1):
+        for k in range(n-1):
+            a=row*n+k
+            faces.append((a,a+1,a+n+1,a+n))
+    faces.append(tuple(range((len(stations)-1)*n,len(stations)*n)))
+    g.role="ShellPlates"
     g.add(verts,faces,PAINT)
-    # Deck is built around two true holds. There is deliberately no hull top
-    # polygon across the openings and no cargo spawn hidden inside solid deck.
     g.role="Deck"
-    for x in (-2.475,2.475): chamfer(g,(x,1.52,0),(.45,.16,12),METAL)
-    for z,length in ((-5.475,1.05),(0,6.1),(5.475,1.05)):
-        chamfer(g,(0,1.52,z),(4.5,.16,length),METAL)
-    for a,b in ((0,1),(1,2),(4,5),(5,6)):
-        za,wa,ya=stations[a];zb,wb,yb=stations[b]
-        # aft and raised bow deck segments only, beyond both hatch apertures.
-        if za>=6 or zb<=-6:
-            vertices=[(-wa*2.7,ya,za),(wa*2.7,ya,za),(wb*2.7,yb,zb),(-wb*2.7,yb,zb),
-                      (-wa*2.7,ya-.14,za),(wa*2.7,ya-.14,za),(wb*2.7,yb-.14,zb),(-wb*2.7,yb-.14,zb)]
-            g.add(vertices,[(0,1,2,3),(4,7,6,5),(0,4,5,1),(1,5,6,2),(2,6,7,3),(3,7,4,0)],METAL)
+    for (za,wa,ya),(zb,wb,yb) in zip(stations,stations[1:]):
+        # Two narrow side aisles beside the open holds. Other stations use the
+        # whole breadth and meet the shell, including the swept foredeck.
+        if abs(abs((za+zb)*.5)-4)<.99:
+            strips=[(-wa,-2.2,-wb,-2.2),(2.2,wa,2.2,wb)]
+        else:
+            strips=[(-wa,wa,-wb,wb)]
+        for la,ra,lb,rb in strips:
+            top=[(la,ya,za),(ra,ya,za),(rb,yb,zb),(lb,yb,zb)]
+            g.add(top+[(x,y-.14,z) for x,y,z in top],
+                  [(0,1,2,3),(4,7,6,5),(0,4,5,1),(1,5,6,2),(2,6,7,3),(3,7,4,0)],METAL)
     g.role=None
     for i,z in enumerate((-4,4)):
         for x in (-2.27,2.27): chamfer(g,(x,1.64,z),(.12,.28,1.98),EDGE,.02)
@@ -1049,26 +1064,50 @@ def trawler(mat):
         for zz in (-.94,.94): g.box((0,.55,z+zz),(4.42,2.1,.08),METAL)
         hinge=empty("Hatch"+"AB"[i],root,(2.33,1.82,z))
         leaf=Geometry()
+        leaf.role="HatchPaint"
         chamfer(leaf,(-2.33,0,0),(4.66,.13,2.04),PAINT,.04)
-        for zz in (-.65,0,.65): leaf.box((-2.33,.09,zz),(4.4,.05,.065),METAL)
-        for zz in (-.65,.65): leaf.rod((-4.4,.12,zz-.13),(-4.4,.12,zz+.13),.035,DARK)
+        leaf.role=None
+        for zz in (-.70,0,.70):
+            chamfer(leaf,(-2.30,.107,zz),(4.42,.095,.07),METAL,.018)
+        # Split knuckles interleave on the actual fore-aft pivot. Feet on
+        # the coaming stay put when the lid and its welded straps swing up.
+        for zz in (-.71,.71):
+            chamfer(leaf,(-.27,.089,zz),(.58,.05,.14),METAL,.016)
+            leaf.rod((0,0,zz-.069),(0,0,zz+.069),.071,METAL,12)
+            for offset in (-.112,.112):
+                dz=zz+offset
+                chamfer(g,(2.39,1.742,z+dz),(.16,.155,.066),METAL,.013)
+                g.rod((2.33,1.82,z+dz-.033),(2.33,1.82,z+dz+.033),.066,METAL,12)
+            g.rod((2.33,1.82,z+zz-.16),(2.33,1.82,z+zz+.16),.032,DARK,10)
+            for dx in (-.46,-.18):
+                leaf.rod((dx,.109,zz),(dx,.128,zz),.031,DARK,6)
+            for end in (-.14,.14):
+                leaf.rod((-4.35,.066,zz+end),(-4.35,.185,zz+end),.029,METAL,8)
+            leaf.rod((-4.35,.185,zz-.14),(-4.35,.185,zz+.14),.031,DARK,8)
         obj(leaf,"HatchLeaf"+"AB"[i],hinge,mat)
         empty("ANCHOR_Cargo"+"AB"[i],root,(0,1.6,z))
-    # Raised continuous bulwarks and metal top rails follow the hull stations.
-    for sign in (-1,1):
-        for j in range(len(stations)-1):
-            za,wa,ya=stations[j];zb,wb,yb=stations[j+1]
-            aa=(sign*2.7*wa,ya+.45,za);bb=(sign*2.7*wb,yb+.45,zb)
-            g.rod(aa,bb,.055,DARK,8)
-            g.rod((aa[0],.15,za),(bb[0],.15,zb),.085,DARK,8)
-            g.rod((aa[0],ya,za),aa,.045,METAL,6)
+    # Rolled cap and rubbing strake follow the flared shell. Narrow bases
+    # keep the side aisles clear where the deckhand reaches the mooring lines.
+    for side in (-1,1):
+        for (za,wa,ya),(zb,wb,yb) in zip(stations,stations[1:]):
+            g.rod((side*(wa-.065),ya+.49,za),(side*(wb-.065),yb+.49,zb),.048,METAL,8)
+            g.rod((side*(wa-.025),ya,za),(side*(wb-.025),yb,zb),.046,PAINT,8)
+            g.rod((side*wa*.985,.76,za),(side*wb*.985,.76,zb),.068,DARK,8)
+        for z,w,y in stations[:-1]:
+            x=side*(w-.11)
+            chamfer(g,(x,y+.023,z),(.18,.046,.19),METAL,.012)
+            g.rod((x,y+.045,z),(side*(w-.065),y+.49,z),.035,METAL,8)
+        g.rod((side*.02,3.03,10),(side*.02,2.54,10),.040,METAL,8)
+    g.rod((-1.535,2.09,-10),(1.535,2.09,-10),.048,METAL,8)
     # Wheelhouse has a real glazed front opening so its captain remains visible.
+    g.role="CabinPaint"
     cabinfront=kit.translated(kit.wall_run(3,2.55,.13,[kit.Opening(-.72,1.15,2.24,1.1),kit.Opening(.72,1.15,2.24,1.1)]),(0,-6.1,1.6))
     kit_add(g,cabinfront,CABIN)
     for x in (-1.5,1.5):
         wall=kit.translated(kit.rotated_z(kit.wall_run(3,2.55,.13,[kit.Opening(.35,1.65,2.24,1.1)]),90),(x,-7.6,1.6))
         kit_add(g,wall,CABIN)
     chamfer(g,(0,2.875,-9.1),(3,2.55,.13),CABIN)
+    g.role=None
     chamfer(g,(0,4.25,-7.6),(3.36,.2,3.46),DARK,.055)
     # Glazing is a separate semantically named renderer for shared glass material.
     glass=Geometry()
@@ -1083,7 +1122,12 @@ def trawler(mat):
     g.box((0,6.4,-7.48),(1.7,.16,.2),CABIN)
     for x in (-1.1,1.1):
         g.rod((x,1.65,-9.3),(x,2.2,-9.3),.23,DARK,10)
-        for j in range(5): ring(g,(x,1.8+j*.065,-9.3),.245,.025,ROPE)
+        last=None
+        for step in range(65):
+            angle=math.tau*step/16
+            point=(x+.247*math.cos(angle),1.826+.061*step/16,-9.3+.247*math.sin(angle))
+            if last is not None: g.rod(last,point,.031,ROPE,6)
+            last=point
     # Working nets stay folded outside the crane's hatch-to-quay corridors.
     for z in (-1.1,-.6,0,.6):
         for x in (-2.25,2.25):
@@ -1091,18 +1135,26 @@ def trawler(mat):
     for z, lateral, y, grade in SHIP_BOLLARDS.values():
         for side in (-1, 1):
             bollard(g, side*lateral, y, z, grade)
-    # Scuffs and welded repair plates are sparse and dull, never fresh damage.
-    for side in (-1,1):
-        for z in (-5,-2,1,3):
-            chamfer(g,(side*2.706,.55,z),(.035,.28,.6),METAL,.012)
-            g.box((side*2.73,.31,z+.1),(.014,.23,.035),RUST)
-    # A forward anchor winch, chain run and hawse mouths give the bow a real
-    # working purpose without crowding the port-side mooring path.
-    chamfer(g,(0,2.17,8.35),(1.25,.22,.85),PAINT)
-    g.rod((-.64,2.52,8.35),(.64,2.52,8.35),.27,METAL,12)
-    for x in (-.49,0,.49):ring(g,(x,2.52,8.35),.29,.04,DARK,(1,0,0),12)
-    for z in (8.65,8.84,9.03,9.22):ring(g,(0,2.40+(z-8.65)*.17,z),.08,.018,DARK,(1,0,0),10)
-    for x in (-.75,.75):ring(g,(x,2.28,8.7),.15,.05,DARK,(0,1,0),10)
+    # Paired bearing cheeks, barrel, flanges and the brake wheel make a bow
+    # windlass whose chain actually leaves the drum on a tangent.
+    chamfer(g,(0,2.12,8.13),(1.38,.24,.88),PAINT,.045)
+    for x in (-.52,.52):
+        chamfer(g,(x,2.36,8.09),(.16,.48,.51),METAL,.06)
+    g.rod((-.69,2.56,8.09),(.69,2.56,8.09),.115,METAL,12)
+    g.rod((-.43,2.56,8.09),(.43,2.56,8.09),.205,DARK,16)
+    for x in (-.39,-.11,.11,.39):
+        g.rod((x-.023,2.56,8.09),(x+.023,2.56,8.09),.285,PAINT,16)
+    ring(g,(.74,2.56,8.09),.255,.028,METAL,(1,0,0),16)
+    for i in range(4):
+        a=math.tau*i/4
+        g.rod((.74,2.56,8.09),(.74,2.56+.25*math.cos(a),8.09+.25*math.sin(a)),.018,METAL,6)
+    # An inclined chain pipe meets the raised foredeck below the final link.
+    chamfer(g,(0,2.39,9.05),(.36,.35,.29),PAINT,.045)
+    ring(g,(0,2.55,9.05),.112,.031,DARK,(0,1,0),12)
+    for index in range(12):
+        t=index/11
+        ring(g,(0,2.76-.20*t,8.10+.95*t),.061,.017,METAL,
+             (1,0,0) if index%2 else (0,1,0),10)
     # Layered wheelhouse glazing: sill, thin mullions, wiper and an actual
     # rear access leaf separate the cabin from the old generic box silhouette.
     for x in (-1.38,-.08,.08,1.38):
@@ -1117,6 +1169,29 @@ def trawler(mat):
     for x in (-1.17,1.17):
         g.rod((x,4.35,-7.5),(x,4.73,-7.5),.045,METAL)
         chamfer(g,(x,4.74,-7.4),(.32,.21,.36),DARK,.025)
+    # A raked visor over the front lights and sloping roof drips alter the
+    # wheelhouse silhouette without obscuring the helm, its glass or the lamp.
+    visor=[(-1.68,4.18,-6.16),(1.68,4.18,-6.16),(1.53,4.08,-5.62),(-1.53,4.08,-5.62)]
+    g.add(visor+[(x,y+.065,z) for x,y,z in visor],
+          [(0,1,2,3),(4,7,6,5),(0,4,5,1),(1,5,6,2),(2,6,7,3),(3,7,4,0)],PAINT)
+    g.rod((-1.53,4.11,-5.62),(1.53,4.11,-5.62),.035,METAL,8)
+    for side in (-1,1):
+        x=side*1.575
+        for y in (2.67,3.86):
+            chamfer(g,(x,y,-7.25),(.085,.075,1.83),PAINT,.018)
+        for z in (-8.10,-6.40):
+            chamfer(g,(x,3.27,z),(.085,1.20,.074),METAL,.016)
+        g.rod((side*1.49,3.91,-6.03),(side*1.48,4.09,-5.66),.027,METAL,8)
+        g.rod((side*1.62,4.18,-9.20),(side*1.62,4.18,-6.01),.035,PAINT,8)
+    # The raised roof has a shallow crown and folded eaves. Short sloped
+    # knees and a coaming stiffen the cabin without covering its side lights.
+    for side in (-1,1):
+        chamfer(g,(side*1.525,1.79,-7.59),(.12,.22,2.98),PAINT,.023)
+        for z in (-8.68,-6.42):
+            g.rod((side*1.78,1.61,z),(side*1.55,2.17,z),.045,PAINT,8)
+        skin=[(0,4.43,-9.28),(side*1.62,4.35,-9.28),(side*1.62,4.35,-5.96),(0,4.43,-5.96)]
+        g.add(skin+[(x,y-.055,z) for x,y,z in skin],
+              [(0,1,2,3),(4,7,6,5),(0,4,5,1),(1,5,6,2),(2,6,7,3),(3,7,4,0)],PAINT)
     # A substantial old searchlight: raised yoke, deep drum and rolled rim.
     # Its authored short cone makes a working shaft readable in coastal fog;
     # it reaches only the foredeck and nearest water, never the closed beach.
@@ -1156,7 +1231,8 @@ def trawler(mat):
            for r in range(len(rings)-1) for i in range(segments)]
     beam.add(vertices,faces,LAMP,uv,solid=False)
     # Keep axial UVs: obj() intentionally replaces plain surfaces with palette UVs.
-    beam.object("SearchlightBeam",root,mat)
+    beam_mesh=beam.object("SearchlightBeam",root,mat)
+    for face in beam_mesh.data.polygons: face.use_smooth=True
     # Folded fishing net in its low bin, away from both working holds and
     # the continuous side aisles. Each strand rests on the stack beneath it.
     chamfer(g,(.2,1.7,.1),(1.8,.20,2.1),WOOD)
@@ -1173,12 +1249,16 @@ def trawler(mat):
         g.rod((x,2.10,-.8),(x+.08,2.1+.06*math.cos(j),.85),.018,ROPE,5)
     for z in (-.75,-.2,.35,.85):
         g.rod((.99,2.12,z),(1.08,2.12,z),.065,ROPE,8)
-    # Working-deck panel seams and salt-dark drainage mouths stay subordinate
-    # to the ship's silhouette; nothing seals a cargo extraction aperture.
-    for z in (-8.6,-7.7,-6.8,-2.6,-1.6,1.7,2.6,6.6):
-        for x in (-2.46,2.46):g.box((x,1.606,z),(.34,.012,.018),DARK)
-    for x in (-2.71,2.71):
-        for z in (-5.7,-2.4,2.4,5.7):g.box((x,1.3,z),(.018,.14,.31),DARK)
+    # Recessed outlets have formed rims; rust trails in the hull charts
+    # start at the two lower corners of each outlet in this same metre frame.
+    for side in (-1,1):
+        for z in (-5.7,-2.4,2.4,5.7):
+            w=float(np.interp(z,[a[0] for a in stations],[a[1] for a in stations]))
+            x=side*(w+.004)
+            chamfer(g,(x,1.37,z),(.045,.14,.30),DARK,.016)
+            for dz in (-.156,.156):
+                g.rod((x,1.30,z+dz),(x,1.44,z+dz),.016,METAL,6)
+            g.rod((x,1.44,z-.156),(x,1.44,z+.156),.019,PAINT,8)
     # Propeller and rudder explain propulsion when the source is inspected.
     g.rod((0,-.85,-9),(0,-.85,-10.3),.10,METAL,8)
     for i in range(3):
@@ -1598,9 +1678,30 @@ def source_surface_materials(roots):
         multiply.inputs[2].default_value=tuple(linear(c) for c in tint)+(1,)
         links.new(tex.outputs["Color"],multiply.inputs[1]);links.new(multiply.outputs[0],shader.inputs["Base Color"])
         shader.inputs["Roughness"].default_value=.87;materials[role]=mat
+    vessel_material=bpy.data.materials.new("Trawler formed steel");vessel_material.use_nodes=True
+    nodes=vessel_material.node_tree.nodes; links=vessel_material.node_tree.links
+    shader=nodes.get("Principled BSDF")
+    for filename in ("TrawlerAlbedo","TrawlerResponse"):
+        tex=nodes.new("ShaderNodeTexImage")
+        tex.image=bpy.data.images.load(str(ROOT/("Assets/Resources/City/Port/"+filename+".png")),check_existing=True)
+        tex.extension="EXTEND"
+        if filename=="TrawlerAlbedo":
+            links.new(tex.outputs["Color"],shader.inputs["Base Color"])
+        else:
+            tex.image.colorspace_settings.name="Non-Color"
+            channels=nodes.new("ShaderNodeSeparateColor");links.new(tex.outputs["Color"],channels.inputs[0])
+            rough=nodes.new("ShaderNodeMath");rough.operation="MULTIPLY_ADD"
+            rough.inputs[1].default_value=-.32;rough.inputs[2].default_value=1
+            links.new(channels.outputs["Red"],rough.inputs[0]);links.new(rough.outputs[0],shader.inputs["Roughness"])
+            bump=nodes.new("ShaderNodeBump");bump.inputs["Distance"].default_value=.0015
+            links.new(channels.outputs["Green"],bump.inputs["Height"]);links.new(bump.outputs[0],shader.inputs["Normal"])
+        tex.image.pack()
     for root in roots:
         for part in root.children_recursive:
             if part.type!="MESH" or "__" not in part.name:continue
+            if root.name=="Trawler" and part.name.endswith(("__ShellPlates","__Deck","__HatchPaint","__CabinPaint")):
+                part.data.materials[0]=vessel_material
+                continue
             role=part.name.rsplit("__",1)[1].split(".")[0]
             if role in materials:part.data.materials[0]=materials[role]
 

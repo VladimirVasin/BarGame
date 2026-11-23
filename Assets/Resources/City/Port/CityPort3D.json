@@ -610,8 +610,8 @@
           ]
         }
       ],
-      "triangles": 13600,
-      "geometry_signature": "528066bc9357d9117cba162be6742574a29e969d8ac8a8fb18dabc720af479e2"
+      "triangles": 20482,
+      "geometry_signature": "e9f19a0642357405cb1efcc95dfa3e842696a624e5d97c1a0db578c69f3b9d6f"
     },
     {
       "name": "CraneBase",

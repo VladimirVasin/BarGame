@@ -5,8 +5,8 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-23
 
-CityBoatRentalStation checks sign UVs, hull rests and pier return. ImageGenCityMap_PreservesPlanAndLivePlaces checks the redrawn map. CityRiverEmbankments checks bridge walks and line 03 clearance; validate_mooring_feet checks contact.
-CityParkBandstand checks seat transfers, corner clicks, both boards under one lamp and default residents’ wardrobe.
+CityTrawlerVisit checks the vessel and cargo. CityPort measures the hull; its road assertion expects an enabled source mesh. CityBoatRentalStation checks sign UVs, rests and pier return. ImageGenCityMap_PreservesPlanAndLivePlaces verifies the redraw. CityRiverEmbankments checks walks/line 03. validate_mooring_feet checks contact.
+CityParkBandstand checks seats, corner clicks, one lamp and resident outfits.
 
 CityCanneryFinishes checks the rebuilt bay, work surfaces, dispatch and the equipped apron panels in pose.
 
@@ -14,8 +14,8 @@ PlayerWatchPlayModeTests checks the LCD colon against real seconds with the cale
 
 CityAsphaltPaving shows staggered runs, sealed joints and fine aggregate under street lights.
 CityGroceryStreetFinishes checks the surveyed curb and running bond. BeerCanFinishFollowsTheHeldParts checks sleeve fibres, grip polish and lid marks in hand.
-CityGrocerySignFromStreet checks the enamel print from both approaches and the overlapping pools of light at night.
-CityWaterworksPaving checks the cut-stone court, new trough, spout over the water and caged lamp.
+CityGrocerySignFromStreet checks both approaches and overlapping night lights.
+CityWaterworksPaving checks stone, trough, spout and caged lamp.
 The column, zinc bypass, worn wheel and drains share a metallic atlas. The City misc Blender
 generator checks the remaining catalogue against the previous revision.
 CityClosedCinema checks the prints on both mirrored facades. CityLastRouteIsland checks the raised stone against the common ground, sit dock and bin clearance. Folded roofs, a chipped mast and empty departure tracks read from both approaches.

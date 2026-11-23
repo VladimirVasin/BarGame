@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
@@ -364,9 +365,115 @@ namespace BarPromenade.Tests.PlayMode
             Assert.Throws<ArgumentOutOfRangeException>(() => CityPortCycle.Sample(-1d));
         }
 
+        [UnityTest]
+        [Explicit("Trawler geometry, cargo custody over one visit and public views in dry and wet weather.")]
+        public IEnumerator CityTrawlerVisit() => CaptureFocusedPort(CaptureTrawlerVisit);
+
+        private static IEnumerator CaptureTrawlerVisit(Camera camera, CityGameRoot city,
+            CityPortController port, CityPortCrew crew)
+        {
+            double unload = CityPortCycle.UnloadStartSeconds;
+            bool automaticWeather = city.Weather.enabled;
+            float previousRain = city.Rain.Intensity;
+            float previousSeaRain = CityWaterResources.RainIntensity;
+            var previousWetness = CityWetSurfaceRegistry.CaptureCheckpoint();
+            try
+            {
+                city.Weather.enabled = false;
+                SetWeather(12, 0f);
+                yield return CapturePort(camera, city, port, crew, unload, "trawler-berth-final",
+                    new Vector3(18.5f, CityPortPlan.DeckHeight + EyeHeight, -5f), new Vector3(0f, 3f, 3.2f), 68f);
+                yield return CapturePort(camera, city, port, crew, 55d, "trawler-approach",
+                    new Vector3(12f, 3.22f, -2.8f), Vector3.zero);
+                Assert.That(port.Snapshot.Stage, Is.EqualTo(CityPortCycleStage.Approach));
+                yield return CapturePort(camera, city, port, crew, unload + 10d, "trawler-quay-day",
+                    new Vector3(9.0f, 3.22f, -2.8f), new Vector3(2f, 2.4f, 3.2f), 74f);
+                yield return CapturePort(camera, city, port, crew, 84d, "trawler-bow-day",
+                    new Vector3(-13.4f, 3.22f, -2.4f), new Vector3(-5.3f, 2f, 3.2f), 70f);
+                yield return CapturePort(camera, city, port, crew, unload + 10d, "trawler-rig-day",
+                    new Vector3(-10.4f, 3.22f, -1.8f), new Vector3(-5.8f, 2.65f, 3.2f), 57f);
+                yield return CapturePort(camera, city, port, crew, unload + 7d, "trawler-open-hold",
+                    new Vector3(-4f, 5.55f, -.75f), new Vector3(-4f, 1.15f, 3.2f), 66f);
+                Assert.That(crew.CaptainHandsMatch && crew.CraneHandsMatch, Is.True);
+                CheckTrawlerFrame("trawler-open-hold");
+                SetWeather(21, 1f);
+                yield return CapturePort(camera, city, port, crew, unload + 10d, "trawler-quay-rain-night",
+                    new Vector3(9f, 3.22f, -2.8f), new Vector3(2f, 2.4f, 3.2f), 74f);
+                CheckTrawlerFrame("trawler-quay-rain-night");
+                double depart = unload + CityPortCycle.UnloadDurationSeconds +
+                    CityPortCycle.SecureDurationSeconds + CityPortCycle.UnmoorDurationSeconds;
+                yield return CapturePort(camera, city, port, crew, depart + 12d, "trawler-departure",
+                    new Vector3(12f, 3.22f, -2.8f), Vector3.zero);
+                Assert.That(port.Snapshot.Stage, Is.EqualTo(CityPortCycleStage.Depart));
+                ValidateTrawlerFinishes(port);
+                var shaft = CityPortAssetProvider.FindPart(port.Vessel.gameObject, "SearchlightBeam").GetComponent<Renderer>();
+                var beamProperties = new MaterialPropertyBlock();
+                shaft.GetPropertyBlock(beamProperties);
+                Assert.That(beamProperties.GetFloat("_SoftShaft"), Is.EqualTo(1f));
+                ValidatePortCargoCycle(port);
+            }
+            finally
+            {
+                city.Rain.SetIntensity(previousRain);
+                CityWaterResources.SetRainIntensity(previousSeaRain);
+                CityWetSurfaceRegistry.RestoreCheckpoint(previousWetness);
+                city.Weather.enabled = automaticWeather;
+            }
+
+            void SetWeather(int hour, float rain)
+            {
+                GameSessionState.AdvanceGameTime((float)((hour*60d - GameSessionState.GameTimeOfDayMinutes)
+                    / GameTimeState.GameMinutesPerRealSecond));
+                city.DayNight.ApplyCurrentTime(true);
+                city.Rain.SetIntensity(rain);
+                CityWaterResources.SetRainIntensity(rain);
+                CityWetSurfaceRegistry.SetImmediate(rain);
+            }
+        }
+
+        private static void CheckTrawlerFrame(string frame)
+        {
+            string path = Path.Combine(Application.dataPath, "..", "Captures", "City", frame + ".png");
+            var image = new Texture2D(2, 2);
+            try
+            {
+                Assert.That(image.LoadImage(File.ReadAllBytes(path)), Is.True);
+                Color32[] pixels = image.GetPixels32();
+                int magenta = 0;
+                for (int i = 0; i < pixels.Length; i += 17)
+                {
+                    Color32 p = pixels[i];
+                    if (p.r > 120 && p.b > 120 && p.r > 1.7f * p.g && p.b > 1.7f * p.g)
+                        magenta++;
+                }
+                Assert.That(magenta, Is.LessThan(20), frame + " contains error-shader pixels");
+            }
+            finally { Object.DestroyImmediate(image); }
+        }
+
+        private static void ValidateTrawlerFinishes(CityPortController port)
+        {
+            Texture2D pigment = Resources.Load<Texture2D>("City/Port/TrawlerAlbedo");
+            Texture2D response = Resources.Load<Texture2D>("City/Port/TrawlerResponse");
+            Assert.That(pigment.width, Is.EqualTo(2048));
+            Assert.That(response.width, Is.EqualTo(pigment.width));
+            var finish = Resources.Load<Material>("City/Port/TrawlerFinish");
+            foreach (string name in new[] { "TrawlerVisible__ShellPlates", "TrawlerVisible__Deck", "TrawlerVisible__CabinPaint",
+                         "HatchLeafA__HatchPaint", "HatchLeafB__HatchPaint" })
+            {
+                Renderer renderer = CityPortAssetProvider.FindPart(port.Vessel.gameObject, name).GetComponent<Renderer>();
+                Assert.That(renderer.sharedMaterial, Is.SameAs(finish), name);
+                Assert.That(finish.GetTexture("_BaseMap"), Is.SameAs(pigment), name);
+                Assert.That(finish.GetTexture("_GroundResponse"), Is.SameAs(response), name);
+                Assert.That(finish.GetFloat("_GroundCityClimate"), Is.EqualTo(1f), name);
+            }
+        }
+
         private static void ValidatePortMeshesAndGround(CityPortController port, CityGameRoot city)
         {
-            Bounds vessel = PortLocalMeshBounds(port.Vessel);
+            // The searchlight volume extends beyond the bow and is not part of the hull.
+            Transform body = CityPortAssetProvider.FindPart(port.Vessel.gameObject, "TrawlerVisible");
+            Bounds vessel = PortLocalMeshBounds(port.Vessel, body);
             Assert.That(vessel.size.z, Is.InRange(20f, 21.5f));
             Assert.That(vessel.size.x, Is.InRange(5.3f, 5.8f));
             Assert.That(vessel.min.y, Is.EqualTo(-CityPortPlan.VesselDraft).Within(.025f));
@@ -814,10 +921,10 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
-        private static Bounds PortLocalMeshBounds(Transform root)
+        private static Bounds PortLocalMeshBounds(Transform root, Transform geometry = null)
         {
             Vector3 low = Vector3.positiveInfinity, high = Vector3.negativeInfinity;
-            foreach (MeshFilter filter in root.GetComponentsInChildren<MeshFilter>(true))
+            foreach (MeshFilter filter in (geometry ?? root).GetComponentsInChildren<MeshFilter>(true))
             {
                 if (filter.name.StartsWith("COL_", StringComparison.Ordinal)) continue;
                 foreach (Vector3 vertex in filter.sharedMesh.vertices)

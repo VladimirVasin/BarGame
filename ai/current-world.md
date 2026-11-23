@@ -1157,9 +1157,9 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   night-gated), rendered on its own no-fog shaders with a
   camera-distance self-fade inside the 48 m far plane — visible from
   the esplanade, sand and pier head, gone from every street;
-- Port (`CityPort{Plan,Cycle,Controller}`): `20 m` trawler, west-mouth berth;
-  2 cranes/trolley/cold store, 3 units. First running/unpaused entry starts
-  ship/supply once; pre-entry time excluded. Autonomous scenes/reentry;
+- Port (`CityPort*`): west berth, 20 m plated trawler, hinged holds, windlass,
+  worn deck, two cranes, cart/cold store. First unpaused entry starts supply.
+  Three loads. Autonomous scenes/reentry;
   new-game reset. Before: Approach `0`. `432 s`+waits: moor, `3*64 s`
   deliveries, secure/depart/idle; truck gates next ship. Silent custody seek.
   Cargo clears baffle; roller leaf/rails move together, outer-jamb bumpers.

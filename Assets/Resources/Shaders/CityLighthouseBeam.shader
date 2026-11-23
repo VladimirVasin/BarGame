@@ -5,6 +5,7 @@ Shader "Bar Promenade/City Lighthouse Beam"
         [HDR] _BeamColor("Beam Color", Color) = (3.8, 3.6, 3.12, 1)
         _Intensity("Intensity", Range(0, 8)) = 1
         _Uniform("Uniform Glow", Range(0, 1)) = 0
+        _SoftShaft("Soft shell for nearby work lights", Float) = 0
         _FadeStartDistance("Fade Start Distance", Float) = 46.8
         _FadeEndDistance("Fade End Distance", Float) = 47.8
     }
@@ -41,6 +42,7 @@ Shader "Bar Promenade/City Lighthouse Beam"
                 half4 _BeamColor;
                 half _Intensity;
                 half _Uniform;
+                half _SoftShaft;
                 float _FadeStartDistance;
                 float _FadeEndDistance;
             CBUFFER_END
@@ -48,6 +50,7 @@ Shader "Bar Promenade/City Lighthouse Beam"
             struct Attributes
             {
                 float4 positionOS : POSITION;
+                float3 normalOS : NORMAL;
                 float2 uv : TEXCOORD0;
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
@@ -56,6 +59,7 @@ Shader "Bar Promenade/City Lighthouse Beam"
             {
                 float4 positionCS : SV_POSITION;
                 float3 positionWS : TEXCOORD1;
+                half3 shellNormalWS : TEXCOORD2;
                 float2 uv : TEXCOORD0;
                 UNITY_VERTEX_OUTPUT_STEREO
             };
@@ -70,6 +74,7 @@ Shader "Bar Promenade/City Lighthouse Beam"
                 output.positionCS = TransformWorldToHClip(
                     output.positionWS);
                 output.uv = input.uv;
+                output.shellNormalWS = TransformObjectToWorldNormal(input.normalOS);
                 return output;
             }
 
@@ -98,6 +103,15 @@ Shader "Bar Promenade/City Lighthouse Beam"
                     _FadeEndDistance,
                     dist);
                 half strength = envelope * fade * _Intensity;
+                if (_SoftShaft > .5h)
+                {
+                    // At a distance the lighthouse is a graphic silhouette. The
+                    // nearby vessel instead needs a finite glowing volume whose
+                    // optical path tapers to zero at both visible edges.
+                    half chord = saturate(abs(dot(normalize(input.shellNormalWS),
+                        GetWorldSpaceNormalizeViewDir(input.positionWS))));
+                    strength *= .38h * chord * chord;
+                }
                 return half4(_BeamColor.rgb * strength, 1.0h);
             }
             ENDHLSL

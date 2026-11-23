@@ -53,6 +53,10 @@ namespace BarPromenade
             var wrapper = new GameObject(name);
             wrapper.transform.SetParent(parent, false);
             GameObject model = UnityEngine.Object.Instantiate(template, wrapper.transform, false);
+            Material vesselFinish = name == "Trawler" ? Resources.Load<Material>(ResourceFolder + "TrawlerFinish") : null;
+            var vesselProperties = vesselFinish != null ? new MaterialPropertyBlock() : null;
+            if (name == "Trawler" && vesselFinish == null)
+                throw new InvalidOperationException("Missing shared trawler finish.");
             foreach (MeshRenderer renderer in model.GetComponentsInChildren<MeshRenderer>(true))
             {
                 bool collision = renderer.name.StartsWith("COL_", StringComparison.Ordinal);
@@ -72,7 +76,18 @@ namespace BarPromenade
                 }
                 int regionSeparator = renderer.name.LastIndexOf("__", StringComparison.Ordinal);
                 string region = regionSeparator >= 0 ? renderer.name.Substring(regionSeparator + 2) : "Plain";
-                renderer.sharedMaterial = renderer.name == "CabinGlass" ? GlassMaterial : GetSurfaceMaterial(region);
+                if (vesselFinish != null && (region == "ShellPlates" || region == "Deck" ||
+                    region == "HatchPaint" || region == "CabinPaint"))
+                {
+                    renderer.sharedMaterial = vesselFinish;
+                    // The weather pass reads renderer properties outside UnityPerMaterial.
+                    // A real per-finish override also keeps these few moving parts on
+                    // the compatible rendering path instead of GPU Resident Drawer.
+                    renderer.GetPropertyBlock(vesselProperties);
+                    vesselProperties.SetFloat("_Smoothness", region == "Deck" ? .14f : .24f);
+                    renderer.SetPropertyBlock(vesselProperties);
+                }
+                else renderer.sharedMaterial = renderer.name == "CabinGlass" ? GlassMaterial : GetSurfaceMaterial(region);
                 renderer.shadowCastingMode = renderer.name == "CabinGlass" ? ShadowCastingMode.Off : ShadowCastingMode.On;
                 renderer.receiveShadows = true;
                 renderer.lightProbeUsage = LightProbeUsage.BlendProbes;
@@ -81,9 +96,6 @@ namespace BarPromenade
                 else if (name == "Dock" &&
                          (renderer.name == "DockVisible__Concrete" ||
                           renderer.name == "DockVisible__ConcreteWall"))
-                    GroundAuthoredSurfaceAppearance.Apply(renderer,
-                        GroundSurfaceKind.Concrete, cityClimate: true);
-                else if (name == "Trawler" && renderer.name == "TrawlerVisible__Deck")
                     GroundAuthoredSurfaceAppearance.Apply(renderer,
                         GroundSurfaceKind.Concrete, cityClimate: true);
                 else if (name == "AccessRoad" && region == "RoadMarking")

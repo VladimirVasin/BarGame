@@ -333,6 +333,7 @@ namespace BarPromenade
             properties.Clear();
             properties.SetColor("_BeamColor", new Color(2.3f, 1.55f, .68f, 1f));
             properties.SetFloat("_Uniform", uniform);
+            properties.SetFloat("_SoftShaft", 1f - uniform);
             properties.SetFloat("_Intensity", intensity);
             properties.SetFloat("_FadeStartDistance", 36f);
             properties.SetFloat("_FadeEndDistance", 46f);
