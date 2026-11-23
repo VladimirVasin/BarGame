@@ -223,10 +223,8 @@ Source-preservation: review owners/coverage без повтора действи
 
 ### 30. Супермаркет — Current
 
-- [x] `Supermarket` Passed: касса/кассир/товары/ценники/опоры/холодильная ниша;
-  линолеум/краска/металл/bloom сохранены. Покупка/возврат Passed:
-  `ShelfBrowser_CentersProducts_CrossesAndSkipsEmptyShelf_ThenRestoresState`.
-  Внешний вход — source-preservation.
+- [x] `SupermarketFinishes` — секции холодильника, гнутые полки и цены, ролики/стекло кассы,
+  сварной пол. Опоры товаров, обход рядов, покупка и обратный путь. Внешний вход сохранён.
 - [x] CCTV imported basis нормализована при прежних world poses детей.
   `Supermarket` Passed: actual iris ray/normal после Track; четыре фронта просмотрены.
 - [x] Индекс: четыре камеры, без surveillance gameplay.

@@ -24,10 +24,12 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 import bar_parts as bp  # noqa: E402
 import interior_kit as kit  # noqa: E402
+import supermarket_floor_rolls as rolls
+import supermarket_shop_charts as charts
 import supermarket_checkout_detail as checkout_detail  # noqa: E402
 
 GENERATOR = "tools/build-supermarket-interior-3d-model.py"
-GENERATOR_VERSION = "1.2.1"
+GENERATOR_VERSION = "1.3.0"
 DESIGN_ID = "supermarket_interior_v1"
 DISPLAY_NAME = "Bar Promenade Supermarket Interior"
 ROOM_WIDTH = 16.0
@@ -56,7 +58,11 @@ TEXTURE_PATHS = {
     "Counter": ROOT / "Assets/Resources/Supermarket/Textures/SupermarketCounterAlbedo.png",
     "Cardboard": ROOT / "Assets/Resources/Supermarket/Textures/SupermarketCardboardAlbedo.png",
 }
+for sheet in ("FloorRolls", "Fittings", "BrushedSteel"):
+    texture = "Fittings" if sheet == "BrushedSteel" else sheet
+    TEXTURE_PATHS[sheet] = TEXTURE_PATHS["Counter"].with_name(f"Supermarket{texture}Albedo.png")
 SHEET_PITCH = {
+    "FloorRolls": 1., "Fittings": 1., "BrushedSteel": 1.,
     "": 1.0,
     "Linoleum": 2.4,
     "WallPaint": 2.6,
@@ -66,8 +72,7 @@ SHEET_PITCH = {
     "Cardboard": 0.9,
 }
 ALLOWED_SHEETS = frozenset(SHEET_PITCH)
-FLOOR = (0.255, 0.285, 0.265, 1.0)
-FLOOR_PATCH = (0.165, 0.185, 0.170, 1.0)
+FLOOR_PATCH = (0.35, 0.37, 0.32, 1.0)
 WALL = (0.56, 0.57, 0.47, 1.0)
 WALL_SHADOW = (0.275, 0.305, 0.265, 1.0)
 GREEN_STRIPE = (0.29, 0.43, 0.34, 1.0)
@@ -219,7 +224,7 @@ def material_for(
                 "Cardboard": 0.94,
             }.get(sheet, 0.82)
         if metallic is not None:
-            metallic.default_value = 0.24 if sheet == "ShelfMetal" else 0.0
+            metallic.default_value = {"ShelfMetal": .24, "BrushedSteel": .58}.get(sheet, 0.)
         texture_path = TEXTURE_PATHS.get(sheet)
         if texture_path is not None and texture_path.exists() and base_input is not None:
             image = bpy.data.images.load(str(texture_path), check_existing=True)
@@ -245,21 +250,26 @@ def material_for(
     asset.materials[key] = material
     return material
 
-def assign_world_uv(mesh: "bpy.types.Mesh", pitch: float) -> None:
+def assign_world_uv(mesh, geometry, sheet, cell):
     layer = mesh.uv_layers.new(name="UVMap")
     metric = mesh.uv_layers.new(name="MetricUV")
+    bounds = kit.solid_bounds(*geometry) if cell is not None else None
+    pitch = SHEET_PITCH[sheet]
     for polygon in mesh.polygons:
-        axis = max(range(3), key=lambda index: abs(polygon.normal[index]))
-        for loop_index in polygon.loop_indices:
-            point = mesh.vertices[mesh.loops[loop_index].vertex_index].co
-            if axis == 0:
-                uv = (point.y / pitch, point.z / pitch)
-            elif axis == 1:
-                uv = (point.x / pitch, point.z / pitch)
-            else:
-                uv = (point.x / pitch, point.y / pitch)
-            layer.data[loop_index].uv = uv
-            metric.data[loop_index].uv = (uv[0] * pitch, uv[1] * pitch)
+        axis = max(range(3), key=lambda i: abs(polygon.normal[i]))
+        axes = ((1, 2), (0, 2), (0, 1))[axis]
+        for index in polygon.loop_indices:
+            vertex = mesh.loops[index].vertex_index
+            point = mesh.vertices[vertex].co
+            u, v = point[axes[0]], point[axes[1]]
+            metric.data[index].uv = (u, v)
+            uv = (u / pitch, v / pitch)
+            if sheet == "FloorRolls":
+                uv = (point.x / ROOM_WIDTH + .5, point.y / ROOM_DEPTH + .5)
+            elif cell is not None:
+                uv = charts.chart_uv(cell, point, axes, bounds[vertex])
+            layer.data[index].uv = uv
+
 
 def add_part(
     asset: AssetBuild,
@@ -275,6 +285,10 @@ def add_part(
     unity_space: bool = True,
     parent_anchor: str = "",
 ) -> "bpy.types.Object":
+    cell = charts.FIXTURES.get(name)
+    if cell is not None:
+        sheet = "BrushedSteel" if cell == charts.STEEL else "Fittings"
+        base_color = (1., 1., 1., 1.)
     if sheet not in ALLOWED_SHEETS:
         raise SystemExit(f"Part '{name}' names unsupported sheet '{sheet}'.")
     source_geometry = bp.to_source(geometry) if unity_space else geometry
@@ -295,7 +309,7 @@ def add_part(
     mesh.from_pydata(mesh_geometry[0], [], mesh_geometry[1])
     mesh.materials.append(material_for(asset, sheet, base_color, emissive))
     mesh.update(calc_edges=True)
-    assign_world_uv(mesh, SHEET_PITCH[sheet])
+    assign_world_uv(mesh, mesh_geometry, sheet, cell)
     for polygon in mesh.polygons:
         polygon.use_smooth = False
     obj = bpy.data.objects.new(name, mesh)
@@ -354,15 +368,12 @@ def configure_scene() -> tuple["bpy.types.Collection", "bpy.types.Object"]:
     return collection, root
 
 def build_shell(asset: AssetBuild) -> None:
-    add_part(
-        asset,
-        "Floor",
-        kit.floor_slab(ROOM_WIDTH, ROOM_DEPTH, FLOOR_THICKNESS, 0.018),
-        "floor",
-        "Linoleum",
-        FLOOR,
-        unity_space=False,
-    )
+    lengths, repairs = [], []
+    for left, right, start, end, repair in rolls.pieces():
+        slab = kit.floor_slab(right-left, end-start, FLOOR_THICKNESS, .002)
+        (repairs if repair else lengths).append(kit.translated(slab, ((left+right)/2,(start+end)/2,0)))
+    add_part(asset, "Floor", merge(lengths), "floor", "FloorRolls", (1.,1.,1.,1.), unity_space=False)
+    add_part(asset, "Linoleum Repairs", merge(repairs), "grime", "Linoleum", FLOOR_PATCH, unity_space=False)
     add_part(
         asset,
         "Ceiling",
@@ -564,21 +575,6 @@ def build_light_fixtures(asset: AssetBuild) -> None:
         )
 
 def build_grime(asset: AssetBuild) -> None:
-    patches = (
-        ((-6.10, 0.009, -3.40), (1.30, 0.018, 0.44)),
-        ((-1.30, 0.009, 2.55), (0.82, 0.018, 0.66)),
-        ((3.25, 0.009, 1.15), (1.15, 0.018, 0.38)),
-        ((6.55, 0.009, -0.60), (0.62, 0.018, 1.05)),
-    )
-    add_part(
-        asset,
-        "Linoleum Repairs",
-        boxes(patches, 0.004),
-        "grime",
-        "Linoleum",
-        FLOOR_PATCH,
-        casts_shadows=False,
-    )
     back = HALF_DEPTH - WALL_THICKNESS * 0.5 - 0.016
     damp = boxes((
         ((-5.85, 0.62, back), (1.45, 0.72, 0.018)),
@@ -618,6 +614,8 @@ def build_gondola(
             ((cx, 0.24, end_z), (width - 0.10, 0.075, 0.07)),
             ((cx, 1.30, end_z), (width - 0.10, 0.055, 0.07)),
         ))
+    for z in (cz-(depth-.12)/6, cz+(depth-.12)/6):
+        frame_specs.append(((cx-facing*.075,height*.53,z),(.09,height-.20,.075)))
     add_part(
         asset,
         f"Shelf {label} Frame",
@@ -626,161 +624,101 @@ def build_gondola(
         "ShelfMetal",
         SHELF_FRAME,
     )
-    tier_parts: list[kit.Geometry] = []
-    for tier_y in (0.38, 0.98, 1.58):
-        y = min(height - 0.09, tier_y)
-        tier_parts.append(bp.u_box(
-            (cx, y, cz),
-            (width - 0.06, 0.065, depth - 0.10),
-            0.010,
-        ))
-        lip_x = cx + facing * (half_x - 0.025)
-        tier_parts.append(bp.u_box(
-            (lip_x, y + 0.022, cz),
-            (0.045, 0.09, depth - 0.18),
-            0.006,
-        ))
-    add_part(
-        asset,
-        f"Shelf {label} Tiers",
-        merge(tier_parts),
-        role,
-        "ShelfMetal",
-        SHELF_SURFACE,
-    )
-    rail_x = cx + facing * (half_x - 0.012)
-    rails = [
-        bp.u_box(
-            (rail_x, min(height - 0.13, tier_y - 0.055), cz),
-            (0.024, 0.072, depth - 0.24),
-            0.004,
-        )
-        for tier_y in (0.38, 0.98, 1.58)
-    ]
-    rails.append(bp.u_box(
-        (rail_x, 0.235, cz - depth * 0.12),
-        (0.024, 0.075, depth * 0.56),
-        0.004,
-    ))
-    add_part(
-        asset,
-        f"Shelf {label} Rails",
-        merge(rails),
-        role,
-        "ShelfMetal",
-        SHELF_RUST,
-        casts_shadows=False,
-    )
+    tier_parts, rails, caps = [], [], []
+    span = (depth - .12) / 3
+    for bay in range(3):
+        middle = cz + (bay - 1)*span
+        for y in (.38,.98,1.58):
+            top = y + .0325
+            section = [(-.466,-.049),(.41,-.049),(.429,-.092),(.477,-.092),
+                       (.486,-.018),(.478,-.004),(.466,0),(-.46,0),(-.466,-.006)]
+            tier_parts.append(folded_run((cx,top,middle),section,span-.008,(facing,0)))
+            # A hollow rolled ticket channel, with return lips above and below the card.
+            channel = [(.475,-.146),(.493,-.146),(.497,-.136),(.488,-.127),
+                       (.488,-.048),(.499,-.041),(.499,-.032),(.475,-.032)]
+            rails.append(folded_run((cx,top,middle),channel,span-.014,(facing,0)))
+            for side in (-1,1):
+                caps.append(bp.u_box((cx+facing*.456,top-.060,middle+side*(span/2-.014)),
+                    (.078,.115,.021),.005))
+    add_part(asset, f"Shelf {label} Tiers", merge(tier_parts),role,"ShelfMetal",SHELF_SURFACE)
+    add_part(asset, f"Shelf {label} Rails", merge(rails),role,"ShelfMetal",SHELF_FRAME)
+    add_part(asset, f"Shelf {label} End Caps", merge(caps),role,"Counter",CHECKOUT_BASE)
+
 
 def build_shelf_details(asset: AssetBuild) -> None:
     for label, spec, role in (("Dry", DRY_SHELF, "shelf_dry"), ("Pantry", PANTRY_SHELF, "shelf_pantry")):
         cx, _, cz, width, height, depth, facing = spec
         slots, brackets = [], []
-        for end in (-1, 1):
-            z = cz + end*(depth*.5-.08)
+        for z in (cz-depth*.5+.08, cz-(depth-.12)/6, cz+(depth-.12)/6, cz+depth*.5-.08):
+            end_post = abs(z-cz) > depth*.4
             for y in (.50, .70, .90, 1.10, 1.30, 1.50, 1.70, 1.90):
-                slots.append(bp.u_box((cx+facing*.458, y, z), (.008, .035, .024), .002))
+                slots.append(bp.u_box((cx+facing*(.497 if end_post else -.027), y, z), (.008, .035, .024), .002))
             for y in (.36, .96, 1.56):
                 brackets.append(bp.u_box((cx+facing*.24, y-.055, z), (.42, .025, .08), .004))
         add_part(asset, f"Shelf {label} Upright Slots", merge(slots), role, "", (.075,.085,.075,1), casts_shadows=False)
         add_part(asset, f"Shelf {label} Brackets", merge(brackets), role, "ShelfMetal", SHELF_FRAME)
-    vent_z = COLD_SHELF[2] - COLD_SHELF[5] * .5 - .008
-    vents = [bp.u_box((-2.85+i*.20, .125, vent_z), (.14,.035,.012), .002) for i in range(29)]
-    add_part(asset, "Cold Cabinet Toe Vent", merge(vents), "cold_vent", "", (.08,.105,.10,1), casts_shadows=False)
+
+
+def folded_run(center, profile, length, front):
+    """Extrude a sheet-metal section along its bay. Profile coordinates face the aisle."""
+    vertices, faces = kit.prism(profile, length)
+    cx, cy, cz = center
+    fx, fz = front
+    points = [(cx + fx*u - fz*v, cy + h, cz + fz*u + fx*v) for u,v,h in vertices]
+    geom = points, faces
+    if bp.signed_volume(geom) < 0:
+        geom = points, [tuple(reversed(face)) for face in faces]
+    return geom
 
 
 def build_cold_shelf(asset: AssetBuild) -> None:
     cx, _, cz, width, height, depth = COLD_SHELF
-    half_x = width * 0.5
-    half_z = depth * 0.5
-    frame = boxes((
-        ((cx, 0.09, cz), (width, 0.18, depth)),
-        ((cx, height - 0.04, cz), (width, 0.08, depth)),
-        ((cx - half_x + 0.05, height * 0.5, cz),
-         (0.10, height, depth)),
-        ((cx + half_x - 0.05, height * 0.5, cz),
-         (0.10, height, depth)),
-        ((cx, height * 0.5, cz + half_z - 0.05),
-         (width, height, 0.10)),
-    ), 0.012)
-    add_part(
-        asset,
-        "Shelf Cold Cabinet",
-        frame,
-        "shelf_cold",
-        "ShelfMetal",
-        COLD_METAL,
-    )
-    cavity_z = cz - half_z + 0.022
-    backing_z = cz + half_z - 0.105
-    add_part(
-        asset,
-        "Shelf Cold Recess",
-        bp.u_box(
-            (cx, height * 0.53, backing_z),
-            (width - 0.22, height - 0.30, 0.035),
-            0.006,
-        ),
-        "shelf_cold",
-        "ShelfMetal",
-        COLD_INTERIOR,
-    )
-    tiers = []
-    for y in (0.54, 1.14, 1.74):
-        tiers.append(bp.u_box(
-            (cx, y, cz),
-            (width - 0.18, 0.065, depth - 0.02),
-            0.009,
-        ))
-    for bay in (-2.0, -1.0, 0.0, 1.0, 2.0):
-        x = cx + bay * (width - 0.24) / 6.0
-        tiers.append(bp.u_box(
-            (x, 1.16, cavity_z - 0.004),
-            (0.032, height - 0.40, 0.026),
-            0.004,
-        ))
-    add_part(
-        asset,
-        "Shelf Cold Tiers",
-        merge(tiers),
-        "shelf_cold",
-        "ShelfMetal",
-        SHELF_SURFACE,
-    )
-    add_part(
-        asset,
-        "Shelf Cold Interior Tube",
-        bp.u_box(
-            (cx, height - 0.13, cz - half_z + 0.045),
-            (width - 0.30, 0.075, 0.055),
-            0.009,
-        ),
-        "shelf_cold",
-        "",
-        FLUORESCENT,
-        emissive=True,
-        casts_shadows=False,
-    )
-    frost = boxes((
-        ((cx - 2.15, 1.38, cz - half_z + 0.010),
-         (0.72, 0.14, 0.012)),
-        ((cx + 1.65, 0.42, cz - half_z + 0.010),
-         (1.08, 0.10, 0.012)),
-    ), 0.002)
-    add_part(
-        asset,
-        "Shelf Cold Frost",
-        frost,
-        "shelf_cold",
-        "",
-        (0.60, 0.72, 0.69, 1.0),
-        casts_shadows=False,
-    )
+    front, rear = cz - depth/2, cz + depth/2
+    # Ends, overhanging canopy and inset kick leave a cavity between the toe and the lamp.
+    case = [
+        ((cx, .22, cz+.020), (width, .065, depth-.040)),
+        ((cx, height-.095, cz), (width, .19, depth)),
+        ((cx, .095, rear-.17), (width-.16, .19, .34)),
+        ((cx, 1.12, rear-.023), (width, 2.24, .046))]
+    for side in (-1,1):
+        case.append(((cx+side*(width/2-.055),1.10,cz),(.11,2.20,depth)))
+    add_part(asset, "Shelf Cold Cabinet", boxes(case,.015), "shelf_cold", "ShelfMetal", COLD_METAL)
+    bays = 3
+    span = (width-.22)/bays
+    centers = [cx + (i-1)*span for i in range(bays)]
+    backs, trays, bright = [], [], []
+    for x in centers:
+        backs.append(bp.u_box((x,1.18,rear-.067),(span-.009,1.84,.038),.012))
+        for y in (.54,1.14,1.74):
+            trays.append(folded_run((x,y+.0325,cz),
+                [(-.284,-.032),(.266,-.032),(.282,-.071),(.304,-.071),
+                 (.307,-.019),(.293,-.002),(.281,0),(-.279,0),(-.284,-.005)],
+                span-.008,(0,-1)))
+            bright.append(bp.u_box((x,y-.031,front+.016),(span-.012,.046,.025),.005))
+        bright.append(bp.u_box((x,2.065,front+.025),(span-.015,.052,.050),.007))
+    add_part(asset, "Shelf Cold Recess", merge(backs), "shelf_cold","ShelfMetal",COLD_INTERIOR)
+    add_part(asset, "Shelf Cold Tiers", merge(trays), "shelf_cold","ShelfMetal",SHELF_SURFACE)
+    add_part(asset, "Cold Shelf Ticket Channels", merge(bright), "shelf_cold","ShelfMetal",COLD_METAL)
+    add_part(asset, "Shelf Cold Interior Tube", merge([
+        bp.u_box((x,2.016,front+.033),(span-.09,.047,.058),.009) for x in centers]),
+        "shelf_cold","",FLUORESCENT,emissive=True,casts_shadows=False)
+    # A recessed dark plenum behind inclined louvres replaces the painted slots.
+    grille = []
+    for x in centers:
+        for dx in (-span/2+.024,0,span/2-.024):
+            grille.append(bp.u_box((x+dx,.106,front+.042),(.033,.19,.052),.004))
+        for y in (.046,.096,.146):
+            grille.append(bp.u_rotated_about(bp.u_box((x,y,front+.049),(span-.058,.016,.064),.003),
+                (-16,0,0),(x,y,front+.049)))
+    add_part(asset, "Cold Cabinet Toe Vent", merge(grille),"cold_vent","ShelfMetal",COLD_METAL)
+    add_part(asset, "Cold Cabinet Plenum", boxes([((x,.105,front+.108),(span-.038,.188,.022))
+        for x in centers],.005), "cold_vent","",(.085,.11,.10,1))
+
 
 def build_shelves(asset: AssetBuild) -> None:
-    build_gondola(asset, "Dry", "shelf_dry", DRY_SHELF)
-    build_gondola(asset, "Pantry", "shelf_pantry", PANTRY_SHELF)
     build_cold_shelf(asset)
+    build_gondola(asset, "Pantry", "shelf_pantry", PANTRY_SHELF)
+    build_gondola(asset, "Dry", "shelf_dry", DRY_SHELF)
     build_shelf_details(asset)
 
 def build_checkout(asset: AssetBuild) -> None:

@@ -5,19 +5,19 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-23
 
-CityCheckpointFinishes checks door/road illumination, closed boom, dry gravel and both E replies. CitySouthTunnel covers masonry, drain, rain and return. CityTrawlerVisit checks hull/cargo. CityPort's road assertion expects an enabled source mesh. CityBoatRentalStation covers sign UVs, rests and return. ImageGenCityMap_PreservesPlanAndLivePlaces checks the redraw. CityRiverEmbankments covers walks/03. validate_mooring_feet checks contact.
+SupermarketFinishes checks fridge, decks, shelf prices, checkout and welded floor along the purchase route. CityCheckpointFinishes covers door/road light, boom, gravel and E replies. CitySouthTunnel covers masonry, drain, rain and return. CityTrawlerVisit checks hull/cargo. CityPort's road assertion expects an enabled source mesh. CityBoatRentalStation covers sign UVs, rests and return. ImageGenCityMap_PreservesPlanAndLivePlaces checks the redraw. CityRiverEmbankments covers walks/03. validate_mooring_feet checks contact.
 CityParkBandstand checks seats, corner clicks, one lamp and resident outfits.
 
 CityCanneryFinishes checks the rebuilt bay, work surfaces, dispatch and the equipped apron panels in pose.
 
-PlayerWatchPlayModeTests checks the LCD colon against real seconds with the calendar paused and captures the night dial.
+PlayerWatchPlayModeTests checks the paused calendar, timed LCD colon and night dial.
 
-CityAsphaltPaving shows staggered runs, sealed joints and fine aggregate under street lights.
+CityAsphaltPaving checks runs, joints and lamp-lit aggregate.
 CityGroceryStreetFinishes checks the surveyed curb and running bond. BeerCanFinishFollowsTheHeldParts checks sleeve fibres, grip polish and lid marks in hand.
 CityGrocerySignFromStreet checks both approaches and overlapping night lights.
 CityWaterworksPaving checks stone, trough, spout and caged lamp.
 Column, bypass, wheel and drains share an atlas. The City misc Blender generator checks the catalogue against its previous revision.
-CityClosedCinema checks the prints on both mirrored facades. CityLastRouteIsland checks the raised stone against the common ground, sit dock and bin clearance. Folded roofs, a chipped mast and empty departure tracks read from both approaches.
+CityClosedCinema checks the prints on both mirrored facades. CityLastRouteIsland checks the raised stone against the common ground, sit dock and bin clearance. Both approaches show the roof, chipped mast and empty tracks.
 The focused City publisher checks the new sheets. The older
 BuildingOldTownFacadePrimary dimension mismatch remains.
 

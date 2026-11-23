@@ -117,7 +117,7 @@ namespace BarPromenade.Editor
                 "Ceiling",
                 "ShelfMetal",
                 "Counter",
-                "Cardboard"
+                "Cardboard", "FloorRolls", "Fittings", "BrushedSteel"
             };
 
         private static bool buildQueued;
@@ -244,7 +244,7 @@ namespace BarPromenade.Editor
             material.SetFloat("_SceneResponseStrength", 1f);
             material.SetFloat("_SceneNormalStrength", .65f);
             EditorUtility.SetDirty(material);
-            foreach (string kind in new[] { "Linoleum", "WallPaint", "Ceiling", "ShelfMetal", "Counter", "Cardboard" })
+            foreach (string kind in new[] { "Linoleum", "WallPaint", "Ceiling", "ShelfMetal", "Counter", "Cardboard", "FloorRolls", "Fittings" })
             {
                 string path = "Assets/Resources/Supermarket/Textures/Supermarket" + kind + "Response.png";
                 AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport);
@@ -268,12 +268,15 @@ namespace BarPromenade.Editor
             importer.wrapMode = TextureWrapMode.Repeat;
             importer.filterMode = FilterMode.Trilinear;
             importer.anisoLevel = 4;
-            importer.maxTextureSize = 512;
+            bool registeredChart = importer.assetPath.EndsWith("FittingsResponse.png", StringComparison.Ordinal) ||
+                importer.assetPath.EndsWith("FloorRollsResponse.png", StringComparison.Ordinal);
+            int size = registeredChart ? 2048 : 512;
+            importer.maxTextureSize = size;
             importer.isReadable = false;
             importer.textureCompression = TextureImporterCompression.CompressedHQ;
             importer.SetPlatformTextureSettings(new TextureImporterPlatformSettings
             {
-                name = "Standalone", overridden = true, maxTextureSize = 512,
+                name = "Standalone", overridden = true, maxTextureSize = size,
                 format = TextureImporterFormat.BC7, compressionQuality = 100
             });
         }
@@ -655,7 +658,7 @@ namespace BarPromenade.Editor
             if (!sheets.SetEquals(requiredSheets))
             {
                 throw new InvalidOperationException(
-                    "The supermarket interior must exercise all six " +
+                    "The supermarket interior must exercise all " +
                     "published surface sheets.");
             }
 

@@ -135,8 +135,8 @@ Repo root;`--`:args. Launcher:Python/errors/fresh `--expect`/JSON;
 `--validate-only`:both.
 Grass:`build-city-grass-3d-model.py`;`build-city-grass-shader.py --check`.
 NPC:`principal_npc_detail.py`/`service_npc_detail.py`/`npc_detail_geometry.py`.
-Cashier:`supermarket_cashier_geometry.py`:normal/3D face;Watcher kept.
-Shop:`supermarket_surface_response.py --validate-only`:6maps/hash.
+Cashier:`supermarket_cashier_geometry.py`.
+Shop:`supermarket_surface_response.py --validate-only`, `build-supermarket-shop-finishes.py --check`.
 
 `Captures/Tooling`:repeat `--stage-output=--model-dir=Assets/path`/other args kept;
 Publish checked/Unity closed;keep `.meta`/rollback;non-atomic.

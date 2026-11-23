@@ -1,36 +1,11 @@
 """Unique atlas charts for the near checkpoint kit, in the generator's Unity metres."""
 from math import floor
+from interior_kit import solid_bounds
 
 GROUPS = {'Booth', 'Barrier', 'Gate', 'Fence', 'RepairedFence', 'Shelter',
           'CanopyLamp', 'Bench', 'UtilityCabinet', 'Lamp'}
 PLASTER, RENDER, PLINTH, FOOTING, ROOF, ZINC, ENAMEL, IRON = range(8)
 STEEL, GLASS, STRIPE, TIMBER, DOOR, MORTAR, SEAL, REPAIR = range(8, 16)
-
-
-def solid_bounds(vertices, faces):
-    """The generator merges disconnected solids without welding their indices."""
-    parent = list(range(len(vertices)))
-
-    def root(i):
-        while i != parent[i]:
-            parent[i] = parent[parent[i]]
-            i = parent[i]
-        return i
-
-    for face in faces:
-        first = root(face[0])
-        for i in face[1:]:
-            parent[root(i)] = first
-    bounds = {}
-    for i, point in enumerate(vertices):
-        index = root(i)
-        if index not in bounds:
-            bounds[index] = (list(point), list(point))
-        low, high = bounds[index]
-        for axis in range(3):
-            low[axis] = min(low[axis], point[axis])
-            high[axis] = max(high[axis], point[axis])
-    return [bounds[root(i)] for i in range(len(vertices))]
 
 
 def chart(group, role, point, normal_axis, bounds):

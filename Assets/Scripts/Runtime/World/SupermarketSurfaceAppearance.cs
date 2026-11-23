@@ -10,7 +10,10 @@ namespace BarPromenade
         Ceiling,
         ShelfMetal,
         Counter,
-        Cardboard
+        Cardboard,
+        FloorRolls,
+        Fittings,
+        BrushedSteel
     }
 
     /// <summary>
@@ -38,7 +41,7 @@ namespace BarPromenade
             "Supermarket/Textures/SupermarketCardboardAlbedo";
 
         private const int SurfaceCount =
-            (int)SupermarketSurfaceKind.Cardboard + 1;
+            (int)SupermarketSurfaceKind.BrushedSteel + 1;
         private const float MinimumUvScale = 0.35f;
 
         // Salts the deterministic UV offset hash away from the home
@@ -70,6 +73,7 @@ namespace BarPromenade
 
         internal static void ApplyResponse(MaterialPropertyBlock properties, SupermarketSurfaceKind kind)
         {
+            if (kind == SupermarketSurfaceKind.BrushedSteel) kind = SupermarketSurfaceKind.Fittings;
             int index = ValidateKind(kind);
             if (responses[index] == null)
                 responses[index] = Resources.Load<Texture2D>("Supermarket/Textures/Supermarket" + kind + "Response");
@@ -129,6 +133,12 @@ namespace BarPromenade
                         0.03f,
                         0f,
                         1.407f);
+                case SupermarketSurfaceKind.FloorRolls:
+                    return new HomeSurfaceRecipe("Supermarket/Textures/SupermarketFloorRollsAlbedo", 1f, .32f, 0f, 1f);
+                case SupermarketSurfaceKind.Fittings:
+                case SupermarketSurfaceKind.BrushedSteel:
+                    float metal = kind == SupermarketSurfaceKind.BrushedSteel ? .58f : 0f;
+                    return new HomeSurfaceRecipe("Supermarket/Textures/SupermarketFittingsAlbedo", 1f, .42f, metal, 1f);
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(kind),
@@ -205,6 +215,9 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(renderer));
             }
 
+            if (kind == SupermarketSurfaceKind.Fittings || kind == SupermarketSurfaceKind.BrushedSteel ||
+                kind == SupermarketSurfaceKind.FloorRolls)
+                return new Vector4(1f, 1f, 0f, 0f);
             return SurfaceAppearanceCore.CreateBaseMapTransform(
                 renderer,
                 GetRecipe(kind).MetersPerTile,

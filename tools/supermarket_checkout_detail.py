@@ -47,14 +47,21 @@ def build_checkout(asset, add_part, centre, size):
     # Three separate working zones, a recessed plinth, and a steel top with a
     # real relief edge. The open employee-side recess keeps knees off the case.
     add("Checkout Counter", boxes([
-        ((x-.04, .53, z), (width-.08, .94, length-.04)),
+        ((x+.035, .53, z), (width-.23, .94, length-.04)),
+        ((x-.355, .53, z-1.04), (.11, .94, 1.07)),
+        ((x-.355, .53, z+1.04), (.11, .94, 1.07)),
         ((x, height-.035, z), (width, .07, length)),
         ((x-.015, .075, z), (width-.19, .15, length-.19)),
     ], .014), "Counter", (.31, .38, .32, 1))
-    add("Checkout Front Panels", boxes([
-        ((x-width/2+.014, .58, z+offset), (.026, .66, .91))
-        for offset in (-1.03, 0, 1.03)
-    ], .004), "Counter", (.53, .49, .34, 1))
+    fascia = []
+    for offset in (-1.03, 0, 1.03):
+        # The middle panel sits behind the recessed hanging crisp display.
+        panel_x = x-width/2+.027 + (.113 if offset == 0 else 0)
+        fascia.append(((panel_x, .56, z+offset), (.038, .73, .998)))
+        # Folded upper and lower returns seat each service panel on the case.
+        for y in (.199, .921):
+            fascia.append(((panel_x+.012, y, z+offset), (.052, .022, .97)))
+    add("Checkout Front Panels", boxes(fascia, .007), "Counter", (.53, .49, .34, 1))
 
     metal = [
         ((x-width/2+.018, height+.026, z), (.035, .052, length-.08)),
@@ -64,24 +71,38 @@ def build_checkout(asset, add_part, centre, size):
         ((x, height+.026, z-.58), (width-.035, .052, .04)),
         ((x, height+.026, z+.55), (width-.035, .052, .04)),
         # Scanner window frame, receipt printer, cash drawer, coin tray.
-        ((x-.08, height+.035, z+.37), (.29, .055, .32)),
+        ((x-.08, height+.027, z+.37), (.29, .045, .32)),
+        *(( (x-.08+side*.133,height+.060,z+.37), (.026,.030,.32)) for side in (-1,1)),
+        *(( (x-.08,height+.060,z+.37+side*.148), (.248,.030,.024)) for side in (-1,1)),
         ((x+.19, height+.11, z+.93), (.23, .16, .22)),
         ((x+.05, height+.045, z+.84), (.56, .07, .55)),
-        ((x-.20, height+.045, z-.38), (.23, .06, .30)),
+        ((x+.255, height+.045, z-.30), (.20, .06, .29)),
     ]
     # Bag rack at the packing end, with a clear hand contact zone at z=-2.25.
     for zz in (z-1.30, z-1.06):
         metal.extend([((x+.25, 1.22, zz), (.028, .34, .028)),
                       ((x+.13, 1.38, zz), (.24, .025, .025))])
-    add("Checkout Rails Scanner Tray And Bag Rack", boxes(metal, .005),
-        "ShelfMetal", (.47, .49, .44, 1), "bag_rack")
-    add("Checkout Conveyor Belt", boxes([
-        ((x-.005, height+.018, z+.99), (.73, .032, 1.10)),
-        ((x-.005, height+.018, z-1.10), (.73, .032, .88)),
-        ((x-.08, height+.066, z+.37), (.21, .014, .24)),
-        ((x-.20, height+.080, z-.38), (.17, .014, .24)),
-    ], .006), "", (.075, .085, .075, 1))
-
+    # Feed belt wraps around two rollers. The packing end is a pressed metal
+    # tray with a folded landing edge; its worktop stays below the cashier's palms.
+    belt_center = (x-.09, height+.034, z-.185)
+    belt = bp.u_box(belt_center, (.56, .042, .80), .015)
+    add("Checkout Conveyor Belt", belt, "Counter", (.18, .19, .18, 1))
+    rollers = []
+    for dz in (-.595, .225):
+        pivot = (belt_center[0], height+.029, z+dz)
+        cylinder = bp.u_cylinder(pivot, (.044, .286, .044), 12)
+        rollers.append(bp.u_rotated_about(cylinder, (0, 0, 90), pivot))
+    steel = [((x-.005, height+.022, z-1.10), (.71, .038, .86)),
+             ((x+.255, height+.080, z-.30), (.15, .014, .23))]
+    for side in (-1,1):
+        steel.extend([((x+side*.365, height+.047, z-1.10), (.024, .067, .86)),
+                      ((belt_center[0]+side*.297, height+.039, belt_center[2]), (.020, .046, .89))])
+    add("Checkout Rails Scanner Tray And Bag Rack",
+        kit.merge_all([boxes(metal,.005), boxes(steel,.007), *rollers]),
+        "ShelfMetal", (.47,.49,.44,1), "bag_rack")
+    # Flush inset glass and four strips of steel around the scanner aperture.
+    add("Checkout Scanner Glass",bp.u_box((x-.08,height+.066,z+.37),(.233,.012,.261),.004),
+        "Counter",(.18,.24,.24,1))
     # Operator keyboard is on +X, facing the cashier. Customer display faces -X.
     add("Checkout Register", boxes([
         ((x+.06, height+.16, z+.78), (.39, .23, .43)),
@@ -117,9 +138,14 @@ def build_checkout(asset, add_part, centre, size):
                        (.11, .045, .72)))
     # Chips hang against the customer panel inside the counter footprint.
     for zz in (z-.25, z+.25):
-        stands.append(((x-.41, .64, zz), (.022, .63, .018)))
+        stands.append(((x-.355, .64, zz), (.022, .63, .018)))
+        for y in (.35, .89):
+            stands.append(((x-.338, y, zz), (.045, .032, .030)))
     for yy in (.35, .62, .89):
-        stands.append(((x-.41, yy, z), (.022, .018, .56)))
+        stands.append(((x-.36, yy, z), (.022, .018, .56)))
+    for row in range(2):
+        for column in range(4):
+            stands.append(((x-.380, .605+row*.28, z-.225+column*.15), (.092, .016, .016)))
     add("Checkout Decorative Snack Trays And Wire Rack", boxes(stands, .003),
         "ShelfMetal", (.24, .28, .25, 1), casts_shadows=False)
     snack_groups = [[], [], [], []]

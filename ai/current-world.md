@@ -2100,14 +2100,14 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   Matte Ø≈1.38m fan:Y2.55,20°/s;brass stem/beam gap6.5cm.
   Skippable `1.35 s` reveal→chase;no ordinary bar SSR/SCGI;
 - `SupermarketInterior`:16×11×3.6m Blender/interior_kit shell/shelves/cold cabinet/
-  stockroom/fluorescents/CCTV. Rear cabinet/stockroom/cartons:Z5.05,back5.375,
-  return buried5.377;no gap. Right-wall checkout faces hall:conveyor/scanner/
-  register/packing/bags/cashier keys;passive text-free sweets/chips,no offers.
+  stockroom/tubes/CCTV. Rear fixtures Z5.05/back5.375/return5.377.
+  Three fridge bays, recessed frost/louvres, folded shelf decks/catalogue prices.
+  Right till faces hall:rollers/scanner glass/steel packing/keys/bags;passive snacks.
   Counter1.05m/0.9×3.2m@(6.15,0,-2.30);cashier(7,0,-2.25)/270°;rear aisle≈1.15m.
   Palm/customer/light anchors own contacts;plan owns aisles/collision/interactions.
   Baskets/channels/vents/wear passive;five skirtings bury back/bottom3mm,no overlap.
   Metal/glass door:authored hinges/handle/solid leaf/shared same-rig exit action.
-  Shared response/normals:dry grey-green/warm checkout;bounded reflection,no SSR/SSGI/SCGI.
+  Welded vinyl rolls/flush repairs/shoe polish;shared fixture atlas, bounded reflection.
   Normal1.75m `supermarket_cashier_v1`:HeroV2/31bones/pelvis.835m;refined anatomy,
   skin/cloth512px,dedicated face/correct bodyUV;separate protruding3D eyes/brows/
   nose/mouth(user2026-11-03). Uniform/hunch/planted palms/blink;fixed neck,

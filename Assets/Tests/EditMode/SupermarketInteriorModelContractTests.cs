@@ -99,7 +99,7 @@ namespace BarPromenade.Tests.EditMode
             "Ceiling",
             "ShelfMetal",
             "Counter",
-            "Cardboard",
+            "Cardboard", "FloorRolls", "Fittings", "BrushedSteel",
         };
 
         [Test]

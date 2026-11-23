@@ -670,7 +670,7 @@ namespace BarPromenade
             {
                 position.x =
                     Mathf.Sign(shelf.FacingDirection.x) *
-                    (shelf.Size.x * 0.5f + 0.045f);
+                    (shelf.Size.x * 0.5f + .004f);
                 position.y = Mathf.Max(0.20f, position.y - 0.09f);
                 tagSize = new Vector3(0.018f, 0.13f, 0.28f);
             }
@@ -678,7 +678,7 @@ namespace BarPromenade
             {
                 position.z =
                     Mathf.Sign(shelf.FacingDirection.z) *
-                    (shelf.Size.z * 0.5f + 0.045f);
+                    (shelf.Size.z * 0.5f - .003f);
                 position.y = Mathf.Max(0.20f, position.y - 0.09f);
                 tagSize = new Vector3(0.28f, 0.13f, 0.018f);
             }
@@ -690,6 +690,22 @@ namespace BarPromenade
                 tagSize,
                 PriceTag,
                 false);
+            var priceObject = new GameObject("Price", typeof(TMPro.TextMeshPro));
+            var text = priceObject.GetComponent<TMPro.TextMeshPro>();
+            // Author in shelf metres before parenting under the non-uniform paper mesh.
+            text.transform.SetParent(shelfRoot, false);
+            text.transform.localPosition = position + shelf.FacingDirection * .0105f;
+            text.transform.localRotation = Quaternion.LookRotation(-shelf.FacingDirection, Vector3.up);
+            text.rectTransform.sizeDelta = new Vector2(.25f, .11f);
+            text.font = CemeteryPlaqueFont.Get();
+            text.fontSize = .94f;
+            text.fontStyle = TMPro.FontStyles.Bold;
+            text.alignment = TMPro.TextAlignmentOptions.Center;
+            text.color = new Color(.12f, .14f, .11f);
+            text.text = SupermarketProductCatalog.GetOffer(slot.ItemId).Price.ToString(
+                System.Globalization.CultureInfo.InvariantCulture);
+            text.renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            text.transform.SetParent(tag.transform, true);
             // The reusable shelf offer retains its tag and model together.
             // Purchase receipts use a separate temporary instance.
             tag.transform.SetParent(productRoot, true);

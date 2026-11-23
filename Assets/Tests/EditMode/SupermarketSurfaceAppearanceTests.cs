@@ -235,9 +235,14 @@ namespace BarPromenade.Tests.EditMode
                 AssertColorApproximatelyEqual(
                     properties.GetColor(ColorId),
                     displayTint);
-                Assert.That(displayTint.r, Is.GreaterThan(tint.r));
-                Assert.That(displayTint.g, Is.GreaterThan(tint.g));
-                Assert.That(displayTint.b, Is.GreaterThan(tint.b));
+                if (recipe.AlbedoCompensation == 1f)
+                    AssertColorApproximatelyEqual(displayTint, tint);
+                else
+                {
+                    Assert.That(displayTint.r, Is.GreaterThan(tint.r));
+                    Assert.That(displayTint.g, Is.GreaterThan(tint.g));
+                    Assert.That(displayTint.b, Is.GreaterThan(tint.b));
+                }
                 Assert.That(
                     properties.GetFloat(SmoothnessId),
                     Is.EqualTo(recipe.Smoothness).Within(0.0001f));
@@ -351,7 +356,7 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(
                     seenKinds,
                     Is.EquivalentTo(expectedKinds),
-                    "The authored semantic bindings must preserve all six " +
+                    "The authored semantic bindings must preserve all " +
                     "supermarket surface families.");
             }
             finally

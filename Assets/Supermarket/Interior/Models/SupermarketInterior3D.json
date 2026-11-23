@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-supermarket-interior-3d-model.py",
-  "generator_version": "1.2.1",
+  "generator_version": "1.3.0",
   "blender_version": "5.2.3 LTS",
   "design_id": "supermarket_interior_v1",
   "display_name": "Bar Promenade Supermarket Interior",
@@ -70,8 +70,8 @@
     3.6,
     5.625
   ],
-  "mesh_count": 86,
-  "triangle_count": 20032,
+  "mesh_count": 90,
+  "triangle_count": 24244,
   "budgets": {
     "maximum_renderers": 90,
     "maximum_triangles": 30000,
@@ -563,22 +563,22 @@
       "name": "Floor",
       "role": "floor",
       "group": "fixed",
-      "sheet": "Linoleum",
+      "sheet": "FloorRolls",
       "emissive": false,
       "casts_shadows": true,
       "shadows": true,
       "base_color": [
-        0.255,
-        0.285,
-        0.265,
+        1.0,
+        1.0,
+        1.0,
         1.0
       ],
       "tint": {
         "field": "",
         "rgb": [
-          0.255,
-          0.285,
-          0.265
+          1.0,
+          1.0,
+          1.0
         ],
         "scale": 1.0,
         "lerp_field": "",
@@ -591,8 +591,8 @@
       },
       "parent_anchor": "",
       "colliders": [],
-      "vertices": 12,
-      "triangles": 20,
+      "vertices": 132,
+      "triangles": 220,
       "bounds_min": [
         -8.0,
         -5.5,
@@ -600,6 +600,51 @@
       ],
       "bounds_max": [
         8.0,
+        5.5,
+        0.0
+      ]
+    },
+    {
+      "name": "Linoleum Repairs",
+      "role": "grime",
+      "group": "fixed",
+      "sheet": "Linoleum",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        0.35,
+        0.37,
+        0.32,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.35,
+          0.37,
+          0.32
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 24,
+      "triangles": 40,
+      "bounds_min": [
+        -7.05,
+        -5.5,
+        -0.12
+      ],
+      "bounds_max": [
+        6.25,
         5.5,
         0.0
       ]
@@ -1820,51 +1865,6 @@
       ]
     },
     {
-      "name": "Linoleum Repairs",
-      "role": "grime",
-      "group": "fixed",
-      "sheet": "Linoleum",
-      "emissive": false,
-      "casts_shadows": false,
-      "shadows": false,
-      "base_color": [
-        0.165,
-        0.185,
-        0.17,
-        1.0
-      ],
-      "tint": {
-        "field": "",
-        "rgb": [
-          0.165,
-          0.185,
-          0.17
-        ],
-        "scale": 1.0,
-        "lerp_field": "",
-        "lerp_rgb": [
-          0.0,
-          0.0,
-          0.0
-        ],
-        "lerp_t": 0.0
-      },
-      "parent_anchor": "",
-      "colliders": [],
-      "vertices": 96,
-      "triangles": 272,
-      "bounds_min": [
-        -6.75,
-        -3.62,
-        0.0
-      ],
-      "bounds_max": [
-        6.86,
-        2.88,
-        0.018
-      ]
-    },
-    {
       "name": "Back Wall Damp",
       "role": "grime",
       "group": "fixed",
@@ -1910,295 +1910,25 @@
       ]
     },
     {
-      "name": "Shelf Dry Frame",
-      "role": "shelf_dry",
-      "group": "fixed",
-      "sheet": "ShelfMetal",
-      "emissive": false,
-      "casts_shadows": true,
-      "shadows": true,
-      "base_color": [
-        0.34,
-        0.36,
-        0.31,
-        1.0
-      ],
-      "tint": {
-        "field": "",
-        "rgb": [
-          0.34,
-          0.36,
-          0.31
-        ],
-        "scale": 1.0,
-        "lerp_field": "",
-        "lerp_rgb": [
-          0.0,
-          0.0,
-          0.0
-        ],
-        "lerp_t": 0.0
-      },
-      "parent_anchor": "",
-      "colliders": [],
-      "vertices": 264,
-      "triangles": 748,
-      "bounds_min": [
-        -5.2,
-        -2.65,
-        0.0
-      ],
-      "bounds_max": [
-        -4.2,
-        2.65,
-        2.05
-      ]
-    },
-    {
-      "name": "Shelf Dry Tiers",
-      "role": "shelf_dry",
-      "group": "fixed",
-      "sheet": "ShelfMetal",
-      "emissive": false,
-      "casts_shadows": true,
-      "shadows": true,
-      "base_color": [
-        0.47,
-        0.48,
-        0.39,
-        1.0
-      ],
-      "tint": {
-        "field": "",
-        "rgb": [
-          0.47,
-          0.48,
-          0.39
-        ],
-        "scale": 1.0,
-        "lerp_field": "",
-        "lerp_rgb": [
-          0.0,
-          0.0,
-          0.0
-        ],
-        "lerp_t": 0.0
-      },
-      "parent_anchor": "",
-      "colliders": [],
-      "vertices": 96,
-      "triangles": 168,
-      "bounds_min": [
-        -5.17,
-        -2.6,
-        0.3475
-      ],
-      "bounds_max": [
-        -4.2025,
-        2.6,
-        1.647
-      ]
-    },
-    {
-      "name": "Shelf Dry Rails",
-      "role": "shelf_dry",
-      "group": "fixed",
-      "sheet": "ShelfMetal",
-      "emissive": false,
-      "casts_shadows": false,
-      "shadows": false,
-      "base_color": [
-        0.31,
-        0.105,
-        0.045,
-        1.0
-      ],
-      "tint": {
-        "field": "",
-        "rgb": [
-          0.31,
-          0.105,
-          0.045
-        ],
-        "scale": 1.0,
-        "lerp_field": "",
-        "lerp_rgb": [
-          0.0,
-          0.0,
-          0.0
-        ],
-        "lerp_t": 0.0
-      },
-      "parent_anchor": "",
-      "colliders": [],
-      "vertices": 64,
-      "triangles": 112,
-      "bounds_min": [
-        -4.224,
-        -2.53,
-        0.1975
-      ],
-      "bounds_max": [
-        -4.2,
-        2.53,
-        1.561
-      ]
-    },
-    {
-      "name": "Shelf Pantry Frame",
-      "role": "shelf_pantry",
-      "group": "fixed",
-      "sheet": "ShelfMetal",
-      "emissive": false,
-      "casts_shadows": true,
-      "shadows": true,
-      "base_color": [
-        0.34,
-        0.36,
-        0.31,
-        1.0
-      ],
-      "tint": {
-        "field": "",
-        "rgb": [
-          0.34,
-          0.36,
-          0.31
-        ],
-        "scale": 1.0,
-        "lerp_field": "",
-        "lerp_rgb": [
-          0.0,
-          0.0,
-          0.0
-        ],
-        "lerp_t": 0.0
-      },
-      "parent_anchor": "",
-      "colliders": [],
-      "vertices": 264,
-      "triangles": 748,
-      "bounds_min": [
-        0.85,
-        -2.35,
-        0.0
-      ],
-      "bounds_max": [
-        1.85,
-        2.35,
-        2.05
-      ]
-    },
-    {
-      "name": "Shelf Pantry Tiers",
-      "role": "shelf_pantry",
-      "group": "fixed",
-      "sheet": "ShelfMetal",
-      "emissive": false,
-      "casts_shadows": true,
-      "shadows": true,
-      "base_color": [
-        0.47,
-        0.48,
-        0.39,
-        1.0
-      ],
-      "tint": {
-        "field": "",
-        "rgb": [
-          0.47,
-          0.48,
-          0.39
-        ],
-        "scale": 1.0,
-        "lerp_field": "",
-        "lerp_rgb": [
-          0.0,
-          0.0,
-          0.0
-        ],
-        "lerp_t": 0.0
-      },
-      "parent_anchor": "",
-      "colliders": [],
-      "vertices": 96,
-      "triangles": 168,
-      "bounds_min": [
-        0.8525,
-        -2.3,
-        0.3475
-      ],
-      "bounds_max": [
-        1.82,
-        2.3,
-        1.647
-      ]
-    },
-    {
-      "name": "Shelf Pantry Rails",
-      "role": "shelf_pantry",
-      "group": "fixed",
-      "sheet": "ShelfMetal",
-      "emissive": false,
-      "casts_shadows": false,
-      "shadows": false,
-      "base_color": [
-        0.31,
-        0.105,
-        0.045,
-        1.0
-      ],
-      "tint": {
-        "field": "",
-        "rgb": [
-          0.31,
-          0.105,
-          0.045
-        ],
-        "scale": 1.0,
-        "lerp_field": "",
-        "lerp_rgb": [
-          0.0,
-          0.0,
-          0.0
-        ],
-        "lerp_t": 0.0
-      },
-      "parent_anchor": "",
-      "colliders": [],
-      "vertices": 64,
-      "triangles": 112,
-      "bounds_min": [
-        0.85,
-        -2.23,
-        0.1975
-      ],
-      "bounds_max": [
-        0.874,
-        2.23,
-        1.561
-      ]
-    },
-    {
       "name": "Shelf Cold Cabinet",
       "role": "shelf_cold",
       "group": "fixed",
-      "sheet": "ShelfMetal",
+      "sheet": "Fittings",
       "emissive": false,
       "casts_shadows": true,
       "shadows": true,
       "base_color": [
-        0.38,
-        0.47,
-        0.45,
+        1.0,
+        1.0,
+        1.0,
         1.0
       ],
       "tint": {
         "field": "",
         "rgb": [
-          0.38,
-          0.47,
-          0.45
+          1.0,
+          1.0,
+          1.0
         ],
         "scale": 1.0,
         "lerp_field": "",
@@ -2211,8 +1941,8 @@
       },
       "parent_anchor": "",
       "colliders": [],
-      "vertices": 120,
-      "triangles": 340,
+      "vertices": 144,
+      "triangles": 408,
       "bounds_min": [
         -3.2,
         4.725,
@@ -2228,22 +1958,22 @@
       "name": "Shelf Cold Recess",
       "role": "shelf_cold",
       "group": "fixed",
-      "sheet": "ShelfMetal",
+      "sheet": "Fittings",
       "emissive": false,
       "casts_shadows": true,
       "shadows": true,
       "base_color": [
-        0.245,
-        0.315,
-        0.305,
+        1.0,
+        1.0,
+        1.0,
         1.0
       ],
       "tint": {
         "field": "",
         "rgb": [
-          0.245,
-          0.315,
-          0.305
+          1.0,
+          1.0,
+          1.0
         ],
         "scale": 1.0,
         "lerp_field": "",
@@ -2256,39 +1986,39 @@
       },
       "parent_anchor": "",
       "colliders": [],
-      "vertices": 16,
-      "triangles": 28,
+      "vertices": 48,
+      "triangles": 84,
       "bounds_min": [
-        -3.09,
-        5.2525,
-        0.2175
+        -3.0855,
+        5.289,
+        0.26
       ],
       "bounds_max": [
-        2.99,
-        5.2875,
-        2.1675
+        2.9855,
+        5.327,
+        2.1
       ]
     },
     {
       "name": "Shelf Cold Tiers",
       "role": "shelf_cold",
       "group": "fixed",
-      "sheet": "ShelfMetal",
+      "sheet": "BrushedSteel",
       "emissive": false,
       "casts_shadows": true,
       "shadows": true,
       "base_color": [
-        0.47,
-        0.48,
-        0.39,
+        1.0,
+        1.0,
+        1.0,
         1.0
       ],
       "tint": {
         "field": "",
         "rgb": [
-          0.47,
-          0.48,
-          0.39
+          1.0,
+          1.0,
+          1.0
         ],
         "scale": 1.0,
         "lerp_field": "",
@@ -2301,17 +2031,62 @@
       },
       "parent_anchor": "",
       "colliders": [],
-      "vertices": 128,
-      "triangles": 224,
+      "vertices": 162,
+      "triangles": 288,
       "bounds_min": [
-        -3.11,
-        4.73,
-        0.235
+        -3.086,
+        4.743,
+        0.5015
       ],
       "bounds_max": [
-        3.01,
-        5.365,
-        2.085
+        2.986,
+        5.334,
+        1.7725
+      ]
+    },
+    {
+      "name": "Cold Shelf Ticket Channels",
+      "role": "shelf_cold",
+      "group": "fixed",
+      "sheet": "Fittings",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 192,
+      "triangles": 336,
+      "bounds_min": [
+        -3.084,
+        4.725,
+        0.486
+      ],
+      "bounds_max": [
+        2.984,
+        4.775,
+        2.091
       ]
     },
     {
@@ -2346,39 +2121,39 @@
       },
       "parent_anchor": "",
       "colliders": [],
-      "vertices": 16,
-      "triangles": 28,
+      "vertices": 48,
+      "triangles": 84,
       "bounds_min": [
-        -3.05,
-        4.7425,
-        2.0825
+        -3.045,
+        4.729,
+        1.9925
       ],
       "bounds_max": [
-        2.95,
-        4.7975,
-        2.1575
+        2.945,
+        4.787,
+        2.0395
       ]
     },
     {
-      "name": "Shelf Cold Frost",
-      "role": "shelf_cold",
+      "name": "Cold Cabinet Toe Vent",
+      "role": "cold_vent",
       "group": "fixed",
-      "sheet": "",
+      "sheet": "BrushedSteel",
       "emissive": false,
-      "casts_shadows": false,
-      "shadows": false,
+      "casts_shadows": true,
+      "shadows": true,
       "base_color": [
-        0.6,
-        0.72,
-        0.69,
+        1.0,
+        1.0,
+        1.0,
         1.0
       ],
       "tint": {
         "field": "",
         "rgb": [
-          0.6,
-          0.72,
-          0.69
+          1.0,
+          1.0,
+          1.0
         ],
         "scale": 1.0,
         "lerp_field": "",
@@ -2391,17 +2166,422 @@
       },
       "parent_anchor": "",
       "colliders": [],
-      "vertices": 48,
-      "triangles": 136,
+      "vertices": 288,
+      "triangles": 504,
       "bounds_min": [
-        -2.56,
-        4.729,
-        0.37
+        -3.0825,
+        4.741,
+        0.011
       ],
       "bounds_max": [
-        2.14,
-        4.741,
-        1.45
+        2.9825,
+        4.806139,
+        0.201
+      ]
+    },
+    {
+      "name": "Cold Cabinet Plenum",
+      "role": "cold_vent",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        0.085,
+        0.11,
+        0.1,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.085,
+          0.11,
+          0.1
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 72,
+      "triangles": 204,
+      "bounds_min": [
+        -3.071,
+        4.822,
+        0.011
+      ],
+      "bounds_max": [
+        2.971,
+        4.844,
+        0.199
+      ]
+    },
+    {
+      "name": "Shelf Pantry Frame",
+      "role": "shelf_pantry",
+      "group": "fixed",
+      "sheet": "Fittings",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 312,
+      "triangles": 884,
+      "bounds_min": [
+        0.85,
+        -2.35,
+        0.0
+      ],
+      "bounds_max": [
+        1.85,
+        2.35,
+        2.05
+      ]
+    },
+    {
+      "name": "Shelf Pantry Tiers",
+      "role": "shelf_pantry",
+      "group": "fixed",
+      "sheet": "Fittings",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 162,
+      "triangles": 288,
+      "bounds_min": [
+        0.864,
+        -2.286,
+        0.3205
+      ],
+      "bounds_max": [
+        1.816,
+        2.286,
+        1.6125
+      ]
+    },
+    {
+      "name": "Shelf Pantry Rails",
+      "role": "shelf_pantry",
+      "group": "fixed",
+      "sheet": "Fittings",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 144,
+      "triangles": 252,
+      "bounds_min": [
+        0.851,
+        -2.283,
+        0.2665
+      ],
+      "bounds_max": [
+        0.875,
+        2.283,
+        1.5805
+      ]
+    },
+    {
+      "name": "Shelf Pantry End Caps",
+      "role": "shelf_pantry",
+      "group": "fixed",
+      "sheet": "Fittings",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 288,
+      "triangles": 504,
+      "bounds_min": [
+        0.855,
+        -2.2865,
+        0.295
+      ],
+      "bounds_max": [
+        0.933,
+        2.2865,
+        1.61
+      ]
+    },
+    {
+      "name": "Shelf Dry Frame",
+      "role": "shelf_dry",
+      "group": "fixed",
+      "sheet": "Fittings",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 312,
+      "triangles": 884,
+      "bounds_min": [
+        -5.2,
+        -2.65,
+        0.0
+      ],
+      "bounds_max": [
+        -4.2,
+        2.65,
+        2.05
+      ]
+    },
+    {
+      "name": "Shelf Dry Tiers",
+      "role": "shelf_dry",
+      "group": "fixed",
+      "sheet": "Fittings",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 162,
+      "triangles": 288,
+      "bounds_min": [
+        -5.166,
+        -2.586,
+        0.3205
+      ],
+      "bounds_max": [
+        -4.214,
+        2.586,
+        1.6125
+      ]
+    },
+    {
+      "name": "Shelf Dry Rails",
+      "role": "shelf_dry",
+      "group": "fixed",
+      "sheet": "Fittings",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 144,
+      "triangles": 252,
+      "bounds_min": [
+        -4.225,
+        -2.583,
+        0.2665
+      ],
+      "bounds_max": [
+        -4.201,
+        2.583,
+        1.5805
+      ]
+    },
+    {
+      "name": "Shelf Dry End Caps",
+      "role": "shelf_dry",
+      "group": "fixed",
+      "sheet": "Fittings",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 288,
+      "triangles": 504,
+      "bounds_min": [
+        -4.283,
+        -2.5865,
+        0.295
+      ],
+      "bounds_max": [
+        -4.205,
+        2.5865,
+        1.61
       ]
     },
     {
@@ -2436,15 +2616,15 @@
       },
       "parent_anchor": "",
       "colliders": [],
-      "vertices": 256,
-      "triangles": 448,
+      "vertices": 512,
+      "triangles": 896,
       "bounds_min": [
-        -4.246,
+        -4.731,
         -2.582,
         0.4825
       ],
       "bounds_max": [
-        -4.238,
+        -4.199,
         2.582,
         1.9175
       ]
@@ -2453,22 +2633,22 @@
       "name": "Shelf Dry Brackets",
       "role": "shelf_dry",
       "group": "fixed",
-      "sheet": "ShelfMetal",
+      "sheet": "BrushedSteel",
       "emissive": false,
       "casts_shadows": true,
       "shadows": true,
       "base_color": [
-        0.34,
-        0.36,
-        0.31,
+        1.0,
+        1.0,
+        1.0,
         1.0
       ],
       "tint": {
         "field": "",
         "rgb": [
-          0.34,
-          0.36,
-          0.31
+          1.0,
+          1.0,
+          1.0
         ],
         "scale": 1.0,
         "lerp_field": "",
@@ -2481,8 +2661,8 @@
       },
       "parent_anchor": "",
       "colliders": [],
-      "vertices": 96,
-      "triangles": 168,
+      "vertices": 192,
+      "triangles": 336,
       "bounds_min": [
         -4.67,
         -2.61,
@@ -2526,15 +2706,15 @@
       },
       "parent_anchor": "",
       "colliders": [],
-      "vertices": 256,
-      "triangles": 448,
+      "vertices": 512,
+      "triangles": 896,
       "bounds_min": [
-        0.888,
+        0.849,
         -2.282,
         0.4825
       ],
       "bounds_max": [
-        0.896,
+        1.381,
         2.282,
         1.9175
       ]
@@ -2543,22 +2723,22 @@
       "name": "Shelf Pantry Brackets",
       "role": "shelf_pantry",
       "group": "fixed",
-      "sheet": "ShelfMetal",
+      "sheet": "BrushedSteel",
       "emissive": false,
       "casts_shadows": true,
       "shadows": true,
       "base_color": [
-        0.34,
-        0.36,
-        0.31,
+        1.0,
+        1.0,
+        1.0,
         1.0
       ],
       "tint": {
         "field": "",
         "rgb": [
-          0.34,
-          0.36,
-          0.31
+          1.0,
+          1.0,
+          1.0
         ],
         "scale": 1.0,
         "lerp_field": "",
@@ -2571,8 +2751,8 @@
       },
       "parent_anchor": "",
       "colliders": [],
-      "vertices": 96,
-      "triangles": 168,
+      "vertices": 192,
+      "triangles": 336,
       "bounds_min": [
         0.9,
         -2.31,
@@ -2585,70 +2765,25 @@
       ]
     },
     {
-      "name": "Cold Cabinet Toe Vent",
-      "role": "cold_vent",
-      "group": "fixed",
-      "sheet": "",
-      "emissive": false,
-      "casts_shadows": false,
-      "shadows": false,
-      "base_color": [
-        0.08,
-        0.105,
-        0.1,
-        1.0
-      ],
-      "tint": {
-        "field": "",
-        "rgb": [
-          0.08,
-          0.105,
-          0.1
-        ],
-        "scale": 1.0,
-        "lerp_field": "",
-        "lerp_rgb": [
-          0.0,
-          0.0,
-          0.0
-        ],
-        "lerp_t": 0.0
-      },
-      "parent_anchor": "",
-      "colliders": [],
-      "vertices": 464,
-      "triangles": 812,
-      "bounds_min": [
-        -2.92,
-        4.711,
-        0.1075
-      ],
-      "bounds_max": [
-        2.82,
-        4.723,
-        0.1425
-      ]
-    },
-    {
       "name": "Checkout Counter",
       "role": "checkout",
       "group": "fixed",
-      "sheet": "Counter",
+      "sheet": "Fittings",
       "emissive": false,
       "casts_shadows": true,
       "shadows": true,
       "base_color": [
-        0.31,
-        0.38,
-        0.32,
+        1.0,
+        1.0,
+        1.0,
         1.0
       ],
       "tint": {
         "field": "",
         "rgb": [
-          0.31,
-          0.38,
-          0.32
+          1.0,
+          1.0,
+          1.0
         ],
         "scale": 1.0,
         "lerp_field": "",
@@ -2661,8 +2796,8 @@
       },
       "parent_anchor": "",
       "colliders": [],
-      "vertices": 48,
-      "triangles": 84,
+      "vertices": 80,
+      "triangles": 140,
       "bounds_min": [
         5.7,
         -3.9,
@@ -2678,22 +2813,22 @@
       "name": "Checkout Front Panels",
       "role": "checkout",
       "group": "fixed",
-      "sheet": "Counter",
+      "sheet": "Fittings",
       "emissive": false,
       "casts_shadows": true,
       "shadows": true,
       "base_color": [
-        0.53,
-        0.49,
-        0.34,
+        1.0,
+        1.0,
+        1.0,
         1.0
       ],
       "tint": {
         "field": "",
         "rgb": [
-          0.53,
-          0.49,
-          0.34
+          1.0,
+          1.0,
+          1.0
         ],
         "scale": 1.0,
         "lerp_field": "",
@@ -2706,39 +2841,84 @@
       },
       "parent_anchor": "",
       "colliders": [],
-      "vertices": 48,
-      "triangles": 84,
+      "vertices": 144,
+      "triangles": 252,
       "bounds_min": [
-        5.701,
-        -3.785,
-        0.25
+        5.708,
+        -3.829,
+        0.188
       ],
       "bounds_max": [
-        5.727,
-        -0.815,
-        0.91
+        5.878,
+        -0.771,
+        0.932
+      ]
+    },
+    {
+      "name": "Checkout Conveyor Belt",
+      "role": "checkout",
+      "group": "fixed",
+      "sheet": "Fittings",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        5.78,
+        -2.885,
+        1.063
+      ],
+      "bounds_max": [
+        6.34,
+        -2.085,
+        1.105
       ]
     },
     {
       "name": "Checkout Rails Scanner Tray And Bag Rack",
       "role": "bag_rack",
       "group": "fixed",
-      "sheet": "ShelfMetal",
+      "sheet": "BrushedSteel",
       "emissive": false,
       "casts_shadows": true,
       "shadows": true,
       "base_color": [
-        0.47,
-        0.49,
-        0.44,
+        1.0,
+        1.0,
+        1.0,
         1.0
       ],
       "tint": {
         "field": "",
         "rgb": [
-          0.47,
-          0.49,
-          0.44
+          1.0,
+          1.0,
+          1.0
         ],
         "scale": 1.0,
         "lerp_field": "",
@@ -2751,8 +2931,8 @@
       },
       "parent_anchor": "",
       "colliders": [],
-      "vertices": 224,
-      "triangles": 392,
+      "vertices": 432,
+      "triangles": 760,
       "bounds_min": [
         5.7005,
         -3.8925,
@@ -2765,25 +2945,25 @@
       ]
     },
     {
-      "name": "Checkout Conveyor Belt",
+      "name": "Checkout Scanner Glass",
       "role": "checkout",
       "group": "fixed",
-      "sheet": "",
+      "sheet": "Fittings",
       "emissive": false,
       "casts_shadows": true,
       "shadows": true,
       "base_color": [
-        0.075,
-        0.085,
-        0.075,
+        1.0,
+        1.0,
+        1.0,
         1.0
       ],
       "tint": {
         "field": "",
         "rgb": [
-          0.075,
-          0.085,
-          0.075
+          1.0,
+          1.0,
+          1.0
         ],
         "scale": 1.0,
         "lerp_field": "",
@@ -2796,17 +2976,17 @@
       },
       "parent_anchor": "",
       "colliders": [],
-      "vertices": 64,
-      "triangles": 112,
+      "vertices": 16,
+      "triangles": 28,
       "bounds_min": [
-        5.78,
-        -3.84,
-        1.052
+        5.9535,
+        -2.0605,
+        1.11
       ],
       "bounds_max": [
-        6.51,
-        -0.76,
-        1.137
+        6.1865,
+        -1.7995,
+        1.122
       ]
     },
     {
@@ -3021,10 +3201,10 @@
       },
       "parent_anchor": "",
       "colliders": [],
-      "vertices": 128,
-      "triangles": 224,
+      "vertices": 320,
+      "triangles": 560,
       "bounds_min": [
-        5.729,
+        5.724,
         -3.7,
         0.325
       ],
@@ -4430,5 +4610,5 @@
       ]
     }
   ],
-  "build_signature": "bd3180c90e38725e2f2ea24247bc39f28d28d5d433693399a88f34996f5a6b1b"
+  "build_signature": "be7ad0c6abc81f63748a84488747741ace782062da77f65c62ce2ff9f102f29b"
 }
