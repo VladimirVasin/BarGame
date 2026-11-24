@@ -387,7 +387,7 @@ MonoBehaviour:
       field: MetalTint
       rgb: {r: 0, g: 0, b: 0, a: 1}
       scale: 1
-      lerpField:
+      lerpField: 
       lerpRgb: {r: 0, g: 0, b: 0, a: 1}
       lerpT: 0
     colliders: []
@@ -2648,10 +2648,10 @@ MonoBehaviour:
     emissive: 0
     castsShadows: 0
     tint:
-      field:
+      field: 
       rgb: {r: 0.34, g: 0.22, b: 0.105, a: 1}
       scale: 1
-      lerpField:
+      lerpField: 
       lerpRgb: {r: 0, g: 0, b: 0, a: 1}
       lerpT: 0
     colliders: []
@@ -2663,10 +2663,10 @@ MonoBehaviour:
     emissive: 0
     castsShadows: 0
     tint:
-      field:
+      field: 
       rgb: {r: 0.53, g: 0.47, b: 0.38, a: 1}
       scale: 1
-      lerpField:
+      lerpField: 
       lerpRgb: {r: 0, g: 0, b: 0, a: 1}
       lerpT: 0
     colliders: []
@@ -2678,10 +2678,10 @@ MonoBehaviour:
     emissive: 0
     castsShadows: 0
     tint:
-      field:
+      field: 
       rgb: {r: 0.41, g: 0.245, b: 0.12, a: 1}
       scale: 1
-      lerpField:
+      lerpField: 
       lerpRgb: {r: 0, g: 0, b: 0, a: 1}
       lerpT: 0
     colliders: []
@@ -2693,10 +2693,10 @@ MonoBehaviour:
     emissive: 0
     castsShadows: 0
     tint:
-      field:
+      field: 
       rgb: {r: 0.83, g: 0.77, b: 0.64, a: 1}
       scale: 1
-      lerpField:
+      lerpField: 
       lerpRgb: {r: 0, g: 0, b: 0, a: 1}
       lerpT: 0
     colliders: []
@@ -2708,10 +2708,10 @@ MonoBehaviour:
     emissive: 0
     castsShadows: 0
     tint:
-      field:
+      field: 
       rgb: {r: 0.5, g: 0.61, b: 0.61, a: 1}
       scale: 1
-      lerpField:
+      lerpField: 
       lerpRgb: {r: 0, g: 0, b: 0, a: 1}
       lerpT: 0
     colliders: []
@@ -2723,10 +2723,10 @@ MonoBehaviour:
     emissive: 0
     castsShadows: 0
     tint:
-      field:
+      field: 
       rgb: {r: 0.19, g: 0.3, b: 0.205, a: 1}
       scale: 1
-      lerpField:
+      lerpField: 
       lerpRgb: {r: 0, g: 0, b: 0, a: 1}
       lerpT: 0
     colliders: []
@@ -2773,7 +2773,7 @@ MonoBehaviour:
       field: CounterWoodTint
       rgb: {r: 0, g: 0, b: 0, a: 1}
       scale: 1
-      lerpField:
+      lerpField: 
       lerpRgb: {r: 0, g: 0, b: 0, a: 1}
       lerpT: 0
     colliders: []
@@ -2788,7 +2788,7 @@ MonoBehaviour:
       field: CounterWoodTint
       rgb: {r: 0, g: 0, b: 0, a: 1}
       scale: 1
-      lerpField:
+      lerpField: 
       lerpRgb: {r: 0, g: 0, b: 0, a: 1}
       lerpT: 0
     colliders: []
@@ -2803,7 +2803,7 @@ MonoBehaviour:
       field: CounterWoodTint
       rgb: {r: 0, g: 0, b: 0, a: 1}
       scale: 1
-      lerpField:
+      lerpField: 
       lerpRgb: {r: 0, g: 0, b: 0, a: 1}
       lerpT: 0
     colliders: []
@@ -2818,7 +2818,7 @@ MonoBehaviour:
       field: CounterWoodTint
       rgb: {r: 0, g: 0, b: 0, a: 1}
       scale: 1
-      lerpField:
+      lerpField: 
       lerpRgb: {r: 0, g: 0, b: 0, a: 1}
       lerpT: 0
     colliders: []
@@ -3037,10 +3037,10 @@ MonoBehaviour:
     emissive: 0
     castsShadows: 1
     tint:
-      field:
+      field: 
       rgb: {r: 0.19, g: 0.17, b: 0.14, a: 1}
       scale: 1
-      lerpField:
+      lerpField: 
       lerpRgb: {r: 0, g: 0, b: 0, a: 1}
       lerpT: 0
     colliders: []
@@ -3055,7 +3055,7 @@ MonoBehaviour:
       field: MetalTint
       rgb: {r: 0, g: 0, b: 0, a: 1}
       scale: 1
-      lerpField:
+      lerpField: 
       lerpRgb: {r: 0, g: 0, b: 0, a: 1}
       lerpT: 0
     colliders: []
@@ -3280,7 +3280,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8270300484773477515, guid: 1ce5caaeb9fdd5945a53d378e3ed2e08, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value:
+      value: 
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
     - target: {fileID: -8047916249188789158, guid: 1ce5caaeb9fdd5945a53d378e3ed2e08, type: 3}
       propertyPath: m_CastShadows
@@ -3296,7 +3296,7 @@ PrefabInstance:
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
     - target: {fileID: -8043577371888264110, guid: 1ce5caaeb9fdd5945a53d378e3ed2e08, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value:
+      value: 
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
     - target: {fileID: -8038395673199361314, guid: 1ce5caaeb9fdd5945a53d378e3ed2e08, type: 3}
       propertyPath: m_LocalRotation.w
@@ -3428,7 +3428,7 @@ PrefabInstance:
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
     - target: {fileID: -7108835445939147661, guid: 1ce5caaeb9fdd5945a53d378e3ed2e08, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value:
+      value: 
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
     - target: {fileID: -7018236429467237976, guid: 1ce5caaeb9fdd5945a53d378e3ed2e08, type: 3}
       propertyPath: m_CastShadows
@@ -3612,7 +3612,7 @@ PrefabInstance:
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
     - target: {fileID: -5703970283092874990, guid: 1ce5caaeb9fdd5945a53d378e3ed2e08, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value:
+      value: 
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
     - target: {fileID: -5569707713332005072, guid: 1ce5caaeb9fdd5945a53d378e3ed2e08, type: 3}
       propertyPath: m_CastShadows
@@ -3724,11 +3724,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -4495998341275942106, guid: 1ce5caaeb9fdd5945a53d378e3ed2e08, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value:
+      value: 
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
     - target: {fileID: -4474833033212702250, guid: 1ce5caaeb9fdd5945a53d378e3ed2e08, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value:
+      value: 
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
     - target: {fileID: -4386773894355472751, guid: 1ce5caaeb9fdd5945a53d378e3ed2e08, type: 3}
       propertyPath: m_CastShadows
@@ -4220,7 +4220,7 @@ PrefabInstance:
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
     - target: {fileID: -255341387846960470, guid: 1ce5caaeb9fdd5945a53d378e3ed2e08, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value:
+      value: 
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
     - target: {fileID: -239607723160854887, guid: 1ce5caaeb9fdd5945a53d378e3ed2e08, type: 3}
       propertyPath: m_CastShadows
@@ -4640,11 +4640,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3333326264915736303, guid: 1ce5caaeb9fdd5945a53d378e3ed2e08, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value:
+      value: 
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
     - target: {fileID: 3338068374030651552, guid: 1ce5caaeb9fdd5945a53d378e3ed2e08, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value:
+      value: 
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
     - target: {fileID: 3431242240317778312, guid: 1ce5caaeb9fdd5945a53d378e3ed2e08, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
@@ -5064,7 +5064,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6813063911710262555, guid: 1ce5caaeb9fdd5945a53d378e3ed2e08, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value:
+      value: 
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
     - target: {fileID: 6918522004549750642, guid: 1ce5caaeb9fdd5945a53d378e3ed2e08, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
@@ -5096,7 +5096,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6946348601080705819, guid: 1ce5caaeb9fdd5945a53d378e3ed2e08, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value:
+      value: 
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
     - target: {fileID: 6976452018188957712, guid: 1ce5caaeb9fdd5945a53d378e3ed2e08, type: 3}
       propertyPath: m_CastShadows
@@ -5216,7 +5216,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8027457297950156708, guid: 1ce5caaeb9fdd5945a53d378e3ed2e08, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value:
+      value: 
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
     - target: {fileID: 8294822505405191024, guid: 1ce5caaeb9fdd5945a53d378e3ed2e08, type: 3}
       propertyPath: m_CastShadows

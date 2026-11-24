@@ -1253,7 +1253,7 @@ MonoBehaviour:
   - sourceName: Shelf Cold Interior Tube
     role: shelf_cold
     group: fixed
-    sheet:
+    sheet: 
     baseColor: {r: 1, g: 1, b: 0.92, a: 1}
     emissive: 1
     castsShadows: 0
@@ -1271,7 +1271,7 @@ MonoBehaviour:
   - sourceName: Cold Cabinet Plenum
     role: cold_vent
     group: fixed
-    sheet:
+    sheet: 
     baseColor: {r: 0.085, g: 0.11, b: 0.1, a: 1}
     emissive: 0
     castsShadows: 1
