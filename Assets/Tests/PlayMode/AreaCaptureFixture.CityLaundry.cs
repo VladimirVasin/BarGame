@@ -126,6 +126,124 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
+        [UnityTest]
+        [Explicit("Laundry folding, handle grips, trolley delivery and both running drums.")]
+        public IEnumerator CityLaundryFittings()
+        {
+            GameSessionState.BeginNewGame();
+            Assert.That(GameSessionState.TryStartGameTimeAt(720), Is.True);
+            CityGameRoot city = null;
+            CityLaundryController laundry = null;
+            PlayerCameraFollow follow = null;
+            bool followEnabled = false, weatherEnabled = false, motorEnabled = false;
+            try
+            {
+                yield return Capture(SceneIds.City, () =>
+                {
+                    city = Object.FindAnyObjectByType<CityGameRoot>();
+                    return city && city.IsInitialized && !CompositionDriver.IsComposing ? city : null;
+                }, () =>
+                {
+                    laundry = Object.FindAnyObjectByType<CityLaundryController>();
+                    laundry.AutoAdvance = false;
+                    laundry.ForcePresentation = true;
+                    follow = city.Camera.GetComponent<PlayerCameraFollow>();
+                    followEnabled = follow.enabled;
+                    follow.enabled = false;
+                    weatherEnabled = city.Weather.enabled;
+                    city.Weather.enabled = false;
+                    motorEnabled = city.Player.Motor.InputEnabled;
+                    city.Player.Motor.SetInputEnabled(false);
+                    SetChurchRemodelTime(720);
+                    city.DayNight.ApplyCurrentTime(true);
+                    return new[]
+                    {
+                        Frame("fold", new Vector3(-1.84f,1.75f,-.43f), new Vector3(-2.65f,1.43f,.52f), 43f, 2),
+                        Frame("grip", new Vector3(-1.64f,1.66f,-.30f), new Vector3(-2.62f,1.37f,.55f), 48f, 11),
+                        Frame("drums", new Vector3(-.43f,1.23f,.58f), new Vector3(-.15f,.79f,-1.60f), 58f, 3),
+                        Frame("walk", new Vector3(3.75f,1.60f,2.66f), new Vector3(1.70f,1.30f,1.10f), 43f, 18.4d),
+                        Frame("cart", new Vector3(4.02f,1.67f,2.67f), new Vector3(2.73f,1.04f,1.10f), 60f, 24),
+                        Frame("front", new Vector3(3.8f,1.68f,8.5f), new Vector3(.15f,1.49f,1.50f), 58f, 24)
+                    };
+                    Shot Frame(string name, Vector3 eye, Vector3 target, float fov, double time)
+                    {
+                        var pose = Shot.At("laundry-fittings-" + name, laundry.Plan.World(eye), laundry.Plan.World(target), fov);
+                        int frames = 0;
+                        return Shot.At(pose.Name, pose.Position, pose.Target, fov, readyWhen: () =>
+                        {
+                            if (frames++ == 0) MoveCityLightingObserver(city, pose);
+                            laundry.ApplyAt(time);
+                            return frames > SettleFrames;
+                        });
+                    }
+                });
+                AssertLaundryWorkContacts(laundry);
+                VerifyLaundryFittings(laundry);
+            }
+            finally
+            {
+                if (laundry) { laundry.AutoAdvance = true; laundry.ForcePresentation = false; }
+                if (follow) follow.enabled = followEnabled;
+                if (city && follow) { city.Weather.enabled = weatherEnabled; city.Player.Motor.SetInputEnabled(motorEnabled); }
+            }
+        }
+
+        private static void VerifyLaundryFittings(CityLaundryController laundry)
+        {
+            Transform Part(string name) => CityLaundryAssetProvider.FindPart(laundry.ModelRoot,name);
+            var fingers = laundry.Worker.GetComponent<NpcHandPose>();
+            float maxLeft = 0f, maxRight = 0f;
+            var leftWrist = CityPedestrianHandProps.FindSocket(laundry.Worker.ModelRoot,"hand.L");
+            var rightWrist = CityPedestrianHandProps.FindSocket(laundry.Worker.ModelRoot,"hand.R");
+            var leftElbow = CityPedestrianHandProps.FindSocket(laundry.Worker.ModelRoot,"forearm.L");
+            var rightElbow = CityPedestrianHandProps.FindSocket(laundry.Worker.ModelRoot,"forearm.R");
+            var leftHandle = Part("ANCHOR_BasketRight");
+            var rightHandle = Part("ANCHOR_BasketLeft");
+            for (double time = 0; time < CityLaundryController.CycleSeconds; time += .25d)
+            {
+                laundry.ApplyAt(time);
+                bool handles = time >= 8d && time <= 24d || time >= 30d && time <= 44d;
+                if (!handles && time > 6d && time < 45d) continue;
+                Assert.That(laundry.HandContactError, Is.LessThan(.028f), "Skin contact at " + time);
+                Assert.That(fingers.LeftGripWeight, Is.EqualTo(handles ? 1f : .52f).Within(.001f));
+                Assert.That(fingers.RightGripWeight, Is.EqualTo(fingers.LeftGripWeight).Within(.001f));
+                if (!handles) continue;
+                CheckGrip(false,rightHandle,rightWrist,rightElbow,ref maxRight);
+                CheckGrip(true,leftHandle,leftWrist,leftElbow,ref maxLeft);
+
+                void CheckGrip(bool left, Transform handle, Transform wrist, Transform elbow, ref float maxBend)
+                {
+                    float bend = Vector3.Angle(wrist.position-elbow.position, fingers.AnatomicalFingerDirection(left));
+                    maxBend = Mathf.Max(maxBend,bend);
+                    Assert.That(bend, Is.LessThan(43f), "Wrist bend " + wrist.name + " at " + time);
+                    Assert.That(Vector3.Dot(wrist.position-elbow.position,handle.position-wrist.position),
+                        Is.Positive, "The grip stays beyond the cuff.");
+                    Assert.That(Vector3.Distance(fingers.AnatomicalCylinderCentre(left),handle.position),
+                        Is.LessThan(.028f), "Hand surrounds the physical handle at " + time);
+                }
+            }
+            Debug.Log($"Laundry maximum wrist bend at the handles: L {maxLeft:F1}, R {maxRight:F1} degrees.");
+            laundry.ApplyAt(27d);
+            Assert.That(fingers.LeftGripWeight+fingers.RightGripWeight,Is.LessThan(.001f));
+            var floor = laundry.Plan.InverseWorld(laundry.Basket.position);
+            Assert.That(floor.y-.19f,Is.EqualTo(.83f).Within(.003f),"Basket base rests on the trolley deck.");
+            Assert.That(Vector3.Distance(laundry.Basket.position,Part("ANCHOR_CanopyHandoff").position),Is.LessThan(.003f));
+            var window = Part("LaundryMachineGlass__Glass");
+            Vector3 centre = window.GetComponent<Renderer>().bounds.center;
+            foreach (var (name, rate) in new[] { ("A",92f),("B",-75f) })
+            {
+                var rotor = Part("MOVE_Drum"+name);
+                var load = Part("DrumCloth"+name+"__LaundryFinish");
+                Assert.That(load.IsChildOf(rotor),Is.True);
+                laundry.ApplyAt(3d);
+                Quaternion before = load.rotation;
+                laundry.ApplyAt(3.5d);
+                Quaternion expected = Quaternion.AngleAxis(rate*.5f, laundry.Plan.Forward)*before;
+                Assert.That(Quaternion.Angle(load.rotation,expected),Is.LessThan(.1f));
+                Assert.That(Vector3.Distance(window.GetComponent<Renderer>().bounds.center,centre),Is.LessThan(.001f));
+            }
+        }
+
         private static void AssertLaundryImportedMetres(CityLaundryController laundry)
         {
             Vector3 low = Vector3.positiveInfinity, high = Vector3.negativeInfinity;

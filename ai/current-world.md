@@ -1355,11 +1355,11 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   No collision/interaction/speech/sound/light/story state;
 - one residual residential laundry (`CityLaundry{Plan,AssetProvider,Controller}`):
   fixed-metre `8.6x6.6m` L-kit/windows/front closed/side open;two drums/table/shelves/canopy/trolley.
-  Permanent global worker:hinged cloth/basket `48s`,authored contacts/collision/free floor.
+  Permanent worker folds the hem, grips both handles and docks the basket on the trolley in `48s`.
   Nonemissive enamel `2.4x.76m`:generated «ПРАЧЕЧНАЯ»/washer-cloth;
   UV/Clamp/sRGB/mips/BC7/1024/nonreadable;ArtSource LaundrySign prompt/SHA.
-  Port tiles:plaster/concrete2m,metal1.5m,timber/fabric1m,Roof2m/Rubber;
-  City albedo/slopes/roughness/cavity. Covered GroundAuthoredConcrete:CityClimate=false/dry.
+  Port shell tiles; local cloth, drum, enamel, grip and timber charts with aligned physical response.
+  Dry ground concrete with wear along the carrying route.
   4 cached lens/halo centres↓165°/20°:warm work/neutral machines/cool canopy/front4m;
   no air beams.Pool12/Soft256/day floor/bounce4/air4/probes2/hum/shared profiles.
   Bounded time/pause/cleanup;static Home. `0-5`;no other text/service/economy/quest/reward/hint;

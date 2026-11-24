@@ -24,6 +24,17 @@ namespace BarPromenade
         public bool IsPresentationActive { get; private set; } = true;
         public IReadOnlyList<Collider> RainShelters { get; private set; } = Array.Empty<Collider>();
         private Transform spine, leftHandle, rightHandle, leftFold, rightFold, drumA, drumB, basketBody;
+        private const float FoldGrip = .52f;
+        private NpcHandPose fingers;
+        private HandContact rightHand, leftHand;
+
+        private struct HandContact
+        {
+            public AnatomicalHandFrame Anatomy;
+            public Transform Wrist, Elbow, Hem, Handle, HandleAxis;
+            public Vector3 Pad, Socket;
+        }
+
         private Vector3 work, waypoint, canopy, restBasket, handoff;
         private Renderer[] dynamicRenderers;
         private AudioSource hum;
@@ -49,13 +60,16 @@ namespace BarPromenade
             Worker.transform.SetPositionAndRotation(plan.World(work), plan.Rotation * Quaternion.Euler(0f, 180f, 0f));
             CityPortCrew.AlignWorkerModelWithPlacement(Worker);
             spine = CityPedestrianHandProps.FindSocket(Worker.ModelRoot, "spine");
+            fingers = Worker.GetComponent<NpcHandPose>();
+            rightHand = BindHand(false, Part("ANCHOR_HemLeft"), leftHandle, Part("ANCHOR_HandleAxisLeft"));
+            leftHand = BindHand(true, Part("ANCHOR_HemRight"), rightHandle, Part("ANCHOR_HandleAxisRight"));
             var body = Worker.gameObject.AddComponent<CapsuleCollider>();
             body.center = Vector3.up * .9f; body.height = 1.72f; body.radius = .21f;
             basketBody = new GameObject("Laundry Carried Basket Body").transform;
             basketBody.SetParent(transform, false);
             var basketCollider = basketBody.gameObject.AddComponent<BoxCollider>();
             basketCollider.center = Vector3.up * .01f;
-            basketCollider.size = new Vector3(.74f, .38f, .64f);
+            basketCollider.size = new Vector3(.81f, .38f, .64f);
             var movingVisuals = new List<Renderer>(Worker.GetComponentsInChildren<Renderer>(true));
             foreach (Renderer renderer in model.GetComponentsInChildren<Renderer>(true))
                 if (renderer.transform.IsChildOf(Basket) || renderer.transform.IsChildOf(Cloth) ||
@@ -185,10 +199,11 @@ namespace BarPromenade
             basketBody.SetPositionAndRotation(basket, basketRotation);
             Cloth.SetPositionAndRotation(basket + basketRotation * new Vector3(0f, .19f, 0f), basketRotation);
             if (!present) return;
-            float fold = phase < 8f ? Mathf.Sin(phase * Mathf.PI / 8f) : 0f;
-            float leftAngle = -135f * fold, rightAngle = 110f * fold;
-            leftFold.localRotation = Quaternion.AngleAxis(leftAngle, Vector3.forward);
-            rightFold.localRotation = Quaternion.AngleAxis(rightAngle, Vector3.forward);
+            // Fold in sequence, carry the folded piece, then reopen it on the sorting pile.
+            float firstFold = Smooth(phase/3.2f) * (1f-Smooth((phase-46f)/2f));
+            float secondFold = Smooth((phase-2.9f)/3.1f) * (1f-Smooth((phase-44.8f)/1.8f));
+            leftFold.localRotation = Quaternion.AngleAxis(-158f * firstFold, Vector3.forward);
+            rightFold.localRotation = Quaternion.AngleAxis(150f * secondFold, Vector3.forward);
             drumA.localRotation = Quaternion.AngleAxis((float)(seconds * 92d % 360d), Vector3.forward);
             drumB.localRotation = Quaternion.AngleAxis((float)(-seconds * 75d % 360d), Vector3.forward);
             // Keep the authored carrying posture through release and regrip;
@@ -208,31 +223,86 @@ namespace BarPromenade
                 contactWeight = Smooth((phase - 28f) / 2f);
                 lean = Mathf.Lerp(12f, 38f, contactWeight);
             }
-            Vector3 right = leftHandle.position, left = rightHandle.position;
-            if (!carrying && (phase < 8f || phase >= 44f))
-            {
-                right = Cloth.position + Cloth.rotation * (new Vector3(-.1f, 0f, 0f) +
-                    Quaternion.AngleAxis(leftAngle, Vector3.forward) * new Vector3(-.18f, .02f, 0f));
-                left = Cloth.position + Cloth.rotation * (new Vector3(.1f, 0f, 0f) +
-                    Quaternion.AngleAxis(rightAngle, Vector3.forward) * new Vector3(.18f, .02f, 0f));
-            }
-            bool touching = carrying || phase < 8f || phase >= 44f || phase < 26f;
-            Quaternion upright = spine.rotation;
+            float handles = phase < 8f ? Smooth((phase-6.1f)/1.9f) :
+                phase >= 44f ? 1f-Smooth((phase-44f)/.8f) : 1f;
+            float fingerWeight = Mathf.Lerp(FoldGrip, 1f, handles) * contactWeight;
+            fingers.SetGrip(false, fingerWeight);
+            fingers.SetGrip(true, fingerWeight);
             HandsMatch = true; HandContactError = 0f;
-            if (!touching || contactWeight < .001f)
+            Quaternion upright = spine.rotation;
+            if (contactWeight < .001f)
             { spine.rotation = Quaternion.AngleAxis(lean, Worker.transform.right) * upright; return; }
-            // Fit this fixed body to measured work surfaces. A bounded spine
-            // lean keeps planted feet and both grips; it never stretches arms
-            // or moves the basket to conceal an unreachable contact.
+            Vector3 approach = Worker.transform.forward + Vector3.up*.28f;
+            Pose right = HandGoal(rightHand,false,handles,approach,out Vector3 rightPoint);
+            Pose left = HandGoal(leftHand,true,handles,approach,out Vector3 leftPoint);
             for (int attempt = 0; attempt < 12; attempt++)
             {
-                float angle = Mathf.Min(56f, lean + attempt * 4f);
+                float angle = Mathf.Min(59f, lean + attempt * 4f);
                 spine.rotation = Quaternion.AngleAxis(angle, Worker.transform.right) * upright;
-                HandsMatch = Worker.ApplyHandContacts(right, left, contactWeight);
-                HandContactError = contactWeight > .999f ? Mathf.Max(Vector3.Distance(Worker.RightGrip.position, right),
-                    Vector3.Distance(Worker.LeftGrip.position, left)) : 0f;
-                if (HandsMatch || angle >= 56f || contactWeight < .999f) break;
+                HandsMatch = Worker.ApplyHandContacts(right.position,left.position,right.rotation,left.rotation,contactWeight);
+                if (HandsMatch || angle >= 59f || contactWeight < .999f) break;
             }
+            if (handles > .001f && contactWeight > .999f)
+            {
+                // Use the solved elbows for roll about the real handle, while keeping both grip centres fixed.
+                right = HandGoal(rightHand,false,handles,rightHand.Wrist.position-rightHand.Elbow.position,out rightPoint);
+                left = HandGoal(leftHand,true,handles,leftHand.Wrist.position-leftHand.Elbow.position,out leftPoint);
+                HandsMatch = Worker.ApplyHandContacts(right.position,left.position,right.rotation,left.rotation);
+            }
+            if (contactWeight > .999f)
+                HandContactError = Mathf.Max(ContactError(rightHand,handles,rightPoint), ContactError(leftHand,handles,leftPoint));
+        }
+
+        private HandContact BindHand(bool isLeft, Transform hem, Transform handle, Transform axis)
+        {
+            string side = isLeft ? ".L" : ".R";
+            var wrist = CityPedestrianHandProps.FindSocket(Worker.ModelRoot,"hand" + side);
+            var hand = new HandContact {
+                Wrist = wrist, Elbow = CityPedestrianHandProps.FindSocket(Worker.ModelRoot,"forearm"+side),
+                Anatomy = fingers.GetAnatomicalFrame(isLeft), Hem = hem, Handle = handle, HandleAxis = axis
+            };
+            Quaternion inverse = Quaternion.Inverse(wrist.rotation);
+            hand.Socket = inverse * ((isLeft ? Worker.LeftGrip : Worker.RightGrip).position - wrist.position);
+            // Identify the physical index pad in the straight hand, then measure the same skin vertices in the folding grip.
+            var skin = Array.Find(Worker.ModelRoot.GetComponentsInChildren<SkinnedMeshRenderer>(true),
+                r => r.name.StartsWith("GEO_",StringComparison.Ordinal) && r.name.EndsWith("Finger0"+side,StringComparison.Ordinal));
+            fingers.SetGrip(isLeft,0f);
+            Vector3[] open = CityPedestrianShoeContacts.SkinWorldVertices(skin);
+            Vector3 direction = wrist.rotation * hand.Anatomy.FingerDirectionInHand;
+            float end = float.NegativeInfinity;
+            foreach (Vector3 v in open) end = Mathf.Max(end,Vector3.Dot(v-wrist.position,direction));
+            fingers.SetGrip(isLeft,FoldGrip);
+            Vector3[] bent = CityPedestrianShoeContacts.SkinWorldVertices(skin);
+            int count = 0;
+            for (int i=0;i<open.Length;i++)
+                if (Vector3.Dot(open[i]-wrist.position,direction) >= end-.0025f)
+                { hand.Pad += inverse * (bent[i]-wrist.position); count++; }
+            hand.Pad /= count;
+            fingers.SetGrip(isLeft,0f);
+            return hand;
+        }
+
+        private Pose HandGoal(HandContact hand, bool isLeft, float handles, Vector3 approach, out Vector3 point)
+        {
+            Vector3 across = Worker.transform.right * (isLeft ? 1f : -1f);
+            Quaternion fold = hand.Anatomy.ResolveHandRotation(Vector3.down,
+                (Worker.transform.forward + .28f*across - .32f*Vector3.up).normalized);
+            Vector3 axis = (hand.HandleAxis.position-hand.Handle.position).normalized;
+            Vector3 distal = Vector3.ProjectOnPlane(approach.normalized,axis).normalized;
+            Vector3 palm = Vector3.Cross(axis,distal);
+            if (Vector3.Dot(palm,Vector3.up+across*.45f)<0f) palm = -palm;
+            Quaternion grip = hand.Anatomy.ResolveHandRotation(palm,distal);
+            Quaternion rotation = Quaternion.Slerp(fold,grip,handles);
+            point = Vector3.Lerp(hand.Hem.position + Vector3.up*.004f,hand.Handle.position,handles);
+            point += Vector3.up*(.14f*handles*(1f-handles));
+            Vector3 localContact = Vector3.Lerp(hand.Pad,hand.Anatomy.CylinderCentreInHand,handles);
+            return new Pose(point+rotation*(hand.Socket-localContact),rotation);
+        }
+
+        private static float ContactError(HandContact hand, float handles, Vector3 point)
+        {
+            Vector3 local = Vector3.Lerp(hand.Pad,hand.Anatomy.CylinderCentreInHand,handles);
+            return Vector3.Distance(hand.Wrist.position+hand.Wrist.rotation*local,point);
         }
 
         private Vector3 Route(float progress)
@@ -256,6 +326,7 @@ namespace BarPromenade
         {
             if (hum != null) hum.Stop();
             if (Worker != null) Worker.ReleaseAnimation();
+            if (fingers) fingers.ResetGrip();
             audioPaused = false;
         }
         private void OnDestroy()

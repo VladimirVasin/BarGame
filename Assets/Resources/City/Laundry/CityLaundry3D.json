@@ -1,6 +1,6 @@
 {
   "design_id": "city_household_laundry_v1",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "generator": "build-city-laundry-3d-model.py",
   "sign_resource": "City/Laundry/LaundrySign",
   "sign_source_sha256": "a80083f8c303846802f790b2cf94655f2e2426c35e4ba224db3e3d87d2b75cf5",
@@ -181,11 +181,11 @@
   "service_door_width": 1.6,
   "floor_height": 0,
   "table_height": 0.96,
-  "triangles": 8462,
+  "triangles": 16106,
   "maximum_triangles": 18000,
   "renderer_count": 29,
   "maximum_renderers": 30,
-  "geometry_signature": "5a70f86532cf7afbe5903deb121c7b87275399010aa1d9a7cc9228b10e273377",
+  "geometry_signature": "a9d62897147e025892e201bc8f2e116e2a11135f7be0f9523e3c079a59db21b4",
   "semantic_uv_tiles_metres": {
     "Concrete": 2.0,
     "Plaster": 2.0,
@@ -198,7 +198,8 @@
     "Roof": 2.0,
     "Plain": 0,
     "Glass": 2.0,
-    "Sign": 0
+    "Sign": 0,
+    "LaundryFinish": 0
   },
   "anchors": [
     {
@@ -402,14 +403,6 @@
       ]
     },
     {
-      "name": "LaundryCanopyStructure",
-      "position": [
-        0.0,
-        0.0,
-        0.0
-      ]
-    },
-    {
       "name": "LaundryClosedFrontDoor",
       "position": [
         0.0,
@@ -426,38 +419,6 @@
       ]
     },
     {
-      "name": "LaundryFrames",
-      "position": [
-        0.0,
-        0.0,
-        0.0
-      ]
-    },
-    {
-      "name": "LaundryFurniture",
-      "position": [
-        0.0,
-        0.0,
-        0.0
-      ]
-    },
-    {
-      "name": "LaundryFurnitureIron",
-      "position": [
-        0.0,
-        0.0,
-        0.0
-      ]
-    },
-    {
-      "name": "LaundryMachineFittings",
-      "position": [
-        0.0,
-        0.0,
-        0.0
-      ]
-    },
-    {
       "name": "LaundryMachineGlass",
       "position": [
         0.0,
@@ -466,31 +427,7 @@
       ]
     },
     {
-      "name": "LaundryMachines",
-      "position": [
-        0.0,
-        0.0,
-        0.0
-      ]
-    },
-    {
       "name": "LaundryRoof",
-      "position": [
-        0.0,
-        0.0,
-        0.0
-      ]
-    },
-    {
-      "name": "LaundryRubberFittings",
-      "position": [
-        0.0,
-        0.0,
-        0.0
-      ]
-    },
-    {
-      "name": "LaundryServicePipesAndLightBody",
       "position": [
         0.0,
         0.0,
@@ -507,14 +444,6 @@
     },
     {
       "name": "LaundrySillsAndDrain",
-      "position": [
-        0.0,
-        0.0,
-        0.0
-      ]
-    },
-    {
-      "name": "LaundryStoredCloth",
       "position": [
         0.0,
         0.0,
@@ -554,11 +483,19 @@
       ]
     },
     {
-      "name": "CarryBasket",
+      "name": "ANCHOR_HandleAxisLeft",
       "position": [
-        -2.65,
-        1.15,
-        0.5
+        -3.02763,
+        1.35,
+        0.5275
+      ]
+    },
+    {
+      "name": "ANCHOR_HandleAxisRight",
+      "position": [
+        -2.27237,
+        1.35,
+        0.5275
       ]
     },
     {
@@ -572,41 +509,33 @@
     {
       "name": "MOVE_ClothLeft",
       "position": [
-        -2.75,
+        -2.782,
         1.34,
         0.5
       ]
     },
     {
-      "name": "WorkClothLeft",
+      "name": "ANCHOR_HemLeft",
       "position": [
-        -2.75,
-        1.34,
-        0.5
+        -2.903,
+        1.341,
+        0.609
       ]
     },
     {
       "name": "MOVE_ClothRight",
       "position": [
-        -2.55,
+        -2.518,
         1.34,
         0.5
       ]
     },
     {
-      "name": "WorkClothRight",
+      "name": "ANCHOR_HemRight",
       "position": [
-        -2.55,
-        1.34,
-        0.5
-      ]
-    },
-    {
-      "name": "WorkCloth",
-      "position": [
-        -2.65,
-        1.34,
-        0.5
+        -2.397,
+        1.341,
+        0.565
       ]
     },
     {
@@ -618,39 +547,7 @@
       ]
     },
     {
-      "name": "DrumA",
-      "position": [
-        -0.8,
-        0.78,
-        -1.56
-      ]
-    },
-    {
-      "name": "DrumClothA",
-      "position": [
-        -0.8,
-        0.78,
-        -1.56
-      ]
-    },
-    {
       "name": "MOVE_DrumB",
-      "position": [
-        0.5,
-        0.78,
-        -1.56
-      ]
-    },
-    {
-      "name": "DrumB",
-      "position": [
-        0.5,
-        0.78,
-        -1.56
-      ]
-    },
-    {
-      "name": "DrumClothB",
       "position": [
         0.5,
         0.78,
@@ -676,19 +573,21 @@
   ],
   "material_roles": [
     "Concrete",
-    "Fabric",
     "Glass",
+    "LaundryFinish",
     "Plain",
     "Plaster",
     "Roof",
-    "Rubber",
     "Sign",
-    "Steel",
-    "SteelDark",
-    "SteelLight",
-    "Timber"
+    "Steel"
   ],
   "assets": [
     "StaticLaundry.fbx"
-  ]
+  ],
+  "finish_sha256": {
+    "LaundryFittingsAlbedo": "5cff64a947aa3b1a941010a32835d8073eb2bad88825c9a31a8cb77d801bff08",
+    "LaundryFittingsResponse": "04ef801642eb3ec523724aaf59d72859646e812a2e5c53b51f3a05670775dde3",
+    "LaundryFloorAlbedo": "9220f5b45ab36190ce47173c25ec603cc9fcfc84d770dad6dcf35d139f05ba10",
+    "LaundryFloorResponse": "2fd45161727a24a36b2f13e2771ffc580215f852c2272179fa14f38a9c18a249"
+  }
 }

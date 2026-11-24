@@ -5,6 +5,8 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-24
 
+City laundry has pressed washer fronts and a loaded basket that rests on the trolley. `CityLaundryFittings` checks both hand centres and wrist angles during the carry, and opposite drum motion behind fixed windows. Blender rays check the sheet around each aperture.
+
 The Ridge cobbler curls his left fingers around the collar and keeps his right wrist aligned through the awl stroke. The steel point reaches the exposed welt. Floor wear follows the entrance and aisle. `CityCobblerFittings` checks the stitch cycle, lamp button, steps in both directions and sitting on the yard bench.
 
 Ridge loft and yard share grain-aligned timber, exposed end grain and handled metal. `CityPigeonLoftFittings` checks the feeding board under both feet, moving lid and vice grips, the stair climb and both gate approaches.

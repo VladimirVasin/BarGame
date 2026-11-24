@@ -9,7 +9,8 @@ namespace BarPromenade
     {
         public const string ResourcePath = "City/Laundry/StaticLaundry";
         private static GameObject template;
-        private static Material glass, sign;
+        private static Material glass, sign, fittings;
+        private static Texture2D floorAlbedo, floorResponse;
 
         public static GameObject Create(Transform parent) => CreateModel(parent, true);
         public static GameObject CreateStatic(Transform parent) => CreateModel(parent, false);
@@ -40,7 +41,7 @@ namespace BarPromenade
                 string role = separator < 0 ? "Plain" : renderer.name.Substring(separator + 2);
                 bool lens = renderer.name.StartsWith("LaundryLampLens", StringComparison.Ordinal);
                 renderer.sharedMaterial = role == "Sign" ? Sign : role == "Glass" ? Glass : lens ? CityNightResources.EmissiveMaterial :
-                    CityPortAssetProvider.GetSurfaceMaterial(role);
+                    role == "LaundryFinish" ? Fittings : CityPortAssetProvider.GetSurfaceMaterial(role);
                 renderer.shadowCastingMode = role == "Glass" || lens ? ShadowCastingMode.Off : ShadowCastingMode.On;
                 renderer.receiveShadows = role != "Glass" && !lens;
                 renderer.lightProbeUsage = LightProbeUsage.BlendProbes;
@@ -52,7 +53,16 @@ namespace BarPromenade
                 if (renderer.name.StartsWith("LaundryFloor", StringComparison.Ordinal))
                 {
                     // Both room and service bay are below actual roof meshes.
-                    GroundAuthoredSurfaceAppearance.Apply(renderer, GroundSurfaceKind.Concrete, cityClimate: false);
+                    if (!floorAlbedo) floorAlbedo = FinishTexture("LaundryFloorAlbedo");
+                    if (!floorResponse) floorResponse = FinishTexture("LaundryFloorResponse");
+                    GroundSurfaceAppearance.Apply(renderer, GroundSurfaceKind.Concrete, floorAlbedo, responseOverride: floorResponse);
+                    var block = new MaterialPropertyBlock();
+                    renderer.GetPropertyBlock(block);
+                    block.SetTexture("_BaseMap", floorAlbedo);
+                    block.SetColor("_BaseColor", Color.white);
+                    block.SetFloat("_Smoothness", .52f);
+                    block.SetFloat("_GroundCityClimate", 0f);
+                    renderer.SetPropertyBlock(block);
                     if (collision) FootstepGround.Stamp(renderer, FootstepGroundKind.Concrete);
                 }
             }
@@ -64,6 +74,27 @@ namespace BarPromenade
             foreach (Transform part in root.GetComponentsInChildren<Transform>(true))
                 if (part.name == name) return part;
             throw new InvalidOperationException("Laundry part is missing: " + name);
+        }
+
+        private static Texture2D FinishTexture(string key) =>
+            Resources.Load<Texture2D>("City/Laundry/" + key) ??
+                throw new InvalidOperationException("Missing laundry texture " + key);
+
+        private static Material Fittings
+        {
+            get
+            {
+                if (fittings) return fittings;
+                fittings = new Material(Resources.Load<Shader>("Shaders/CitySurfaceLit"))
+                {
+                    name = "Laundry fittings", hideFlags = HideFlags.HideAndDontSave, enableInstancing = true
+                };
+                fittings.SetTexture("_BaseMap", FinishTexture("LaundryFittingsAlbedo"));
+                fittings.SetTexture("_SceneMaterialResponse", FinishTexture("LaundryFittingsResponse"));
+                fittings.SetFloat("_SceneResponseStrength", 1f);
+                fittings.SetFloat("_SceneNormalStrength", .52f);
+                return fittings;
+            }
         }
 
         private static Material Glass
@@ -122,6 +153,8 @@ namespace BarPromenade
             template = null;
             if (glass != null) UnityEngine.Object.Destroy(glass);
             if (sign != null) UnityEngine.Object.Destroy(sign);
+            if (fittings) UnityEngine.Object.Destroy(fittings);
+            fittings = null; floorAlbedo = floorResponse = null;
             glass = null;
             sign = null;
         }

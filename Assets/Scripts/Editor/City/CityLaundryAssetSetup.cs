@@ -14,9 +14,13 @@ namespace BarPromenade.Editor
 
         private void OnPreprocessTexture()
         {
-            if (assetPath != ModelFolder + "LaundrySign.png" || !(assetImporter is TextureImporter importer)) return;
+            if (!assetPath.StartsWith(ModelFolder, StringComparison.Ordinal) ||
+                !(assetImporter is TextureImporter importer)) return;
+            bool response = assetPath.EndsWith("Response.png", StringComparison.Ordinal);
             importer.textureType = TextureImporterType.Default;
-            importer.sRGBTexture = true; importer.alphaSource = TextureImporterAlphaSource.None;
+            importer.sRGBTexture = !response;
+            importer.alphaSource = assetPath.EndsWith("FittingsResponse.png", StringComparison.Ordinal)
+                ? TextureImporterAlphaSource.FromInput : TextureImporterAlphaSource.None;
             importer.mipmapEnabled = true; importer.streamingMipmaps = true; importer.isReadable = false;
             importer.wrapMode = TextureWrapMode.Clamp; importer.filterMode = FilterMode.Trilinear;
             importer.npotScale = TextureImporterNPOTScale.None; importer.maxTextureSize = 1024;
