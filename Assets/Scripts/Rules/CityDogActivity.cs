@@ -41,7 +41,7 @@ namespace BarPromenade
             float perimeter = (float)(Math.PI * (3 * (a + b) - Math.Sqrt((3 * a + b) * (a + 3 * b))));
             float sitStart = dog == 2 ? 41 : dog == 0 ? 35 : 40;
             float sit = Smooth((t - sitStart) / 2) * (1 - Smooth((t - (float)cycle + 4) / 3));
-            float sniff = speed < .03f ? (1 - sit) * (.65f + .25f * (float)Math.Sin(t * .7 + dog)) : 0;
+            float sniff = (1 - Smooth(speed / .12f)) * (1 - sit) * (.65f + .25f * (float)Math.Sin(t * .7 + dog));
             return new Sample(-.45f + a * cs, b * sn,
                 (float)(Math.Atan2(dx, dz) * 180 / Math.PI), speed,
                 (float)(Math.Floor(clock / cycle) * loopsPerCycle + u) * perimeter, sniff, sit, play);

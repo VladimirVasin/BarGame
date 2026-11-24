@@ -1365,8 +1365,8 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   Bounded time/pause/cleanup;static Home. `0-5`;no other text/service/economy/quest/reward/hint;
 - `8x10m` residential dog park (`CityDogPark*`,`CityDogPose`,`CityDogActivity`):
   residual ground after laundry,park-first fitting;homes/POIs/routes retained.
-  Fence/open1.6m entry/earth/bench/barrier;three distinct articulated dogs walk,
-  sniff,play/sit;two permanent silent global owners,one seated. Local bounded
+  Panel fence/open 1.6m entry, worn soil to slatted bench, bolted hurdle. Terrier and two mongrels plant toes,
+  sniff/play/sit;two silent catalog owners,one seated. Local bounded
   collision/avoidance,calendar phases/30Hz poses/distance sleep;pause/disable/unload cleanup.
   Dog bark reuses village synthesis;shared soft paws.No new light/text/quest/story;
 - one deterministic `city_misc_citywide_v4` mesh library at generator version

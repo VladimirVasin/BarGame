@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -158,6 +159,176 @@ namespace BarPromenade.Tests.PlayMode
                 GameSessionState.UpdateDrinkingProgress(0, DrinkId.LightBeer, 0);
                 Time.captureDeltaTime = previousDelta;
             }
+        }
+
+        [UnityTest]
+        [Explicit("Ground contacts of three dogs, sniffing, bench support and two-way entry.")]
+        public IEnumerator CityDogParkFittings()
+        {
+            GameSessionState.BeginNewGame();
+            Assert.That(GameSessionState.TryStartGameTimeAt(720), Is.True);
+            CityGameRoot city = null;
+            CityDogParkController park = null;
+            PlayerCameraFollow follow = null;
+            bool followEnabled = false, weatherEnabled = false, motorEnabled = false;
+            try
+            {
+                yield return Capture(SceneIds.City, () =>
+                {
+                    city = Object.FindAnyObjectByType<CityGameRoot>();
+                    return city && city.IsInitialized && !CompositionDriver.IsComposing ? city : null;
+                }, () =>
+                {
+                    park = Object.FindAnyObjectByType<CityDogParkController>();
+                    park.AutoAdvance = false;
+                    park.ForcePresentation = true;
+                    follow = city.Camera.GetComponent<PlayerCameraFollow>();
+                    followEnabled = follow.enabled;
+                    follow.enabled = false;
+                    weatherEnabled = city.Weather.enabled;
+                    city.Weather.enabled = false;
+                    motorEnabled = city.Player.Motor.InputEnabled;
+                    city.Player.Motor.SetInputEnabled(false);
+                    SetChurchRemodelTime(720);
+                    city.DayNight.ApplyCurrentTime(true);
+                    return new[]
+                    {
+                        Frame("entry", park.transform, new Vector3(.32f,1.72f,8.6f), new Vector3(-.4f,.57f,-.55f), 57f, 8d),
+                        Frame("terrier", park.Dogs[0], new Vector3(.89f,.35f,.72f), new Vector3(0,.25f,.05f), 40f, 8d),
+                        Frame("terrier-profile", park.Dogs[0], new Vector3(-.91f,.37f,.68f), new Vector3(0,.26f,.08f), 39f, 13d),
+                        Frame("sniff", park.Dogs[1], new Vector3(1.32f,.47f,.92f), new Vector3(0,.37f,.12f), 44f, 9d),
+                        Frame("large", park.Dogs[2], new Vector3(1.83f,.60f,.81f), new Vector3(0,.43f,.04f), 44f, 24d),
+                        Frame("bench", park.transform, new Vector3(-.95f,1.15f,-2.48f), new Vector3(-2.57f,.73f,-4.10f), 52f, 8d)
+                    };
+                    Shot Frame(string name, Transform basis, Vector3 eye, Vector3 target, float fov, double phase)
+                    {
+                        park.ApplyAt(phase);
+                        Shot pose = Shot.At("dog-fittings-" + name, basis.TransformPoint(eye), basis.TransformPoint(target), fov);
+                        int frames = 0;
+                        return Shot.At(pose.Name, pose.Position, pose.Target, fov, readyWhen: () =>
+                        {
+                            if (frames++ == 0) MoveCityLightingObserver(city, pose);
+                            park.ApplyAt(phase);
+                            return frames > SettleFrames;
+                        });
+                    }
+                });
+                VerifyDogParkContacts(park);
+                yield return WalkDogParkEntrance(city,park);
+                VerifyDogParkOwnerSeat(park);
+            }
+            finally
+            {
+                if (park) { park.AutoAdvance = true; park.ForcePresentation = false; }
+                if (follow) follow.enabled = followEnabled;
+                if (city && follow) { city.Weather.enabled = weatherEnabled; city.Player.Motor.SetInputEnabled(motorEnabled); }
+            }
+        }
+
+        private static void VerifyDogParkContacts(CityDogParkController park)
+        {
+            string[] legs = { "FL", "FR", "BL", "BR" };
+            float ground = CityDogParkAssetProvider.FindPart(park.transform, "ParkGround__Ground")
+                .GetComponent<Renderer>().bounds.max.y;
+            for (int dog = 0; dog < park.Dogs.Count; dog++)
+            {
+                Transform host = park.Dogs[dog];
+                Transform nose = CityDogParkAssetProvider.FindPart(host,"ANCHOR_Muzzle");
+                var feet = legs.Select(id => CityDogParkAssetProvider.FindPart(host,"DogPaw"+id+"__Plain")
+                    .GetComponent<MeshFilter>()).ToArray();
+                var vertices = feet.Select(f => f.sharedMesh.vertices).ToArray();
+                bool[] planted = new bool[4], swung = new bool[4];
+                bool sniffed = false;
+                for (double t = 0; t <= 73; t += .25)
+                {
+                    park.ApplyAt(t);
+                    var state = CityDogActivity.Evaluate(dog,t);
+                    int supports = 0;
+                    for (int leg = 0; leg < feet.Length; leg++)
+                    {
+                        var matrix = feet[leg].transform.localToWorldMatrix;
+                        float sole = float.PositiveInfinity;
+                        foreach (Vector3 v in vertices[leg]) sole = Mathf.Min(sole,matrix.MultiplyPoint3x4(v).y-ground);
+                        Assert.That(sole,Is.GreaterThan(-.012f),host.name+" sole penetrates earth at "+t);
+                        if (sole < .02f) { supports++; planted[leg] |= state.Speed > .15f; }
+                        swung[leg] |= sole > .027f && state.Speed > .15f;
+                    }
+                    Assert.That(supports,Is.GreaterThanOrEqualTo(2),host.name+" grounded paws at "+t);
+                    if (state.Sniff > .60f && state.Speed < .01f)
+                    {
+                        Assert.That(nose.position.y-ground,Is.InRange(.009f,.052f),host.name+" nose over earth at "+t);
+                        sniffed = true;
+                    }
+                }
+                Assert.That(planted.All(x => x) && swung.All(x => x) && sniffed, Is.True, host.name);
+            }
+        }
+
+        private static void VerifyDogParkOwnerSeat(CityDogParkController park)
+        {
+            string[] ids = { DefaultNpcPopulation.CityDogParkStandingOwner, DefaultNpcPopulation.CityDogParkSeatedOwner };
+            for (int i=0; i<ids.Length; i++)
+            {
+                var assignment = DefaultNpcPopulation.GetAssignment(ids[i]);
+                Assert.That(assignment.ModelId, Is.EqualTo(DefaultNpcCatalog.OrdinaryWorker));
+                var expected = DefaultNpcCatalog.GetPrefab(assignment.ModelId).GetComponentsInChildren<SkinnedMeshRenderer>(true)
+                    .Select(s => s.sharedMesh).ToHashSet();
+                var owner = park.Owners[i].GetComponent<DefaultNpcAppearance>();
+                Assert.That(owner.AppearanceKey, Is.EqualTo(ids[i]));
+                Assert.That(owner.CurrentFaceId, Is.EqualTo(assignment.FaceId));
+                Assert.That(owner.CurrentHairColorId, Is.EqualTo(assignment.HairColorId));
+                Assert.That(owner.GetComponentsInChildren<SkinnedMeshRenderer>(true).Any(s =>
+                    s.enabled && s.gameObject.activeInHierarchy && expected.Contains(s.sharedMesh)), Is.True);
+            }
+            Transform seat = CityDogParkAssetProvider.FindPart(park.transform,"ANCHOR_BenchSeat");
+            var bench = CityDogParkAssetProvider.FindPart(park.transform,"ParkBench__Plain").GetComponent<MeshFilter>();
+            float top = bench.sharedMesh.vertices.Select(v => park.Plan.InverseWorld(bench.transform.TransformPoint(v)))
+                .Where(v => v.z > -4.39f && v.z < -3.85f && v.y < .465f).Max(v => v.y);
+            Assert.That(top,Is.EqualTo(park.Plan.InverseWorld(seat.position).y).Within(.006f));
+            var baked = new Mesh();
+            try
+            {
+                foreach (double t in new[] { 0d, 9d, 27d })
+                {
+                    park.ApplyAt(t);
+                    float clearance = float.PositiveInfinity;
+                    foreach (var skin in park.Owners[1].GetComponentsInChildren<SkinnedMeshRenderer>())
+                    {
+                        if (!skin.enabled || !skin.sharedMesh) continue;
+                        skin.BakeMesh(baked, true);
+                        foreach (Vector3 v in baked.vertices)
+                        {
+                            Vector3 point = Quaternion.Inverse(park.Plan.Rotation) * (skin.localToWorldMatrix.MultiplyPoint3x4(v) - seat.position);
+                            if (Mathf.Abs(point.x) < .24f && point.z > -.23f && point.z < .095f)
+                                clearance = Mathf.Min(clearance,point.y);
+                        }
+                    }
+                    Assert.That(clearance,Is.InRange(-.022f,.021f),"Clothing on seat slats at "+t);
+                }
+            }
+            finally { Object.DestroyImmediate(baked); }
+        }
+
+        private static IEnumerator WalkDogParkEntrance(CityGameRoot city, CityDogParkController park)
+        {
+            var motor = city.Player.Motor;
+            Vector3 offset = Vector3.up * PlayerFactory.GroundedRootOffset;
+            var path = new[] { park.Plan.ApproachWorld, park.Plan.EntranceWorld, park.Plan.World(new Vector3(0,0,3.65f)) };
+            motor.Teleport(path[0] + offset);
+            Physics.SyncTransforms();
+            for (int pass=0; pass<2; pass++)
+            for (int i=1; i<path.Length; i++)
+            {
+                Vector3 target = path[pass==0 ? i : path.Length-1-i] + offset;
+                bool reached = false;
+                for (int step=0; step<90 && !reached; step++)
+                {
+                    reached = motor.MoveTowardsApproachWaypoint(target,.065f,.04f);
+                    if (step%3 == 0) yield return null;
+                }
+                Assert.That(reached,Is.True,"Player crosses dog yard entrance, direction "+pass);
+            }
+            motor.CancelInteractionPoseMove();
         }
 
         private static void AssertDogParkImportedActors(CityDogParkController park)

@@ -11,22 +11,25 @@ namespace BarPromenade.Editor
     {
         public const string ModelFolder = "Assets/Resources/City/DogPark/";
         public const string ManifestPath = ModelFolder + "CityDogPark3D.json";
-        public override uint GetVersion() => 1;
+        public override uint GetVersion() => 2;
 
         private void OnPreprocessTexture()
         {
-            if (assetPath != ModelFolder + "DogParkPalette.png" || !(assetImporter is TextureImporter importer)) return;
+            if (!assetPath.StartsWith(ModelFolder, StringComparison.Ordinal) ||
+                !(assetImporter is TextureImporter importer)) return;
+            bool response = assetPath.EndsWith("Response.png", StringComparison.Ordinal);
             importer.textureType = TextureImporterType.Default;
             importer.textureShape = TextureImporterShape.Texture2D;
-            importer.sRGBTexture = true;
-            importer.alphaSource = TextureImporterAlphaSource.None;
-            importer.mipmapEnabled = false;
-            importer.isReadable = false;
-            importer.wrapMode = TextureWrapMode.Clamp;
-            importer.filterMode = FilterMode.Point;
-            importer.npotScale = TextureImporterNPOTScale.None;
-            importer.maxTextureSize = 32;
-            importer.textureCompression = TextureImporterCompression.Uncompressed;
+            importer.sRGBTexture = !response;
+            importer.alphaSource = assetPath.EndsWith("FinishResponse.png", StringComparison.Ordinal)
+                ? TextureImporterAlphaSource.FromInput : TextureImporterAlphaSource.None;
+            importer.mipmapEnabled = true; importer.streamingMipmaps = true; importer.isReadable = false;
+            importer.wrapMode = TextureWrapMode.Clamp; importer.filterMode = FilterMode.Trilinear;
+            importer.npotScale = TextureImporterNPOTScale.None; importer.maxTextureSize = 1024;
+            importer.anisoLevel = 4; importer.textureCompression = TextureImporterCompression.CompressedHQ;
+            importer.SetPlatformTextureSettings(new TextureImporterPlatformSettings {
+                name = "Standalone", overridden = true, maxTextureSize = 1024,
+                format = TextureImporterFormat.BC7, compressionQuality = 100 });
         }
 
         private void OnPreprocessModel()
@@ -96,18 +99,24 @@ namespace BarPromenade.Editor
                 try { ValidateModel(root, manifest.models[index]); }
                 finally { UnityEngine.Object.DestroyImmediate(root); }
             }
-            var texture = AssetDatabase.LoadAssetAtPath<Texture2D>(ModelFolder + "DogParkPalette.png");
-            if (texture == null || texture.width != 16 || texture.height != 1 || texture.isReadable || texture.filterMode != FilterMode.Point)
-                throw new InvalidOperationException("Dog park palette lost its finite shared import contract.");
+            foreach (string name in FinishNames)
+            {
+                var texture = Resources.Load<Texture2D>(CityDogParkAssetProvider.ResourceFolder + name);
+                if (!texture || texture.width != 1024 || texture.height != 1024 || texture.isReadable ||
+                    texture.mipmapCount <= 1 || texture.filterMode != FilterMode.Trilinear)
+                    throw new InvalidOperationException("Invalid dog park finish " + name);
+            }
             Debug.Log("CITY DOG PARK IMPORTED METRES, PAW CONTACTS AND SHARED SURFACES OK");
         }
+
+        private static readonly string[] FinishNames = { "DogParkPalette", "DogParkFinishResponse", "DogParkSoil", "DogParkSoilResponse" };
 
         /// <summary>Finish the finite imported dependency set and verify typed
         /// Resources before constructing runtime presentation. A legacy empty
         /// texture importer can otherwise identify the palette as a cubemap.</summary>
         public static void EnsureImportedAssets()
         {
-            string[] assets = { "DogParkPalette.png", "StaticDogPark.fbx", "DogSmall.fbx", "DogShaggy.fbx", "DogLarge.fbx" };
+            string[] assets = { "StaticDogPark.fbx", "DogSmall.fbx", "DogShaggy.fbx", "DogLarge.fbx" };
             foreach (string name in assets)
             {
                 string path = ModelFolder + name;
@@ -119,7 +128,8 @@ namespace BarPromenade.Editor
             }
             // Resolve typed resources too: this gives an exact diagnostic
             // before PaletteMaterial or the City scene can run.
-            EnsureResource<Texture2D>(CityDogParkAssetProvider.ResourceFolder + "DogParkPalette", ModelFolder + "DogParkPalette.png");
+            foreach (string name in FinishNames)
+                EnsureResource<Texture2D>(CityDogParkAssetProvider.ResourceFolder + name, ModelFolder + name + ".png");
         }
 
         private static void EnsureResource<T>(string resource, string path) where T : UnityEngine.Object

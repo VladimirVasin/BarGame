@@ -12,7 +12,8 @@ namespace BarPromenade
         public const int DogVariantCount = 3;
         private static readonly string[] Names = { "DogSmall", "DogShaggy", "DogLarge" };
         private static readonly GameObject[] Templates = new GameObject[DogVariantCount + 1];
-        private static Material paletteMaterial;
+        private static Material fittings;
+        private static Texture2D soil, soilResponse;
 
         public static GameObject CreatePark(Transform parent) => Create(parent, 0, "StaticDogPark");
 
@@ -40,7 +41,6 @@ namespace BarPromenade
             GameObject instance = UnityEngine.Object.Instantiate(Templates[slot], root.transform, false);
             foreach (MeshRenderer renderer in instance.GetComponentsInChildren<MeshRenderer>(true))
             {
-                renderer.sharedMaterial = PaletteMaterial;
                 renderer.shadowCastingMode = renderer.name.StartsWith("ParkFenceWire", StringComparison.Ordinal)
                     ? ShadowCastingMode.Off : ShadowCastingMode.On;
                 renderer.receiveShadows = true;
@@ -48,35 +48,40 @@ namespace BarPromenade
                 renderer.reflectionProbeUsage = ReflectionProbeUsage.Off;
                 if (renderer.name.StartsWith("ParkGround", StringComparison.Ordinal))
                 {
-                    CityParkSurfaceAppearance.ApplyCombined(renderer, CityParkSurfaceKind.Path,
-                        new Color(.34f, .315f, .265f));
+                    if (!soil) soil = Texture("DogParkSoil");
+                    if (!soilResponse) soilResponse = Texture("DogParkSoilResponse");
+                    GroundSurfaceAppearance.Apply(renderer, GroundSurfaceKind.Soil, soil, responseOverride: soilResponse);
+                    var properties = new MaterialPropertyBlock();
+                    renderer.GetPropertyBlock(properties);
+                    properties.SetTexture("_BaseMap", soil);
+                    properties.SetColor("_BaseColor", Color.white);
+                    properties.SetFloat("_GroundCityClimate", 1f);
+                    properties.SetFloat("_Smoothness", .22f);
+                    renderer.SetPropertyBlock(properties);
                     FootstepGround.Stamp(renderer, FootstepGroundKind.Soil);
                 }
+                else renderer.sharedMaterial = Fittings;
             }
             return root;
         }
 
-        private static Material PaletteMaterial
+        private static Texture2D Texture(string name) => Resources.Load<Texture2D>(ResourceFolder + name)
+            ?? throw new InvalidOperationException("Missing dog park finish " + name);
+
+        private static Material Fittings
         {
             get
             {
-                if (paletteMaterial != null) return paletteMaterial;
-                Shader shader = Resources.Load<Shader>("Shaders/Lit");
-                Texture2D palette = Resources.Load<Texture2D>(ResourceFolder + "DogParkPalette");
-                if (shader == null)
-                    throw new InvalidOperationException("Dog park shared shader resource is missing: Shaders/Lit.");
-                if (palette == null)
-                    throw new InvalidOperationException("Dog park palette resource is missing: " + ResourceFolder + "DogParkPalette.");
-                paletteMaterial = new Material(shader)
+                if (fittings) return fittings;
+                fittings = new Material(Resources.Load<Shader>("Shaders/CitySurfaceLit"))
                 {
-                    name = "Residential Dogs and Park Shared", hideFlags = HideFlags.HideAndDontSave,
-                    enableInstancing = true
+                    name = "Dog coats and yard fittings", hideFlags = HideFlags.HideAndDontSave, enableInstancing = true
                 };
-                paletteMaterial.SetTexture("_BaseMap", palette);
-                paletteMaterial.SetColor("_BaseColor", Color.white);
-                paletteMaterial.SetFloat("_Smoothness", .10f);
-                paletteMaterial.SetFloat("_Metallic", 0f);
-                return paletteMaterial;
+                fittings.SetTexture("_BaseMap", Texture("DogParkPalette"));
+                fittings.SetTexture("_SceneMaterialResponse", Texture("DogParkFinishResponse"));
+                fittings.SetFloat("_SceneResponseStrength", 1f);
+                fittings.SetFloat("_SceneNormalStrength", .45f);
+                return fittings;
             }
         }
 
@@ -84,8 +89,9 @@ namespace BarPromenade
         private static void ResetResources()
         {
             Array.Clear(Templates, 0, Templates.Length);
-            if (paletteMaterial != null) UnityEngine.Object.Destroy(paletteMaterial);
-            paletteMaterial = null;
+            if (fittings) UnityEngine.Object.Destroy(fittings);
+            fittings = null;
+            soil = soilResponse = null;
         }
     }
 }

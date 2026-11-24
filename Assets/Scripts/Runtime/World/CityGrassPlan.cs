@@ -205,6 +205,12 @@ namespace BarPromenade
                     Reserve(steps);
                     break;
                 }
+            var dogYard = CityDogParkPlan.ForLayout(city);
+            if (dogYard.IsEnabled)
+            {
+                ReserveRect(dogYard.Footprint);
+                ReserveRect(dogYard.ApproachBounds);
+            }
             if (RidgeParkingPlan.ForLayout(city) is { } parking) ReserveRect(parking.SurfaceBounds);
             // Some path tops are separate models, and Home omits their
             // collision entirely. Reserve their same contours in City space.

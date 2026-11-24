@@ -23,8 +23,10 @@ ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location("dog_park_port", ROOT / "tools/build-city-port-3d-model.py")
 port = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(port)
+import dog_park_finishes as finishes
+
 base = port.base
-VERSION = "1.0.0"
+VERSION = "2.0.0"
 MODEL_DIR = ROOT / "Assets/Resources/City/DogPark"
 SOURCE_DIR = ROOT / "ArtSource/City/DogPark"
 PALETTE = (
@@ -89,16 +91,48 @@ def part(g, name, parent, material, pivot_position=None, role="Plain"):
     o.parent = parent
     o.matrix_world = world
     bpy.context.view_layer.update()
+    config = None
+    if name.startswith("Dog"):
+        ancestor = parent
+        while ancestor.parent:
+            ancestor = ancestor.parent
+        config = next(row for row in DOGS if row["name"] == ancestor.name)
     for polygon, color in zip(o.data.polygons, g.colors):
-        index = PALETTE.index(color) if color in PALETTE else 12
+        slot = PALETTE.index(color)
+        normal = Vector(base.source(polygon.normal))
+        dominant = max(range(3), key=lambda k: abs(normal[k]))
+        wood = name in ("ParkBench","ParkLowBarrier") and slot in (0,1)
+        if wood:
+            slot = 13 if dominant == 0 else 12
+        uv = o.data.uv_layers.active.data
         for loop in polygon.loop_indices:
-            o.data.uv_layers.active.data[loop].uv = ((index + .5) / len(PALETTE), .5)
-            if role != "Plain":
-                vertex = o.data.vertices[o.data.loops[loop].vertex_index].co
-                n = polygon.normal
-                axis = max(range(3), key=lambda k: abs(n[k]))
-                axes = ((1, 2), (0, 2), (0, 1))[axis]
-                o.data.uv_layers.active.data[loop].uv = (vertex[axes[0]], vertex[axes[1]])
+            vtx = o.data.vertices[o.data.loops[loop].vertex_index].co
+            x,y,z = base.source(vtx + Vector(base.source(pivot_position or (0,0,0))))
+            if role == "Ground":
+                uv[loop].uv = ((x+4)/8,(z+5)/10)
+                continue
+            if config:
+                length,h,width = config["length"],config["shoulder"],config["width"]
+                # Same chart across torso and articulated parts in bind metres.
+                u = (z/length+.65)/1.65
+                v = 1-(y/h-.20)/1.13
+                if dominant == 1:
+                    v = .07 + .66*abs(x)/width
+                elif dominant == 2:
+                    u = .56 + x/(width*1.8)
+            elif wood:
+                u = (x+3.5)/1.80 if name=="ParkBench" else (x-1.75)/1.40
+                if slot == 13:
+                    u,v = (z*3)%1, (y*2)%1
+                elif dominant == 1:
+                    v = (z+4.41)/.63 if name=="ParkBench" else (z+2.36)/.12
+                else:
+                    v = y/.97
+            else:
+                u,v = (x+4)/8 if dominant != 0 else (z+5)/10, y/1.26
+                if dominant == 1:
+                    v = (z+5)/10
+            uv[loop].uv = finishes.uv(slot,u,v)
     return o
 
 
@@ -123,6 +157,52 @@ def coat_tufts(g, centers, radius, color, seed):
         g.add([a, b, c, d], [(0, 2, 1), (0, 1, 3), (1, 2, 3), (2, 0, 3)], PALETTE[color])
 
 
+def loft(g, stations, color, upright=False, sides=10):
+    """Elliptical sections, centred and tapered independently along the limb or spine."""
+    points = []
+    for x, y, z, rx, ry in stations:
+        for j in range(sides):
+            angle = math.tau * j / sides
+            a, b = rx * math.cos(angle), ry * math.sin(angle)
+            points.append((x + a, y if upright else y + b, z + b if upright else z))
+    last = len(points) - sides
+    faces = [tuple(reversed(range(sides))), tuple(range(last, last + sides))]
+    for i in range(0, last, sides):
+        for j in range(sides):
+            a, b = i + j, i + (j + 1) % sides
+            faces.append((a, b, b + sides, a + sides))
+    g.add(points, faces, PALETTE[color])
+
+
+def paw_mesh(g, x, z, r, coat, light):
+    # A heel with a flat weight-bearing sole; two longer middle toes lead the step.
+    loft(g, [(x, y*r, z+dz*r, w*r, d*r) for y,dz,w,d in
+             ((0,.13,.52,.46),(.20,.14,.68,.66),(.62,-.02,.54,.53),
+              (1.02,-.16,.30,.32))], light, upright=True)
+    for toe in (-1.5,-.5,.5,1.5):
+        mid = z + r * (1.00 - .16 * abs(toe))
+        loft(g, [(x + toe*r*.34, y*r, mid+dz*r, w*r, d*r) for y,dz,w,d in
+                 ((0,0,.16,.28),(.17,.02,.205,.37),(.39,-.05,.17,.28),(.51,-.13,.08,.12))],
+             coat if abs(toe)>1 else light, upright=True, sides=8)
+
+
+def muzzle(g, h, length, size, main, light, terrier):
+    # Broad cheek tapers over a separate, slightly shorter lower jaw.
+    origin = length * .51
+    for stations, color in ((
+            ((.19,.01,.47,.28),(.52,-.03,.45,.28),(.93,-.06,.33,.22),
+             (1.19,-.05,.25,.15)), light), (
+            ((.25,-.18,.38,.16),(.72,-.23,.32,.14),(1.11,-.20,.22,.09)), main)):
+        loft(g, [(0,h*1.19+y*size,origin+z*size,w*size,d*size)
+                 for z,y,w,d in stations],color)
+    loft(g, [(0,h*1.19+y*size,origin+z*size,w*size,d*size)
+             for z,y,w,d in ((1.10,.01,.25,.15),(1.24,.015,.28,.17),(1.34,-.02,.19,.10))],7)
+    if terrier:
+        for side in (-1,1):
+            coat_tufts(g, [(side*size*.38,h*1.18,origin+size*.62),
+                           (side*size*.32,h*1.155,origin+size*.89)],size*.22,light,11)
+
+
 def dog(config, material):
     name, h, length, width = config["name"], config["shoulder"], config["length"], config["width"]
     main, dark, light = config["coat"], config["dark"], config["light"]
@@ -130,28 +210,30 @@ def dog(config, material):
     hip = (0, h * .92, -length * .32)
     torso = pivot("MOVE_Torso", hip, root)
     body = geometry()
-    ellipsoid(body, (0, h * .87, -.025), (width * .51, h * .235, length * .57), main)
-    ellipsoid(body, (0, h * .88, length * .29), (width * .55, h * .285, length * .22), main)
-    ellipsoid(body, (0, h * .89, -length * .34), (width * .50, h * .23, length * .23), main)
-    # A distinct withers/back and chest bib keep a canine silhouette from above.
-    ellipsoid(body, (0, h * .97, -length * .13), (width * .43, h * .13, length * .37), dark)
-    ellipsoid(body, (0, h * .78, length * .425), (width * .34, h * .22, length * .09), light)
+    # One continuous rib cage, tucked flank, rump and brisket. The big dog's
+    # ribs and withers are fuller; the terrier has a shorter, squarer trunk.
+    chest = 1.12 if name == "DogLarge" else 1.0
+    loft(body, [(0,y*h,z*length,w*width,d*h) for z,y,w,d in
+                ((-.58,.90,.20,.14),(-.45,.89,.46,.24),(-.31,.91,.51,.23),
+                 (-.13,.93,.43,.18),(.06,.88,.50,.23),(.24,.86,.55,.29*chest),
+                 (.39,.89,.46,.25),(.47,.95,.29,.17))], main, sides=14)
+    ellipsoid(body, (0,h*.81,length*.37),(width*.37,h*.21,length*.12),light,5,10)
     if name == "DogShaggy":
         centers = [(math.sin(i * 1.7) * width * .47, h * (.80 + (i % 3) * .07),
                     -length * .41 + i * length * .073) for i in range(12)]
         coat_tufts(body, centers, h * .075, light, 12)
+        for side in (-1,1):
+            centers = [(side*width*.42,h*(.84+.075*i),length*(.35-.015*i)) for i in range(4)]
+            coat_tufts(body, centers, h*.12, main, 5)
     part(body, "DogBody", torso, material, hip)
 
     # Neck is carried with the head; a broad chest overlap hides the swivel.
-    head_point = (0, h * 1.07, length * .43)
+    head_point = (0, h * .91, length * .16)
     head = pivot("MOVE_Head", head_point, torso)
     shape = geometry()
     ellipsoid(shape, (0, h * 1.09, length * .40), (width * .37, h * .24, length * .19), main, tilt=-24)
     ellipsoid(shape, (0, h * 1.235, length * .51), (config["head"] * .61, config["head"] * .67, config["head"] * .67), main)
-    ellipsoid(shape, (0, h * 1.17, length * .51 + config["head"] * .72),
-              (config["head"] * .43, config["head"] * .34, config["head"] * .63), light)
-    ellipsoid(shape, (0, h * 1.19, length * .51 + config["head"] * 1.18),
-              (config["head"] * .29, config["head"] * .21, config["head"] * .18), 7, 4, 8)
+    muzzle(shape, h, length, config["head"], main, light, name == "DogSmall")
     # Muzzle mouth seam, brows and small near-black eyes, no emotive painted grin.
     for side in (-1, 1):
         eye = (side * config["head"] * .48, h * 1.28, length * .51 + config["head"] * .39)
@@ -197,16 +279,29 @@ def dog(config, material):
             lower = pivot("MOVE_Leg" + code + "_Lower", lower_point, upper)
             paw = pivot("MOVE_Leg" + code + "_Paw", paw_point, lower)
             up_mesh = geometry()
-            up_mesh.rod(upper_point, lower_point, h * (.076 if front else .105), PALETTE[main], 8, h * .052)
-            ellipsoid(up_mesh, upper_point, (h * .10, h * .15, h * .125), main, 4, 8)
+            thigh = not front and name == "DogLarge"
+            def shaft(g, top, bottom, profile):
+                sections = []
+                for t, width_factor, depth_factor, shift in profile:
+                    y = top[1] + (bottom[1] - top[1]) * t
+                    axis_z = top[2] + (bottom[2] - top[2]) * t + h * shift
+                    sections.append((x,y,axis_z,h*width_factor,h*depth_factor))
+                loft(g, sections, main, upright=True)
+            shaft(up_mesh,upper_point,lower_point,
+                  ((-.12,.06,.09,0),(.08,.10,.145 if front else .17,0),
+                   (.34,.094,.16 if thigh else .12,.012),(.72,.065,.09,.01),
+                   (1.02,.057,.068,0)))
+            if name == "DogShaggy":
+                coat_tufts(up_mesh, [(x+side*h*.057,h*.59,z),(x,h*.63,z-h*.075)],h*.082,light,9)
             part(up_mesh, "DogLeg" + code + "Upper", upper, material, upper_point)
             low_mesh = geometry()
-            low_mesh.rod(lower_point, paw_point, h * .050, PALETTE[main], 8, h * .032)
-            ellipsoid(low_mesh, lower_point, (h * .057, h * .066, h * .057), main, 4, 8)
+            shaft(low_mesh,lower_point,paw_point,
+                  ((-.07,.045,.048,0),(.05,.059,.064,0),(.28,.052,.059,-.012),
+                   (.62,.035,.037,-.022 if not front else 0),(.84,.043,.047,-.012),
+                   (1,.038,.040,0)))
             part(low_mesh, "DogLeg" + code + "Lower", lower, material, lower_point)
             foot = geometry()
-            ellipsoid(foot, (x, paw_radius * .52, paw_point[2] + paw_radius * .26),
-                      (paw_radius * .64, paw_radius * .52, paw_radius), light, 4, 8)
+            paw_mesh(foot,x,paw_point[2],paw_radius,main,light)
             part(foot, "DogPaw" + code, paw, material, paw_point)
             pivot("ANCHOR_Foot" + code, (x, 0, paw_point[2] + paw_radius * .26), paw)
             joints.append(dict(leg=code, upper=list(upper_point), lower=list(lower_point),
@@ -236,52 +331,79 @@ def park(material):
     edges = [((-3.94, -4.94), (3.94, -4.94)), ((-3.94, -4.94), (-3.94, 4.94)),
              ((3.94, -4.94), (3.94, 4.94)), ((-3.94, 4.94), (-.86, 4.94)),
              ((.86, 4.94), (3.94, 4.94))]
+    wire = geometry()
+    installed = set()
     for a, b in edges:
         distance = math.dist(a, b)
         count = math.ceil(distance / 1.98)
+        dx, dz = (b[0]-a[0])/distance, (b[1]-a[1])/distance
         for i in range(count + 1):
-            t = i / count
-            x, z = a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t
-            steel.rod((x, .0, z), (x, 1.23, z), .045, PALETTE[11], 8)
-            steel.rod((x, 1.23, z), (x, 1.25, z), .044, PALETTE[11], 8, .025)
-        for y in (.12, 1.17):
-            steel.rod((a[0], y, a[1]), (b[0], y, b[1]), .022, PALETTE[11], 6)
+            x, z = a[0]+dx*distance*i/count, a[1]+dz*distance*i/count
+            key = (round(x,3),round(z,3))
+            if key not in installed:
+                installed.add(key)
+                foot_radius = .058 if abs(x) < 1 and z > 4 else .068
+                steel.rod((x,0,z),(x,.085,z),foot_radius,PALETTE[14],8,.055)
+                steel.rod((x,.065,z),(x,1.22,z),.045,PALETTE[11],10)
+                steel.rod((x,1.215,z),(x,1.25,z),.052,PALETTE[11],10,.039)
+                for y in (.19,1.13):
+                    steel.rod((x,y-.021,z),(x,y+.021,z),.049,PALETTE[15],8)
+            if i == count:
+                continue
+            # Each welded panel ends short of the post; its tabs bridge the gap.
+            span = distance/count
+            def at(t,y):
+                return (x+dx*t,y,z+dz*t)
+            for t in (.066,span-.066):
+                wire.rod(at(t,.14),at(t,1.16),.013,PALETTE[11],6)
+                for y in (.19,1.13):
+                    post = 0 if t < span/2 else span
+                    steel.rod(at(post,y),at(t,y),.018,PALETTE[11],6)
+            for y in (.15,.35,.55,.75,.95,1.15):
+                wire.rod(at(.066,y),at(span-.066,y),.009,PALETTE[11],5)
+            div = math.ceil((span-.132)/.21)
+            for j in range(1,div):
+                t = .066+(span-.132)*j/div
+                wire.rod(at(t,.15),at(t,1.15),.007,PALETTE[11],5)
     part(steel, "ParkFencePosts", root, material)
-    wire = geometry()
-    for a, b in edges:
-        count = math.ceil(math.dist(a, b) / .24)
-        for i in range(count + 1):
-            t = i / count
-            x, z = a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t
-            wire.rod((x, .16, z), (x, 1.13, z), .006, PALETTE[11], 4)
-        for y in (.24, .44, .64, .84, 1.04):
-            wire.rod((a[0], y, a[1]), (b[0], y, b[1]), .006, PALETTE[11], 4)
     part(wire, "ParkFenceWire", root, material)
     ground = geometry()
-    # Low, irregular pigment cells read as compacted soil, never an asphalt slab.
-    for ix in range(10):
-        for iz in range(12):
-            x0, x1 = -4 + ix * .8, -4 + (ix + 1) * .8
-            z0, z1 = -5 + iz * (10 / 12), -5 + (iz + 1) * (10 / 12)
-            color = 12 + ((ix * 7 + iz * 3) % 3)
-            ground.add([(x0, 0, z0), (x0, 0, z1), (x1, 0, z1), (x1, 0, z0)],
-                       [(0, 1, 2, 3)], PALETTE[color], solid=False)
+    ground.add([(-4,0,-5),(-4,0,5),(4,0,5),(4,0,-5)],[(0,1,2,3)],PALETTE[12],solid=False)
+    # A thin, irregular lip of trampled earth meets the lower approach between the posts.
+    lip = [(-.81,0,5),(-.82,-.024,5.17),(-.48,-.024,5.29),(-.13,-.024,5.25),
+           (.24,-.024,5.33),(.57,-.024,5.22),(.82,-.024,5.16),(.81,0,5)]
+    ground.add(lip,[(0,i,i+1) for i in range(1,7)],PALETTE[12],solid=False)
     part(ground, "ParkGround", root, material, role="Ground")
     bench = geometry()
-    for x in (-3.28, -1.92):
-        for z in (-4.33, -3.88):
-            bench.rod((x, 0, z), (x, .43, z), .035, PALETTE[11], 6)
-        bench.rod((x, .39, -4.40), (x, .91, -4.47), .035, PALETTE[11], 6)
-    for z in (-4.31, -4.13, -3.95):
-        bench.box((-2.6, .43, z), (1.80, .06, .15), PALETTE[0])
-    for y in (.65, .83):
-        bench.box((-2.6, y, -4.44), (1.8, .13, .06), PALETTE[0])
+    def fitting(g, centre, size, index, bevel):
+        port.chamfer(g,centre,size,PALETTE[index],bevel)
+    for x in (-3.28,-1.92):
+        for z in (-4.33,-3.88):
+            footing = z + (-.035 if z < -4 else .035)
+            fitting(bench,(x,.018,footing),(.115,.032,.14),11,.007)
+            bench.rod((x,.030,footing),(x,.39,z),.030,PALETTE[11],8)
+        fitting(bench,(x,.38,-4.13),(.059,.052,.55),11,.007)
+        bench.rod((x,.37,-4.34),(x,.91,-4.47),.029,PALETTE[11],8)
+    bench.rod((-3.28,.25,-4.30),(-1.92,.25,-4.30),.022,PALETTE[11],8)
+    for z in (-4.31,-4.13,-3.95):
+        fitting(bench,(-2.6,.431,z),(1.80,.058,.161),0,.010)
+        for x in (-3.28,-1.92):
+            bench.rod((x,.458,z),(x,.462,z),.013,PALETTE[15],8,.010)
+    for y in (.65,.83):
+        fitting(bench,(-2.6,y,-4.40),(1.8,.133,.056),0,.009)
+        for x in (-3.28,-1.92):
+            bench.rod((x,y,-4.376),(x,y,-4.369),.012,PALETTE[15],8)
     part(bench, "ParkBench", root, material)
     hurdle = geometry()
-    for x in (1.88, 3.02):
-        hurdle.box((x, .20, -2.3), (.10, .40, .36), PALETTE[11])
-        hurdle.box((x, .025, -2.3), (.26, .05, .36), PALETTE[11])
-    hurdle.box((2.45, .39, -2.3), (1.40, .10, .10), PALETTE[15])
+    for x in (1.88,3.02):
+        fitting(hurdle,(x,.025,-2.3),(.235,.05,.35),11,.010)
+        fitting(hurdle,(x,.198,-2.3),(.069,.30,.096),11,.009)
+        fitting(hurdle,(x,.334,-2.3),(.09,.022,.15),15,.004)
+        for sign in (-1,1):
+            fitting(hurdle,(x,.382,-2.3+sign*.061),(.09,.105,.014),11,.004)
+            hurdle.rod((x,.39,-2.3+sign*.061),(x,.39,-2.3+sign*.071),.017,PALETTE[15],6)
+            hurdle.rod((x,.045,-2.3+sign*.125),(x,.059,-2.3+sign*.125),.019,PALETTE[15],6)
+    fitting(hurdle,(2.45,.39,-2.3),(1.40,.09,.108),1,.011)
     part(hurdle, "ParkLowBarrier", root, material)
     for name, point in PARK_ANCHORS.items():
         base.empty(name, root, point)
@@ -328,15 +450,6 @@ def build():
                        palette=[list(c) for c in PALETTE], models=models)
 
 
-def write_palette(path):
-    image = bpy.data.images.new("DogParkPalette", width=len(PALETTE), height=1, alpha=False)
-    image.pixels = [channel for color in PALETTE for channel in color]
-    image.filepath_raw = str(path)
-    image.file_format = "PNG"
-    image.save()
-    bpy.data.images.remove(image)
-
-
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model-dir", type=Path, default=MODEL_DIR)
@@ -346,8 +459,12 @@ def main():
     args = parser.parse_args(sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else [])
     base.reset()
     roots, result = build()
+    textures = finishes.maps()
+    result["texture_sha256"] = {name: hashlib.sha256(data).hexdigest() for name,data in textures.items()}
     if args.validate_only:
         saved = json.loads((args.model_dir / "CityDogPark3D.json").read_text())
+        if any((args.model_dir / (name+".png")).read_bytes() != data for name,data in textures.items()):
+            raise RuntimeError("Dog park finish maps differ")
         if saved != result:
             raise RuntimeError("Dog park source differs from committed geometry manifest")
     else:
@@ -355,12 +472,14 @@ def main():
         args.source_dir.mkdir(parents=True, exist_ok=True)
         for root in roots:
             base.export(root, args.model_dir / (root.name + ".fbx"))
-        write_palette(args.model_dir / "DogParkPalette.png")
+        for name,data in textures.items():
+            (args.model_dir / (name+".png")).write_bytes(data)
         (args.model_dir / "CityDogPark3D.json").write_text(json.dumps(result, indent=2) + "\n")
         bpy.context.preferences.filepaths.save_version = 0
         bpy.ops.wm.save_as_mainfile(filepath=str(args.source_dir / "CityDogPark3D.blend"), check_existing=False)
     base.reset()
     _, repeated = build()
+    repeated["texture_sha256"] = result["texture_sha256"]
     if repeated != result:
         raise RuntimeError("Dog park deterministic rebuild differs")
     print("CITY DOG PARK ART CONTRACT OK: authored canine anatomy, four articulated legs, metre contacts, open entry, finite shared palette and deterministic geometry", flush=True)

@@ -13,9 +13,10 @@ namespace BarPromenade
         }
         private readonly Transform host, torso, head, earL, earR, tailA, tailB;
         private readonly Vector3 torsoRest;
+        private readonly Quaternion headInHost;
         private readonly Quaternion torsoRotation, headRest, earLRest, earRRest, tailARest, tailBRest;
         private readonly Leg[] legs = new Leg[4];
-        private readonly float height, stride;
+        private readonly float height, stride, muzzleReach, muzzleRestPitch;
         private readonly Vector3 frontShoulderFromTorso;
         public float PawError { get; private set; }
 
@@ -27,6 +28,10 @@ namespace BarPromenade
             earL = Find("MOVE_EarL"); earR = Find("MOVE_EarR");
             tailA = Find("MOVE_Tail01"); tailB = Find("MOVE_Tail02");
             torsoRest = torso.localPosition; torsoRotation = torso.localRotation;
+            headInHost = Quaternion.Inverse(host.rotation) * head.rotation;
+            Vector3 noseFromNeck = Quaternion.Inverse(head.rotation) * (Find("ANCHOR_Muzzle").position - head.position);
+            muzzleReach = new Vector2(noseFromNeck.y, noseFromNeck.z).magnitude;
+            muzzleRestPitch = Mathf.Atan2(noseFromNeck.y, noseFromNeck.z);
             headRest = head.localRotation; earLRest = earL.localRotation; earRRest = earR.localRotation;
             tailARest = tailA.localRotation; tailBRest = tailB.localRotation;
             string[] names = { "FL", "FR", "BL", "BR" };
@@ -52,14 +57,28 @@ namespace BarPromenade
             float sniff = activity.Sniff * (1 - moving);
             // Rotate at the hips and lower them by the exact rise of the front
             // shoulders: a sitting dog folds its rear legs, not its front contacts.
-            float pitch = -29f * sit + 7f * sniff;
-            Vector3 shoulderRotated = Quaternion.Euler(pitch, 0f, 0f) * frontShoulderFromTorso;
+            float searching = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(sniff / .46f));
+            float sittingPitch = -29f * sit;
+            float pitch = sittingPitch + 16f * searching;
+            Vector3 shoulderRotated = Quaternion.Euler(sittingPitch, 0f, 0f) * frontShoulderFromTorso;
             float drop = shoulderRotated.y - frontShoulderFromTorso.y + height * .035f;
             Vector3 worldOffset = Vector3.down * drop + Vector3.up * Mathf.Sin(t * 1.9f) * height * .007f;
             torso.localPosition = torsoRest + torso.parent.InverseTransformVector(worldOffset);
             torso.localRotation = torsoRotation * Quaternion.Euler(pitch, 0f, Mathf.Sin(t * 2.1f) * moving * .8f);
             head.localRotation = headRest * Quaternion.Euler(24f * sniff - 9f * sit,
                 Mathf.Sin(t * .57f + activity.X) * (moving > .1f ? 4f : 13f), 0f);
+            if (searching > 0f)
+            {
+                // Lower the chest over the planted forefeet, then pitch the neck so
+                // the nose clears the soil by a few cm, for each muzzle length.
+                float clearance = .022f + .012f * (.5f + .5f * Mathf.Sin(t * 2.1f));
+                float rise = Mathf.Clamp((head.position.y - host.position.y - clearance) / muzzleReach, -1f, 1f);
+                float nosePitch = (Mathf.Asin(rise) + muzzleRestPitch) * Mathf.Rad2Deg;
+                float sweep = Mathf.Sin(t * 1.55f + activity.X) * 8f;
+                Quaternion noseRotation = host.rotation * Quaternion.Euler(0f,sweep,0f)
+                    * Quaternion.Euler(nosePitch,0f,0f) * headInHost;
+                head.rotation = Quaternion.Slerp(head.rotation, noseRotation, searching);
+            }
             earL.localRotation = earLRest * Quaternion.Euler(Mathf.Sin(t * 1.2f) * 5f, 0f, 2f * sniff);
             earR.localRotation = earRRest * Quaternion.Euler(Mathf.Sin(t * 1.37f + 1.8f) * 4f, 0f, -2f * sniff);
             float wag = Mathf.Sin(t * (activity.Play > 0 ? 6.8f : 3.1f)) * (activity.Play > 0 ? 24f : 11f);
@@ -80,7 +99,7 @@ namespace BarPromenade
                     Mathf.Lerp(-.5f, .5f, Mathf.SmoothStep(0f, 1f, (phase - duty) / (1 - duty)));
                 float lift = phase < duty ? 0 : Mathf.Sin((phase - duty) / (1 - duty) * Mathf.PI) * height * .19f;
                 Vector3 target = leg.Foot + new Vector3(0, lift * moving, step * stride * moving);
-                if (i >= 2) target.z += height * .34f * sit;
+                target.z += i < 2 ? height * .20f * searching : height * .34f * sit;
                 Vector3 worldTarget = host.TransformPoint(target);
                 Vector3 hint = leg.Upper.position + host.forward * height * (i < 2 ? -.65f : 1.1f);
                 LimbTwoBoneIk.Solve(leg.Upper, leg.Lower, leg.Paw, worldTarget,
