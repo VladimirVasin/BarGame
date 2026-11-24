@@ -258,6 +258,122 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
+        [UnityTest, Explicit("Ridge loft fittings, physical contacts and comparison views.")]
+        [Timeout(180000)]
+        public IEnumerator CityPigeonLoftFittings()
+        {
+            GameSessionState.BeginNewGame();
+            Assert.That(GameSessionState.TryPrepareGameTimeAt(NewGameStartService.StoryStartMinuteOfDay), Is.True);
+            yield return SceneManager.LoadSceneAsync(SceneIds.City, LoadSceneMode.Single);
+            var city = Object.FindAnyObjectByType<CityGameRoot>();
+            yield return WaitFor(() => city && city.IsInitialized && !CompositionDriver.IsComposing, "City composition");
+            var keeper = Object.FindAnyObjectByType<CityPigeonKeeper>();
+            var flock = Object.FindAnyObjectByType<CityPigeonFlock>();
+            var gate = Object.FindAnyObjectByType<CityPigeonCourtyardGate>();
+            Transform loft = keeper.transform;
+            var camera = Camera.main;
+            var follow = camera.GetComponent<PlayerCameraFollow>();
+            var route = keeper.CommutePlan.WorkToGate;
+            Vector3 outside = keeper.CommutePlan.GateOutsideStand - loft.right * 2f;
+            city.Player.Motor.Teleport(outside + Vector3.up * PlayerFactory.GroundedRootOffset);
+            keeper.PresentationObserver = city.Player.GameObject.transform;
+            keeper.AutoAdvance = false;
+            bool wasFollowing = follow.enabled;
+            float oldDelta = Time.captureDeltaTime;
+            Time.captureDeltaTime = 1f / 30f;
+            follow.enabled = false;
+            try
+            {
+                for (int i = 0; i < 16 && (GameWeatherRules.EvaluateCurrent().Kind == WeatherKind.HeavyRain ||
+                    GameWeatherRules.EvaluateCurrent().Kind == WeatherKind.Thunderstorm); i++)
+                {
+                    GameSessionState.AdvanceGameTime((float)(90d / GameTimeState.GameMinutesPerRealSecond));
+                    if (GameSessionState.GameMinuteOfDay >= 1260) AdvanceResidentLifeClockTo(8 * 60);
+                }
+                keeper.ApplyAt(360d / GameTimeState.GameMinutesPerRealSecond + 22d);
+                Assert.That(keeper.IsFeeding, Is.True);
+                Physics.SyncTransforms();
+                Vector3 perch = CityPedestrianHandProps.FindSocket(loft, "FeederPerch").position;
+                Transform landed = null;
+                for (int step = 0; step < 4000 && !landed; step++)
+                {
+                    flock.Advance(.05f);
+                    for (int i = 0; i < flock.BirdCount; i++)
+                        if (!flock.IsFlying(i) && Vector3.Distance(flock.GetBirdTransform(i).position, perch) < .065f)
+                            landed = flock.GetBirdTransform(i);
+                }
+
+                yield return PigeonLoftFrame(camera, loft.TransformPoint(new Vector3(-4.6f, 2.1f, -7.1f)),
+                    loft.TransformPoint(new Vector3(-.25f, 2.15f, -.35f)), "fittings-street");
+                Assert.That(landed, Is.Not.Null, flock.DescribeRoutes());
+                foreach (string name in new[] { "LeftFoot", "RightFoot" })
+                {
+                    var foot = CityPedestrianHandProps.FindSocket(landed, name).GetComponent<MeshRenderer>();
+                    var sole = foot.bounds;
+                    Assert.That(Physics.Raycast(new Vector3(sole.center.x, sole.min.y + .025f, sole.center.z),
+                        Vector3.down, out var hit, .045f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore), Is.True);
+                    Assert.That(hit.collider.name, Is.EqualTo("LoftStructure"));
+                    Assert.That(Mathf.Abs(hit.point.y - sole.min.y), Is.LessThan(.008f));
+                }
+                yield return PigeonLoftFrame(camera, perch + loft.right * .85f - loft.forward * .86f + Vector3.up * .47f,
+                    perch + loft.right * .11f + Vector3.up * .12f, "fittings-feeder");
+
+                var fingers = keeper.Worker.GetComponent<NpcHandPose>();
+                double noon = NewGameStartService.StoryStartMinuteOfDay / GameTimeState.GameMinutesPerRealSecond;
+                keeper.ApplyAt(noon);
+                var vice = keeper.DayViceContact;
+                var lid = keeper.DayGrainContact;
+                var viceRest = vice.rotation;
+                var lidRest = lid.position;
+                bool turned = false, lifted = false;
+                for (int i = 0; i < keeper.DayCycleSeconds * 10 + 20 && !(turned && lifted); i++)
+                {
+                    keeper.AdvanceAt(noon, .1f);
+                    Vector3 hand = fingers.CylinderCentre(false);
+                    if (!lifted && keeper.CurrentDayTask == CityPigeonKeeperDayTask.GrainStore &&
+                        Vector3.Distance(lid.position, lidRest) > .04f && Vector3.Distance(hand, lid.position) < .035f)
+                    {
+                        yield return PigeonLoftFrame(camera, lid.position + new Vector3(-.78f,.59f,-.61f),
+                            lid.position, "fittings-lid");
+                        lifted = Vector3.Distance(fingers.CylinderCentre(false), lid.position) < .035f;
+                    }
+                    if (!turned && keeper.CurrentDayTask == CityPigeonKeeperDayTask.Workbench &&
+                        Quaternion.Angle(viceRest, vice.rotation) > 5f && Vector3.Distance(hand, vice.position) < .035f)
+                    {
+                        yield return PigeonLoftFrame(camera, vice.position + new Vector3(.58f,.51f,-.66f),
+                            vice.position, "fittings-vice");
+                        turned = Vector3.Distance(fingers.CylinderCentre(false), vice.position) < .035f;
+                    }
+                }
+                Assert.That(lifted, Is.True, "Hand on the moving bin handle");
+                Assert.That(turned, Is.True, "Hand on the turning vice handle");
+                var climb = new List<Vector3>();
+                for (int i = 14; i >= 1; i--) climb.Add(route[i]);
+                city.Player.Motor.Teleport(climb[0] + Vector3.up * PlayerFactory.GroundedRootOffset);
+                Physics.SyncTransforms();
+                yield return WalkPigeonCourtyard(city, climb, false);
+                foreach (var dock in new[] { gate.Interaction.GroundedInsideDock, gate.Interaction.GroundedOutsideDock })
+                {
+                    city.Player.Motor.Teleport(climb[0] + Vector3.up * PlayerFactory.GroundedRootOffset);
+                    Physics.SyncTransforms();
+                    Assert.That(gate.TrySetOpenness(0f), Is.True);
+                    city.Player.Motor.Teleport(dock);
+                    Physics.SyncTransforms();
+                    yield return null;
+                    Assert.That(gate.Interaction.Begin(), Is.True);
+                    for (int i = 0; i < 480 && gate.Interaction.OwnsActiveInteraction; i++) yield return null;
+                    Assert.That(gate.Interaction.OwnsActiveInteraction, Is.False);
+                    Assert.That(gate.Openness, Is.GreaterThan(.999f));
+                }
+            }
+            finally
+            {
+                Time.captureDeltaTime = oldDelta;
+                follow.enabled = wasFollowing;
+                keeper.AutoAdvance = true;
+            }
+        }
+
         private static IEnumerator VerifyPigeonKeeperDay(CityGameRoot city, CityPigeonKeeper keeper, Camera camera)
         {
             var plan = keeper.CommutePlan;

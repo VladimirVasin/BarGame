@@ -13,8 +13,8 @@
         4.5,
         1.7
       ],
-      "triangles": 7140,
-      "sha256": "0e39ca4eb0c392de8af0a3ab7fbce919aa04a09f0d5f344cdb09771665e27753"
+      "triangles": 11188,
+      "sha256": "bd46980109c8385055353b1fb144bdc9e958eb0bb7fad64bd0cabd2329c611c1"
     },
     "LampAviaryLens": {
       "min": [
@@ -46,31 +46,31 @@
     },
     "Feeder": {
       "min": [
-        -0.201,
-        0.0,
-        -0.108
+        -0.2275,
+        0.001,
+        -0.13
       ],
       "max": [
-        0.201,
-        0.135,
-        0.108
+        0.2275,
+        0.1455,
+        0.13
       ],
-      "triangles": 140,
-      "sha256": "af0080f70bbb252ff84f293cf3b17af1415166d51016260fba608529241b5673"
+      "triangles": 956,
+      "sha256": "fc0fda7e7e7d0e42456739290946346e25224f0350e64e46fa45d2ac28f7c879"
     },
     "Water": {
       "min": [
-        -0.155,
+        -0.158,
         0,
-        -0.155
+        -0.158
       ],
       "max": [
-        0.155,
-        0.116,
-        0.155
+        0.158,
+        0.117,
+        0.158
       ],
-      "triangles": 424,
-      "sha256": "e127bc716df2434a83c622574deee15414a140b3cfe5d60e734893bd717a6bf3"
+      "triangles": 1656,
+      "sha256": "bafc977c3b68aaa5bc2cef78ab6ea60a2102097c0d8866dab72a4335c60def1d"
     },
     "Scoop": {
       "min": [
@@ -139,8 +139,8 @@
         0.0,
         0.176
       ],
-      "triangles": 56,
-      "sha256": "ea1f30b4e27eacf19c9f791d577cd4a8dfbb02faeb37fa6bc1d4dcb991494b6a"
+      "triangles": 236,
+      "sha256": "48df464dd190e0f6c65ee48869e880a8642548747ec2e0ce11e9f1cd9b3adc06"
     },
     "Support1": {
       "min": [
@@ -153,8 +153,8 @@
         0.0,
         0.176
       ],
-      "triangles": 56,
-      "sha256": "ea1f30b4e27eacf19c9f791d577cd4a8dfbb02faeb37fa6bc1d4dcb991494b6a"
+      "triangles": 236,
+      "sha256": "48df464dd190e0f6c65ee48869e880a8642548747ec2e0ce11e9f1cd9b3adc06"
     },
     "Support2": {
       "min": [
@@ -167,8 +167,8 @@
         0.0,
         0.176
       ],
-      "triangles": 56,
-      "sha256": "ea1f30b4e27eacf19c9f791d577cd4a8dfbb02faeb37fa6bc1d4dcb991494b6a"
+      "triangles": 236,
+      "sha256": "48df464dd190e0f6c65ee48869e880a8642548747ec2e0ce11e9f1cd9b3adc06"
     },
     "Support3": {
       "min": [
@@ -181,8 +181,8 @@
         0.0,
         0.176
       ],
-      "triangles": 56,
-      "sha256": "ea1f30b4e27eacf19c9f791d577cd4a8dfbb02faeb37fa6bc1d4dcb991494b6a"
+      "triangles": 236,
+      "sha256": "48df464dd190e0f6c65ee48869e880a8642548747ec2e0ce11e9f1cd9b3adc06"
     },
     "Support4": {
       "min": [
@@ -195,8 +195,8 @@
         0.0,
         0.131
       ],
-      "triangles": 56,
-      "sha256": "884ed64ee2ca43061147c91ce45c10638d1addbfcd68150d48660024242e3543"
+      "triangles": 236,
+      "sha256": "22a0950e572510fbca569e5a902afb63aa6b212b643b5891b63cb25c8536cf16"
     },
     "Support5": {
       "min": [
@@ -209,8 +209,8 @@
         0.0,
         0.131
       ],
-      "triangles": 56,
-      "sha256": "884ed64ee2ca43061147c91ce45c10638d1addbfcd68150d48660024242e3543"
+      "triangles": 236,
+      "sha256": "22a0950e572510fbca569e5a902afb63aa6b212b643b5891b63cb25c8536cf16"
     }
   },
   "anchors": {
@@ -431,5 +431,5 @@
       1.2
     ]
   },
-  "atlas_sha256": "e5d5c8afeb7bb0b1abc9cd79540df52f96677b3cd34fa55e61c626cc535774d4"
+  "atlas_sha256": "a62f05b3ca5bd86cf06f7391ff3ec085ec5f092272cc5420aa02badbe7420c6c"
 }

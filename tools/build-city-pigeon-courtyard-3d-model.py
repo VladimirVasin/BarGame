@@ -48,13 +48,35 @@ def fence(length, gate=False, repaired=False):
     for i in range(1, columns):
         m.box("zinc" if repaired and i>=columns//2 else "iron", (length*i/columns,.71,.003), (.008,1.23,.008), 0)
     for i in range(1,11):
-        m.box("zinc" if repaired and i>=5 else "iron", (length*.5,.09+i*.124,-.004), (length-.04,.008,.008), 0)
+        y = .09+i*.124
+        if repaired:
+            for x,surface in ((.25,"iron"),(.75,"zinc")):
+                m.box(surface,(length*x,y,-.004),(length*.5-.008,.008,.008),.001)
+        else:
+            m.box("iron",(length*.5,y,-.004),(length-.04,.008,.008),.001)
+    if repaired:
+        for u in (.50,.962):
+            m.box("zinc",(length*u,.71,.014),(.024,1.25,.017),.003)
+            for y in (.17,.50,.89,1.25):
+                m.bar("iron",(length*u-.025,y-.014,.020),(length*u+.023,y+.019,.020),.009,.011,.001)
+                m.pin("zinc",(length*u,y,.020),(length*u,y,.031),.009)
     if gate:
         for y in (.30,1.11):
-            m.disk("rust", (0,y,0), .027,.11,10)
+            m.box("iron",(.082,y,.021),(.170,.059,.014),.005)
+            for x in (.053,.139):
+                m.pin("zinc",(x,y,.025),(x,y,.036),.011)
+            m.pin("iron",(0,y-.074,0),(0,y+.080,0),.015)
+            for offset in (-.039,.041):
+                m.pin("rust",(0,y+offset-.03,0),(0,y+offset+.03,0),.026,12)
         m.bar("rust", (.05,.14,.014),(length-.05,1.29,.014),.014,.014,0)
-        m.box("bare", (length-.045,.79,.034), (.085,.028,.07),.003)
-        m.bar("iron", (length-.09,.80,.05),(length+.028,.80,.05),.012,.012,0)
+        for sign in (-1,1):
+            m.box("iron",(length-.082,.80,sign*.026),(.158,.088,.014),.005)
+            for x in (length-.133,length-.024):
+                m.bar("iron",(x,.80,sign*.030),(x,.80,sign*.054),.022,.027)
+            m.pin("latch",(length-.145,.80,sign*.054),(length+.019,.80,sign*.054),.012)
+        # The keeper pushes this rail near the hinge; the hero takes the far latch.
+        m.bar("iron",(.025,.958,0),(.32,.958,0),.023,.028)
+        m.pin("latch",(.145,.958,0),(.232,.958,0),.019)
     return m
 
 
@@ -87,15 +109,26 @@ def workbench():
     for i in range(1,10):
         m.bar("iron",(-.55+i*.104,.91,-.366),(-.55+i*.104,1.345,-.478),.006,.006,0)
     # Cast-iron vice has opposing jaws, a moving screw and a loose cross handle.
-    m.box("iron",(.61,.893,.225),(.24,.074,.19),.009)
-    m.box("iron",(.61,.96,.225),(.16,.12,.145),.008)
-    for z in (.145,.337):
-        m.box("zinc",(.61,1.035,z),(.26,.06,.05),.003)
-    m.bar("iron",(.61,.946,.30),(.61,.946,.46),.034)
+    m.turned("iron",(.615,.8525,.206),[(.114,0),(.129,.010),(.124,.028),(.090,.041)],20)
+    for x in (.51,.72):
+        m.disk("zinc",(x,.884,.206),.012,.013,6)
+    m.box("iron",(.615,.92,.191),(.167,.094,.163),.016)
+    m.box("zinc",(.615,.947,.289),(.083,.047,.159),.005)
+    for z,side in ((.146,1),(.337,-1)):
+        m.box("iron",(.615,.991,z),(.197,.104,.063),.014)
+        m.box("iron",(.615,1.031,z),(.254,.058,.060),.007)
+        m.box("jaw",(.615,1.045,z+side*.029),(.249,.038,.015),.002)
+    m.pin("iron",(.615,.946,.354),(.615,.946,.455),.024,12)
+    for i in range(5):
+        z=.37+i*.014
+        m.pin("zinc",(.615,.946,z),(.615,.946,z+.004),.0255,12)
     handle = Assembly()
-    handle.bar("bare",(.48,.946,.46),(.75,.946,.46),.020)
-    for x in (.48,.75):
-        handle.disk("rust",(x,.946,.46),.015,.029,8)
+    handle.pin("iron",(.615,.946,.433),(.615,.946,.482),.030,12)
+    handle.pin("iron",(.477,.946,.46),(.753,.946,.46),.010,12)
+    for x in (.477,.697):
+        handle.pin("latch",(x,.946,.46),(x+.056,.946,.46),.0115,12)
+    for x in (.470,.747):
+        handle.pin("zinc",(x,.946,.46),(x+.014,.946,.46),.015,10)
     # Galvanized mesh roll and two short frame offcuts rest on the low shelf.
     for z in (-.12,.12):
         for i in range(12):
@@ -130,8 +163,13 @@ def grain_store():
         # disks would otherwise seal the whole opening at every reinforcing band.
         m.add("iron",kit.translated(([(x,h,z) for x,z,h in ring],faces[:-2]),(-.29,y,.03)))
     lid = Assembly()
-    lid.turned("zinc",(-.29,.76,.03),[(.184,0),(.20,.012),(.20,.03),(.176,.05),(.015,.05)],24)
-    lid.bar("iron",(-.36,.825,.03),(-.22,.825,.03),.017,.025)
+    lid.turned("zinc",(-.29,.76,.03),[(.184,0),(.198,.003),(.201,.009),(.198,.018),
+        (.183,.022),(.152,.031),(.136,.027),(.073,.031),(.018,.033)],32)
+    for x in (-.369,-.211):
+        lid.box("iron",(x,.797,.03),(.035,.010,.051),.003)
+        lid.bar("iron",(x,.800,.03),(x,.825,.03),.014,.021,.003)
+        lid.disk("zinc",(x,.802,.047),.005,.004,8)
+    lid.pin("latch",(-.369,.825,.03),(-.211,.825,.03),.011,12)
     m.box("straw",(.29,.365,-.07),(.35,.45,.36),.072)
     m.box("bare",(.29,.60,-.07),(.25,.038,.115),.015)
     # A closed sack and a spare scoop are protected beneath the loft.
@@ -177,10 +215,10 @@ def gravel_patch():
     n=len(rim)
     faces=[tuple(reversed(range(n))),tuple(range(n,2*n))]
     faces += [(i,(i+1)%n,(i+1)%n+n,i+n) for i in range(n)]
-    m.add("tar",(vertices,faces))
+    m.add("earth",(vertices,faces))
     for i in range(22):
         x=.40*math.sin(i*2.399); z=.29*math.cos(i*1.731)
-        m.disk("stone" if i%3==0 else "bare",(x,.009,z),.009+.004*(i%3),.012,5)
+        m.disk("stone" if i%3==0 else "earth",(x,.009,z),.009+.004*(i%3),.012,5)
     return m
 
 
@@ -215,10 +253,13 @@ def build():
     assert record["pieces"]["Gate"]["max"][0]<1.49
     assert record["pieces"]["GrainStore"]["max"][1]<1
     assert record["pieces"]["Bath"]["max"][1]<.15
-    # The vice retains its resting topology. The bin's added inner wall and
-    # grain bed stay inside the original exterior and below the separate lid.
-    assert record["pieces"]["Workbench"]["triangles"] + record["pieces"]["ViceHandle"]["triangles"] == 1464
-    assert record["pieces"]["GrainLid"]["triangles"] == 264
+    # Probe the metal itself at the keeper's animated grip, in each moving
+    # piece's pivot frame. A correctly named anchor alone proves no contact.
+    for name, anchor in (("ViceHandle","ViceGrip"),("GrainLid","GrainLidHandle")):
+        tree = BVHTree.FromPolygons(*kit.merge_all(solid for _,solid in pieces[name].solids))
+        centre = Vector(ANCHORS[name][anchor])
+        hit = tree.ray_cast(centre + Vector((0,.035,0)),Vector((0,-1,0)),.035)[0]
+        assert hit is not None and .008 < hit.y-centre.y < .015, (name, "grip", hit)
     assert record["pieces"]["GrainStore"]["triangles"] < 1900
     for child in PIVOTS:
         for surface, solid in pieces[child].solids:

@@ -5,6 +5,8 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-24
 
+Ridge loft and yard share grain-aligned timber, exposed end grain and handled metal. `CityPigeonLoftFittings` checks the feeding board under both feet, moving lid and vice grips, the stair climb and both gate approaches.
+
 Ridge pawnshop tray runs through the grille. Cases support the radio, tools and appliance. Floor seams and wear follow the public aisle. `CityPawnshop_EnterOpenBothStubsAndReturn` checks fitted materials, door, both menus and street return.
 
 The café cigarette takes its bind position from the catalog woman's hand landmarks. `Attach_SeatsThePropOnItsSocketAtHandScale` checks the filter against her grip and seats the towel and coffee pot on the café attendant.

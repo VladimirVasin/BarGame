@@ -13,8 +13,8 @@
         1.35,
         0.016
       ],
-      "triangles": 316,
-      "sha256": "7902dc1e9bb541ea7926ed37b842eadc4b2bc798a8a2c28f981146cf4bcbde9e"
+      "triangles": 476,
+      "sha256": "30e1f972dbdfdb867b321fc8bdaa1dedab49de7e97ad48f27d1c0683d4dc4b24"
     },
     "FencePanelRepair": {
       "min": [
@@ -25,10 +25,10 @@
       "max": [
         1.0,
         1.35,
-        0.016
+        0.031
       ],
-      "triangles": 316,
-      "sha256": "279687f410393166b7bce070e96ce15d2c48609b87bd191820b321136420115e"
+      "triangles": 1516,
+      "sha256": "b1132951f04cd11881e6faf86f42cd405df583235f94074a77f2d6788165354e"
     },
     "FencePost": {
       "min": [
@@ -46,17 +46,17 @@
     },
     "Gate": {
       "min": [
-        -0.027,
+        -0.026,
         0.075,
-        -0.02568
+        -0.066
       ],
       "max": [
-        1.478,
+        1.469,
         1.35,
-        0.069
+        0.066
       ],
-      "triangles": 488,
-      "sha256": "a5e4376af9f7c4dfa00216688701dfb5d64fb3569f2c4a909d6d6678a22a17e0"
+      "triangles": 1696,
+      "sha256": "c24b86fefb9ba26ad9c08c7140fff935c786a7acdefb6cf322d4626ed83675b7"
     },
     "Workbench": {
       "min": [
@@ -67,24 +67,24 @@
       "max": [
         0.96,
         1.39464,
-        0.46
+        0.455
       ],
-      "triangles": 1380,
-      "sha256": "c3a9ff714b63646ce9925d75e8da9df7674d53e0ab101f9a4b290231c8e65e12"
+      "triangles": 2212,
+      "sha256": "a3802cff804a1fbe24116428decfd02bad0b07c0ec86d97bacb2f80ac1db1262"
     },
     "ViceHandle": {
       "min": [
-        -0.15,
-        -0.0145,
-        -0.015
+        -0.145,
+        -0.03,
+        -0.027
       ],
       "max": [
-        0.15,
-        0.0145,
-        0.015
+        0.146,
+        0.03,
+        0.022
       ],
-      "triangles": 84,
-      "sha256": "317cd48eddec89204db0634d74b9ea6e4e9e2593b89f118832117ed33f5f67fa"
+      "triangles": 520,
+      "sha256": "1a02f0be40a64d50e29d8e594f1e2f3859da0dc761d7c12208c9265380de0270"
     },
     "GrainStore": {
       "min": [
@@ -102,17 +102,17 @@
     },
     "GrainLid": {
       "min": [
-        -0.2,
+        -0.201,
         0.0,
-        -0.2
+        -0.201
       ],
       "max": [
-        0.2,
-        0.0735,
-        0.2
+        0.201,
+        0.076,
+        0.201
       ],
-      "triangles": 264,
-      "sha256": "3ae0c1bf8d6007ba358ec595cfd25d20b41e670c317648fc925debe14d7280f3"
+      "triangles": 832,
+      "sha256": "4c6d20a8444eae51c2e979f07bcf71d91867fde7fd44a4c8f96bef9d32fe5496"
     },
     "Bath": {
       "min": [
@@ -154,7 +154,7 @@
         0.4
       ],
       "triangles": 388,
-      "sha256": "da3911cd5bf7504b6a11268ba84537c27c08ee49b0c4ad84a87c35cd985723a3"
+      "sha256": "2ae13b55bb15b7510ef906e0b5f447829dfdcd2b94986d9bbb7707eab917d37a"
     },
     "HandLamp": {
       "min": [
@@ -242,5 +242,5 @@
     "GrainLid": "GrainStore"
   },
   "shared_material": "City/PigeonLoft/PigeonLoftSurface",
-  "atlas_sha256": "e5d5c8afeb7bb0b1abc9cd79540df52f96677b3cd34fa55e61c626cc535774d4"
+  "atlas_sha256": "a62f05b3ca5bd86cf06f7391ff3ec085ec5f092272cc5420aa02badbe7420c6c"
 }

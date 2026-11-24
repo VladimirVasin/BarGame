@@ -33,7 +33,10 @@ SURFACES = {
     "rust": ((119, 92, 67), .28), "stone": ((139, 137, 123), .17),
     "enamel": ((155, 164, 147), .5), "grain": ((166, 145, 95), .20),
     "water": ((111, 132, 125), .8), "straw": ((140, 119, 80), .24),
-    "latch": ((162, 151, 123), .57), "lens": ((214, 202, 160), .42),
+    "latch": ((153, 149, 132), .68), "lens": ((214, 202, 160), .42),
+    "perch": ((145, 128, 103), .30), "endgrain": ((158, 139, 111), .22),
+    "mineral": ((178, 180, 159), .25), "jaw": ((134, 138, 131), .49),
+    "earth": ((96, 92, 77), .14),
 }
 PIVOTS = {"Feeder": (.28, 2.75, -1.35), "Water": (.86, 2.75, -1.35),
           "Scoop": (-.32, 2.79, -1.39), "Broom": (-1.02, 2.91, -1.31), "WaterTap": (1.08,3.11,-1.27),
@@ -60,34 +63,67 @@ STAIR = {"x": -2.02, "width": .9, "foot_z": 1.7, "top_z": -1.3,
 WOOD = ("sage", "fade", "moss", "bare", "tar")
 
 
+# Pixel rectangles, including trim pieces for exposed cuts and handled metal.
+ATLAS_SIZE = 1024
+REGIONS = {key: ((i%4)*256, (i//4)*256, 256, 256)
+           for i,key in enumerate(SURFACES) if i < 12}
+REGIONS.update({
+    "water": (0,768,256,128), "mineral": (0,896,256,128),
+    "straw": (256,768,256,128), "perch": (256,896,256,128),
+    "latch": (512,768,256,128), "jaw": (512,896,128,128), "lens": (640,896,128,128),
+    "endgrain": (768,768,256,128), "earth": (768,896,256,128),
+})
+
+
 def atlas():
-    cell = 192
-    image = np.zeros((4*cell, 4*cell, 4), dtype=np.uint8)
-    y, x = np.mgrid[0:cell, 0:cell] / cell
+    image = np.empty((ATLAS_SIZE, ATLAS_SIZE, 4), dtype=np.uint8)
     for tile, (key, (rgb, smoothness)) in enumerate(SURFACES.items()):
+        left, top, width, height = REGIONS[key]
+        y, x = np.mgrid[:height,:width] / np.array([height,width])[:,None,None]
         rng = np.random.default_rng(4301+tile)
         grit = rng.normal(size=x.shape)
         wave = np.sin(8.3*x+1.8*np.sin(4.8*y)) + .35*np.sin(23*x+11*y)
-        shade = 2.1*grit+2*wave
-        if key in WOOD:
-            # Long fibre, splitting finish, small knots and thin, dull bare edges.
-            rings = 56*x+2.6*np.sin(6.1*y+1.2*x)+1.4*wave
-            knots = np.sqrt(((x-.43)/.10)**2 + ((y-.69)/.11)**2)
-            shade += 4.8*np.sin(rings)+3*np.sin(3*rings) + 8*np.sin(13*knots)*np.exp(-knots)
-            chip = np.clip((np.sin(121*x+wave)*.73 + np.sin(29*y+7*x)*.35-.57)*2.7,0,1)
-            tone = np.array(rgb) + shade[:,:,None] + chip[:,:,None]*np.array([14,3,-7])
-        else:
-            if key in ("roof", "zinc", "iron"):
-                shade += 3*np.sin(85*x+wave) + 3*np.maximum(0,np.sin(15*y+9*wave))
-            if key in ("grain", "straw", "stone"):
-                shade += 2.8*grit
-            tone = np.array(rgb) + shade[:,:,None]
-        row, col = divmod(tile,4)
-        image[row*cell:(row+1)*cell,col*cell:(col+1)*cell] = np.dstack(
-            (np.clip(tone,0,255), np.clip(smoothness*255 - 3*wave,0,255))).astype(np.uint8)
+        shade = 1.6*grit+2*wave
+        response = smoothness + .012*wave
+        tone = np.broadcast_to(np.array(rgb, dtype=float), (*x.shape,3)).copy()
+        if key in (*WOOD, "perch"):
+            grain = 94*x + 1.4*np.sin(9*y+2*x) + .6*np.sin(21*y+wave)
+            pores = np.maximum(0, np.cos(grain*2.1+wave))**8
+            shade += 4*np.sin(grain) - 9*pores + 1.8*np.cos(2.8*grain)
+            if key in ("sage","moss","fade"):
+                chipped = np.clip((pores*.8 + .32*np.sin(12*y+wave) + .20*grit-.78)*2.6,0,1)
+                tone += chipped[:,:,None]*(np.array([142,124,98])-np.array(rgb))
+                response -= chipped*.065
+            elif key == "perch":
+                rub = np.exp(-((x-.50)/.29)**4) * (.77 + .15*np.sin(8*y+wave))
+                shade += 6*rub
+                response += .10*rub
+        elif key == "endgrain":
+            radius = np.hypot((x+.19)*1.2, (y-.52)*.55)
+            rings = np.cos(radius*115+1.3*wave)
+            shade += 6*rings - 7*np.maximum(0,rings)**7 + 2*grit
+        elif key in ("zinc","iron","roof","latch","jaw"):
+            scratches = np.maximum(0,np.cos(184*x+4*np.sin(6*y)+wave))**12
+            if key == "jaw":
+                knurl = np.minimum(np.cos(83*(x+y)),np.cos(83*(x-y)))
+                shade += 12*knurl
+                response += .08*knurl
+            elif key == "latch":
+                shade += 5*wave - 6*scratches
+                response += .045*wave - .12*scratches
+            else:
+                fleck = np.sin(59*x+31*y+wave)*np.sin(35*x-43*y)
+                shade += (5 if key == "zinc" else 2)*fleck - 3*scratches
+                response -= .05*scratches
+        elif key in ("grain","straw","earth","stone","rust","mineral"):
+            clusters = (np.sin(64*x+77*y+wave) * np.sin(47*x-33*y))**2
+            shade += 3.0*grit + 7*clusters
+            response -= .055*clusters
+        image[top:top+height,left:left+width] = np.dstack((
+            np.clip(tone+shade[:,:,None],0,255), np.clip(response,0,1)*255)).astype(np.uint8)
     def chunk(tag, data):
         return struct.pack(">I",len(data))+tag+data+struct.pack(">I", zlib.crc32(tag+data))
-    return (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB",4*cell,4*cell,8,6,0,0,0)) +
+    return (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB",ATLAS_SIZE,ATLAS_SIZE,8,6,0,0,0)) +
             chunk(b"IDAT",zlib.compress(b"".join(b"\0"+row.tobytes() for row in image),9)) + chunk(b"IEND",b""))
 
 
@@ -121,6 +157,29 @@ class Assembly:
         vertices, faces = kit.lathe(profile,sides)
         self.add(surface,kit.translated(([(x,h,z) for x,z,h in vertices],faces),xyz))
 
+    def collar(self, surface, xyz, profile, sides=20):
+        """Revolve a closed sheet section, leaving its bore open."""
+        vertices, faces = kit.lathe([*profile, profile[0]], sides)
+        self.add(surface, kit.translated(([(x,h,z) for x,z,h in vertices], faces[:-2]), xyz))
+
+    def pin(self, surface, a, b, radius, sides=8):
+        axis = Vector(b) - Vector(a)
+        bevel = min(.0025, radius*.22, axis.length*.2)
+        verts, faces = kit.lathe([(radius-bevel,0),(radius,bevel),
+            (radius,axis.length-bevel),(radius-bevel,axis.length)], sides)
+        turn = Vector((0,0,1)).rotation_difference(axis)
+        self.add(surface, ([tuple(Vector(a) + turn @ Vector(v)) for v in verts], faces))
+
+
+def feeding_board(m, x):
+    m.box("perch", (x, 2.710, -1.565), (.32, .040, .153), .006)
+    for side in (-1, 1):
+        u = x + side * .112
+        m.box("iron", (u, 2.682, -1.515), (.030, .016, .24), .003)
+        m.bar("iron", (u, 2.645, -1.423), (u, 2.677, -1.614), .014, .019, .002)
+        m.box("iron", (u, 2.667, -1.423), (.036, .071, .014), .002)
+        m.disk("rust", (u, 2.730, -1.576), .005, .002, 8)
+
 
 def structure():
     m = Assembly()
@@ -139,16 +198,24 @@ def structure():
         left=-2.52 if z<=-1.30 else -1.50
         m.box(("bare","fade","bare")[i%3],((1.53+left)*.5,1.965,z),(1.53-left,.07,1.08/7-.004))
     for x in (-2.43,-1.61):
-        m.bar("tar",(x,.035,1.65),(x,1.94,-1.33),.10,.14)
+        m.bar("iron",(x,.035,1.65),(x,1.94,-1.33),.075,.14)
     for i in range(12):
         y=(i+1)*STAIR["rise"]
         z=1.7-(i+.5)*.25
         m.box("bare",(-2.02,y-.025,z),(.90,.05,.25),.007)
         m.box("iron",(-2.02,y-.035,z+.116),(.88,.046,.014),.002)
+        for x in (-2.42,-1.62):
+            m.box("iron",(x,y-.061,z),(.085,.022,.195),.003)
+            m.box("rust",(x,y-.083,z+.003),(.018,.056,.125),.004)
+            m.disk("iron",(x,y,z+.065),.008,.002,8)
     # Outer guard and only the exposed deck edges. The eastward route stays open.
     for z in (1.62,.65,-.32,-1.28,-2.21):
         top = min(2,(1.7-z)/.25*STAIR["rise"]+.10)
         m.box("iron",(-2.45,top+.43,z),(.043,.89,.043))
+        m.box("iron",(-2.45,top+.020,z),(.071,.14,.065),.005)
+        m.pin("zinc",(-2.489,top+.046,z),(-2.486,top+.046,z),.013)
+        rail_y = min(2.98, 1.01 + (1.62-z)*1.97/2.95)
+        m.box("iron",(-2.45,rail_y-.048,z),(.068,.055,.095),.004)
     m.bar("bare",(-2.45,1.01,1.62),(-2.45,2.98,-1.33),.065,.060)
     m.bar("bare",(-2.45,2.98,-1.33),(-2.45,2.98,-2.22),.065,.060)
     for x in (-2.45,-1.37,-.27,.72,1.47):
@@ -174,6 +241,11 @@ def structure():
     for x in (-1.47,1.47):
         for z in (-1.17,1.17):
             m.box("moss",(x,3.03,z),(.101,2.06,.101))
+            m.box("zinc",(x,2.124,z),(.111,.183,.111),.004)
+    for z in (-1.205,1.205):
+        m.box("moss",(0,4.00,z),(2.93,.087,.06),.006)
+    for x in (-1.51,1.49):
+        m.box("fade",(x,2.125,0),(.056,.132,2.34),.009)
     for i in range(6):
         x=-.43+(i+.5)*.86/6
         m.box(("fade","sage","fade")[i%3],(x,2.91,-1.124),(.86/6-.003,1.77,.065))
@@ -191,6 +263,10 @@ def structure():
             m.bar("zinc",(0,4.466,z),(sign*1.68,4.029,z),.022,.024)
         for z in (-1.376,1.376):
             m.bar("fade",(0,4.39,z),(sign*1.66,3.959,z),.099,.067)
+        m.box("roof",(sign*1.676,3.977,0),(.042,.098,2.85),.006)
+        m.box("zinc",(sign*1.686,3.936,0),(.039,.013,2.85),.004)
+        for z in (-1.14,-.49,.21,.99):
+            m.bar("tar",(sign*1.45,3.93,z),(sign*1.65,3.936,z),.061,.073)
     m.box("zinc",(0,4.482,0),(.11,.036,2.87))
     return m
 
@@ -211,10 +287,11 @@ def roosts(m):
         m.box("fade",(1.72,3.07,z),(.48,1.6,.035))
     for y in (2.75,3.38):
         for z in (-.67,0,.67):
-            m.box("bare",(1.70,y-.025,z),(.49,.05,.61))
-            m.box("moss",(1.922,y+.025,z),(.040,.058,.49))
-            # Center of landing board stays free through the open front.
-            m.box("bare",(1.865,y-.016,z),(.19,.032,.40))
+            for offset, width in ((-.113,.376),(.190,.225)):
+                m.box("perch",(1.70,y-.025,z+offset),(.49,.05,width),.004)
+            for offset in (-.222,.222):
+                m.bar("iron",(1.479,y-.16,z+offset),(1.897,y-.062,z+offset),.019,.023)
+            m.box("moss",(1.928,y-.040,z),(.034,.066,.59),.005)
     m.box("roof",(1.72,3.85,0),(.56,.060,2.33))
     m.box("zinc",(1.98,3.808,0),(.038,.075,2.34))
     # A hood hooked over the folded fascia exposes the lens below the front hem.
@@ -223,15 +300,19 @@ def roosts(m):
     m.box("enamel",(2.040,3.770,0),(.033,.082,.165),.006)
     for z in (-.077,.077):
         m.box("iron",(2.011,3.757,z),(.075,.045,.012),.003)
-    m.box("bare",(-.99,3.562,-1.35),(.62,.056,.30))
+    m.box("perch",(-.99,3.562,-1.35),(.62,.056,.30))
     for x in (-1.23,-.76):
         m.bar("iron",(x,3.34,-1.19),(x,3.535,-1.46),.032)
     # Maintenance shelf, twin flat perches, work lamp and its folded rain hood.
     m.box("bare",(.24,2.725,-1.349),(1.60,.05,.285))
     for x in (-.46,.89):
         m.bar("iron",(x,2.51,-1.21),(x,2.69,-1.469),.027)
-    for x in (.28,.86):
-        m.box("bare",(x,2.711,-1.557),(.27,.038,.115))
+    feeding_board(m, .28)
+    feeding_board(m, .86)
+    # Three low cleats seat the removable bowl without trapping its rim.
+    for angle in (-60,60,180):
+        a = math.radians(angle)
+        m.disk("iron",(.86+.100*math.sin(a),2.759,-1.35+.100*math.cos(a)),.014,.018,10)
     m.box("iron",(.49,3.88,-1.33),(.30,.074,.28))
     m.box("enamel",(.49,3.872,-1.44),(.32,.056,.23))
     m.box("lens",(.49,3.836,-1.45),(.22,.024,.14),.008)
@@ -256,18 +337,36 @@ def roosts(m):
 def utensils():
     feeder, water, scoop, broom = (Assembly() for _ in range(4))
     # Each prop is built around its real handling pivot in Unity metres.
-    feeder.box("bare",(0,.022,0),(.40,.044,.21))
-    for z in (-.099,.099):
-        feeder.box("zinc",(0,.073,z),(.396,.098,.018))
-    for x in (-.193,.193):
-        feeder.box("bare",(x,.079,0),(.016,.112,.212))
+    feeder.box("zinc",(0,.025,0),(.39,.024,.171),.004)
+    for side in (-1,1):
+        wall = parts.u_rotated(parts.u_box((0,0,0),(.406,.101,.010),.002), (side*15,0,0))
+        feeder.add("zinc",kit.translated(wall,(0,.073,side*.096)))
+        feeder.box("zinc",(0,.122,side*.109),(.413,.012,.017),.004)
+        x = side*.205
+        feeder.box("bare",(x,.077,0),(.022,.137,.232),.007)
+        feeder.box("iron",(x,.009,0),(.045,.016,.26),.003)
+        for z in (-.122,.122):
+            feeder.disk("rust",(x,.018,z),.007,.004,8)
+        for end in (-1,1):
+            cheek = side * .188
+            flange = parts.u_rotated(parts.u_box((0,0,0),(.028,.084,.006),.002),(end*15,0,0))
+            feeder.add("iron",kit.translated(flange,(cheek,.074,end*.102)))
+            for y in (.048,.098):
+                z = end*(.106+(y-.074)*.27)
+                feeder.pin("zinc",(cheek,y,z),(cheek,y,z+end*.005),.006)
     stock=Assembly()
     stock.box("grain",(0,.028,0),(.365,.041,.176),.009)
     for i in range(16):
         stock.disk("grain",(-.157+.022*i,.050+.002*(i%2),.049*math.sin(2.7*i)),.008,.006,6)
-    water.turned("enamel",(0,0,0),[(.083,0),(.098,.015),(.154,.102),(.155,.114),
-                                    (.148,.116),(.141,.104),(.091,.024)],24)
-    water.disk("water",(0,.092,0),.133,.004,24)
+    water.turned("enamel",(0,0,0),[(.076,0),(.088,.007),(.090,.018),(.112,.042),
+        (.146,.090),(.152,.102),(.153,.111),(.149,.116),(.142,.112),
+        (.140,.101),(.106,.050),(.084,.027),(.018,.024)],32)
+    water.collar("zinc",(0,0,0),[(.151,.104),(.157,.107),(.158,.112),(.153,.117),
+        (.147,.117),(.144,.114),(.148,.111)],32)
+    water.disk("water",(0,.091,0),.135,.004,32)
+    # A narrow deposit follows the inner slope just above the standing water.
+    water.collar("mineral",(0,0,0),[(.1333,.093),(.1364,.0975),
+        (.1379,.0975),(.1349,.093)],32)
     # Open sheet-metal scoop with shallow curved side returns, handle origin at the grip.
     scoop.bar("bare",(0,0,-.052),(0,0,.095),.026,.031)
     scoop.box("zinc",(0,-.008,.145),(.105,.014,.119),.004)
@@ -293,7 +392,13 @@ def utensils():
         foot=.25 if thin else .34
         thick=.13 if thin else .165
         # Each pivot is at the top bearing so runtime can bed the solid at surveyed ground.
-        leg.box("tar",(0,-.90,0),(thick,1.80,thick))
+        leg.box("iron",(0,-.90,0),(thick,1.80,thick),.007)
+        leg.box("iron",(0,-.033,0),(thick+.090,.046,thick+.080),.005)
+        leg.box("rust",(0,-1.717,0),(foot-.022,.035,foot-.017),.005)
+        leg.box("iron",(0,-1.614,0),(thick+.016,.186,thick+.016),.006)
+        for sign in (-1,1):
+            leg.disk("zinc",(sign*foot*.34,-1.694,-sign*foot*.34),.013,.013,6)
+            leg.bar("iron",(0,-.19,sign*thick*.45),(0,-.066,sign*(thick*.5+.033)),.036,.024)
         leg.box("stone",(0,-1.83,0),(foot,.20,foot+.012),.018)
         pieces[f"Support{i}"]=leg
     return pieces
@@ -318,6 +423,13 @@ def validate_contacts(body):
     for key,point in MARKS.items():
         if key.startswith("PerchGround") or key in ("LampAnchor","LampAviaryAnchor","DoorwayAnchor"): continue
         contact(point)
+    for mark in ("FeederPerch", "WaterPerch"):
+        x, y, z = MARKS[mark]
+        # The flock stands 34 mm inboard, facing the trough. Probe both balls
+        # and the forward and rear toe tips of the authored rock pigeon.
+        for foot in (-.023, .023):
+            for dx, dz in ((0,.006),(-.015,.024),(0,.034),(.014,.025),(0,-.012)):
+                contact((x + foot + dx, y, z + .034 + dz))
     for index in range(STAIR["steps"]):
         z=STAIR["foot_z"]-(index+.5)*STAIR["tread"]
         y=(index+1)*STAIR["rise"]
@@ -351,23 +463,41 @@ def mesh_object(name,solids,material):
     verts, faces, uvs=[],[],[]
     for i,(surface,geom) in enumerate(solids):
         points,faces_b=parts.to_source(geom)
-        q=np.array(geom[0]); low=q.min(axis=0); span=np.maximum(q.max(axis=0)-low,.0001)
-        shifted=(q-low)/span
-        tile=list(SURFACES).index(surface)
-        row,col=divmod(tile,4)
+        q = np.asarray(geom[0], dtype=float)
+        centred = q - q.mean(axis=0)
+        _, directions = np.linalg.eigh(centred.T @ centred)
+        grain_axis = directions[:, -1]
         offset=len(verts)
         verts.extend(points)
         for f in faces_b:
-            pts=q[list(f)]
-            normal=np.cross(pts[1]-pts[0],pts[2]-pts[0])
-            axes=[axis for axis in range(3) if axis!=abs(normal).argmax()]
-            if span[axes[0]]>span[axes[1]]:
-                axes.reverse()
-            # Each individual stave samples a different strip; long fibres follow it.
-            uv=shifted[list(f)][:,axes]
-            uv[:,0]=.065+((i*13)%29)*.012+uv[:,0]*.55
-            if i%3: uv[:,1]=1-uv[:,1]
-            uvs.extend(zip((col+.016+.967*uv[:,0])/4,(3-row+.016+.967*uv[:,1])/4))
+            pts = q[list(f)]
+            normal = np.cross(pts[1]-pts[0],pts[2]-pts[0])
+            normal /= max(np.linalg.norm(normal),1e-12)
+            finish = surface
+            if surface in (*WOOD, "perch") and abs(normal @ grain_axis) > .92:
+                finish = "endgrain"
+            longitudinal = grain_axis - normal * (normal @ grain_axis)
+            if np.linalg.norm(longitudinal) < .05:
+                longitudinal = directions[:, 1] - normal * (normal @ directions[:, 1])
+            longitudinal /= max(np.linalg.norm(longitudinal),1e-12)
+            transverse = np.cross(normal, longitudinal)
+            # All faces on the same side sample one field in metres. Short
+            # offcuts take a crop of the timber; they never compress a full board.
+            field = centred @ np.column_stack((transverse,longitudinal))
+            span = np.ptp(field,axis=0)
+            metres = (.38,1.65) if surface in (*WOOD,"perch") else (.50,.85)
+            if finish in ("jaw","latch","mineral","endgrain"):
+                metres = (.18,.29)
+            scale = np.maximum(span, metres)
+            uv = field[list(f)]/scale
+            uv -= (field.min(axis=0) + .5*span)/scale
+            room = 1 - span/scale
+            phase = np.array([((i*13)%29)/28,((i*17)%31)/30])-.5
+            uv += .5 + room*phase
+            left,top,width,height = REGIONS[finish]
+            pad = 5
+            uvs.extend(zip((left+pad+uv[:,0]*(width-2*pad))/ATLAS_SIZE,
+                           1-(top+pad+uv[:,1]*(height-2*pad))/ATLAS_SIZE))
             faces.append(tuple(offset+j for j in f))
     mesh=bpy.data.meshes.new(name)
     mesh.from_pydata(verts,[],faces)
