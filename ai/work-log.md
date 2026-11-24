@@ -5,6 +5,9 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-24
 
+Working and Residential gained empty parking courts with two graded street mouths.
+`LiveCity_DistrictParkingFitsEveryBay` checked the sedan, wheel contact, marked arrivals and bus boarding from both directions. Day/night frames reviewed. ImageGen shifted the lots off survey; the live scheme carries the new geometry.
+
 City dog yard has jointed paws, a low sniff pose, worn earth and a seated catalog owner. `CityDogParkFittings` samples soles, muzzle clearance, seat contact and the two-way entrance.
 
 City laundry has pressed washer fronts and a loaded basket that rests on the trolley. `CityLaundryFittings` checks both hand centres and wrist angles during the carry, and opposite drum motion behind fixed windows. Blender rays check the sheet around each aperture.

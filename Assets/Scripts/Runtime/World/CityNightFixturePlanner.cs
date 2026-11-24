@@ -46,6 +46,12 @@ namespace BarPromenade
             var streetLamps = new List<StreetLampDescriptor>(
                 checked(layout.RoadEdges.Count * 2));
             CreateStreetLamps(layout, streetLamps, includeParkPaths);
+            var parking = DistrictParkingPlan.ForLayout(layout);
+            if (parking.Count != 0)
+            {
+                streetLamps.RemoveAll(lamp => DistrictParkingPlan.Reserves(layout, lamp.Position, .35f));
+                foreach (DistrictParkingPlan site in parking) streetLamps.AddRange(site.Lamps);
+            }
 
             var trafficSignals = new List<TrafficSignalDescriptor>(
                 MaximumSignalIntersections * 2);

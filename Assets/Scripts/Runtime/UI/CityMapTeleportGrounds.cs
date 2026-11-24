@@ -49,6 +49,15 @@ namespace BarPromenade
                 Vector3 car = parking.ParkedPosition(RidgeParkingPlan.OccupiedBay);
                 polygonBuildingObstacles.Add(CityRoadPolygon.Rectangle(new Rect(car.x - 1.04f, car.z - 2.522f, 2.08f, 5.044f)));
             }
+            foreach (DistrictParkingPlan site in DistrictParkingPlan.ForLayout(layout))
+            {
+                foreach (Rect curb in site.Curbs) obstacleFootprints.Add(curb);
+                foreach (var lamp in site.Lamps)
+                {
+                    Bounds pole = CityStaticCollisionBuilder.CreateLowerPoleBounds(lamp.Position);
+                    obstacleFootprints.Add(Rect.MinMaxRect(pole.min.x, pole.min.z, pole.max.x, pole.max.z));
+                }
+            }
             foreach (CityKioskSitePlan kiosk in kiosks)
             {
                 polygonBuildingObstacles.Add(kiosk.Footprint);
@@ -184,6 +193,8 @@ namespace BarPromenade
         {
             if (RidgeParkingPlan.ForLayout(layout) is { } parking && parking.SurfaceBounds.Contains(worldXZ))
             { top = parking.SurfaceTop(worldXZ.y - parking.Origin.z); return true; }
+            foreach (DistrictParkingPlan site in DistrictParkingPlan.ForLayout(layout))
+                if (site.TryTop(worldXZ, out top)) return true;
             if (CityCobblerSitePlan.ForLayout(layout).TrySampleFloor(worldXZ, out top)) return true;
             if(CityPawnshopDescentPlan.ForLayout(layout).TrySampleTop(worldXZ,out top)) return true;
             if(CityPawnshopBenchTerracePlan.ForLayout(layout).TrySampleTop(worldXZ,out top)) return true;

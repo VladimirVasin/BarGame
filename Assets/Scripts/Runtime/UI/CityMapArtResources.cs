@@ -412,6 +412,16 @@ namespace BarPromenade
                     writer.Write("ridge-parking"); Point(writer, parking.Origin); RectValue(writer, parking.SurfaceBounds);
                     for (int bay = 0; bay < RidgeParkingPlan.Capacity; bay++) RectValue(writer, parking.Bay(bay));
                 }
+                foreach (DistrictParkingPlan site in DistrictParkingPlan.ForLayout(layout))
+                {
+                    writer.Write(site.Id);
+                    foreach (Rect surface in site.Surfaces) RectValue(writer, surface);
+                    for (int bay = 0; bay < DistrictParkingPlan.Capacity; bay++)
+                    {
+                        RectValue(writer, site.Bay(bay));
+                        Point(writer, site.ParkedPosition(bay));
+                    }
+                }
                 writer.Write(controller.PointsOfInterest.Count);
                 foreach (CityMapPointOfInterest point in controller.PointsOfInterest)
                 {

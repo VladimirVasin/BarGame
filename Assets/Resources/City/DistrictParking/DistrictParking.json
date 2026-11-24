@@ -1,0 +1,18 @@
+{
+  "unit": "metre",
+  "bay_count": 4,
+  "bay_width": 2.9,
+  "bay_length": 5.8,
+  "core": [
+    -6.2,
+    -7.4,
+    8.6,
+    7.4
+  ],
+  "entrance": [
+    -4.95,
+    0.1,
+    10.8
+  ],
+  "geometry_sha256": "95e5c34640a8027664b93c478cfafa2a5fb8341ec1ae492a3225ecadb0420367"
+}

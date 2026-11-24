@@ -43,7 +43,8 @@ namespace BarPromenade
         PawnshopDescent = 24,
         PigeonLoft = 25,
         GlassReturn = 26,
-        Cobbler = 27
+        Cobbler = 27,
+        Parking = 28
     }
 
     public readonly struct CityMapPointOfInterest
@@ -989,6 +990,9 @@ namespace BarPromenade
                 case CityMapPointOfInterestKind.PawnshopDescent:
                     key = "map.poi.pawnshop_descent";
                     return true;
+                case CityMapPointOfInterestKind.Parking:
+                    key = "map.poi.parking";
+                    return true;
                 case CityMapPointOfInterestKind.Laundry:
                     key = "map.poi.laundry";
                     return true;
@@ -1538,6 +1542,9 @@ namespace BarPromenade
                 pointsOfInterest.Add(new CityMapPointOfInterest(
                     "laundry", CityMapPointOfInterestKind.Laundry, CityDistrictKind.Residential,
                     ResolveNamedPlaceArrival(laundry.ApproachWorld)));
+            foreach (DistrictParkingPlan site in DistrictParkingPlan.ForLayout(Layout))
+                pointsOfInterest.Add(new CityMapPointOfInterest(site.Id, CityMapPointOfInterestKind.Parking,
+                    site.District, site.PedestrianArrival + Vector3.up * rootOffset, site.Lot, true));
             CityDogParkPlan dogPark = CityDogParkPlan.ForLayout(Layout);
             if (dogPark.IsEnabled)
                 pointsOfInterest.Add(new CityMapPointOfInterest(

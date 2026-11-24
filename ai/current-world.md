@@ -795,8 +795,8 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   Permanent drivers, full hull holds, clear turn entries and 40 m forecasts.
   Buses predict only to leaders. No boarding/overtaking/island/tunnel/closed exit.
   Two near beam pairs, shared audio/LOD. Pause/dormancy keep, unload clears.
-  `RidgeParkingPlan`: four lit home/kiosk bays, graded manoeuvres,
-  silent/dark unowned sedan; City/Home/nav/map/grass share footprint.
+  Ridge:4 lit bays/silent sedan. Working/Residential:4 empty bays each,
+  through aisles; shared grade/grass/nav/City map.
   Residents retain `city.pedestrian.NN`, catalog model/face/hair/clothes across
   loads; appended IDs preserve prior looks. Six library residents stay local.
   Home retains its separate `5` daytime/`2` night slots over the original first
@@ -1753,7 +1753,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   fair/post/docks/arch/church/cafe/laundry/dog yard/terraces/kiosks/pawnshop/descent),bounded localized legend/
   selectable places. Public lots/fair use open ground,not buildings;locations come
   from validated memoised plans/port.
-  City:scheme pending parking art registration;live layers/XYZ remain.
+  City uses the live scheme when parking art needs registration.
   Village uses the worn tourist brochure with a red-crossed resort.
   LodgeApproach arrival;no3D change. Plan/RU SHA+bounds/size guard
   stale art;other seeds/MountainRoad→schematic. City SHA excludes Village

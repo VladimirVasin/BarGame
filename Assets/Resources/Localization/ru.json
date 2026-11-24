@@ -1850,6 +1850,10 @@
       "value": "Прачечная"
     },
     {
+      "key": "map.poi.parking",
+      "value": "Автостоянки"
+    },
+    {
       "key": "map.poi.dog_park",
       "value": "Собачья площадка"
     },

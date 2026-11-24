@@ -394,6 +394,7 @@ namespace BarPromenade
                 partition == null ? null : partition.IsLower);
             CityLaundryWorldBuilder.Build(world, laundryPlan);
             CityDogParkWorldBuilder.Build(world, layout);
+            DistrictParkingWorld.Build(world, layout);
             CityStaticCollisionBuilder.AddDogParkColliders(world, plans.DogPark);
             GameObject residentialCourtyardRoot = CityResidentialCourtyardWorldBuilder.Build(world, residentialCourtyards);
             CityResidentialCourtyardLife courtyardLife = residentialCourtyardRoot.AddComponent<CityResidentialCourtyardLife>();
@@ -883,6 +884,9 @@ namespace BarPromenade
             Transform surfaces,
             CityLayout layout, bool background)
         {
+            var parkingCuts = new List<Rect>();
+            foreach (DistrictParkingPlan parking in DistrictParkingPlan.ForLayout(layout))
+                parkingCuts.AddRange(parking.Surfaces);
             var districtAreaIds = new List<string>();
             for (int index = 0; index < layout.Districts.Count; index++)
             {
@@ -897,7 +901,7 @@ namespace BarPromenade
                 districtAreaIds.Add(district.AreaId);
                 GameObject ground = null;
                 yield return CityTerrainSurfaceWorldBuilder.BuildTerrainSteps($"Active Land ({district.AreaId})", surfaces,
-                    layout, CitySurfaceKind.BuildableGround, Color.white, true, null, null,
+                    layout, CitySurfaceKind.BuildableGround, Color.white, true, null, parkingCuts,
                     CityTerrainSurfaceAreaFilter.IncludeOnly(new[] { district.AreaId }), background, value => ground = value);
                 if (ground == null)
                 {
@@ -926,7 +930,7 @@ namespace BarPromenade
                 Color.white,
                 true,
                 null,
-                null,
+                parkingCuts,
                 CityTerrainSurfaceAreaFilter.Excluding(districtAreaIds), background, openLand =>
                 {
                     FootstepGround.Stamp(openLand, FootstepGroundKind.Soil);
@@ -2977,7 +2981,21 @@ namespace BarPromenade
             {
                 var provisional = CityKioskSites.ForLayout(Layout).ReserveCourtFurniture(Layout,
                     CityDecorationPlanner.CreatePlan(Layout, Fence, nightPlan));
-                decoration = CityStreetUtilitySites.Survey(Layout, provisional, walk ?? RoadWalkableArea.FromLayout(Layout,MountainBoundary), nightPlan);
+                var surveyed = CityStreetUtilitySites.Survey(Layout, provisional,
+                    walk ?? RoadWalkableArea.FromLayout(Layout, MountainBoundary), nightPlan);
+                if (DistrictParkingPlan.ForLayout(Layout).Count != 0)
+                {
+                    var clear = new List<CityDecorationDescriptor>(surveyed.Count);
+                    foreach (var item in surveyed.Descriptors)
+                    {
+                        bool groundFurniture = item.AnchorKind == CityDecorationAnchorKind.Roadside ||
+                            item.AnchorKind == CityDecorationAnchorKind.BuildingFrontage;
+                        if (!groundFurniture || !DistrictParkingPlan.Reserves(Layout, item.Position, .8f))
+                            clear.Add(item);
+                    }
+                    surveyed = new CityDecorationPlan(surveyed.Seed, clear);
+                }
+                decoration = surveyed;
                 decorationNightPlan = nightPlan;
             }
 

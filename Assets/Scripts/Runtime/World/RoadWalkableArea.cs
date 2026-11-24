@@ -753,6 +753,16 @@ namespace BarPromenade
                 Vector3 car = parking.ParkedPosition(RidgeParkingPlan.OccupiedBay);
                 area.Exclude(new Rect(car.x - 1.04f, car.z - 2.522f, 2.08f, 5.044f));
             }
+            foreach (DistrictParkingPlan site in DistrictParkingPlan.ForLayout(layout))
+            {
+                foreach (var floor in site.Surfaces) area.Add(floor);
+                foreach (var curb in site.Curbs) area.Exclude(curb);
+                foreach (var lamp in site.Lamps)
+                {
+                    Bounds pole = CityStaticCollisionBuilder.CreateLowerPoleBounds(lamp.Position);
+                    area.Exclude(Rect.MinMaxRect(pole.min.x, pole.min.z, pole.max.x, pole.max.z));
+                }
+            }
             if (CityPawnshopPlan.TryCreate(layout, out var pawnshop))
                 area.ExcludePolygons(new[] { pawnshop.Footprint });
             area.ExcludePolygons(CityGlassReturnSitePlan.ForLayout(layout).SolidPolygons);

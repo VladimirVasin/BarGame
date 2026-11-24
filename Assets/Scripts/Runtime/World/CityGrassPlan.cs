@@ -212,6 +212,9 @@ namespace BarPromenade
                 ReserveRect(dogYard.ApproachBounds);
             }
             if (RidgeParkingPlan.ForLayout(city) is { } parking) ReserveRect(parking.SurfaceBounds);
+            foreach (DistrictParkingPlan site in DistrictParkingPlan.ForLayout(city))
+                foreach (Rect floor in site.Surfaces)
+                    ReserveRect(floor);
             // Some path tops are separate models, and Home omits their
             // collision entirely. Reserve their same contours in City space.
             foreach (var site in CityKioskSites.ForLayout(city).Sites)

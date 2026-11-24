@@ -1781,6 +1781,18 @@ namespace BarPromenade
                     DrawLine(projection.WorldToScreen(a), projection.WorldToScreen(b), 1f, GetPathColor(CityPathKind.ParkPath));
                 }
             }
+            foreach (DistrictParkingPlan site in DistrictParkingPlan.ForLayout(controller.Layout))
+            {
+                foreach (Rect surface in site.Surfaces)
+                    DrawGroundQuad(CityRoadPolygon.Rectangle(surface), PublicPlaceLand);
+                for (int bay = 0; bay <= DistrictParkingPlan.Capacity; bay++)
+                {
+                    float z = (bay - 2) * RidgeParkingPlan.BayWidth;
+                    Vector3 a = site.Point(DistrictParkingPlan.ParkX - RidgeParkingPlan.BayLength * .5f, z);
+                    Vector3 b = site.Point(DistrictParkingPlan.ParkX + RidgeParkingPlan.BayLength * .5f, z);
+                    DrawLine(projection.WorldToScreen(a), projection.WorldToScreen(b), 1f, GetPathColor(CityPathKind.ParkPath));
+                }
+            }
             var pawnshopDescent = CityPawnshopDescentPlan.ForLayout(controller.Layout);
             if (pawnshopDescent.IsEnabled)
             {
@@ -2707,6 +2719,7 @@ namespace BarPromenade
                     pointOfInterest.Kind != CityMapPointOfInterestKind.PigeonLoft &&
                     pointOfInterest.Kind != CityMapPointOfInterestKind.GlassReturn &&
                     pointOfInterest.Kind != CityMapPointOfInterestKind.Cobbler &&
+                    pointOfInterest.Kind != CityMapPointOfInterestKind.Parking &&
                     pointOfInterest.Kind != CityMapPointOfInterestKind.UpperCourtBridge &&
                     pointOfInterest.Kind != CityMapPointOfInterestKind.UpperSummitBridge)
                 {
@@ -3892,6 +3905,12 @@ namespace BarPromenade
                         center + new Vector2(halfSize, -halfSize * .68f), width, color);
                     DrawLine(center + new Vector2(-halfSize * .76f, halfSize * .22f),
                         center + new Vector2(halfSize * .76f, halfSize * .22f), width, color);
+                    break;
+                case CityMapPointOfInterestKind.Parking:
+                    DrawLine(center + new Vector2(-halfSize * .65f, -halfSize),
+                        center + new Vector2(-halfSize * .65f, halfSize), width, color);
+                    RetroUiTheme.StrokeRect(new Rect(center.x - halfSize * .65f, center.y - halfSize,
+                        halfSize * 1.3f, halfSize), width, color);
                     break;
                 case CityMapPointOfInterestKind.Laundry:
                     // Washer body with a diamond-shaped drum: distinct in grayscale.

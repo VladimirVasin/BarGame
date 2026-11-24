@@ -27,7 +27,9 @@
   pole; power poles/wires skirt the lot. Map uses scheme pending registered art.
   24FX: City GI/SSAO/fog/shadows/grade/probes/SSR/wetness/post and bevelled
   finishes retained; no new GI/volume/water/wind/COLOR/decals/particles/rim/
-  outline/lens effects. Cost unmeasured. Story16/21/art9.
+  outline/lens effects. Story16/21/art9.
+  `2026-11-24`: district lots each have four empty bays, two graded mouths,
+  shared materials/lights, safe arrivals and test-only sedan paths.
 
 - **Accepted 2026-11-15, user — ambient City traffic.** Four sedans:
   City/Ridge lanes; spawn off turns; 40m forecast. Hulls win over priority/

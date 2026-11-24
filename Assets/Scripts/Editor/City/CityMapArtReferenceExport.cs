@@ -345,6 +345,13 @@ namespace BarPromenade.Editor
                 for (int bay = 0; bay < RidgeParkingPlan.Capacity; bay++)
                     Box("ridge-parking:bay:" + bay, "sidewalk", parking.Bay(bay));
             }
+            foreach (DistrictParkingPlan site in DistrictParkingPlan.ForLayout(layout))
+            {
+                for (int strip = 0; strip < site.Surfaces.Count; strip++)
+                    Box(site.Id + ":surface:" + strip, "public-ground", site.Surfaces[strip]);
+                for (int bay = 0; bay < DistrictParkingPlan.Capacity; bay++)
+                    Box(site.Id + ":bay:" + bay, "sidewalk", site.Bay(bay));
+            }
             CityTerraceDistrictPlan terraces = CityTerraceDistrictPlan.ForLayout(layout);
             if (terraces.IsEnabled)
             {

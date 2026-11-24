@@ -182,7 +182,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Continuous 3D player interactions | Positioned entry/exit/contact continuity; optional exit hold/tail timing; owned presentation/input cleanup. | `PlayerAnimatedInteraction{Timeline,Controller}`, `PlayerDoorAction{Plan,Controller,Target}` | Current |
 | Sofa sleep and wake | Two hand-supported pelvis steps with seated stops; domed pillow dents and recovers. | `HomeBedInteraction{,Plan}`, `PlayerAnimatedInteractionPelvisPath` | Current |
 | City bench and park game-table seats | Shared sit/rest/stand; owning seat retains E/prompt and nested handlers through cleanup. | `CityParkBenchPlanner`, `CityBenchSit{Plan,WorldBuilder}` | Current |
-| City sedans | Four roaming + one rare pass-by, shared hulls. Ridge: four lit bays and a parked sedan. | `CityAmbientTraffic`, `RidgeParking*`, `LastRouteCar*` | Current |
+| City sedans and parking | Four roaming + rare pass-by. Ridge sedan; two empty four-bay district lots. | `CityAmbientTraffic`, `{Ridge,District}Parking*` | Current |
 | Ferryman radio and road speech | Three stations, playheads and cabin reactions persist; passenger exit switches the radio off. | `LastRouteRadioMusicPlayer`, `LastRouteRideSpeech{Session,View}` | Current |
 | Ferryman coin | One authored coin supplies the toss and contained glovebox pile; shared material, no pickups. | `LastRouteCoinAsset`, `LastRouteGloveboxCoins` | Current |
 | The last route | Shared Ferryman identity and outfit; ride stages, blackouts, arrivals, drunkenness refusal. | `DefaultNpcPopulation`, `LastRouteFerrymanFactory`, `LastRouteRideController`, `LastRouteFerrymanRideRules` | Current |
