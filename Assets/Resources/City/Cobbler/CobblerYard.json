@@ -2,14 +2,14 @@
   "coordinateSystem": "Local Unity metres; origin at ground; +Z seat forward or cable length",
   "surface": "City/Cobbler/CobblerSurface",
   "generator": "build-city-cobbler-yard-3d-model.py",
-  "triangles": 11420,
+  "triangles": 11488,
   "parts": [
     {
       "name": "SeatBench",
       "bounds_min": [
         -0.663,
         -0.008,
-        -0.38218
+        -0.38037
       ],
       "bounds_max": [
         0.637,
@@ -34,8 +34,8 @@
           ]
         }
       ],
-      "triangles": 1000,
-      "geometry_signature": "6ecb4c583de51fa9298608563c75196180aa93530d95bbbe7087a077cd68f42c",
+      "triangles": 964,
+      "geometry_signature": "00e15109c13cf73e4785284815c9f30814361cc09b7e422c86a9a756b1bfb779",
       "boxes": [
         {
           "name": "COL_SeatBench",
@@ -56,7 +56,7 @@
       "name": "Footrest",
       "bounds_min": [
         -0.238,
-        -0.0045,
+        -0.003,
         -0.154
       ],
       "bounds_max": [
@@ -74,8 +74,8 @@
           ]
         }
       ],
-      "triangles": 264,
-      "geometry_signature": "10c2bbc6bf8a05add628904219d857c71eb08323e044cab149c554b0831ee574",
+      "triangles": 336,
+      "geometry_signature": "ddfea58dbc9329441aff432508a705bf269da0723bd2cc3e6ae073e27de1b8e7",
       "boxes": [
         {
           "name": "COL_Footrest",
@@ -105,8 +105,8 @@
         0.0985
       ],
       "anchors": [],
-      "triangles": 148,
-      "geometry_signature": "90e0de7ecfcbc54998295fac658a0444917671f3017e9aad515f28d0729d19cb",
+      "triangles": 180,
+      "geometry_signature": "d85ae7ce76424ffd6e5124b4bd39ffd0dfa1c959ab009645a98f5c9a82a0015f",
       "boxes": [
         {
           "name": "COL_BootScraper",
@@ -137,7 +137,7 @@
       ],
       "anchors": [],
       "triangles": 68,
-      "geometry_signature": "7888ccd77c020d196a2d3e32a86f6b2cc7a41011b79d6e9dc2cd42cb844bdbe9",
+      "geometry_signature": "345a1773e61306a745dccff2930a0fb608887b068fa4901bf1cd2098e9e457a1",
       "boxes": [
         {
           "name": "COL_KerbLong",
@@ -168,7 +168,7 @@
       ],
       "anchors": [],
       "triangles": 68,
-      "geometry_signature": "d10d6ca20b9436f8ae14605c7a3ee86fc118b720d0db4906a8b00709e9a385c8",
+      "geometry_signature": "87af97f9772ecbf2fabbb161812173d85103ea85e66431a3c5575328fd8b371f",
       "boxes": [
         {
           "name": "COL_KerbShort",
@@ -199,7 +199,7 @@
       ],
       "anchors": [],
       "triangles": 3680,
-      "geometry_signature": "a925e522e2c7bf82bb98bcee578241d7c19dd1c35fe2d820b79a9806201a0066",
+      "geometry_signature": "6b4476a8acef0b65cba3892618462f1a5a7ca7dc376543b677a1ed2cae613d93",
       "boxes": [
         {
           "name": "COL_Lilac",
@@ -230,7 +230,7 @@
       ],
       "anchors": [],
       "triangles": 168,
-      "geometry_signature": "b79f41ea9a3b8db7027459f9dead615aca77752de8a1a116c891b16b3d0f9cc6",
+      "geometry_signature": "fdf0e57681b514bb03cf78060efd321f6f58b1c811b85c9f63eafdcafd3adf1b",
       "boxes": []
     },
     {
@@ -264,7 +264,7 @@
         }
       ],
       "triangles": 428,
-      "geometry_signature": "6a979106d5cb5d40e57ec260dc7a8395ebc5d012a0289674e28215a69e7dd08c",
+      "geometry_signature": "a0126091e58ec35179516ca2b5a40dd21303ab54a4de77b50975930bf7cbcd8a",
       "boxes": []
     },
     {
@@ -281,7 +281,7 @@
       ],
       "anchors": [],
       "triangles": 5596,
-      "geometry_signature": "8ead3746b233c875df16316419bfa97093f54f0f7bc9c12dc72a3bcef2f32208",
+      "geometry_signature": "08c68fb72c4ce9b879c95dd7dc50b6a66b08f26bf6e3285520fc9619583325e0",
       "boxes": [
         {
           "name": "COL_OldBusWheels",

@@ -20,6 +20,14 @@
       ]
     },
     {
+      "name": "ANCHOR_CollarInside",
+      "position": [
+        -0.55999,
+        1.36744,
+        3.03443
+      ]
+    },
+    {
       "name": "ANCHOR_EntryInside",
       "position": [
         0.53,
@@ -46,17 +54,17 @@
     {
       "name": "ANCHOR_HandLeft",
       "position": [
-        -0.6,
-        1.34,
-        3.0
+        -0.54424,
+        1.36744,
+        2.97953
       ]
     },
     {
       "name": "ANCHOR_HandRight",
       "position": [
-        -0.27,
-        1.37,
-        3.01
+        -0.202,
+        1.342,
+        3.095
       ]
     },
     {
@@ -148,6 +156,14 @@
       ]
     },
     {
+      "name": "ANCHOR_Welt",
+      "position": [
+        -0.29582,
+        1.24648,
+        3.11681
+      ]
+    },
+    {
       "name": "ANCHOR_Workbench",
       "position": [
         -0.46,
@@ -174,9 +190,17 @@
     {
       "name": "PIVOT_Awl",
       "position": [
-        -0.27,
-        1.37,
-        3.01
+        -0.202,
+        1.342,
+        3.095
+      ]
+    },
+    {
+      "name": "ANCHOR_AwlTip",
+      "position": [
+        -0.29582,
+        1.24648,
+        3.11681
       ]
     },
     {
@@ -252,8 +276,8 @@
       ]
     }
   ],
-  "triangles": 11804,
-  "geometry_signature": "4664c9de2832a6abf9b4832f9b6db3d3ed3dd51cb3289513c39ab80e7fd79034",
+  "triangles": 21736,
+  "geometry_signature": "dd62dfad74e2f612fb860a68786a7160556dabafac0403d09e0a93a2e1a6162b",
   "coordinateSystem": "Unity metres, +Z nose, +X passenger side, Y=0 ground",
   "bodySize": [
     2.38,
@@ -510,5 +534,5 @@
       ]
     }
   ],
-  "atlasSHA256": "61565943a611eddba49d033ec3b538012f4631174bc92ab1ad862433447a8e3a"
+  "atlasSHA256": "ac8106b2bb9b8da69efaea50acec2e75d188a042e31cb72678aabf340588c3e0"
 }

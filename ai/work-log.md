@@ -5,6 +5,8 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-24
 
+The Ridge cobbler curls his left fingers around the collar and keeps his right wrist aligned through the awl stroke. The steel point reaches the exposed welt. Floor wear follows the entrance and aisle. `CityCobblerFittings` checks the stitch cycle, lamp button, steps in both directions and sitting on the yard bench.
+
 Ridge loft and yard share grain-aligned timber, exposed end grain and handled metal. `CityPigeonLoftFittings` checks the feeding board under both feet, moving lid and vice grips, the stair climb and both gate approaches.
 
 Ridge pawnshop tray runs through the grille. Cases support the radio, tools and appliance. Floor seams and wear follow the public aisle. `CityPawnshop_EnterOpenBothStubsAndReturn` checks fitted materials, door, both menus and street return.

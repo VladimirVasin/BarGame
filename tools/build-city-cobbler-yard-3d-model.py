@@ -29,14 +29,25 @@ def octagon(width, depth, cut):
             (x-cut,z), (-x+cut,z), (-x,z-cut), (-x,-z+cut)]
 
 
+def fastener(m, centre, axis, radius, height):
+    # A shallow crowned head embedded in the plate has no visible stem or back.
+    n = Vector(axis).normalized()
+    u = Vector((1,0,0))
+    v = n.cross(u)
+    ring = [Vector(centre)+radius*(u*math.cos(j*math.tau/6)+v*math.sin(j*math.tau/6)) for j in range(6)]
+    m.g.add([*ring,Vector(centre)+n*height],[(j,(j+1)%6,6) for j in range(6)],workshop.COLOR["zinc"],solid=False)
+
+
 def bench(m, mat):
     # The paired vinyl backs, tubular ends and grab rail retain the proportions
     # of rigid public-bus seats. Two weather-grey sleepers anchor the reused frame.
     for x in (-.48,.48):
         m.box("wear", (x,.025,-.016), (.14,.066,.59), .012)
         for z in (-.204,.186):
-            m.box("iron", (x,.064,z), (.103,.024,.09), .007)
-            m.rod("iron", (x,.067,z),(x,.384,z*.82), .021, 8)
+            m.rings("iron", [[(x+dx,y,z+dz) for dx,dz in octagon(.103,.09,.018)]
+                             for y in (.055,.072)])
+            fastener(m,(x+.032,.072,z),(0,1,0),.009,.005)
+            m.rod("iron", (x,.067,z),(x,.384,z*.82), .021, 6)
     for z in (-.158,.16):
         m.rod("iron",(-.637,.386,z),(.637,.386,z),.023,8)
     for x in (-.32,.32):
@@ -44,7 +55,7 @@ def bench(m, mat):
         for y,w,d,dz in ((.401,.55,.436,0),(.418,.607,.494,.006),(.455,.614,.504,.008),
                           (.474,.581,.475,.003),(.480,.497,.385,0)):
             seat.append([(x+dx,y,dz+zz) for dx,zz in octagon(w,d,.043)])
-        m.rings("leather",seat)
+        m.rings("vinyl",seat)
         # The pipecord is sewn into the front of the seat, not printed stripes.
         m.rod("oxblood",(x-.243,.449,.260),(x+.243,.449,.260),.0048,6)
         back = []
@@ -52,16 +63,22 @@ def bench(m, mat):
                           (.678,-.258,.582,.108),(.898,-.314,.554,.103),
                           (.955,-.323,.491,.080),(.969,-.325,.438,.057)):
             back.append([(x+dx,y,zc+zz) for dx,zz in octagon(w,d,.021)])
-        m.rings("leather",back)
+        m.rings("vinyl",back)
         for side in (-1,1):
             xbar=x+side*.211
-            m.rod("rubber",(xbar,.375,-.165),(xbar,.853,-.366),.018,7)
+            m.rod("iron",(xbar,.375,-.165),(xbar,.853,-.366),.018,6)
+            fastener(m,(xbar,.798,-.356),(0,0,-1),.015,.006)
         m.rod("oxblood",(x-.229,.681,-.204),(x+.229,.681,-.204),.004,7)
     # One nick shows the backing on the exposed left passenger corner.
     m.rod("wear",(-.567,.445,.254),(-.525,.438,.258),.005,6)
     rail = [(-.645,.402,-.182),(-.645,.620,-.177),(-.645,.725,-.110),(-.645,.722,.096),(-.645,.604,.152)]
-    for a,b in zip(rail,rail[1:]):
-        m.rod("zinc",a,b,.018,8)
+    rings=[]
+    for i,centre in enumerate(rail):
+        tangent=(Vector(rail[min(i+1,len(rail)-1)])-Vector(rail[max(i-1,0)])).normalized()
+        normal=tangent.cross(Vector((1,0,0)))
+        rings.append([Vector(centre)+.018*(Vector((1,0,0))*math.cos(j*math.tau/8)
+                     + normal*math.sin(j*math.tau/8)) for j in range(8)])
+    m.rings("zinc",rings)
     workshop.collider(m.root,mat,"SeatBench",(0,.473,-.045),(1.33,.946,.65))
     for label,x in (("Left",-.32),("Right",.32)):
         port.empty("ANCHOR_YardSeat"+label,m.root,(x,.480,0))
@@ -70,13 +87,18 @@ def bench(m, mat):
 def footrest(m, mat):
     # A small sloping boot board fits beneath the customer's sole.
     for x in (-.170,.170):
-        m.box("iron",(x,.053,-.105),(.039,.114,.038),.004)
-        m.box("iron",(x,.078,.104),(.039,.165,.038),.004)
+        for z,top in ((-.105,.105),(.104,.162)):
+            m.rod("iron",(x,-.003,z),(x,top,z),.022,6)
+            m.rod("iron",(x,top-.013,z),(x,top,z),.029,6)
         m.rod("iron",(x,.031,-.106),(x,.136,.104),.010,6)
     rings=[]
     for z,y,width in ((-.154,.108,.423),(-.130,.113,.476),(.133,.175,.476),(.155,.180,.429)):
         rings.append([(-width*.5,y-.032,z),(width*.5,y-.032,z),(width*.5,y,z),(-width*.5,y,z)])
     m.rings("wood",rings)
+    for x in (-.17,.17):
+        for z in (-.104,.105):
+            y = .113+(z+.13)*(.062/.263)
+            fastener(m,(x,y+.0004,z),(0,1,0),.009,.002)
     for z in (-.067,.012,.083):
         y=.113+(z+.13)*(.062/.263)
         m.rod("rubber",(-.205,y+.003,z),(.205,y+.003,z),.0055,7)
@@ -89,7 +111,8 @@ def scraper(m, mat):
     # working edge; a screwed-on sign or a second action would add no function.
     for x in (-.157,.157):
         m.box("concrete",(x,.012,0),(.124,.085,.197),.015)
-        m.rod("iron",(x,.051,0),(x,.134,0),.011,7)
+        m.rod("iron",(x,.051,0),(x,.068,0),.030,6,.022)
+        m.rod("iron",(x,.068,0),(x,.134,0),.014,6,.011)
     m.rings("iron", [[(x,.091,-.008),(x,.091,.008),(x,.145,.004),(x,.145,-.004)] for x in (-.181,.181)])
     m.rod("zinc",(-.18,.146,0),(.18,.146,0),.0038,6)
     workshop.collider(m.root,mat,"BootScraper",(0,.063,0),(.438,.177,.197))

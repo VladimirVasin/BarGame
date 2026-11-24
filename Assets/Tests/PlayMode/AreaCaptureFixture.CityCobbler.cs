@@ -159,54 +159,7 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(city.World.WalkableArea.Contains(site.Approach, .32f), Is.True);
                 VerifyCobblerYardGeometry(cobbler, site);
 
-                // Use the actual hero capsule and motor across the open doorway, both steps and aisle.
-                Time.captureDeltaTime = 1f / 30f;
-                SetChurchRemodelTime(720); city.DayNight.ApplyCurrentTime(true);
-                cobbler.ApplyAt(720d / GameTimeState.GameMinutesPerRealSecond);
-                for (int frame = 0; frame < 20; frame++) yield return null;
-                var path = new[] { "ANCHOR_EntryOutside", "ANCHOR_Step1", "ANCHOR_Step2", "ANCHOR_Threshold", "ANCHOR_EntryInside" }
-                    .Select(name => CityCobblerAssetProvider.FindPart(cobbler.transform, name).position)
-                    .Prepend(site.Yard.PathStart).ToArray();
-                city.Player.Motor.Teleport(path[0] + Vector3.up * (PlayerFactory.GroundedRootOffset + .02f));
-                for (int direction = 0; direction < 2; direction++)
-                for (int index = 1; index < path.Length; index++)
-                {
-                    Vector3 target = path[direction == 0 ? index : path.Length - 1 - index] +
-                        Vector3.up * PlayerFactory.GroundedRootOffset;
-                    bool reached = false;
-                    for (int step = 0; step < 100 && !reached; step++)
-                    {
-                        reached = city.Player.Motor.MoveTowardsApproachWaypoint(target, .12f, .04f);
-                        if (step % 3 == 0) yield return null;
-                    }
-                    Assert.That(reached, Is.True, "Player crosses step/threshold " + index + " direction " + direction);
-                    // Short treads are narrower than the capsule diameter. Its lower hemisphere
-                    // can already rest on the next riser while the centre reaches this waypoint.
-                    float highestNeighbour = path.Skip(Math.Max(0, (direction == 0 ? index : path.Length - 1 - index) - 2))
-                        .Take(5).Max(p => p.y) + PlayerFactory.GroundedRootOffset;
-                    Assert.That(city.Player.Motor.transform.position.y, Is.InRange(target.y - .10f, highestNeighbour + .14f),
-                        "Supported capsule at tread " + index + " direction " + direction);
-                }
-                city.Player.Motor.CancelInteractionPoseMove();
-                Time.captureDeltaTime = 1f / 30f;
-                var fittingSeat = city.BenchSits.Single(s => s.Plan.Id == CityCobblerYardPlan.SeatId);
-                Assert.That(city.World.WalkableArea.Contains(fittingSeat.Plan.EntryRootPosition, .32f), Is.True);
-                city.Player.Motor.Teleport(fittingSeat.Plan.EntryRootPosition);
-                yield return null;
-                Assert.That(fittingSeat.CanInteract(city.Player.Interactor), Is.True);
-                fittingSeat.Interact(city.Player.Interactor);
-                for (int frame = 0; frame < 240 && !fittingSeat.IsSeated; frame++) yield return null;
-                Assert.That(fittingSeat.IsSeated, Is.True,
-                    "The reclaimed seat uses the shared sit action. Phase=" + fittingSeat.Controller.Phase);
-                fittingSeat.Controller.RefreshActiveClipAlignment();
-                var hero = (Player3DCharacterPresentation)city.Player.Visual;
-                hero.ReapplyLatePresentationPose();
-                Assert.That(Vector3.Distance(hero.Registry.Anchors.Pelvis.position, fittingSeat.Plan.ActionHipPosition),
-                    Is.LessThan(.04f), "The hero rests on the actual upholstery.");
-                fittingSeat.Interact(city.Player.Interactor);
-                for (int frame = 0; frame < 240 && fittingSeat.OwnsActiveInteraction; frame++) yield return null;
-                Assert.That(fittingSeat.OwnsActiveInteraction, Is.False);
-                Assert.That(Vector3.Distance(city.Player.Motor.transform.position, fittingSeat.Plan.EntryRootPosition), Is.LessThan(.09f));
+                yield return WalkCobblerStepsAndUseSeat(city, cobbler, site);
             }
             finally
             {
@@ -220,6 +173,163 @@ namespace BarPromenade.Tests.PlayMode
                     city.Player.Motor.CancelInteractionPoseMove();
                 }
             }
+        }
+
+        [UnityTest]
+        [Explicit("Cobbler workbench, switch, entrance and fitting seat at the bridge.")]
+        public IEnumerator CityCobblerFittings()
+        {
+            GameSessionState.BeginNewGame();
+            Assert.That(GameSessionState.TryStartGameTimeAt(720), Is.True);
+            CityGameRoot city = null;
+            CityCobblerWorker worker = null;
+            PlayerCameraFollow follow = null;
+            bool motorEnabled = false, followEnabled = false, weatherEnabled = false;
+            float previousDelta = Time.captureDeltaTime;
+            try
+            {
+                yield return Capture(SceneIds.City, () =>
+                {
+                    city = Object.FindAnyObjectByType<CityGameRoot>();
+                    return city && city.IsInitialized && !CompositionDriver.IsComposing ? city : null;
+                }, () =>
+                {
+                    var site = CityCobblerSitePlan.ForLayout(city.Layout);
+                    worker = city.World.RidgeRoot.GetComponentInChildren<CityCobblerWorker>(true);
+                    follow = city.Camera.GetComponent<PlayerCameraFollow>();
+                    followEnabled = follow.enabled;
+                    follow.enabled = false;
+                    motorEnabled = city.Player.Motor.InputEnabled;
+                    city.Player.Motor.SetInputEnabled(false);
+                    weatherEnabled = city.Weather.enabled;
+                    city.Weather.enabled = false;
+                    worker.AutoAdvance = false;
+                    SetChurchRemodelTime(720);
+                    city.DayNight.ApplyCurrentTime(true);
+                    Vector3 shoe = site.ToWorld(new Vector3(-.45f, 1.31f, 3.04f));
+                    var court = CityHillsideQuarterPlan.ForLayout(city.Layout).Links[0];
+                    return new[]
+                    {
+                        Frame("cobbler-fittings-bridge", new Vector3(49f, court.PavementTopAt(49f) + EyeHeight, -303f),
+                            site.ToWorld(new Vector3(0, 1.4f, 1.4f)), 44f),
+                        Frame("cobbler-fittings-awl", site.ToWorld(new Vector3(.20f, 1.71f, 3.53f)), shoe, 38f),
+                        Frame("cobbler-fittings-withdraw", site.ToWorld(new Vector3(.20f, 1.71f, 3.53f)), shoe, 38f, .45d),
+                        Frame("cobbler-fittings-salon", site.ToWorld(new Vector3(.40f, 1.98f, 2.32f)),
+                            site.ToWorld(new Vector3(-.20f, 1.62f, -2.6f)), 64f),
+                        Frame("cobbler-fittings-entry", site.Approach + site.Rotation * new Vector3(2.5f, 1.45f, -1.85f),
+                            site.ToWorld(new Vector3(1.48f, .75f, 2.46f)), 51f)
+                    };
+
+                    Shot Frame(string name, Vector3 eye, Vector3 target, float fov, double phase = 0d)
+                    {
+                        var pose = Shot.At(name, eye, target, fov);
+                        int frames = 0;
+                        return Shot.At(name, eye, target, fov, readyWhen: () =>
+                        {
+                            if (frames++ == 0) MoveCityLightingObserver(city, pose);
+                            worker.ApplyAt(720d / GameTimeState.GameMinutesPerRealSecond + phase);
+                            return frames > SettleFrames;
+                        });
+                    }
+                });
+
+                var fingers = worker.Worker.GetComponent<NpcHandPose>();
+                double noon = 720d / GameTimeState.GameMinutesPerRealSecond;
+                var tip = CityCobblerAssetProvider.FindPart(worker.Awl, "ANCHOR_AwlTip");
+                var welt = CityCobblerAssetProvider.FindPart(worker.transform, "ANCHOR_Welt");
+                var collar = worker.ShoeContact;
+                var wrist = CityCobblerAssetProvider.FindPart(worker.Worker.ModelRoot, "hand.R");
+                var elbow = CityCobblerAssetProvider.FindPart(worker.Worker.ModelRoot, "forearm.R");
+                float nearest = float.PositiveInfinity, farthest = 0f;
+                for (int i = 0; i <= 32; i++)
+                {
+                    worker.ApplyAt(noon + i * .1d);
+                    Assert.That(fingers.RightGripWeight, Is.GreaterThan(.99f));
+                    Assert.That(fingers.LeftGripWeight, Is.GreaterThan(.99f), "Fingers curl around the boot collar.");
+                    Assert.That(Vector3.Distance(fingers.AnatomicalCylinderCentre(true),collar.position), Is.LessThan(.012f));
+                    Assert.That(worker.HandContactError, Is.LessThan(.025f));
+                    Assert.That(Vector3.Dot((wrist.position-elbow.position).normalized,
+                        (worker.Awl.position-wrist.position).normalized), Is.GreaterThan(.2f),
+                        "The closed grip stays beyond the cuff as the awl withdraws.");
+                    Vector3 axis = (tip.position - worker.Awl.position).normalized;
+                    Vector3 toSeam = welt.position - tip.position;
+                    Assert.That(Vector3.Cross(axis, toSeam).magnitude, Is.LessThan(.002f));
+                    float distance = Vector3.Dot(axis, toSeam);
+                    nearest = Mathf.Min(nearest, distance);
+                    farthest = Mathf.Max(farthest, distance);
+                }
+                Assert.That(nearest, Is.InRange(-.001f, .001f), "Point touches the welt without entering the boot.");
+                Assert.That(farthest, Is.InRange(.053f,.057f), "The awl withdraws between stitches.");
+                var lights = worker.GetComponentsInChildren<Light>(true);
+                VerifyCobblerLampCircuit(worker, lights.Single(l => l.name == "Cobbler desk light"),
+                    lights.Single(l => l.name == "Cobbler sign light"));
+                yield return WalkCobblerStepsAndUseSeat(city, worker, CityCobblerSitePlan.ForLayout(city.Layout));
+            }
+            finally
+            {
+                Time.captureDeltaTime = previousDelta;
+                if (worker) worker.AutoAdvance = true;
+                if (follow) follow.enabled = followEnabled;
+                if (city && follow)
+                {
+                    city.Weather.enabled = weatherEnabled;
+                    city.Player.Motor.SetInputEnabled(motorEnabled);
+                    city.Player.Motor.CancelInteractionPoseMove();
+                }
+            }
+        }
+
+        private static IEnumerator WalkCobblerStepsAndUseSeat(CityGameRoot city, CityCobblerWorker cobbler,
+            CityCobblerSitePlan site)
+        {
+            // Use the actual hero capsule and motor across the open doorway, both steps and aisle.
+            Time.captureDeltaTime = 1f / 30f;
+            SetChurchRemodelTime(720); city.DayNight.ApplyCurrentTime(true);
+            cobbler.ApplyAt(720d / GameTimeState.GameMinutesPerRealSecond);
+            for (int frame = 0; frame < 20; frame++) yield return null;
+            var path = new[] { "ANCHOR_EntryOutside", "ANCHOR_Step1", "ANCHOR_Step2", "ANCHOR_Threshold", "ANCHOR_EntryInside" }
+                .Select(name => CityCobblerAssetProvider.FindPart(cobbler.transform, name).position)
+                .Prepend(site.Yard.PathStart).ToArray();
+            city.Player.Motor.Teleport(path[0] + Vector3.up * (PlayerFactory.GroundedRootOffset + .02f));
+            for (int direction = 0; direction < 2; direction++)
+            for (int index = 1; index < path.Length; index++)
+            {
+                Vector3 target = path[direction == 0 ? index : path.Length - 1 - index] +
+                    Vector3.up * PlayerFactory.GroundedRootOffset;
+                bool reached = false;
+                for (int step = 0; step < 100 && !reached; step++)
+                {
+                    reached = city.Player.Motor.MoveTowardsApproachWaypoint(target, .12f, .04f);
+                    if (step % 3 == 0) yield return null;
+                }
+                Assert.That(reached, Is.True, "Player crosses step/threshold " + index + " direction " + direction);
+                // Short treads are narrower than the capsule diameter. Its lower hemisphere
+                // can already rest on the next riser while the centre reaches this waypoint.
+                float highestNeighbour = path.Skip(Math.Max(0, (direction == 0 ? index : path.Length - 1 - index) - 2))
+                    .Take(5).Max(p => p.y) + PlayerFactory.GroundedRootOffset;
+                Assert.That(city.Player.Motor.transform.position.y, Is.InRange(target.y - .10f, highestNeighbour + .14f),
+                    "Supported capsule at tread " + index + " direction " + direction);
+            }
+            city.Player.Motor.CancelInteractionPoseMove();
+            Time.captureDeltaTime = 1f / 30f;
+            var fittingSeat = city.BenchSits.Single(s => s.Plan.Id == CityCobblerYardPlan.SeatId);
+            Assert.That(city.World.WalkableArea.Contains(fittingSeat.Plan.EntryRootPosition, .32f), Is.True);
+            city.Player.Motor.Teleport(fittingSeat.Plan.EntryRootPosition);
+            yield return null;
+            Assert.That(fittingSeat.CanInteract(city.Player.Interactor), Is.True);
+            fittingSeat.Interact(city.Player.Interactor);
+            for (int frame = 0; frame < 240 && !fittingSeat.IsSeated; frame++) yield return null;
+            Assert.That(fittingSeat.IsSeated, Is.True,
+                "The reclaimed seat uses the shared sit action. Phase=" + fittingSeat.Controller.Phase);
+            fittingSeat.Controller.RefreshActiveClipAlignment();
+            var hero = (Player3DCharacterPresentation)city.Player.Visual;
+            hero.ReapplyLatePresentationPose();
+            Assert.That(Vector3.Distance(hero.Registry.Anchors.Pelvis.position, fittingSeat.Plan.ActionHipPosition),
+                Is.LessThan(.04f), "The hero rests on the actual upholstery.");
+            fittingSeat.Interact(city.Player.Interactor);
+            for (int frame = 0; frame < 240 && fittingSeat.OwnsActiveInteraction; frame++) yield return null;
+            Assert.That(fittingSeat.OwnsActiveInteraction, Is.False);
+            Assert.That(Vector3.Distance(city.Player.Motor.transform.position, fittingSeat.Plan.EntryRootPosition), Is.LessThan(.09f));
         }
 
         private static void VerifyCobblerYardGeometry(CityCobblerWorker worker, CityCobblerSitePlan site)

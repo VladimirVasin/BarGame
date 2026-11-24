@@ -10,6 +10,8 @@ namespace BarPromenade
         private Transform seatAnchor, floorAnchor, leftContact, rightContact, awl, pelvis, spine, leftHand;
         private NpcHandPose fingers;
         private AnatomicalHandFrame leftPalm;
+        private Quaternion awlHandRotation, collarHandRotation;
+        private Vector3 rightSocketFromGrip, leftSocketFromGrip;
         private Pose awlWorking, awlRest;
         private Vector3 toolAxis;
         private readonly Transform[] feet = new Transform[2];
@@ -75,9 +77,22 @@ namespace BarPromenade
                 if (!float.IsInfinity(bottom)) seatLift -= Mathf.Clamp(bottom + .003f, -.12f, .12f);
             }
             Worker.Apply(VillageResidentAction.Idle, 0f);
-            toolAxis = (site.Rotation * new Vector3(-.12f, -.08f, .04f)).normalized;
+            toolAxis = (Part("ANCHOR_AwlTip").position - awl.position).normalized;
+            var rightHand = Joint("hand.R");
+            var anatomy = fingers.GetAnatomicalFrame(false);
+            Vector3 distal = Vector3.ProjectOnPlane(site.Rotation * Vector3.forward, toolAxis).normalized;
+            Vector3 palm = Vector3.Cross(toolAxis, distal).normalized;
+            if (Vector3.Dot(palm, Vector3.down) < 0f) palm = -palm;
+            // Either direction along the shaft fits a cylinder. Keep the knuckles ahead of the wrist.
+            awlHandRotation = anatomy.ResolveHandRotation(palm, distal);
+            rightSocketFromGrip = Quaternion.Inverse(rightHand.rotation) *
+                (Worker.RightGrip.position - rightHand.position) - anatomy.CylinderCentreInHand;
+            Vector3 intoBoot = Part("ANCHOR_CollarInside").position - leftContact.position;
+            collarHandRotation = leftPalm.ResolveHandRotation(Vector3.down, intoBoot);
+            leftSocketFromGrip = Quaternion.Inverse(leftHand.rotation) *
+                (Worker.LeftGrip.position - leftHand.position) - leftPalm.CylinderCentreInHand;
             var rest = Part("ANCHOR_AwlRest");
-            awlRest = new Pose(rest.position, Quaternion.AngleAxis(-34f, site.Rotation * Vector3.forward) * awlWorking.rotation);
+            awlRest = new Pose(rest.position, Quaternion.FromToRotation(toolAxis, Vector3.ProjectOnPlane(toolAxis, Vector3.up).normalized) * awlWorking.rotation);
         }
 
         private void RestTool() => awl.SetPositionAndRotation(awlRest.position, awlRest.rotation);
@@ -99,24 +114,22 @@ namespace BarPromenade
             HandContactError = SoleContactError = 0f;
             if (seat > 0f) PlaceOnSeat(seatAnchor.position, floorAnchor.position.y, seat);
             if (grip <= 0f) return;
-            Vector3 forward = site.Rotation * Vector3.forward, right = site.Rotation * Vector3.right;
-            Quaternion leftRotation = leftPalm.ResolveHandRotation(Vector3.down, forward);
-            Vector3 socketOffset = Quaternion.Inverse(leftHand.rotation) * (Worker.LeftGrip.position - leftHand.position);
-            Vector3 left = leftContact.position + leftRotation * (socketOffset - leftPalm.PalmCentreInHand);
-            Pose hand = fingers.GetSocketPose(false, awl.position, toolAxis, -right);
+            Vector3 right = site.Rotation * Vector3.right;
+            Vector3 left = leftContact.position + collarHandRotation * leftSocketFromGrip;
+            Vector3 gripSocket = awl.position + awlHandRotation * rightSocketFromGrip;
             Quaternion upright = spine.rotation;
             // Real arm and garment dimensions come from the global assignment.
             // Lean from the spine, leaving the supported pelvis and feet in place.
             for (int tilt = 22; tilt <= 62; tilt += 5)
             {
                 spine.rotation = Quaternion.AngleAxis(tilt * grip, right) * upright;
-                if (Worker.ApplyHandContacts(hand.position, left, hand.rotation, leftRotation, grip) || grip < .999f) break;
+                if (Worker.ApplyHandContacts(gripSocket, left, awlHandRotation, collarHandRotation, grip) || grip < .999f) break;
             }
             fingers.SetGrip(false, grip);
-            fingers.SetGrip(true, 0f);
+            fingers.SetGrip(true, grip);
             if (grip >= .999f)
-                HandContactError = Mathf.Max(Vector3.Distance(fingers.CylinderCentre(false), awl.position),
-                    Vector3.Distance(leftHand.position + leftHand.rotation * leftPalm.PalmCentreInHand, leftContact.position));
+                HandContactError = Mathf.Max(Vector3.Distance(fingers.AnatomicalCylinderCentre(false), awl.position),
+                    Vector3.Distance(fingers.AnatomicalCylinderCentre(true), leftContact.position));
         }
 
         private void PlaceOnSeat(Vector3 surface, float floor, float seated)
