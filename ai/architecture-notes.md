@@ -3,13 +3,10 @@
 ## Current facts
 
 - **Accepted 2026-11-22, user — wristwatch.** H loans the existing camera and
-  uses stationary contextual ownership. Right pinch follows the left cuff.
-  The bezel stays on the forearm and the LCD follows the session minute.
-  Bevels, matte surfaces and area lighting/fog/post.
+  holds stationary context. Right pinch tracks the left cuff. Forearm bezel, session-minute LCD, bevels, matte finish and area fog/light/post.
 
 - **Accepted 2026-11-18, user — hero outfit.** Restored olive M-65 and oxblood
-  1460-style boots. Sole length, planting, clips and material passes retained.
-  Forms and finishes in `player-art-spec.md`, art §2 and story §7.
+  1460-style boots. Same sole length, planting, clips and passes. See `player-art-spec.md`, art §2, story §7.
 
 - **Accepted 2026-11-17, user — hero redesign.** Swept hair and sculpted face.
   Same rig and anchors. Default male
@@ -83,8 +80,8 @@
   City/Home cache100/range38m. Clear paths. Roots, hero+7NPC/24trails.
   Ridge gusts peak at the crest. Crowns/wires bounded; grass outside loft fence.
 
-- **Accepted 2026-11-11,user — fish sign:** story §6/21, art §7/13.
-  `(-23,-7)`; ImageGen print, Blender frame, two fixed Spots.
+- **Accepted 2026-11-11, user — fish sign.** Ridge `(-23,-7)`, two floods.
+- **Accepted 2026-11-25, user — second fish print.** Clock gable `(4,8)`: matte ImageGen head/tail tin, fixed sign lights. Story §6/21, art §13.
 
 - **Accepted 2026-11-09 — City power:** ≤64poles/192spans;roads≥7m;Home≤64m.
   Ridge:axes2m,neighbour feeds;16 segments clear bays/roofs.

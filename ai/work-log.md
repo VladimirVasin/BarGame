@@ -3,6 +3,10 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
+## 2026-11-25
+
+The west Ridge garages connect two streets over a sheltered repair bay. An opal ceiling lamp lights the bay walls, with broad overlapping beams at the bench, motor and entrance. One fabrication hall has wired roof glazing and a street window onto the hoist. The clock gable carries a second matte cannery print with one head and one tail. `LiveCity_GarageRoofAndWorkshopHaveSeparateArrivals` walked both levels and boarded from the public pavement. Matched night frames showed the garage diffuser lifting the side walls, the entry lamp reaching the adjacent gate and both clock floodlights illuminating the lettering and tin. The ImageGen sheet omitted the stair connection. City uses the surveyed scheme.
+
 ## 2026-11-24
 
 Working and Residential gained empty parking courts with two graded street mouths.

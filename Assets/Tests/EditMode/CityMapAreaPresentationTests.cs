@@ -941,6 +941,7 @@ namespace BarPromenade.Tests.EditMode
                     CityMapPointOfInterestKind.Church,
                     CityMapPointOfInterestKind.Cafe,
                     CityMapPointOfInterestKind.Laundry,
+                    CityMapPointOfInterestKind.Parking, CityMapPointOfInterestKind.Parking,
                     CityMapPointOfInterestKind.DogPark,
                     CityMapPointOfInterestKind.TerraceCourts,
                     CityMapPointOfInterestKind.TerraceUnderpass,
@@ -959,12 +960,13 @@ namespace BarPromenade.Tests.EditMode
                     CityMapPointOfInterestKind.PigeonLoft,
                     CityMapPointOfInterestKind.PawnshopDescent,
                     CityMapPointOfInterestKind.GlassReturn,
+                    CityMapPointOfInterestKind.RidgeGarage, CityMapPointOfInterestKind.RidgeGarageRoof,
                     CityMapPointOfInterestKind.Cobbler
                 };
                 var expectedIds = new[]
                 {
-                    "fair", "eastern-post", "docks", "arch", "church-entrance", "city-cafe", "laundry", "dog-park", "terrace-courts", "terrace-underpass", "terrace-lower-court", "terrace-shortcut", "terrace-landing", "residential-summit", "industrial-summit", "upper-shared-court",
-                    "upper-court-bridge", "upper-summit-bridge", "ridge-kiosk", "residential-kiosk", "industrial-kiosk", "pawnshop", "ridge-pigeon-loft", "pawnshop-descent", "ridge-glass-return", CityCobblerSitePlan.StableId
+                    "fair", "eastern-post", "docks", "arch", "church-entrance", "city-cafe", "laundry", "industrial-parking", "residential-parking", "dog-park", "terrace-courts", "terrace-underpass", "terrace-lower-court", "terrace-shortcut", "terrace-landing", "residential-summit", "industrial-summit", "upper-shared-court",
+                    "upper-court-bridge", "upper-summit-bridge", "ridge-kiosk", "residential-kiosk", "industrial-kiosk", "pawnshop", "ridge-pigeon-loft", "pawnshop-descent", "ridge-glass-return", RidgeGaragePlan.StableId, RidgeGaragePlan.StableId + "-roof", CityCobblerSitePlan.StableId
                 };
                 var expectedDistricts = new[]
                 {
@@ -974,6 +976,8 @@ namespace BarPromenade.Tests.EditMode
                     CityDistrictKind.Residential,
                     CityDistrictKind.Church,
                     CityDistrictKind.Residential,
+                    CityDistrictKind.Residential,
+                    CityDistrictKind.Industrial,
                     CityDistrictKind.Residential,
                     CityDistrictKind.Residential,
                     CityDistrictKind.Residential,
@@ -989,6 +993,8 @@ namespace BarPromenade.Tests.EditMode
                     CityDistrictKind.Residential,
                     CityDistrictKind.Residential,
                     CityDistrictKind.Industrial,
+                    CityDistrictKind.Residential,
+                    CityDistrictKind.Residential,
                     CityDistrictKind.Residential,
                     CityDistrictKind.Residential,
                     CityDistrictKind.Residential,
@@ -1049,6 +1055,11 @@ namespace BarPromenade.Tests.EditMode
                 var glass = CityGlassReturnSitePlan.ForLayout(layout);
                 var cobbler = CityCobblerSitePlan.ForLayout(layout);
                 Assert.That(cobbler.IsEnabled, Is.True);
+                var garages = RidgeGaragePlan.ForLayout(layout);
+                namedArrivals.Add(RidgeGaragePlan.StableId, ("Гаражи на Гребне", garages.LowerArrival));
+                namedArrivals.Add(RidgeGaragePlan.StableId + "-roof", ("Проход по крыше гаражей", garages.RoofArrival));
+                foreach (var lot in DistrictParkingPlan.ForLayout(layout))
+                    namedArrivals.Add(lot.Id, ("Автостоянки", lot.PedestrianArrival));
                 namedArrivals.Add("ridge-pigeon-loft", ("Голубятня", loft.Approach));
                 namedArrivals.Add(CityGlassReturnSitePlan.StableId, ("Приём стеклотары", glass.Approach));
                 namedArrivals.Add(CityCobblerSitePlan.StableId, ("Сапожная мастерская", cobbler.Approach));
@@ -1078,7 +1089,7 @@ namespace BarPromenade.Tests.EditMode
                     var xz = new Vector2(place.WorldPosition.x, place.WorldPosition.z);
                     bool bridgePlace = place.Kind == CityMapPointOfInterestKind.UpperCourtBridge ||
                         place.Kind == CityMapPointOfInterestKind.UpperSummitBridge;
-                    Assert.That(place.HasFootprint, Is.EqualTo(bridgePlace || place.Kind == CityMapPointOfInterestKind.Fair ||
+                    Assert.That(place.HasFootprint, Is.EqualTo(bridgePlace || place.Kind == CityMapPointOfInterestKind.Parking || place.Kind == CityMapPointOfInterestKind.Fair ||
                         place.Kind == CityMapPointOfInterestKind.Cafe || place.Kind == CityMapPointOfInterestKind.DogPark ||
                         place.Kind == CityMapPointOfInterestKind.RidgeKiosk ||
                         place.Kind == CityMapPointOfInterestKind.GlassReturn || place.Kind == CityMapPointOfInterestKind.PigeonLoft ||

@@ -128,6 +128,8 @@ namespace BarPromenade
             CityHillsideSiteDetails.Build(frame, context.Layout, window);
             CityRidgeVegetationPlan.ForLayout(context.Layout).Build(frame, window);
             CityHillsideFurnitureWorld.Build(frame, context.Layout, window);
+            if (RidgeGaragePlan.ForLayout(context.Layout) is { } garages && window.Overlaps(garages.Bounds))
+                RidgeGarageWorld.Build(frame, garages, false);
             CityPigeonLoftWorld.Build(frame, context.Layout, false, window);
             if (CityPawnshopPlan.TryCreate(context.Layout, out var pawnshop) && window.Overlaps(pawnshop.Bounds))
                 CityPawnshopWorld.Build(frame, pawnshop, false);

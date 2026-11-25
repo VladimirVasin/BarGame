@@ -44,18 +44,19 @@ namespace BarPromenade
             {
                 var houses = new List<CityHillsideBuilding>();
                 Rect bounds = CityHillsideNeighborhoodPlan.TerrainBounds(roads[i]);
-                if (baseline != null && !(kioskCourt?.Overlaps(bounds) ?? false) && !(parking?.Bounds.Overlaps(bounds) ?? false)) { grids[i] = baseline[i]; continue; }
+                var garage = baseline == null || roads[i].Bank != CityTerraceTransportBank.West ? null : RidgeGaragePlan.ForLayout(layout);
+                if (baseline != null && garage == null && !(kioskCourt?.Overlaps(bounds) ?? false) && !(parking?.Bounds.Overlaps(bounds) ?? false)) { grids[i] = baseline[i]; continue; }
                 foreach (var house in buildings)
                     if (house.Bank == roads[i].Bank &&
                         (bounds.Overlaps(house.FoundationBounds) || bounds.Overlaps(house.ApproachBounds) || bounds.Overlaps(house.CourtBounds)))
                         houses.Add(house);
-                grids[i] = new CityHillsideGroundGrid(layout, roads[i], houses, kioskCourt, parking);
+                grids[i] = new CityHillsideGroundGrid(layout, roads[i], houses, kioskCourt, parking, garage);
             }
             return grids;
         }
 
         private CityHillsideGroundGrid(CityLayout layout, CityHillsideStreetRoute road, List<CityHillsideBuilding> houses,
-            RidgeKioskCourtPlan kioskCourt, RidgeParkingPlan parking)
+            RidgeKioskCourtPlan kioskCourt, RidgeParkingPlan parking, RidgeGaragePlan garage)
         {
             Layout = layout;
             Road = road;
@@ -93,6 +94,19 @@ namespace BarPromenade
                 zs.Add(road.GetLaneZ(i) - CityHillsideStreetRoute.OuterHalfWidth);
                 zs.Add(road.GetLaneZ(i) + CityHillsideStreetRoute.OuterHalfWidth);
             }
+            if (garage != null)
+            {
+                cuts.Add(garage.Shell); cuts.Add(garage.Stair);
+                AddBreaks(garage.Shell); AddBreaks(garage.Stair);
+                AddBreaks(garage.Apron); AddBreaks(garage.UpperPath);
+                xs.Add(garage.Bounds.xMin - 1.25f); xs.Add(garage.Bounds.xMax + 1.25f);
+                foreach (var flight in garage.Flights)
+                {
+                    zs.Add(garage.Origin.z + flight.Start.z);
+                    zs.Add(garage.Origin.z + flight.End.z);
+                }
+                zs.Add(garage.Origin.z + .55f);
+            }
             CityHillsideGroundPlan.AddPadBreaks(bounds, pads, xs, zs);
             CityHillsideGroundPlan.AddRampBreaks(bounds, ramps, xs, zs);
             kioskCourt?.AddGradeBreaks(bounds, xs, zs);
@@ -114,7 +128,8 @@ namespace BarPromenade
                     CityHillsideGroundPlan.ApplyPads(p, seams.Apply(p, verge), pads), ramps);
                 ground = talus.ApplyHeight(p, ground);
                 ground = kioskCourt?.Grade(p, ground) ?? ground;
-                heights[row * Columns + col] = parking?.Grade(p, ground) ?? ground;
+                ground = parking?.Grade(p, ground) ?? ground;
+                heights[row * Columns + col] = garage?.Grade(p, ground) ?? ground;
                 if (col + 1 == Columns || row + 1 == Rows) continue;
                 var center = new Vector2((p.x + x[col + 1]) * .5f, (p.y + z[row + 1]) * .5f);
                 surfaces[row * (Columns - 1) + col] = Classify(center);
@@ -123,6 +138,7 @@ namespace BarPromenade
             Surface Classify(Vector2 p)
             {
                 foreach (Rect cut in cuts) if (cut.Contains(p)) return Surface.Cut;
+                if (garage?.IsPaved(p) == true) return Surface.Concrete;
                 foreach (var house in houses) if (house.TrySampleApproach(p, out _)) return Surface.Concrete;
                 return Surface.Earth;
             }

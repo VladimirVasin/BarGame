@@ -826,7 +826,7 @@ namespace BarPromenade.Tests.PlayMode
         }
 
 #if UNITY_EDITOR
-        private static void AssertSignReadsFromStreet(Transform sign, Renderer print, bool plainEdges = false)
+        internal static void AssertSignReadsFromStreet(Transform sign, Renderer print, bool plainEdges = false)
         {
             var mesh = print.GetComponent<MeshFilter>().sharedMesh;
             using var data = UnityEditor.MeshUtility.AcquireReadOnlyMeshData(mesh);

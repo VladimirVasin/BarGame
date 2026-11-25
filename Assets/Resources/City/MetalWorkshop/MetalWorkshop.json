@@ -1,0 +1,17 @@
+{
+  "unit": "metre",
+  "base": "industrial-prototype-04",
+  "window_center": [
+    -7.75,
+    1.98,
+    0.5
+  ],
+  "window_clear": [
+    3.2,
+    1.8
+  ],
+  "room_depth": 3.37,
+  "roof_teeth": 3,
+  "mesh_sha256": "47597de2bffcf9b755c8bd930fe1bbbaf0f6f1bb8240fe4c26c1cf917eb642fa",
+  "wire_sha256": "0518eb1e29d6d8b919254c9f53f8f369361140bd7378f3f41f5d25f24535da15"
+}

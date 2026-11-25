@@ -305,6 +305,13 @@ namespace BarPromenade
                         industrialRangeLimits[index] = 10f;
                         industrialSpotAngles[index] = 108f;
                         industrialInnerSpotAngles[index] = 80f; break;
+                    case CityFishCannerySign.ClockPurpose:
+                        industrialPurposes[index] = CityIndustrialPurpose.CompressorHouse;
+                        industrialUseShadows[index] = true;
+                        industrialIntensityScales[index] = 2.2f;
+                        industrialRangeLimits[index] = 6.4f;
+                        industrialSpotAngles[index] = 124f;
+                        industrialInnerSpotAngles[index] = 88f; break;
                     case "RidgeBench":
                         industrialPurposes[index] = CityIndustrialPurpose.CompressorHouse;
                         industrialUseShadows[index] = true;
@@ -373,7 +380,8 @@ namespace BarPromenade
                 }
                 PracticalLightProfile profile = GetIndustrialProfile(industrialPurposes[index]);
                 // The court and sign lights use the visible lenses for glow.
-                if (purposeName == "RidgeKioskInterior" || purposeName == "GlassReturnWindow" || purposeName == "PawnshopSignLeft" ||
+                if (purposeName == CityFishCannerySign.ClockPurpose || purposeName == "RidgeKioskInterior" ||
+                    purposeName == "GlassReturnWindow" || purposeName == "PawnshopSignLeft" ||
                     purposeName == "PawnshopSignRight" || purposeName == "GlassReturnSignLeft" ||
                     purposeName == "GlassReturnSignRight" || purposeName == "KioskSign" ||
                     (RidgeKioskCourtWorld.IsLampAnchor(taskAnchors[index].name) ||

@@ -118,7 +118,7 @@ def equipment_bench(x: float, y: float, bottom: float = .48) -> Geometry:
     return merge(pieces)
 
 
-def industrial_prototype(variant: int) -> PrototypeSpec:
+def industrial_prototype(variant: int, *, inspection_bay: bool = False) -> PrototypeSpec:
     if not 1 <= variant <= 8:
         raise ValueError("Industrial variant must be 1..8")
     purpose = PURPOSES[variant - 1]
@@ -197,11 +197,28 @@ def industrial_prototype(variant: int) -> PrototypeSpec:
                                          (end - start, 1.06, .48)))
 
     if variant == 4:
-        primary.append(facade_prism(recessed_outline(-hw, -1.8, .42), 0., 4.2))
+        wing = recessed_outline(-hw, -1.8, .42)
+        upper = ((-hw, -hd), (hw, -hd), (hw, hd), (-hw, hd))
+        if inspection_bay:
+            # Carve the room out of the left wing all the way to its roof well.
+            # The wall around the real window is a 200 mm shell. All other
+            # sides use the original outlines, facade charts and entrance cuts.
+            def room_notch(back):
+                return ((-hw, 2.85), (back, 2.85), (back, -1.85), (-hw, -1.85))
+            wing += room_notch(-4.18)
+            upper += room_notch(-2.53)
+            def outer_wall(start, end, bottom, top):
+                primary.append(trim_box((-hw + .10, (start + end) / 2, (bottom + top) / 2),
+                                        (.20, end - start, top - bottom), .011))
+            outer_wall(-1.85, 2.85, 0., 1.08)
+            outer_wall(-1.85, -1.10, 1.08, 2.88)
+            outer_wall(2.10, 2.85, 1.08, 2.88)
+            outer_wall(-1.85, 2.85, 2.88, body_top)
+        primary.append(facade_prism(wing, 0., 4.2))
         staff_bay(recessed_outline(1.8, hw, .09), front, 4.2)
         apron(-hw + .08, -1.88)
         apron(1.88, hw - .08)
-        primary.append(facade_prism(((-hw, -hd), (hw, -hd), (hw, hd), (-hw, hd)), 4.2, body_top))
+        primary.append(facade_prism(upper, 4.2, body_top))
     elif variant == 3:
         polygon = ((-hw, -hd), (-hw + 5., -hd), (-hw + 5., 0.),
                    (hw, 0.), (hw, hd), (-hw, hd))

@@ -1,0 +1,56 @@
+{
+  "design_id": "city_clock_fish_sign",
+  "print_size": [
+    5.7,
+    3.8
+  ],
+  "model": {
+    "name": "ClockFishSign",
+    "bounds_min": [
+      -2.92,
+      -1.97,
+      0.0
+    ],
+    "bounds_max": [
+      2.92,
+      2.405,
+      2.07535
+    ],
+    "anchors": [
+      {
+        "name": "ANCHOR_AimLeft",
+        "position": [
+          -1.41,
+          -0.52,
+          0.163
+        ]
+      },
+      {
+        "name": "ANCHOR_AimRight",
+        "position": [
+          1.41,
+          -0.52,
+          0.163
+        ]
+      },
+      {
+        "name": "ANCHOR_FloodLeft",
+        "position": [
+          -1.41,
+          2.09283,
+          1.86328
+        ]
+      },
+      {
+        "name": "ANCHOR_FloodRight",
+        "position": [
+          1.41,
+          2.09283,
+          1.86328
+        ]
+      }
+    ],
+    "triangles": 416,
+    "geometry_signature": "fd1f23dabe2eae02b01ad3e060ba03024717dcfb7eb5981784f71d8a84948953"
+  }
+}

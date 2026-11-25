@@ -142,12 +142,12 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Bus stop lighting | City/Home perimeter strip/apron;fixed daylight;bounded soft-shadow fades. | `CityBusStopLighting`, `CityNightAtmosphere` | Current |
 | Pedestrian bench rests | Eligible walkers reserve, sit, rest, stand and resume their route. | `CityBenchRest{Plan,Planner}`, `CityBenchNpcRestController` | Current |
 | City bus passengers | Two doors/10seats/3standing;remote. Gap:fares/live tracking. | `CityBusRide{Plan,Controller}`, `CityBusStopWait{Plan,Planner}` | Partial |
-| City visual variants | Deterministic variants share assets and simple semantic colliders. | `CityDecoration{Descriptor,Plan,Planner,Validator,WorldBuilder}`, `CityDecorationCollisionCatalog` | Current |
+| City visual variants | Shared models and colliders, one glazed fabrication hall. | `CityDecoration*`, `CityMetalWorkshop` | Current |
 | Road-edge fences | Planned fences leave road and waterside openings clear. | `RoadFence{Planner,Plan,WorldBuilder}`, `CitySurfaceDescriptor` | Current |
 | Shops | 3 kiosks, Ridge talk. Shop shelves show offer prices; shared browser/3D receipt. | `RidgeKiosk*`, `IWorldShelfMenu`, `SupermarketShelfShop*` | Current |
 | Kiosk courts | Ridge talks; Residential seats/cleanup; Industrial bottle return. | `RidgeKioskCourt*`, `DistrictKioskCourt*` | Current |
 | Pawnshop | Island pavilion/secure clerk. Gap:trade stubs have no transactions. | `CityPawnshop*`, `PawnshopInterior*`, `PawnshopTradeController` | Partial |
-| Ridge workshops | Cobbler11–20:30/home;glass08–23/switch/grille. | `CityCobbler*`,`CityGlassReturn*` | Current |
+| Ridge workshops | Cobbler11–20:30, glass08–23, garage roof/repair bay. | `CityCobbler*`,`CityGlassReturn*`,`RidgeGarage*` | Current |
 
 | Supermarket cashier | Wall checkout/decor snacks;anchored palms/light;ordinary cashier,bulging 3D face/shared rig. | `SupermarketCashier{Provider,AssetRegistry,Factory,Presentation,Actor,SurveillanceState,BlinkState,Interaction}` | Current |
 | Supermarket CCTV corner cameras | Four authored corner cameras follow the hero without gameplay surveillance. | `SupermarketInteriorAssetRegistry`, `SupermarketSecurityCamera{,WorldBuilder}` | Current |

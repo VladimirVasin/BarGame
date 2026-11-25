@@ -1834,6 +1834,13 @@ namespace BarPromenade
                 DrawGroundQuad(glass.Footprint, ResidentialBuilding);
                 DrawGroundQuad(glass.YardFootprint, PublicPlaceLand);
             }
+            if (RidgeGaragePlan.ForLayout(controller.Layout) is { } garage)
+            {
+                DrawSolidRect(ProjectWorldRect(projection, garage.Apron), PublicPlaceLand);
+                DrawSolidRect(ProjectWorldRect(projection, garage.UpperPath), PublicPlaceLand);
+                DrawSolidRect(ProjectWorldRect(projection, garage.Stair), PublicPlaceLand);
+                DrawSolidRect(ProjectWorldRect(projection, garage.Shell), ResidentialBuilding);
+            }
             var cobbler = CityCobblerSitePlan.ForLayout(controller.Layout);
             if (cobbler.IsEnabled) DrawGroundQuad(cobbler.Footprint, ResidentialBuilding);
             void DrawGroundQuad(Vector2[] polygon, Color color)
@@ -3898,6 +3905,8 @@ namespace BarPromenade
                 case CityMapPointOfInterestKind.Pawnshop:
                 case CityMapPointOfInterestKind.PigeonLoft:
                 case CityMapPointOfInterestKind.GlassReturn:
+                case CityMapPointOfInterestKind.RidgeGarage:
+                case CityMapPointOfInterestKind.RidgeGarageRoof:
                 case CityMapPointOfInterestKind.Cobbler:
                     RetroUiTheme.StrokeRect(new Rect(center.x - halfSize * .76f, center.y - halfSize * .48f,
                         halfSize * 1.52f, halfSize * 1.4f), width, color);

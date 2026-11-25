@@ -305,7 +305,7 @@ namespace BarPromenade
                 if (retained.HasValue && !retained.Value.Overlaps(site.Bounds)) continue;
                 // Finished court/parking surfaces replace conflicting planting and
                 // old retaining details; the original frontage survey stays stable.
-                if (IsClearedForCourt(site, court) || (RidgeParkingPlan.ForLayout(layout)?.Clears(site) ?? false)) continue;
+                if (RidgeGaragePlan.ForLayout(layout)?.Bounds.Overlaps(site.Bounds) == true || IsClearedForCourt(site, court) || (RidgeParkingPlan.ForLayout(layout)?.Clears(site) ?? false)) continue;
                 int i = (int)site.Part;
                 var frame = new GameObject(Names[i]).transform;
                 frame.SetParent(root, false);

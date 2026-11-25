@@ -36,6 +36,19 @@ namespace BarPromenade
                 Connect(prefix + "summit-crossing", right, left, CityPedestrianLinkKind.Crosswalk, StreetHeight);
                 foreach (var stair in access.Shortcuts)
                     if (stair.Bank == road.Bank) AddStair(stair, prefix + "stair:" + stair.LowerLane, pavement, pavement);
+                if (road.Bank == CityTerraceTransportBank.West && RidgeGaragePlan.ForLayout(layout) is { } garage)
+                {
+                    var path = garage.Path;
+                    const string id = "hill:West:garage";
+                    int from = Gate(id + ":lower", pavement, path[0]);
+                    foreach (Rect floor in new[] { garage.Apron, garage.Stair, garage.Shell, garage.UpperPath })
+                        graph.AddNavigationPolygon(CityRoadPolygon.Rectangle(floor));
+                    for (int i = 0; i < path.Count - 1; i++)
+                        from = JoinPoint(id + ":" + i, from, path[i], Height, CityPedestrianLinkKind.Stair);
+                    int to = Gate(id + ":upper", pavement, path[path.Count - 1]);
+                    Connect(id + ":upper-join", from, to, CityPedestrianLinkKind.Stair, Height);
+                    float Height(Vector2 p) => garage.Bounds.Contains(p) ? garage.SurfaceTop(p) : StreetHeight(p);
+                }
                 foreach (var house in district.Buildings)
                     if (house.Bank == road.Bank) AddHouse(house, prefix, pavement);
 

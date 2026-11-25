@@ -441,9 +441,9 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   E glass return08–23;switch→cabin light/grille;sign/flood fixed.
   Raised yard grass-free/map outside;spill.12/day≥⅔/Soft/opaque.
   Paved path from east footway; asphalt at window and staff exit follows grade.
-  Ridge homes: plinths keyed into banks/court; side rails behind footway.
-  Home verges:soil/wet asphalt/turf/gravel/stone. W:drains;E:kerbs/scrapers.
-  Home soffit lamp/timber above deck. East `(21,-7)` clears walk.
+  Ridge plinths meet banks/court, rails behind footway. Home: soil/wet asphalt/turf/gravel/stone,
+  W drains/E kerbs/scrapers; soffit lamp/timber above deck, east (21,-7) clears walk.
+  West garages: roof/bay arrivals. Opal ceiling light fills the bay. Bench, engine and entry lights follow City time.
   West `(-23,-7)`: «Хвост и Чешуя», two floods. Poles→stairs/bridge footways;
   covered lamps below;rock/gravel under bridge bearings.
   Kiosk lens/two soft spots→seller/shelves/street; Ridge three canopy spots.
@@ -1390,9 +1390,9 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   three-loop idle bank. Fifteen shell, terrace, barrel, bedding and clutter
   renderers reuse measured City surface albedos through property blocks.
   Tilted cemetery monuments intentionally retain their legacy visual builder;
-- Four public sites reserve entire blocks and street access clear of ordinary buildings, bar, home and landmarks.
-  The working bank has a paved court with a cast standpipe, wheel, trough and grated drains. A public passage skirts the cannery.
-  The residential bank has the drying yard and last-route island.
+- Four public blocks reserve street access clear of buildings and landmarks.
+  West: standpipe/trough, cannery passage, glazed hall/hoist, lit fish-tin print at the clock.
+  East: drying yard and last-route island.
   Each has a distinct silhouette/movement grammar; Home reconstructs nearby
   descriptors locally. On the island, radial flags meet a raised curb. Folded canopy sheets reveal
   bare ribs. A chipped mast plate, two-legged departure board with empty tracks and torn bills,
@@ -1753,7 +1753,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   fair/post/docks/arch/church/cafe/laundry/dog yard/terraces/kiosks/pawnshop/descent),bounded localized legend/
   selectable places. Public lots/fair use open ground,not buildings;locations come
   from validated memoised plans/port.
-  City uses the live scheme when parking art needs registration.
+  City uses the live scheme for garages, stairs and parking courts.
   Village uses the worn tourist brochure with a red-crossed resort.
   LodgeApproach arrival;no3D change. Plan/RU SHA+bounds/size guard
   stale art;other seeds/MountainRoad→schematic. City SHA excludes Village

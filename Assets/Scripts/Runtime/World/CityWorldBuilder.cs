@@ -562,6 +562,8 @@ namespace BarPromenade
                 foreach (var collider in loft.GetComponentsInChildren<BoxCollider>())
                     if (collider.isTrigger && collider.name == "Pigeon loft rain shelter") rainShelters.Add(collider);
 
+            if (RidgeGaragePlan.ForLayout(layout) is { } garages)
+                rainShelters.Add(RidgeGarageWorld.Build(parent, garages, true));
             RidgeParkingWorld.Build(parent, layout, true);
             if (CityPawnshopPlan.TryCreate(layout, out var pawnshop))
             {
@@ -1473,11 +1475,13 @@ namespace BarPromenade
 
             if (lot.IsOrdinaryBuilding)
             {
-                CityBuildingPrototypeWorldBuilder.BuildCity(
+                var registry = CityBuildingPrototypeWorldBuilder.BuildCity(
                     building,
                     lot,
                     citySeed,
                     foundationDepth);
+                CityMetalWorkshop.Build(layout, lot, registry);
+                CityFishCannerySign.BuildClock(layout, lot, registry);
                 return;
             }
 

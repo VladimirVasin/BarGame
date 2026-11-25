@@ -687,6 +687,11 @@ namespace BarPromenade
             // Streets, courts and earth form one union before capsule erosion.
             // Adjoining soil is physical terrain, not an invisible road fence.
             area.AddPolygons(CityHillsideGroundPlan.ForLayout(layout).WalkablePolygons);
+            if (RidgeGaragePlan.ForLayout(layout) is { } garage)
+            {
+                area.Add(garage.Shell); area.Add(garage.Stair);
+                area.Add(garage.Apron); area.Add(garage.UpperPath);
+            }
             var hillsideStreets = CityHillsideStreetPlan.ForLayout(layout).Routes;
             foreach (CityHillsideStreetRoute route in hillsideStreets)
                 area.AddPolygons(route.WalkablePolygons);

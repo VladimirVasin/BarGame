@@ -9,7 +9,6 @@ namespace BarPromenade
         private static GameObject entryRailModel;
         private static readonly GameObject[] galleries = new GameObject[5];
         private static readonly Vector2Int FishSignHouse = new(-23, -7);
-        private const string FishSignResource = "City/RidgeFishSign/";
 
         internal static void Build(Transform root, CityHillsideBuilding house, CityBuildingAssetRegistry building)
         {
@@ -18,7 +17,7 @@ namespace BarPromenade
             int variant = house.Lot.BuildingVariant;
             Vector3 envelope = CityBuildingAssetProvider.GetExpectedEnvelope(house.Lot.District, variant);
             if (house.Lot.Cell == FishSignHouse)
-                BuildFishSign(building, envelope);
+                CityFishCannerySign.BuildRidge(building, envelope);
             if (house.HasGuardedEntry)
             {
                 if (entryRailModel == null)
@@ -102,50 +101,6 @@ namespace BarPromenade
                 volume.gameObject.layer = 2;
                 volume.isTrigger = true;
                 root.gameObject.AddComponent<CityTerraceWorldAnchors>().Initialize(volume);
-            }
-        }
-
-        private static void BuildFishSign(CityBuildingAssetRegistry building, Vector3 envelope)
-        {
-            var model = Resources.Load<GameObject>(FishSignResource + "RidgeFishSign");
-            var print = Resources.Load<Texture2D>(FishSignResource + "RidgeFishSignAlbedo");
-            if (model == null || print == null)
-                throw new InvalidOperationException("The west Ridge gable sign needs its imported frame and print.");
-
-            Transform wall = building.transform;
-            var sign = UnityEngine.Object.Instantiate(model, wall, false);
-            sign.name = "Ridge fish cannery advertisement";
-            sign.transform.localPosition = new Vector3(envelope.x * .5f, 8.55f, -.6f);
-            sign.transform.localRotation = Quaternion.LookRotation(Vector3.right, Vector3.up);
-            foreach (Renderer part in sign.GetComponentsInChildren<Renderer>())
-            {
-                switch (part.name)
-                {
-                    case "PrintedFace":
-                        part.sharedMaterial = RuntimePrimitiveFactory.DefaultMaterial;
-                        var properties = new MaterialPropertyBlock();
-                        properties.SetTexture("_BaseMap", print);
-                        properties.SetColor("_BaseColor", Color.white);
-                        properties.SetFloat("_Smoothness", .06f);
-                        part.SetPropertyBlock(properties);
-                        break;
-                    case "FloodDiffusers":
-                        part.sharedMaterial = CityNightResources.EmissiveMaterial;
-                        CityNightGlowRegistry.Register(part, new Color(1.6f, 1.68f, 1.46f));
-                        break;
-                    default:
-                        part.sharedMaterial = CityPortAssetProvider.GetSurfaceMaterial("SteelDark");
-                        CitySurfaceLibrary.ApplyRenderer(part);
-                        break;
-                }
-            }
-
-            foreach (string side in new[] { "Upper", "Lower" })
-            {
-                Transform lens = CityResidentialCourtyardAssetProvider.FindPart(sign.transform, "ANCHOR_Flood" + side);
-                Transform aim = CityResidentialCourtyardAssetProvider.FindPart(sign.transform, "ANCHOR_Aim" + side);
-                lens.name = CityNightAtmosphere.IndustrialTaskLightPrefix + "RidgeFishSign";
-                lens.rotation = Quaternion.LookRotation(aim.position - lens.position, wall.up);
             }
         }
 

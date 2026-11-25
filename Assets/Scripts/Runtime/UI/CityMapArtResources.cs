@@ -288,6 +288,14 @@ namespace BarPromenade
                         foreach (Vector2 point in polygon) Point(writer, point);
                     Point(writer, glass.Origin); Point(writer, glass.YardOrigin); Point(writer, glass.Approach);
                 }
+                if (RidgeGaragePlan.ForLayout(layout) is { } garage)
+                {
+                    writer.Write(RidgeGaragePlan.StableId);
+                    foreach (Rect part in new[] { garage.Shell, garage.Stair, garage.Apron, garage.UpperPath })
+                    { Point(writer, part.min); Point(writer, part.max); }
+                    foreach (Vector3 p in garage.Path) Point(writer, p);
+                    Point(writer, garage.LowerArrival); Point(writer, garage.RoofArrival);
+                }
                 var cobbler = CityCobblerSitePlan.ForLayout(layout);
                 if (cobbler.IsEnabled)
                 {

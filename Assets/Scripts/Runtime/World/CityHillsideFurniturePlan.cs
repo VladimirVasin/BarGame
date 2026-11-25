@@ -238,6 +238,7 @@ namespace BarPromenade
                 quarter = CityHillsideQuarterPlan.ForLayout(layout);
                 housing = CityHillsideNeighborhoodPlan.ForLayout(layout);
                 if (quarter.Links.Count == 0) return;
+                if (RidgeGaragePlan.ForLayout(layout) is { } garage) reserved.Add(garage.Bounds);
                 foreach (var house in housing.AllBuildings)
                 { reserved.Add(Expand(house.FoundationBounds, .65f)); reserved.Add(Expand(house.ApproachBounds, .45f));
                     reserved.Add(Expand(house.CourtBounds, .45f)); }

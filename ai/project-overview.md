@@ -88,7 +88,7 @@ Repair/publication: [../tools/README.md](../tools/README.md).
   Hero:wounds/no detach;bar:hit/parry;skin/aim.
   Gap:pierce/balance. [World](current-world.md)
 - City:west work/east homes3–5storeys+park;144lots/courts/wings.
-  Hillside yards and lit bench paths share plans. Street bins and public phones use surveyed approaches and first-person hero contacts.
+  Ridge yards, garage roof/bay and bench paths share plans. Street bins/phones retain surveyed approaches and hero contacts.
   2 buses/ring, transfer stairs, stop zebras. 10 seats+3 stands.
   City NPC192/≤36+12 ambient, Home5/2, dogs3/owners2.
   Eight industrial types with staff doors/shifts. Visible mains feed City/Ridge. Sewers reach the east beach.

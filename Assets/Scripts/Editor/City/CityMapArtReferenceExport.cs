@@ -317,6 +317,13 @@ namespace BarPromenade.Editor
                 var fence = new List<Vector2>(glass.YardFootprint) { glass.YardFootprint[0] };
                 Line("glass-return:fence", "fence", .15f, fence);
             }
+            if (RidgeGaragePlan.ForLayout(layout) is { } garage)
+            {
+                Poly("ridge-garages:forecourt", "terrace-court", CityRoadPolygon.Rectangle(garage.Apron));
+                Poly("ridge-garages:upper-path", "promenade", CityRoadPolygon.Rectangle(garage.UpperPath));
+                Poly("ridge-garages:building", "building", CityRoadPolygon.Rectangle(garage.Shell));
+                Poly("ridge-garages:stairs", "terrace-landing", CityRoadPolygon.Rectangle(garage.Stair));
+            }
             var cobbler = CityCobblerSitePlan.ForLayout(layout);
             if (cobbler.IsEnabled)
                 Poly(CityCobblerSitePlan.StableId + ":building", "shop-building", cobbler.Footprint);

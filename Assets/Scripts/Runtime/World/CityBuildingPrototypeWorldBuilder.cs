@@ -108,6 +108,8 @@ namespace BarPromenade
                     cityPose);
             ApplyPose(registry.transform, homePose);
             ApplyAppearance(registry, lot, context.Layout.Seed);
+            CityMetalWorkshop.Build(context.Layout, lot, registry);
+            CityFishCannerySign.BuildClock(context.Layout, lot, registry);
             BuildFoundation(
                 parent,
                 registry,

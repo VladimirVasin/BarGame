@@ -44,7 +44,9 @@ namespace BarPromenade
         PigeonLoft = 25,
         GlassReturn = 26,
         Cobbler = 27,
-        Parking = 28
+        Parking = 28,
+        RidgeGarage = 29,
+        RidgeGarageRoof = 30
     }
 
     public readonly struct CityMapPointOfInterest
@@ -990,6 +992,10 @@ namespace BarPromenade
                 case CityMapPointOfInterestKind.PawnshopDescent:
                     key = "map.poi.pawnshop_descent";
                     return true;
+                case CityMapPointOfInterestKind.RidgeGarage:
+                    key = "map.poi.ridge_garage"; return true;
+                case CityMapPointOfInterestKind.RidgeGarageRoof:
+                    key = "map.poi.ridge_garage_roof"; return true;
                 case CityMapPointOfInterestKind.Parking:
                     key = "map.poi.parking";
                     return true;
@@ -1616,6 +1622,13 @@ namespace BarPromenade
             if (glass.IsEnabled)
                 pointsOfInterest.Add(new CityMapPointOfInterest(CityGlassReturnSitePlan.StableId, CityMapPointOfInterestKind.GlassReturn,
                     CityDistrictKind.Residential, glass.Approach + Vector3.up * rootOffset, glass.Bounds, true));
+            if (RidgeGaragePlan.ForLayout(Layout) is { } garage)
+            {
+                pointsOfInterest.Add(new CityMapPointOfInterest(RidgeGaragePlan.StableId, CityMapPointOfInterestKind.RidgeGarage,
+                    CityDistrictKind.Residential, garage.LowerArrival + Vector3.up * rootOffset));
+                pointsOfInterest.Add(new CityMapPointOfInterest(RidgeGaragePlan.StableId + "-roof", CityMapPointOfInterestKind.RidgeGarageRoof,
+                    CityDistrictKind.Residential, garage.RoofArrival + Vector3.up * rootOffset));
+            }
             var cobbler = CityCobblerSitePlan.ForLayout(Layout);
             if (cobbler.IsEnabled)
                 pointsOfInterest.Add(new CityMapPointOfInterest(CityCobblerSitePlan.StableId, CityMapPointOfInterestKind.Cobbler,
