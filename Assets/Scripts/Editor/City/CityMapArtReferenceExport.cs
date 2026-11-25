@@ -460,7 +460,7 @@ namespace BarPromenade.Editor
                     Line(id + (x == bridge.WestBearingWorld.x ? ":west-bearing" : ":east-bearing"), "bridge-joint", .22f,
                         new[] { new Vector2(x, deck.yMin), new Vector2(x, deck.yMax) });
             }
-            foreach (CityHillsideShortcut stair in CityHillsideAccessPlan.ForLayout(layout).AllStairs)
+            foreach (CityHillsideShortcut stair in CityHillsideAccessPlan.ForLayout(layout).MappedStairs)
             {
                 string id = "hill-stair:" + stair.Id;
                 for (int i = 0; i < stair.WalkableBounds.Count; i++)

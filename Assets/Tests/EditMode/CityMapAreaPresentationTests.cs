@@ -961,12 +961,14 @@ namespace BarPromenade.Tests.EditMode
                     CityMapPointOfInterestKind.PawnshopDescent,
                     CityMapPointOfInterestKind.GlassReturn,
                     CityMapPointOfInterestKind.RidgeGarage, CityMapPointOfInterestKind.RidgeGarageRoof,
-                    CityMapPointOfInterestKind.Cobbler
+                    CityMapPointOfInterestKind.Cobbler, CityMapPointOfInterestKind.WorkshopWalk,
+                    CityMapPointOfInterestKind.CulvertWalk, CityMapPointOfInterestKind.GableWalk
                 };
                 var expectedIds = new[]
                 {
                     "fair", "eastern-post", "docks", "arch", "church-entrance", "city-cafe", "laundry", "industrial-parking", "residential-parking", "dog-park", "terrace-courts", "terrace-underpass", "terrace-lower-court", "terrace-shortcut", "terrace-landing", "residential-summit", "industrial-summit", "upper-shared-court",
-                    "upper-court-bridge", "upper-summit-bridge", "ridge-kiosk", "residential-kiosk", "industrial-kiosk", "pawnshop", "ridge-pigeon-loft", "pawnshop-descent", "ridge-glass-return", RidgeGaragePlan.StableId, RidgeGaragePlan.StableId + "-roof", CityCobblerSitePlan.StableId
+                    "upper-court-bridge", "upper-summit-bridge", "ridge-kiosk", "residential-kiosk", "industrial-kiosk", "pawnshop", "ridge-pigeon-loft", "pawnshop-descent", "ridge-glass-return", RidgeGaragePlan.StableId, RidgeGaragePlan.StableId + "-roof", CityCobblerSitePlan.StableId,
+                    CityHillsideShortcut.Workshop, CityHillsideShortcut.Culvert, CityHillsideShortcut.Gable
                 };
                 var expectedDistricts = new[]
                 {
@@ -999,6 +1001,7 @@ namespace BarPromenade.Tests.EditMode
                     CityDistrictKind.Residential,
                     CityDistrictKind.Residential,
                     CityDistrictKind.Residential,
+                    CityDistrictKind.Residential, CityDistrictKind.Industrial, CityDistrictKind.Industrial,
                     CityDistrictKind.Residential
                 };
                 int lotCount = layout.DistrictPointsOfInterest.Count;
@@ -1056,6 +1059,11 @@ namespace BarPromenade.Tests.EditMode
                 var cobbler = CityCobblerSitePlan.ForLayout(layout);
                 Assert.That(cobbler.IsEnabled, Is.True);
                 var garages = RidgeGaragePlan.ForLayout(layout);
+                var serviceWalks = CityServiceStairPlan.Lowland(layout);
+                namedArrivals.Add(CityHillsideShortcut.Workshop, ("Площадка металлоцеха", serviceWalks[0].Floors[1].Center));
+                namedArrivals.Add(CityHillsideShortcut.Culvert, ("Полка у водовыпуска", serviceWalks[1].Floors[0].Center));
+                var gableFloors = CityHillsideAccessPlan.ForLayout(layout).GableCourt.Floors;
+                namedArrivals.Add(CityHillsideShortcut.Gable, ("Лестница у торца", gableFloors[gableFloors.Count - 2].Center));
                 namedArrivals.Add(RidgeGaragePlan.StableId, ("Гаражи на Гребне", garages.LowerArrival));
                 namedArrivals.Add(RidgeGaragePlan.StableId + "-roof", ("Проход по крыше гаражей", garages.RoofArrival));
                 foreach (var lot in DistrictParkingPlan.ForLayout(layout))

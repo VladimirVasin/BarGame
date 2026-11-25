@@ -5,7 +5,9 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-25
 
-The west Ridge garages connect two streets over a sheltered repair bay. An opal ceiling lamp lights the bay walls, with broad overlapping beams at the bench, motor and entrance. One fabrication hall has wired roof glazing and a street window onto the hoist. The clock gable carries a second matte cannery print with one head and one tail. `LiveCity_GarageRoofAndWorkshopHaveSeparateArrivals` walked both levels and boarded from the public pavement. Matched night frames showed the garage diffuser lifting the side walls, the entry lamp reaching the adjacent gate and both clock floodlights illuminating the lettering and tin. The ImageGen sheet omitted the stair connection. City uses the surveyed scheme.
+The west Ridge garages connect two streets over a sheltered repair bay. An opal ceiling lamp lights the bay walls, with broad overlapping beams at the bench, motor and entrance. One fabrication hall has wired roof glazing and a street window onto the hoist. The clock gable carries a second matte cannery print with one head and one tail. `LiveCity_GarageRoofAndWorkshopHaveSeparateArrivals` walked both levels and boarded from the public pavement. Matched night frames showed the garage diffuser lifting the side walls, the entry lamp reaching the adjacent gate and both clock floodlights illuminating the lettering and tin. The garage ImageGen sheet omitted its stair connection.
+
+Workshop and outfall steps connect their street approaches. A wider east gable flight opens into the existing porch. Lower Court has a repaired nosing and open return rail. Matching night views showed the work lights reaching nosings, the floor grate and landing turns. `LiveCity_ServiceStairsJoinBothEndsAndKeepLandingArrivals` exercised return walks, map arrivals, an opposing resident and public boarding at every stop. The final charcoal sheet displaced the outfall steps and omitted the loading walk. The map uses the updated survey.
 
 ## 2026-11-24
 

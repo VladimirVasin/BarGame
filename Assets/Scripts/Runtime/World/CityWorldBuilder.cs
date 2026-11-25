@@ -400,6 +400,7 @@ namespace BarPromenade
             CityResidentialCourtyardLife courtyardLife = residentialCourtyardRoot.AddComponent<CityResidentialCourtyardLife>();
             courtyardLife.Initialize(residentialCourtyards, residentialCourtyardRoot.transform);
             CityTerracePilotWorld.Build(world, terraces);
+            CityTerracePilotWorld.BuildServiceWalks(world, layout);
             // Compose under the common surface owner until the joint meshes,
             // grass and lighting have read both sides of the approaches.
             Transform ridge = world;

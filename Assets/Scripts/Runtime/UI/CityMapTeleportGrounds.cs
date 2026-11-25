@@ -218,6 +218,8 @@ namespace BarPromenade
                     kiosk is RidgeKioskSitePlan { Court: { } court } && court.TrySurface(worldXZ, out top)) return true;
             if (terraces.ContainsFootprint(worldXZ))
                 return terraces.TrySampleStandingTop(worldXZ, 0f, out top);
+            foreach (var walk in CityServiceStairPlan.Lowland(layout))
+                if (walk.TrySampleTop(worldXZ, out top)) return true;
             foreach (CityHillsideShortcut stair in CityHillsideAccessPlan.ForLayout(layout).AllStairs)
                 if (stair.TrySampleTop(worldXZ, out top)) return true;
             foreach (CityHillsideBuilding building in CityHillsideNeighborhoodPlan.ForLayout(layout).AllBuildings)

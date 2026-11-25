@@ -12,9 +12,13 @@ namespace BarPromenade.Tests.PlayMode
         public IEnumerator LiveCity_SharedStairPassesPlayerAndOpposingResidents()
         {
             yield return LoadProductionCity();
+            yield return MeetResidentOnStair(CityHillsideAccessPlan.ForLayout(city.Layout).SharedCourt, true);
+        }
+
+        private IEnumerator MeetResidentOnStair(CityHillsideShortcut stair, bool exerciseResidentPair)
+        {
             var director = city.Pedestrians;
             var graph = city.PedestrianPlan;
-            var stair = CityHillsideAccessPlan.ForLayout(city.Layout).SharedCourt;
             var flight = stair.Flights[0];
             var centreline = new CityRoadPath(stair.RouteWorld.Select(p => new Vector2(p.x, p.z)).ToArray());
             int firstWaypoint = stair.RouteWorld.ToList().IndexOf(flight.End);
@@ -28,7 +32,7 @@ namespace BarPromenade.Tests.PlayMode
             try
             {
                 yield return MeetOnFlight(true);
-                yield return MeetOnFlight(false);
+                if (exerciseResidentPair) yield return MeetOnFlight(false);
             }
             finally
             {

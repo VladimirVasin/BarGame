@@ -260,7 +260,7 @@ namespace BarPromenade
                     foreach (var part in yard.Parts)
                         if (part.Kind == CityFringeYardPartKind.DrainCover || part.Kind == CityFringeYardPartKind.WheelRut)
                             ReserveRect(part.Footprint);
-            foreach (var stair in CityHillsideAccessPlan.ForLayout(city).AllStairs)
+            foreach (var stair in CityHillsideAccessPlan.ForLayout(city).MappedStairs)
                 foreach (Rect piece in stair.WalkableBounds) ReserveRect(piece);
             foreach (var pocket in CityHillsideBenchPocketPlan.ForLayout(city).Pockets)
                 foreach (var piece in pocket.SurfacePolygons) Reserve(piece);

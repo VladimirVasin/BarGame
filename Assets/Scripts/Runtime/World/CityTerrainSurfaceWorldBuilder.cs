@@ -687,6 +687,9 @@ namespace BarPromenade
             var patches = new List<Rect> { surface.WorldBounds };
             foreach (Rect cut in CityTerraceDistrictPlan.ForLayout(layout).GroundCuts)
                 SubtractFromPatches(patches, cut, surface.WorldBounds);
+            foreach (var stair in CityServiceStairPlan.Lowland(layout))
+                if (stair.Bounds.Overlaps(surface.WorldBounds))
+                    foreach (Rect cut in stair.WalkableBounds) SubtractFromPatches(patches, cut, surface.WorldBounds);
             foreach (Rect cut in CityBuildingEntrancePlan.CachedWorkFloorCuts(layout, surface))
                 SubtractFromPatches(patches, cut, surface.WorldBounds);
             // Runtime holes come out first. A dug grave is a rectangle
@@ -1302,6 +1305,8 @@ namespace BarPromenade
             var cuts = new List<Rect>();
             if (excavations != null) cuts.AddRange(excavations);
             cuts.AddRange(CityTerraceDistrictPlan.ForLayout(layout).GroundCuts);
+            foreach (var stair in CityServiceStairPlan.Lowland(layout))
+                if (stair.Bounds.Overlaps(surface.WorldBounds)) cuts.AddRange(stair.WalkableBounds);
             cuts.AddRange(CityBuildingEntrancePlan.CachedWorkFloorCuts(layout, surface));
             foreach (CityElevationStairDescriptor stair in layout.ElevationPlan.SignatureStairs)
                 cuts.Add(CityElevationStairPlacementPlanner.Create(layout, stair).GroundCutFootprint);

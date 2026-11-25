@@ -6,7 +6,7 @@ using UnityEngine;
 namespace BarPromenade
 {
     /// <summary>The same surveyed landings and flights support the model, capsule, map and pedestrian graph.</summary>
-    public sealed class CityHillsideShortcut
+    public sealed partial class CityHillsideShortcut
     {
         public const float Width = 2.1f;
         private const float LandingLength = 1.5f;
@@ -39,6 +39,8 @@ namespace BarPromenade
         {
             top = 0f;
             if (!CityTerracePilotPlan.Inside(Bounds, point.x, point.y)) return false;
+            foreach (var apron in aprons)
+                if (CityTerracePilotPlan.Inside(apron.Bounds, point.x, point.y)) { top = apron.Top(point); return true; }
             foreach (var floor in floors)
                 if (CityTerracePilotPlan.Inside(floor.Bounds, point.x, point.y))
                 {
@@ -177,13 +179,14 @@ namespace BarPromenade
             return stair;
         }
 
-        private void FlightRun(Vector3 direction, int count, float rise, float landing)
+        private void FlightRun(Vector3 direction, int count, float rise, float landing,
+            float width = CityTerracePilotPlan.FlightWidth)
         {
             for (int i = 0; i < count; i++)
             {
-                if (i > 0) Flat(direction, landing);
+                if (i > 0) Flat(direction, landing, Mathf.Max(Width, width));
                 var flight = new CityExteriorStairFlightDescriptor(Id + " flight " + flights.Count, Cursor, direction,
-                    CityTerracePilotPlan.FlightWidth, CityTerracePilotPlan.StepsPerFlight,
+                    width, CityTerracePilotPlan.StepsPerFlight,
                     rise / CityTerracePilotPlan.StepsPerFlight, CityTerracePilotPlan.TreadDepth, CityExteriorStairDropSide.Both);
                 flights.Add(flight);
                 AddBounds(FlightFootprint(flight));
@@ -218,7 +221,8 @@ namespace BarPromenade
         private static Rect FlightFootprint(CityExteriorStairFlightDescriptor flight)
         {
             Vector3 mid = (flight.Start + flight.End) * .5f;
-            Vector2 size = flight.Direction.x == 0f ? new Vector2(Width, flight.RunLength) : new Vector2(flight.RunLength, Width);
+            float width = Mathf.Max(Width, flight.Width);
+            Vector2 size = flight.Direction.x == 0f ? new Vector2(width, flight.RunLength) : new Vector2(flight.RunLength, width);
             return new Rect(new Vector2(mid.x, mid.z) - size * .5f, size);
         }
 
@@ -236,8 +240,10 @@ namespace BarPromenade
         private static readonly ConditionalWeakTable<CityLayout, CityHillsideAccessPlan> Plans = new();
         public IReadOnlyList<CityHillsideShortcut> Shortcuts { get; }
         public IReadOnlyList<CityHillsideShortcut> Transfers { get; }
+        internal CityHillsideShortcut GableCourt { get; }
         public CityHillsideShortcut SharedCourt { get; }
         public IReadOnlyList<CityHillsideShortcut> AllStairs { get; }
+        internal IReadOnlyList<CityHillsideShortcut> MappedStairs { get; }
         internal CityLayout Layout { get; }
         private CityHillsideAccessPlan(CityLayout layout)
         {
@@ -248,6 +254,8 @@ namespace BarPromenade
             {
                 for (int lane = 0; lane + 1 < CityHillsideStreetRoute.LaneCount; lane++)
                     slopes.Add(CityHillsideShortcut.Create(street, lane));
+                if (street.Bank == CityTerraceTransportBank.East && layout.Seed == GameSessionState.DefaultCitySeed)
+                    GableCourt = CityHillsideShortcut.GableWalk(street);
                 transfers.Add(CityHillsideShortcut.CreateTransfer(layout, street));
             }
             Shortcuts = slopes.AsReadOnly();
@@ -255,8 +263,12 @@ namespace BarPromenade
             SharedCourt = CityHillsideShortcut.CreateShared(CityHillsideQuarterPlan.ForLayout(layout));
             var all = new List<CityHillsideShortcut>(slopes);
             all.AddRange(transfers);
+            if (GableCourt != null) all.Add(GableCourt);
             if (SharedCourt != null) all.Add(SharedCourt);
             AllStairs = all.AsReadOnly();
+            var mapped = new List<CityHillsideShortcut>(all);
+            mapped.AddRange(CityServiceStairPlan.Lowland(layout));
+            MappedStairs = mapped.AsReadOnly();
         }
         public static CityHillsideAccessPlan ForLayout(CityLayout layout) =>
             Plans.GetValue(layout, value => new CityHillsideAccessPlan(value));

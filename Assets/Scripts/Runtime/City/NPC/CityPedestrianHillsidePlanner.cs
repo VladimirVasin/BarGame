@@ -78,6 +78,18 @@ namespace BarPromenade
                 }
             }
 
+            foreach (var stair in CityServiceStairPlan.Lowland(layout))
+            {
+                var path = stair.RouteWorld;
+                string id = "service:" + stair.Id;
+                int from = graph.SplitTerraceStreetAt(id + ":in", XZ(path[0]), StreetHeight);
+                int to = graph.SplitTerraceStreetAt(id + ":out", XZ(path[path.Count - 1]), StreetHeight);
+                foreach (var piece in stair.WalkableBounds) graph.AddNavigationPolygon(CityRoadPolygon.Rectangle(piece));
+                for (int i = 0; i < path.Count; i++)
+                    from = JoinPoint(id + ":" + i, from, path[i], Height, CityPedestrianLinkKind.Stair);
+                Connect(id + ":outlet", from, to, CityPedestrianLinkKind.Stair, Height);
+                float Height(Vector2 point) => stair.TrySampleTop(point, out float y) ? y : StreetHeight(point);
+            }
             if (access.SharedCourt != null)
                 AddStair(access.SharedCourt, "hill:quarter:passage", "hill:quarter:court:south", "hill:quarter:summit:north");
             foreach (var house in district.SharedCourtBuildings)
@@ -190,6 +202,16 @@ namespace BarPromenade
                 int approach = JoinPoint(id + ":apron", start, elbow, Height, kind);
                 int entry = JoinPoint(id + ":entry", approach, GroundedPoint(center, Height), Height, kind);
                 graph.RetainEntranceTerminal(entry);
+                if (house.SideOpeningSegment >= 0 && access.GableCourt is { } stair)
+                {
+                    string stairId = "hill:East:" + stair.Id;
+                    int prev = Gate(stairId + ":street", pavement, stair.RouteWorld[0]);
+                    foreach (Rect floor in stair.WalkableBounds) graph.AddNavigationPolygon(CityRoadPolygon.Rectangle(floor));
+                    for (int i = 0; i < stair.RouteWorld.Count; i++)
+                        prev = JoinPoint(stairId + ":" + i, prev, stair.RouteWorld[i], StairHeight, CityPedestrianLinkKind.Stair);
+                    Connect(stairId + ":court", prev, entry, CityPedestrianLinkKind.Courtyard, StairHeight);
+                    float StairHeight(Vector2 p) => stair.TrySampleTop(p, out float top) ? top : Height(p);
+                }
 
                 float Height(Vector2 p)
                 {

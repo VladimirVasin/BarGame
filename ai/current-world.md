@@ -425,9 +425,8 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   Two raised houses/two OpenGround,144 IDs. House11,8 sits3.84m below street,
   roof12.883 below upper eye15.073. Sheltered3m alley under4.8×2.4m bridge,
   guarded3×2.4m east exit atX126.4. Hero/NPC/map use distinct floors.
-  Two seven-tier climbs link coast, Lower Court and upper homes. Streamed
-  Ridge/lowland districts share the hero, bus fleet and map.
-  Bevelled stair cuts to tiers/court/crest. Soil blends at curbs, grass off paths/loft.
+  Two seven-tier climbs link coast, Lower Court and homes. Ridge/lowland share hero/buses/map.
+  Shielded lamps rake the workshop/outfall steps, gable court and repaired Lower Court. Bevelled tier cuts; soil meets curbs, paths/loft grass-free.
   Home bench→truss/ravine/roofs. Bins clang. Loft/kiosk booths: index dials, Esc/Q exits mid-call.
   West Lane6: (-24,-8)/4fl/X-99.2; (-25,-8)/3fl/X-84.
   `CityHillsideBenchPocketPlan`:pawnshop≤45mXZ;origins fixed;West11/13 face+Z/new docks.

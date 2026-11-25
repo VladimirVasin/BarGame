@@ -716,6 +716,10 @@ namespace BarPromenade
                 area.AddPolygons(new[] { CityRoadPolygon.Rectangle(link.Bounds) });
             var hillsideAccess = CityHillsideAccessPlan.ForLayout(layout);
             foreach (var stair in hillsideAccess.Shortcuts) area.Add(stair.Bounds);
+            if (hillsideAccess.GableCourt is { } gable)
+                foreach (Rect piece in gable.WalkableBounds) area.Add(piece);
+            foreach (var stair in CityServiceStairPlan.Lowland(layout))
+                foreach (Rect piece in stair.WalkableBounds) area.Add(piece);
             foreach (var stair in hillsideAccess.Transfers) area.Add(stair.Bounds);
             if (hillsideAccess.SharedCourt != null)
                 foreach (Rect piece in hillsideAccess.SharedCourt.WalkableBounds) area.Add(piece);

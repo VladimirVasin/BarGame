@@ -80,8 +80,8 @@ def rail_geometry(g, x, length, slope=0.0, first_tread=False):
         g.rod((x, .24 + slope * z, z), (x, rail_top + slope * z, z), .009, port.METAL, 6)
 
 
-def flight(material):
-    root = port.empty(NAMES[0])
+def flight(material, name=NAMES[0], width=WIDTH):
+    root = port.empty(name)
     stone, metal = geometry("Concrete"), geometry("SteelDark")
     for index in range(STEPS):
         top = (index + 1) * RISE
@@ -89,9 +89,9 @@ def flight(material):
         # the .008 m edge relief changes neither tread pitch nor contact datum.
         color = port.CONCRETE if index not in (3, 8) else port.EDGE
         box(stone, (0, (top - .25) * .5, (index + .5) * TREAD),
-            (WIDTH, top + .25, TREAD), color, .008)
+            (width, top + .25, TREAD), color, .008)
     for side in (-1, 1):
-        rail_geometry(metal, side * .99, LENGTH, HEIGHT / LENGTH, True)
+        rail_geometry(metal, side * (width * .5 - .06), LENGTH, HEIGHT / LENGTH, True)
     emit(stone, "FlightSteps", root, material)
     emit(metal, "FlightSupportedRails", root, material)
     anchor(root, "ANCHOR_Lower", (0, 0, 0))

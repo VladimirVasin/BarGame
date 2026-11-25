@@ -1886,7 +1886,7 @@ namespace BarPromenade
                     DrawLine(new Vector2(screenX, deck.yMin), new Vector2(screenX, deck.yMax), 1f, MountainHatch);
                 }
             }
-            foreach (CityHillsideShortcut stair in CityHillsideAccessPlan.ForLayout(controller.Layout).AllStairs)
+            foreach (CityHillsideShortcut stair in CityHillsideAccessPlan.ForLayout(controller.Layout).MappedStairs)
             {
                 foreach (var patch in stair.WalkableBounds)
                     DrawSolidRect(ProjectWorldRect(projection, patch), PublicPlaceLand);
@@ -3955,6 +3955,9 @@ namespace BarPromenade
                     }
                     break;
                 case CityMapPointOfInterestKind.UpperSharedCourt:
+                case CityMapPointOfInterestKind.WorkshopWalk:
+                case CityMapPointOfInterestKind.CulvertWalk:
+                case CityMapPointOfInterestKind.GableWalk:
                 case CityMapPointOfInterestKind.TerraceCourts:
                 case CityMapPointOfInterestKind.TerraceShortcut:
                 case CityMapPointOfInterestKind.PawnshopDescent:

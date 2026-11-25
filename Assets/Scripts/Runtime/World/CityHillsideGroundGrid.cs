@@ -80,6 +80,8 @@ namespace BarPromenade
             var access = CityHillsideAccessPlan.ForLayout(layout);
             foreach (var stair in access.Shortcuts)
                 if (stair.Bank == road.Bank) { cuts.Add(stair.Bounds); AddBreaks(stair.Bounds); }
+            if (access.GableCourt is { } gable && gable.Bank == road.Bank)
+                foreach (Rect piece in gable.WalkableBounds) { cuts.Add(piece); AddBreaks(piece); }
             foreach (var stair in access.Transfers)
                 if (stair.Bank == road.Bank)
                 {

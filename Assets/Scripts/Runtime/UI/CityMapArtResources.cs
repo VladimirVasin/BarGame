@@ -362,7 +362,7 @@ namespace BarPromenade
                     CrosswalkStroke(stripe, out var a, out var b, out float width);
                     Point(writer, a); Point(writer, b); Scalar(writer, width);
                 }
-                foreach (CityHillsideShortcut stair in CityHillsideAccessPlan.ForLayout(layout).AllStairs)
+                foreach (CityHillsideShortcut stair in CityHillsideAccessPlan.ForLayout(layout).MappedStairs)
                 {
                     writer.Write(stair.Id); writer.Write(stair.WalkableBounds.Count);
                     foreach (Rect footprint in stair.WalkableBounds) RectValue(writer, footprint);

@@ -25,7 +25,7 @@ namespace BarPromenade
                 var guard = new GameObject("Ridge entry rail").transform;
                 guard.SetParent(root, false);
                 for (int i = 1; i < house.EntryRail.Count; i++)
-                    CityTerracePilotWorld.BuildRailRun(guard, entryRailModel, "Entry rail", house.EntryRail[i - 1], house.EntryRail[i]);
+                    if (i != house.SideOpeningSegment) CityTerracePilotWorld.BuildRailRun(guard, entryRailModel, "Entry rail", house.EntryRail[i - 1], house.EntryRail[i]);
                 CitySurfaceLibrary.ApplyHierarchy(guard);
             }
             if (house.Bank == CityTerraceTransportBank.East)

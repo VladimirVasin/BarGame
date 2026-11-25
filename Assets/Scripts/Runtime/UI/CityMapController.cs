@@ -46,7 +46,8 @@ namespace BarPromenade
         Cobbler = 27,
         Parking = 28,
         RidgeGarage = 29,
-        RidgeGarageRoof = 30
+        RidgeGarageRoof = 30,
+        WorkshopWalk = 31, CulvertWalk = 32, GableWalk = 33
     }
 
     public readonly struct CityMapPointOfInterest
@@ -994,6 +995,9 @@ namespace BarPromenade
                     return true;
                 case CityMapPointOfInterestKind.RidgeGarage:
                     key = "map.poi.ridge_garage"; return true;
+                case CityMapPointOfInterestKind.WorkshopWalk: key = "map.poi.workshop_walk"; return true;
+                case CityMapPointOfInterestKind.CulvertWalk: key = "map.poi.culvert_walk"; return true;
+                case CityMapPointOfInterestKind.GableWalk: key = "map.poi.gable_walk"; return true;
                 case CityMapPointOfInterestKind.RidgeGarageRoof:
                     key = "map.poi.ridge_garage_roof"; return true;
                 case CityMapPointOfInterestKind.Parking:
@@ -1633,6 +1637,16 @@ namespace BarPromenade
             if (cobbler.IsEnabled)
                 pointsOfInterest.Add(new CityMapPointOfInterest(CityCobblerSitePlan.StableId, CityMapPointOfInterestKind.Cobbler,
                     CityDistrictKind.Residential, cobbler.Approach + Vector3.up * rootOffset, cobbler.Bounds, true));
+            foreach (var stair in CityServiceStairPlan.Lowland(Layout))
+            {
+                bool hall = stair.Id == CityHillsideShortcut.Workshop;
+                var landing = hall ? stair.Floors[1] : stair.Floors[0];
+                pointsOfInterest.Add(new CityMapPointOfInterest(stair.Id, hall ? CityMapPointOfInterestKind.WorkshopWalk :
+                    CityMapPointOfInterestKind.CulvertWalk, CityDistrictKind.Industrial, landing.Center + Vector3.up * rootOffset));
+            }
+            if (CityHillsideAccessPlan.ForLayout(Layout).GableCourt is { } gable)
+                pointsOfInterest.Add(new CityMapPointOfInterest(gable.Id, CityMapPointOfInterestKind.GableWalk,
+                    CityDistrictKind.Residential, gable.Floors[gable.Floors.Count - 2].Center + Vector3.up * rootOffset));
         }
 
         private Vector3 ResolveNamedPlaceArrival(Vector3 approach)

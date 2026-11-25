@@ -23,6 +23,7 @@ namespace BarPromenade
         public Vector3 ThresholdWorld { get; }
         internal float PavementEdgeZ => StreetContactWorld.z + Mathf.Sign(DoorWorld.z - StreetContactWorld.z);
         internal bool HasGuardedEntry => !Lot.IsPlayerHome && EntryRail.Count >= 2;
+        internal int SideOpeningSegment { get; } = -1;
         internal IReadOnlyList<Vector3> EntryRail { get; } = System.Array.Empty<Vector3>();
         internal IReadOnlyList<Vector2[]> EntryRailFootprints { get; } = System.Array.Empty<Vector2[]>();
         internal const float PavementRise = CityStreetSurfacePlanner.SidewalkTop - CityStreetSurfacePlanner.RoadTop;
@@ -31,7 +32,7 @@ namespace BarPromenade
         // the footway along the outside wall; its axis never cuts a solid corner.
         internal CityHillsideBuilding(CityTerraceTransportBank bank, Vector2Int cell,
             float x, float streetZ, int side, float setback, int variant, Vector3 forward,
-            System.Func<float, float> pavement, bool summit = false, bool playerHome = false)
+            System.Func<float, float> pavement, bool summit = false, bool playerHome = false, bool sideOpening = false)
         {
             Bank = bank;
             OnSummitStreet = summit;
@@ -101,19 +102,26 @@ namespace BarPromenade
                     if ((porchBack - porchStart) * inward > .06f)
                     {
                         AddRailPoint(porchEdge, porchStart);
+                        if (sideOpening)
+                        {
+                            AddRailPoint(porchEdge, CourtBounds.center.y - CityHillsideShortcut.Width * .5f);
+                            SideOpeningSegment = rail.Count;
+                            AddRailPoint(porchEdge, CourtBounds.center.y + CityHillsideShortcut.Width * .5f);
+                        }
                         AddRailPoint(porchEdge, porchBack);
                         if (gableEntry) AddRailPoint(oppositePorchEdge, porchBack);
                     }
                 }
-                var footprints = new Vector2[Mathf.Max(0, rail.Count - 1)][];
-                for (int i = 0; i < footprints.Length; i++)
+                var footprints = new List<Vector2[]>();
+                for (int i = 0; i + 1 < rail.Count; i++)
                 {
+                    if (i + 1 == SideOpeningSegment) continue;
                     Vector2 a = new(rail[i].x, rail[i].z), b = new(rail[i + 1].x, rail[i + 1].z);
                     Vector2 offset = new Vector2(a.y - b.y, b.x - a.x).normalized * (EntryRailWidth * .5f);
-                    footprints[i] = CityRoadPolygon.CounterClockwise(new[] { a - offset, b - offset, b + offset, a + offset });
+                    footprints.Add(CityRoadPolygon.CounterClockwise(new[] { a - offset, b - offset, b + offset, a + offset }));
                 }
                 EntryRail = rail.AsReadOnly();
-                EntryRailFootprints = System.Array.AsReadOnly(footprints);
+                EntryRailFootprints = footprints.AsReadOnly();
 
                 void AddRailPoint(float railX, float railZ)
                 {
@@ -204,7 +212,7 @@ namespace BarPromenade
                             float depth = CityBuildingAssetProvider.GetExpectedEnvelope(CityDistrictKind.Residential, variant).z;
                             setback = laneSpacing - CityHillsideStreetRoute.OuterHalfWidth - depth - .65f;
                         }
-                        var building = new CityHillsideBuilding(road.Bank, cell, x, road.GetLaneZ(lane), side,
+                        var building = east && shelf == 3 && parcel == 1 ? SurveyGableHouse(road, access.GableCourt != null) : new CityHillsideBuilding(road.Bank, cell, x, road.GetLaneZ(lane), side,
                             setback, variant, forward,
                             at => road.SampleLaneTop(lane, at) + CityHillsideBuilding.PavementRise);
                         if (!BlocksStair(building, access) && HasClearance(building, buildings)) buildings.Add(building);
@@ -252,6 +260,13 @@ namespace BarPromenade
             all.AddRange(buildings);
             all.AddRange(shared);
             AllBuildings = all.AsReadOnly();
+        }
+
+        internal static CityHillsideBuilding SurveyGableHouse(CityHillsideStreetRoute road, bool sideOpening = false)
+        {
+            float x = Mathf.Lerp(road.LaneMinX, road.LaneMaxX, .52f);
+            return new CityHillsideBuilding(road.Bank, new Vector2Int(22, -5), x, road.GetLaneZ(4), 1, 8.05f, 4,
+                Vector3.left, at => road.SampleLaneTop(4, at) + CityHillsideBuilding.PavementRise, sideOpening: sideOpening);
         }
 
         internal static CityHillsideBuilding CreateWestSummitHouse(CityHillsideQuarterLink upper, bool playerHome) =>

@@ -6,7 +6,7 @@ using UnityEngine.Rendering;
 namespace BarPromenade
 {
     /// <summary>Passive imported geometry with metre-based collision. No visible runtime primitives.</summary>
-    public static class CityTerracePilotWorld
+    public static partial class CityTerracePilotWorld
     {
         public const string ResourceFolder = "CityTerraces/";
 
@@ -48,6 +48,7 @@ namespace BarPromenade
             foreach (string name in new[] { "TerraceFlight", "TerraceSupport", "TerraceRail" }) LoadModel(name);
             foreach (CityTerracePilotFloor floor in floors) LoadModel(floor.ModelName);
             if (district != null) LoadModel("TerracePassage");
+            if (district?.HasCourtyardLink == true) LoadModel("CourtReturnRail");
 
             void LoadModel(string name)
             {
@@ -73,7 +74,8 @@ namespace BarPromenade
                     Support(templates["TerraceSupport"], root.transform, floor.Id + " support",
                         floor.Center - Vector3.up * thickness, floor.Size, foundationBottom);
                 if (district == null || !floor.Id.StartsWith("residence-entry-", StringComparison.Ordinal))
-                    BuildFloorRails(root.transform, templates["TerraceRail"], floors, flights, floor, district);
+                    BuildFloorRails(root.transform, templates[floor.Id == "link-inner-turn" || floor.Id == "link-bottom-turn"
+                        ? "CourtReturnRail" : "TerraceRail"], floors, flights, floor, district);
             }
             foreach (CityExteriorStairFlightDescriptor flight in flights)
                 BuildFlight(root.transform, flight, templates["TerraceFlight"], templates["TerraceSupport"], foundationBottom);
@@ -128,6 +130,7 @@ namespace BarPromenade
 
                 if (district.HasCourtyardLink)
                 {
+                    DressLowerCourt(root.transform, district);
                     BuildCourtyardLinkRamp(root.transform, district, templates, foundationBottom);
                     foreach (RuntimeOrientedBox wall in district.CourtyardLinkWalls)
                     {
@@ -178,12 +181,13 @@ namespace BarPromenade
             // slightly inside that body so the two chamfers overlap.
             float treadBaseDepth = .25f * riseScale - .02f;
             Vector3 supportTop = flight.Start + flight.Direction * (flight.RunLength * .5f) - Vector3.up * treadBaseDepth;
+            float slabWidth = Mathf.Max(CityHillsideShortcut.Width, flight.Width);
             Vector2 supportSize = Mathf.Abs(flight.Direction.z) > .5f
-                ? new Vector2(2.1f, flight.RunLength) : new Vector2(flight.RunLength, 2.1f);
+                ? new Vector2(slabWidth, flight.RunLength) : new Vector2(flight.RunLength, slabWidth);
             Support(supportModel, root, flight.Id + " support", supportTop, supportSize, foundationBottom);
             for (int side = -1; side <= 1; side += 2)
                 Box(root, flight.Id + " rail " + side,
-                    (flight.Start + flight.End) * .5f + Vector3.up * (.55f * riseScale) + flight.Right * (side * .99f),
+                    (flight.Start + flight.End) * .5f + Vector3.up * (.55f * riseScale) + flight.Right * (side * (slabWidth * .5f - .06f)),
                     new Vector3(.12f, 1.05f * riseScale, delta.magnitude), slope);
             // Feet see each real tread. Keep the probes on one transform per imported flight.
             var probes = new GameObject(flight.Id + " tread probes");
@@ -224,8 +228,9 @@ namespace BarPromenade
                     foreach (var bank in banks)
                         if (bank.Road.Bank == stair.Bank)
                             baseY = Mathf.Min(baseY, entryY - bank.FoundationDepth(stair.Bounds, entryY));
+                GameObject module = stair == access.GableCourt ? Template("GableFlight") : flightModel;
                 foreach (var flight in stair.Flights)
-                    BuildFlight(root.transform, flight, flightModel, support, baseY, flight.StepRise / CityTerracePilotPlan.StepRise);
+                    BuildFlight(root.transform, flight, module, support, baseY, flight.StepRise / CityTerracePilotPlan.StepRise);
                 foreach (var floor in stair.Floors)
                 {
                     Vector3 top = floor.Center;
@@ -241,6 +246,7 @@ namespace BarPromenade
                     if (throughHouse) continue;
                     BuildFloorRails(root.transform, rail, stair.Floors, stair.Flights, floor, null, stair);
                 }
+                if (stair == access.GableCourt) DressGable(root.transform, access.Layout, stair);
                 CitySurfaceLibrary.ApplyHierarchy(root.transform);
             }
         }
@@ -448,7 +454,8 @@ namespace BarPromenade
                         if (Mathf.Abs(relative.y) > .03f || Mathf.Abs(Vector3.Dot(relative, normal)) > .10f ||
                             Mathf.Abs(Vector3.Dot(flight.Direction, normal)) < .99f) return;
                         float at = Vector3.Dot(relative, tangent);
-                        gaps.Add(new Vector2(at - 1.07f, at + 1.07f));
+                        float half = Mathf.Max(CityHillsideShortcut.Width, flight.Width) * .5f + .02f;
+                        gaps.Add(new Vector2(at - half, at + half));
                     }
                     AddEnd(flight.Start);
                     AddEnd(flight.End);
