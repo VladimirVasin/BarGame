@@ -232,6 +232,47 @@ namespace BarPromenade
         internal ulong GuaranteedWindowMask { get; set; }
         internal ulong OptionalWindowMask { get; set; }
         internal uint WindowScheduleSeed { get; set; }
+        // City and the bounded Home view may build different copies of the same lot.
+        private static readonly Dictionary<Vector2Int, List<CityBuildingAssetRegistry>> balconyBuildings = new();
+        private Vector2Int? balconyCell;
+
+        internal void RegisterBalconies(Vector2Int cell)
+        {
+            if (balconySlots.Length == 0 || balconyCell.HasValue) return;
+            if (!balconyBuildings.TryGetValue(cell, out var copies))
+                balconyBuildings.Add(cell, copies = new List<CityBuildingAssetRegistry>(1));
+            copies.Add(this);
+            balconyCell = cell;
+        }
+
+        internal static CityBuildingAssetRegistry FindBalcony(Vector2Int cell, string slotId, Vector3 dock, out int pane)
+        {
+            pane = -1;
+            if (!balconyBuildings.TryGetValue(cell, out var copies)) return null;
+            foreach (var building in copies)
+            foreach (var balcony in building.BalconySlots)
+                if (balcony.StableId == slotId && (building.transform.TransformPoint(balcony.LocalNpcDock) - dock).sqrMagnitude < .01f)
+                    foreach (var opening in building.WindowSlots)
+                        if (opening.SlotId == balcony.DoorSlotId)
+                        {
+                            pane = opening.Uv2SlotId;
+                            return building;
+                        }
+            return null;
+        }
+
+        private void OnDestroy()
+        {
+            if (balconyCell is { } cell && balconyBuildings.TryGetValue(cell, out var copies))
+            {
+                copies.Remove(this);
+                if (copies.Count == 0) balconyBuildings.Remove(cell);
+            }
+        }
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ClearBalconyBuildings() => balconyBuildings.Clear();
+
         internal Renderer WindowGlassRenderer { get; set; }
         internal float[] WindowStateBuffer { get; set; }
         internal MaterialPropertyBlock WindowProperties { get; set; }

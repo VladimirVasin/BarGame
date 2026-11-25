@@ -6,311 +6,286 @@ using UnityEngine.Playables;
 
 namespace BarPromenade
 {
-    /// <summary>
-    /// A static, passive roaming-pedestrian presentation sampling the
-    /// production Hero V2 SmokeLoop through a manual graph. Its clock mirrors
-    /// the player's authored frame holds instead of letting the four-second
-    /// clip run free.
-    /// </summary>
     [DisallowMultipleComponent]
     public sealed class CityBalconySmokerPresentation : MonoBehaviour
     {
         public const string SmokeLoopClipName = "SmokeLoop";
-        public const float MaximumStepSeconds = 0.1f;
+        public const float MaximumStepSeconds = .1f;
         public const string MouthSocketName = "SOCKET_Mouth";
-
-        /// <summary>The bone the cigarette socket hangs off; part of the
-        /// 31-bone pose transfer so the socket follows the hand.</summary>
-        public const string RightHandBoneName = "hand.R";
-
-        /// <summary>
-        /// The socket the cigarette hand prop is attached to. The hero's
-        /// SmokeLoop keys this socket's filter offset and axis for the
-        /// authored finger grip. The canonical rest transform stays shared;
-        /// ordinary pose transfer applies those same deltas to the prop.
-        /// </summary>
-        public const string CigaretteSocketName =
-            CityPedestrianHandProps.CigaretteRightSocketName;
-
-        private const int ExpectedPoseBoneCount = 31;
-        private const float RestPositionTolerance = 0.0001f;
-        private const float RestAngleTolerance = 0.01f;
-        private static readonly string[] PoseBoneNames =
-        {
-            "root",
-            "pelvis",
-            "spine",
-            "chest",
-            "neck",
-            "head",
-            "face.eye.L",
-            "face.eye.R",
-            "face.brow.L",
-            "face.brow.R",
-            "face.mouth",
-            MouthSocketName,
-            "clavicle.L",
-            "upper_arm.L",
-            "forearm.L",
-            "hand.L",
-            "SOCKET_Grip.L",
-            "SOCKET_Vessel.L",
-            "clavicle.R",
-            "upper_arm.R",
-            "forearm.R",
-            RightHandBoneName,
-            "SOCKET_Grip.R",
-            CigaretteSocketName,
-            "SOCKET_Bottle.R",
-            "thigh.L",
-            "shin.L",
-            "foot.L",
-            "thigh.R",
-            "shin.R",
-            "foot.R"
-        };
-
-        private PlayableGraph graph;
-        private AnimationClipPlayable playable;
-        private CityPedestrianAssetRegistry registry;
+        public const string CigaretteSocketName = CityPedestrianHandProps.CigaretteRightSocketName;
+        private const float OpenSeconds = VillageResidentPresentation.DoorDurationSeconds;
+        private const float ApproachSeconds = 1.65f, CrossingSeconds = 2.2f, InsideTurnSeconds = 1.55f;
+        private const float ClosingSeconds = 1.15f;
+        private const float SettleSeconds = .68f;
+        private enum Visit { ComingOut, AtRail, GoingIn, Indoors }
+        private Visit stage;
+        private float elapsed, smokingSeconds;
+        private double burstTimeSeconds;
+        private CityPedestrianPresentation body;
+        private VillageResidentPresentation resident;
+        private bool samplingDoor;
+        internal bool OperatingDoor => samplingDoor;
+        internal float DoorFraction => door.Fraction;
+        internal Vector3 DoorHandle => door.Handle;
+        private CityRailRestPose rest;
+        private CityBalconyDoor door;
+        private Vector3 threshold;
+        private GameObject poseDriverRoot;
+        private Transform driverMouth, driverFilter;
         private AnimationClip activeClip;
         private PlayerAnimatedInteractionDefinition animationDefinition;
-        private HomeBalconySmokingExhaleEffect exhaleEffect;
-        private FootGroundingProbe footGroundingProbe;
-        private Player3DAssetRegistry poseDriverRegistry;
-        private GameObject poseDriverRoot;
-        private PoseBoneBinding[] poseBoneBindings =
-            Array.Empty<PoseBoneBinding>();
-        private Transform mouthSocket;
-        private Vector3 modelBaseLocalPosition;
-        private double loopTimeSeconds;
-        private double burstTimeSeconds;
-        private CityPedestrianHandPropRegistry heldCigarette;
+        private PlayableGraph graph;
+        private AnimationClipPlayable playable;
 
         public bool IsInitialized { get; private set; }
         public CityBalconySmokerDescriptor Descriptor { get; private set; }
-        public CityPedestrianAssetRegistry Registry => registry;
+        public CityPedestrianAssetRegistry Registry => body.Registry;
         public AnimationClip ActiveClip => activeClip;
-        public PlayerAnimatedInteractionDefinition AnimationDefinition =>
-            animationDefinition;
-        public HomeBalconySmokingExhaleEffect ExhaleEffect => exhaleEffect;
-        /// <summary>The cigarette hand prop attached to
-        /// <see cref="CigaretteSocketName"/>; null until Initialize and
-        /// after Shutdown.</summary>
-        public CityPedestrianHandPropRegistry HeldCigarette => heldCigarette;
-
-        /// <summary>The attached cigarette's renderers (the paper and its
-        /// ember), for the visual tests that measure the mouth distance.</summary>
-        public IReadOnlyList<Renderer> CigaretteRenderers =>
-            heldCigarette != null
-                ? heldCigarette.Renderers
-                : Array.Empty<Renderer>();
-        public double LoopTimeSeconds => loopTimeSeconds;
+        public PlayerAnimatedInteractionDefinition AnimationDefinition => animationDefinition;
+        public HomeBalconySmokingExhaleEffect ExhaleEffect => rest?.Exhale;
+        public CityPedestrianHandPropRegistry HeldCigarette => rest?.Cigarette;
+        public IReadOnlyList<Renderer> CigaretteRenderers => HeldCigarette != null
+            ? HeldCigarette.Renderers : Array.Empty<Renderer>();
+        public double LoopTimeSeconds { get; private set; }
         public int CurrentLoopFrame { get; private set; }
         public float CurrentClipProgress01 { get; private set; }
-        public int SmokeBurstCount => exhaleEffect != null
-            ? exhaleEffect.ManualBurstCount
-            : 0;
+        public int SmokeBurstCount => ExhaleEffect != null ? ExhaleEffect.ManualBurstCount : 0;
+        internal bool AtRail => stage == Visit.AtRail;
+        internal bool Finished => stage == Visit.Indoors;
 
-        internal void Initialize(
-            CityPedestrianAssetRegistry assetRegistry,
-            CityBalconySmokerDescriptor descriptor,
-            AnimationClip smokeLoop,
-            Avatar heroAvatar,
-            PlayerAnimatedInteractionDefinition definition,
-            bool poseIsParentLocal)
+        internal void Initialize(CityPedestrianPresentation actor, CityBalconySmokerDescriptor descriptor,
+            AnimationClip smokeLoop, Avatar heroAvatar, PlayerAnimatedInteractionDefinition definition, bool poseIsParentLocal)
         {
-            if (IsInitialized)
-            {
-                throw new InvalidOperationException(
-                    "The balcony smoker presentation is already " +
-                    "initialized.");
-            }
-
-            registry = assetRegistry != null
-                ? assetRegistry
-                : throw new ArgumentNullException(nameof(assetRegistry));
-            activeClip = smokeLoop != null
-                ? smokeLoop
-                : throw new ArgumentNullException(nameof(smokeLoop));
-            animationDefinition = definition ??
-                throw new ArgumentNullException(nameof(definition));
-            if (registry.Animator == null || registry.ModelRoot == null)
-            {
-                throw new InvalidOperationException(
-                    "A balcony smoker requires an Animator and model root.");
-            }
-
-            if (!string.Equals(
-                    registry.DesignId,
-                    descriptor.ArchetypeDesignId,
-                    StringComparison.Ordinal))
-            {
-                throw new InvalidOperationException(
-                    "The instantiated roaming archetype does not match the " +
-                    "balcony-smoker descriptor.");
-            }
-
-            if (heroAvatar == null ||
-                registry.Animator.avatar != heroAvatar)
-            {
-                throw new InvalidOperationException(
-                    "The balcony smoker must share Hero V2's Generic Avatar " +
-                    "before it can sample the literal SmokeLoop clip.");
-            }
-
-            if (!string.Equals(
-                    animationDefinition.LoopClipName,
-                    SmokeLoopClipName,
-                    StringComparison.Ordinal))
-            {
-                throw new ArgumentException(
-                    "The balcony smoker definition must target SmokeLoop.",
-                    nameof(definition));
-            }
-
+            body = actor;
             Descriptor = descriptor;
-            Quaternion facingRotation = Quaternion.LookRotation(
-                descriptor.Facing,
-                Vector3.up);
-            if (poseIsParentLocal)
-            {
-                transform.localPosition = descriptor.Position;
-                transform.localRotation = facingRotation;
-            }
-            else
-            {
-                transform.SetPositionAndRotation(
-                    descriptor.Position,
-                    facingRotation);
-            }
-
-            transform.localScale = Vector3.one;
-            registry.ApplyPaletteVariant(descriptor.PaletteVariant);
-            // The same cigarette prefab for every design: the body ships
-            // empty-handed and no babushka source has to be borrowed.
-            CityPedestrianHandProps.Detach(ref heldCigarette);
-            heldCigarette = CityPedestrianHandProps.Attach(
-                registry,
-                CityPedestrianHandPropId.Cigarette,
-                descriptor.PaletteVariant);
-            mouthSocket = CityPedestrianHandProps.FindSocket(
-                registry.ModelRoot,
-                MouthSocketName);
-            if (mouthSocket == null)
-            {
-                throw new InvalidOperationException(
-                    $"The balcony smoker prefab lost '{MouthSocketName}'.");
-            }
-
-            Animator animator = registry.Animator;
-            animator.applyRootMotion = false;
-            animator.runtimeAnimatorController = null;
-            // A Generic clip imported with Player3DV2 binds to that FBX's
-            // hierarchy, not to a separately imported pedestrian even when
-            // both Animators reference the same Avatar asset. Keep the
-            // resident Animator from restoring its authored A-pose; a hidden
-            // Hero V2 rig samples the literal clip and the canonical-bone
-            // deltas are transferred below.
-            animator.enabled = false;
-            modelBaseLocalPosition = registry.ModelRoot.localPosition;
-            footGroundingProbe = FootGroundingProbe.Create(registry);
-            Animator poseDriverAnimator = CreatePoseDriver(heroAvatar);
-            BuildGraph(poseDriverAnimator);
-
-            loopTimeSeconds =
-                descriptor.AnimationPhase01 *
-                animationDefinition.LoopDurationSeconds;
-            burstTimeSeconds = CalculateFrameStartSeconds(
-                animationDefinition,
-                HomeBalconySmokingExhaleEffect.ExhaleStartLoopFrame);
-            EvaluatePose();
-
-            exhaleEffect = gameObject.AddComponent<
-                HomeBalconySmokingExhaleEffect>();
-            exhaleEffect.Initialize(mouthSocket, animationDefinition);
-            if (!exhaleEffect.EnableManualBurstMode())
-            {
-                throw new InvalidOperationException(
-                    "The balcony smoker could not enter manual smoke-burst " +
-                    "mode.");
-            }
-
+            if (actor.Registry.DesignId != descriptor.ArchetypeDesignId ||
+                actor.GetComponent<CityPedestrianDefaultNpcBody>().CharacterId != descriptor.CharacterId)
+                throw new InvalidOperationException("Balcony resident lacks its assigned default appearance.");
+            var facing = Quaternion.LookRotation(descriptor.Facing);
+            if (poseIsParentLocal) transform.SetLocalPositionAndRotation(descriptor.Position, facing);
+            else transform.SetPositionAndRotation(descriptor.Position, facing);
+            resident = body.GetComponent<CityPedestrianDefaultNpcBody>().Character;
+            body.UseAuthoredFloor = true;
+            body.Registry.Animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+            // The visit owns these skins through the rail-to-walk and handle-to-walk handoffs.
+            foreach (Renderer part in body.Registry.Renderers)
+                if (part is SkinnedMeshRenderer skin) skin.forceMatrixRecalculationPerRender = true;
+            threshold = new Vector3(descriptor.DoorOffset.x, 0f, descriptor.DoorOffset.y);
+            door = new CityBalconyDoor(transform, threshold, descriptor);
+            activeClip = smokeLoop;
+            animationDefinition = definition;
+            BuildGraph(CreatePoseDriver(heroAvatar));
+            rest = new CityRailRestPose(body.Registry);
+            rest.PrepareSmoking();
+            HeldCigarette.ApplyPaletteVariant(descriptor.PaletteVariant);
+            HeldCigarette.gameObject.SetActive(false);
+            burstTimeSeconds = CalculateFrameStartSeconds(definition, HomeBalconySmokingExhaleEffect.ExhaleStartLoopFrame);
+            smokingSeconds = (float)definition.LoopDurationSeconds * (descriptor.AnimationPhase01 < .5f ? 2 : 3);
             IsInitialized = true;
+            StartVisit();
+        }
+
+        private void StartVisit()
+        {
+            stage = Visit.ComingOut;
+            elapsed = 0f;
+            body.transform.SetLocalPositionAndRotation(HandleDock(true, 0f), Quaternion.identity);
+            body.gameObject.SetActive(true);
+            NpcFootstepSources.Unregister(body.transform);
+            body.Advance(0f, false, true);
+            door.SetOpen(0f);
         }
 
         public void Advance(float deltaTime)
         {
-            if (!IsInitialized)
+            if (!IsInitialized || Finished || !(deltaTime > 0f) || !isActiveAndEnabled) return;
+            float step = Mathf.Min(deltaTime, MaximumStepSeconds);
+            elapsed += step;
+            if (AtRail)
             {
+                SampleSmoke(step);
+                if (elapsed >= smokingSeconds + SettleSeconds)
+                {
+                    rest.Release();
+                    stage = Visit.GoingIn;
+                    elapsed = 0f;
+                    body.Advance(0f, false, true);
+                }
                 return;
             }
 
-            float step = SanitizeDeltaTime(deltaTime);
-            double previous = loopTimeSeconds;
-            double unwrapped = previous + step;
-            double duration = animationDefinition.LoopDurationSeconds;
-            bool wrapped = unwrapped >= duration;
-            bool crossedBurst =
-                previous < burstTimeSeconds &&
-                unwrapped >= burstTimeSeconds;
-            if (wrapped)
-            {
-                unwrapped %= duration;
-                crossedBurst |= unwrapped >= burstTimeSeconds;
-            }
+            if (stage == Visit.ComingOut) ComeOutside(step);
+            else GoInside(step);
+        }
 
-            loopTimeSeconds = unwrapped;
-            EvaluatePose();
-            if (crossedBurst)
+        private Vector3 OutsideDock => threshold + new Vector3(.40f, 0f, .50f);
+        private Vector3 InsideDock => threshold + new Vector3(.07f, 0f, -.72f);
+
+        private void ComeOutside(float step)
+        {
+            if (elapsed <= OpenSeconds)
             {
-                exhaleEffect.EmitManualBurst();
+                OperateDoor(elapsed, false, step);
+                return;
             }
+            EndDoorAction();
+            float walk = elapsed - OpenSeconds;
+            Vector3 at = Vector3.Lerp(HandleDock(true, 1f), OutsideDock, Mathf.Clamp01(walk / .9f));
+            at = Vector3.Lerp(at, Vector3.zero, Mathf.InverseLerp(.9f, 1.65f, walk));
+            Move(at, Vector3.forward, step);
+            door.SetOpen(1f - Ease(walk, 1.05f, 2.2f));
+            if (walk < 2.35f) return;
+            stage = Visit.AtRail;
+            elapsed = 0f;
+            BeginLean();
+        }
+
+        private void GoInside(float step)
+        {
+            if (elapsed < ApproachSeconds)
+            {
+                // Straighten completely at the rail, then turn toward the closed door.
+                Vector3 dock = HandleDock(false, 0f);
+                Move(Vector3.Lerp(Vector3.zero, dock, Ease(elapsed, .36f, 1.36f)), threshold - dock, step);
+                return;
+            }
+            float opening = elapsed - ApproachSeconds;
+            if (opening <= OpenSeconds)
+            {
+                OperateDoor(opening, true, step);
+                return;
+            }
+            EndDoorAction();
+            float walk = opening - OpenSeconds;
+            if (walk < CrossingSeconds + InsideTurnSeconds)
+            {
+                door.SetOpen(1f);
+                Vector3 at = Vector3.Lerp(HandleDock(false, 1f), InsideDock, Mathf.Clamp01(walk / CrossingSeconds));
+                at = Vector3.Lerp(at, InsideDock + Vector3.right * 1.04f,
+                    Mathf.InverseLerp(CrossingSeconds, CrossingSeconds + InsideTurnSeconds, walk));
+                Move(at, Vector3.back, step);
+                return;
+            }
+            // The jamb hides the whole resident inside the room before the leaf closes.
+            if (body.gameObject.activeSelf) body.gameObject.SetActive(false);
+            float close = (walk - CrossingSeconds - InsideTurnSeconds) / ClosingSeconds;
+            door.SetOpen(1f - Mathf.SmoothStep(0f, 1f, close));
+            if (close >= 1f) stage = Visit.Indoors;
+        }
+
+        private void OperateDoor(float seconds, bool fromDeck, float step)
+        {
+            float fraction = Ease(seconds, VillageResidentPresentation.DoorGripStartSeconds,
+                VillageResidentPresentation.DoorGripEndSeconds);
+            door.SetOpen(fraction);
+            Vector3 dock = HandleDock(!fromDeck, fraction);
+            Vector3 hand = transform.InverseTransformPoint(door.Handle);
+            float travel = Vector3.Distance(dock, body.transform.localPosition);
+            Move(dock, new Vector3(hand.x - dock.x, 0f, hand.z - dock.z), step, faceTarget: true);
+            // The same authored clip and moving right-hand contact as the ordinary
+            // residents at the kiosk and glass-return workshop.
+            body.SampleWalkingDoor(resident, seconds, fromDeck ? -travel : travel, step);
+            resident.ApplySampledDoorContact(seconds, door.Handle);
+            samplingDoor = true;
+        }
+
+        private Vector3 HandleDock(bool inside, float fraction)
+        {
+            // Follow the latch from beside the swept leaf, with room behind the feet.
+            Vector3 hinge = threshold + new Vector3(-.365f, 0f, .06f);
+            if (inside)
+            {
+                Vector3 latch = Quaternion.Euler(0f, -95f * fraction, 0f) * new Vector3(.665f, 0f, .034f);
+                return hinge + latch + new Vector3(Mathf.Lerp(-.25f, .39f, fraction), 0f, -.51f);
+            }
+            float angle = Mathf.Lerp(23f, 63f, fraction) * Mathf.Deg2Rad;
+            return hinge + new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * .96f;
+        }
+
+        private void EndDoorAction()
+        {
+            if (!samplingDoor) return;
+            samplingDoor = false;
+            body.ClearAuthoredAction();
+            body.Advance(0f, false, true);
+        }
+
+        private void Move(Vector3 at, Vector3 facing, float step, bool faceTarget = false)
+        {
+            Vector3 displacement = at - body.transform.localPosition;
+            bool walking = displacement.sqrMagnitude > .000001f;
+            Vector3 heading = walking && !faceTarget ? displacement : facing;
+            if (heading.sqrMagnitude > .000001f)
+                body.transform.localRotation = Quaternion.RotateTowards(body.transform.localRotation,
+                    Quaternion.LookRotation(heading), 240f * step);
+            body.transform.localPosition = at;
+            if (!faceTarget) body.AdvanceTravelled(step, walking, transform.TransformVector(displacement));
+        }
+
+        private static float Ease(float seconds, float start, float end) =>
+            Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(start, end, seconds));
+
+        private CityRailRestSpot Rail => CityRailRestSpot.AtLevelRail(transform.position, transform.forward,
+            transform.position + transform.forward * Descriptor.RailReach + Vector3.up * CityBalconySmokerDescriptor.RailHeight);
+
+        private void BeginLean()
+        {
+            body.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
+            body.Advance(0f, false, true);
+            rest.Bind(Rail, true, Descriptor.AnimationPhase01);
+            SampleSmoke(0f);
+        }
+
+        private void SampleSmoke(float step)
+        {
+            double duration = animationDefinition.LoopDurationSeconds;
+            float sampled = Mathf.Min(elapsed, smokingSeconds);
+            LoopTimeSeconds = sampled >= smokingSeconds ? duration : sampled % duration;
+            CurrentLoopFrame = ResolveLoopFrame(animationDefinition, LoopTimeSeconds);
+            CurrentClipProgress01 = ResolveClipProgress(animationDefinition, LoopTimeSeconds);
+            playable.SetTime(activeClip.length * CurrentClipProgress01);
+            graph.Evaluate(0f);
+            // The Hero clip supplies the actual draw and authored holds. Match its
+            // reach on the resident's own proportions, with the filter touching the lips.
+            float distance = Vector3.Distance(driverMouth.position, driverFilter.position);
+            float lift = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(.43f, .085f, distance));
+            float weight = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / SettleSeconds)) *
+                (1f - Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((elapsed - smokingSeconds) / SettleSeconds)));
+            rest.ApplyBalcony(Rail, elapsed, lift, weight);
+            if (step > 0f && elapsed <= smokingSeconds &&
+                Math.Floor((elapsed - burstTimeSeconds) / duration) > Math.Floor((elapsed - step - burstTimeSeconds) / duration))
+                ExhaleEffect.EmitManualBurst();
+        }
+
+        private void LateUpdate() => Advance(Time.deltaTime);
+
+        private void OnEnable()
+        {
+            if (!IsInitialized) return;
+            if (Finished) StartVisit();
+            else if (AtRail) BeginLean();
+        }
+
+        private void OnDisable()
+        {
+            rest?.Release();
+            if (door != null) door.SetOpen(0f);
+            if (ExhaleEffect != null) ExhaleEffect.StopAndClear();
         }
 
         public void Shutdown()
         {
-            if (!IsInitialized && !graph.IsValid())
-            {
-                return;
-            }
-
-            if (exhaleEffect != null)
-            {
-                exhaleEffect.StopAndClear();
-            }
-
-            RestoreModelBasePosition();
-            if (graph.IsValid())
-            {
-                graph.Destroy();
-            }
-
-            if (poseDriverRoot != null)
-            {
-                CityPedestrianResources.DestroyObject(poseDriverRoot);
-            }
-
-            // Explicit rather than left to the body's destruction: the
-            // director may release a smoker and the body's asset must not
-            // keep a cigarette between uses.
-            CityPedestrianHandProps.Detach(ref heldCigarette);
-
+            if (!IsInitialized && !graph.IsValid()) return;
             IsInitialized = false;
-            registry = null;
-            activeClip = null;
-            animationDefinition = null;
-            exhaleEffect = null;
-            footGroundingProbe = null;
-            poseDriverRegistry = null;
-            poseDriverRoot = null;
-            poseBoneBindings = Array.Empty<PoseBoneBinding>();
-            mouthSocket = null;
-            loopTimeSeconds = 0d;
-            burstTimeSeconds = 0d;
-            CurrentLoopFrame = 0;
-            CurrentClipProgress01 = 0f;
+            if (door != null) door.SetOpen(0f);
+            rest?.Release();
+            if (ExhaleEffect != null) ExhaleEffect.StopAndClear();
+            if (graph.IsValid()) graph.Destroy();
+            if (poseDriverRoot != null) CityPedestrianResources.DestroyObject(poseDriverRoot);
+            if (body != null) body.Shutdown();
         }
+
+        private void OnDestroy() => Shutdown();
 
         public static PlayerAnimatedInteractionDefinition
             CreateAnimationDefinition()
@@ -340,32 +315,6 @@ namespace BarPromenade
                 loopFrameExtraHoldSeconds: holds);
         }
 
-        private void LateUpdate()
-        {
-            Advance(Time.deltaTime);
-        }
-
-        private void OnEnable()
-        {
-            if (IsInitialized)
-            {
-                EvaluatePose();
-            }
-        }
-
-        private void OnDisable()
-        {
-            if (exhaleEffect != null)
-            {
-                exhaleEffect.StopAndClear();
-            }
-        }
-
-        private void OnDestroy()
-        {
-            Shutdown();
-        }
-
         private void BuildGraph(Animator animator)
         {
             graph = PlayableGraph.Create(
@@ -384,29 +333,9 @@ namespace BarPromenade
             graph.Play();
         }
 
-        private void EvaluatePose()
-        {
-            if (!graph.IsValid())
-            {
-                return;
-            }
-
-            RestoreModelBasePosition();
-            CurrentLoopFrame = ResolveLoopFrame(
-                animationDefinition,
-                loopTimeSeconds);
-            CurrentClipProgress01 = ResolveClipProgress(
-                animationDefinition,
-                loopTimeSeconds);
-            playable.SetTime(activeClip.length * CurrentClipProgress01);
-            graph.Evaluate(0f);
-            TransferPoseFromDriver();
-            GroundFeetToPresentationRoot();
-        }
-
         private Animator CreatePoseDriver(Avatar heroAvatar)
         {
-            poseDriverRegistry = Player3DResources.Instantiate(transform);
+            var poseDriverRegistry = Player3DResources.Instantiate(transform);
             poseDriverRoot = poseDriverRegistry.gameObject;
             poseDriverRoot.name = "SmokeLoop Pose Driver";
             poseDriverRoot.transform.localPosition = Vector3.zero;
@@ -437,159 +366,9 @@ namespace BarPromenade
             driverAnimator.applyRootMotion = false;
             driverAnimator.runtimeAnimatorController = null;
             driverAnimator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
-            poseBoneBindings = BuildPoseBoneBindings(
-                poseDriverRegistry.ModelRoot,
-                registry.ModelRoot);
+            driverMouth = CityPedestrianHandProps.FindSocket(poseDriverRegistry.ModelRoot, MouthSocketName);
+            driverFilter = CityPedestrianHandProps.FindSocket(poseDriverRegistry.ModelRoot, CigaretteSocketName);
             return driverAnimator;
-        }
-
-        private static PoseBoneBinding[] BuildPoseBoneBindings(
-            Transform sourceModelRoot,
-            Transform targetModelRoot)
-        {
-            if (PoseBoneNames.Length != ExpectedPoseBoneCount)
-            {
-                throw new InvalidOperationException(
-                    "The balcony-smoker canonical bone catalog drifted.");
-            }
-
-            var bindings = new PoseBoneBinding[ExpectedPoseBoneCount];
-            var names = new HashSet<string>(StringComparer.Ordinal);
-            for (int index = 0; index < PoseBoneNames.Length; index++)
-            {
-                string boneName = PoseBoneNames[index];
-                if (!names.Add(boneName))
-                {
-                    throw new InvalidOperationException(
-                        $"Balcony-smoker pose catalog repeats bone " +
-                        $"'{boneName}'.");
-                }
-
-                Transform source = FindUniqueDescendant(
-                    sourceModelRoot,
-                    boneName,
-                    "source");
-                Transform target = FindUniqueDescendant(
-                    targetModelRoot,
-                    boneName,
-                    "target");
-                string sourceParent = source.parent != null
-                    ? source.parent.name
-                    : string.Empty;
-                string targetParent = target.parent != null
-                    ? target.parent.name
-                    : string.Empty;
-                if (!string.Equals(
-                        sourceParent,
-                        targetParent,
-                        StringComparison.Ordinal))
-                {
-                    throw new InvalidOperationException(
-                        $"Balcony-smoker bone '{boneName}' changed parent " +
-                        $"from '{sourceParent}' to '{targetParent}'.");
-                }
-
-                bindings[index] = new PoseBoneBinding(source, target);
-            }
-
-            return bindings;
-        }
-
-        private static Transform FindUniqueDescendant(
-            Transform rootTransform,
-            string name,
-            string rigRole)
-        {
-            Transform found = null;
-            FindUniqueDescendant(
-                rootTransform,
-                name,
-                rigRole,
-                ref found);
-            if (found == null)
-            {
-                throw new InvalidOperationException(
-                    $"Balcony-smoker {rigRole} rig is missing canonical " +
-                    $"bone '{name}'.");
-            }
-
-            return found;
-        }
-
-        private static void FindUniqueDescendant(
-            Transform current,
-            string name,
-            string rigRole,
-            ref Transform found)
-        {
-            if (string.Equals(current.name, name, StringComparison.Ordinal))
-            {
-                if (found != null)
-                {
-                    throw new InvalidOperationException(
-                        $"Balcony-smoker {rigRole} rig repeats canonical " +
-                        $"bone '{name}'.");
-                }
-
-                found = current;
-            }
-
-            for (int index = 0; index < current.childCount; index++)
-            {
-                FindUniqueDescendant(
-                    current.GetChild(index),
-                    name,
-                    rigRole,
-                    ref found);
-            }
-        }
-
-        private void TransferPoseFromDriver()
-        {
-            for (int index = 0;
-                 index < poseBoneBindings.Length;
-                 index++)
-            {
-                poseBoneBindings[index].Apply();
-            }
-        }
-
-        private void GroundFeetToPresentationRoot()
-        {
-            if (registry == null || registry.ModelRoot == null)
-            {
-                return;
-            }
-
-            if (!TryGetGroundingHeight(out float lowestFoot))
-            {
-                return;
-            }
-
-            registry.ModelRoot.position += Vector3.up *
-                (transform.position.y - lowestFoot);
-        }
-
-        private bool TryGetGroundingHeight(out float height)
-        {
-            if (footGroundingProbe != null &&
-                footGroundingProbe.TryGetLowestHeight(out height))
-            {
-                return true;
-            }
-
-            height = float.PositiveInfinity;
-            IncludeHeight(registry.LeftFootAnchor, ref height);
-            IncludeHeight(registry.RightFootAnchor, ref height);
-            return !float.IsPositiveInfinity(height);
-        }
-
-        private void RestoreModelBasePosition()
-        {
-            if (registry != null && registry.ModelRoot != null)
-            {
-                registry.ModelRoot.localPosition = modelBaseLocalPosition;
-            }
         }
 
         private static int ResolveLoopFrame(
@@ -658,235 +437,5 @@ namespace BarPromenade
             return seconds;
         }
 
-        private static float SanitizeDeltaTime(float deltaTime)
-        {
-            return IsFinite(deltaTime)
-                ? Mathf.Clamp(deltaTime, 0f, MaximumStepSeconds)
-                : 0f;
-        }
-
-        private static void IncludeHeight(
-            Transform anchor,
-            ref float lowestHeight)
-        {
-            if (anchor != null && IsFinite(anchor.position.y))
-            {
-                lowestHeight = Mathf.Min(lowestHeight, anchor.position.y);
-            }
-        }
-
-        private sealed class FootGroundingProbe
-        {
-            private readonly FootContactPoint[] contacts;
-
-            private FootGroundingProbe(FootContactPoint[] contactPoints)
-            {
-                contacts = contactPoints;
-            }
-
-            public static FootGroundingProbe Create(
-                CityPedestrianAssetRegistry assetRegistry)
-            {
-                var points = new List<FootContactPoint>();
-                IReadOnlyList<CityPedestrianRendererBinding> bindings =
-                    assetRegistry.RendererBindings;
-                for (int index = 0; index < bindings.Count; index++)
-                {
-                    CityPedestrianRendererBinding binding = bindings[index];
-                    if (binding == null || binding.Renderer == null)
-                    {
-                        continue;
-                    }
-
-                    Transform foot = ResolveFoot(assetRegistry, binding);
-                    if (foot != null)
-                    {
-                        AddBoundsContacts(
-                            points,
-                            foot,
-                            binding.Renderer.bounds);
-                    }
-                }
-
-                return points.Count > 0
-                    ? new FootGroundingProbe(points.ToArray())
-                    : null;
-            }
-
-            public bool TryGetLowestHeight(out float height)
-            {
-                height = float.PositiveInfinity;
-                for (int index = 0; index < contacts.Length; index++)
-                {
-                    if (contacts[index].TryGetWorldPosition(
-                            out Vector3 position))
-                    {
-                        height = Mathf.Min(height, position.y);
-                    }
-                }
-
-                return !float.IsPositiveInfinity(height);
-            }
-
-            private static Transform ResolveFoot(
-                CityPedestrianAssetRegistry assetRegistry,
-                CityPedestrianRendererBinding binding)
-            {
-                string rendererName = binding.RendererName ?? string.Empty;
-                if (rendererName.IndexOf(
-                        "LeftBootSole",
-                        StringComparison.Ordinal) >= 0 ||
-                    rendererName.IndexOf(
-                        "ShoeSole.L",
-                        StringComparison.Ordinal) >= 0)
-                {
-                    return assetRegistry.LeftFootAnchor;
-                }
-
-                if (rendererName.IndexOf(
-                        "RightBootSole",
-                        StringComparison.Ordinal) >= 0 ||
-                    rendererName.IndexOf(
-                        "ShoeSole.R",
-                        StringComparison.Ordinal) >= 0)
-                {
-                    return assetRegistry.RightFootAnchor;
-                }
-
-                return null;
-            }
-
-            private static void AddBoundsContacts(
-                ICollection<FootContactPoint> points,
-                Transform bone,
-                Bounds bounds)
-            {
-                AddBoundsFace(points, bone, bounds, bounds.min.y);
-                AddBoundsFace(points, bone, bounds, bounds.max.y);
-            }
-
-            private static void AddBoundsFace(
-                ICollection<FootContactPoint> points,
-                Transform bone,
-                Bounds bounds,
-                float y)
-            {
-                points.Add(new FootContactPoint(
-                    bone,
-                    new Vector3(bounds.min.x, y, bounds.min.z)));
-                points.Add(new FootContactPoint(
-                    bone,
-                    new Vector3(bounds.min.x, y, bounds.max.z)));
-                points.Add(new FootContactPoint(
-                    bone,
-                    new Vector3(bounds.max.x, y, bounds.min.z)));
-                points.Add(new FootContactPoint(
-                    bone,
-                    new Vector3(bounds.max.x, y, bounds.max.z)));
-            }
-        }
-
-        private readonly struct FootContactPoint
-        {
-            private readonly Transform bone;
-            private readonly Vector3 boneLocalPosition;
-
-            public FootContactPoint(
-                Transform footBone,
-                Vector3 worldPosition)
-            {
-                bone = footBone;
-                boneLocalPosition = bone != null
-                    ? bone.InverseTransformPoint(worldPosition)
-                    : Vector3.zero;
-            }
-
-            public bool TryGetWorldPosition(out Vector3 position)
-            {
-                if (bone == null)
-                {
-                    position = default;
-                    return false;
-                }
-
-                position = bone.TransformPoint(boneLocalPosition);
-                return IsFinite(position);
-            }
-        }
-
-        private readonly struct PoseBoneBinding
-        {
-            private readonly Transform source;
-            private readonly Transform target;
-            private readonly Vector3 sourceRestPosition;
-            private readonly Vector3 targetRestPosition;
-            private readonly Quaternion sourceRestRotation;
-            private readonly Quaternion targetRestRotation;
-            private readonly Vector3 sourceRestScale;
-            private readonly Vector3 targetRestScale;
-
-            public PoseBoneBinding(Transform sourceBone, Transform targetBone)
-            {
-                source = sourceBone;
-                target = targetBone;
-                sourceRestPosition = sourceBone.localPosition;
-                targetRestPosition = targetBone.localPosition;
-                sourceRestRotation = sourceBone.localRotation;
-                targetRestRotation = targetBone.localRotation;
-                sourceRestScale = sourceBone.localScale;
-                targetRestScale = targetBone.localScale;
-                if (Vector3.Distance(
-                        sourceRestPosition,
-                        targetRestPosition) > RestPositionTolerance ||
-                    Quaternion.Angle(
-                        sourceRestRotation,
-                        targetRestRotation) > RestAngleTolerance ||
-                    Vector3.Distance(
-                        sourceRestScale,
-                        targetRestScale) > RestPositionTolerance ||
-                    Mathf.Abs(sourceRestScale.x) <= 0.000001f ||
-                    Mathf.Abs(sourceRestScale.y) <= 0.000001f ||
-                    Mathf.Abs(sourceRestScale.z) <= 0.000001f)
-                {
-                    throw new InvalidOperationException(
-                        $"Balcony-smoker bone '{sourceBone.name}' no " +
-                        "longer shares the Hero V2 rest transform.");
-                }
-            }
-
-            public void Apply()
-            {
-                if (source == null || target == null)
-                {
-                    return;
-                }
-
-                Quaternion delta =
-                    Quaternion.Inverse(sourceRestRotation) *
-                    source.localRotation;
-                target.localPosition = targetRestPosition +
-                    (source.localPosition - sourceRestPosition);
-                target.localRotation = targetRestRotation * delta;
-                Vector3 sourceScaleRatio = new Vector3(
-                    source.localScale.x / sourceRestScale.x,
-                    source.localScale.y / sourceRestScale.y,
-                    source.localScale.z / sourceRestScale.z);
-                target.localScale = Vector3.Scale(
-                    targetRestScale,
-                    sourceScaleRatio);
-            }
-        }
-
-        private static bool IsFinite(Vector3 value)
-        {
-            return IsFinite(value.x) &&
-                   IsFinite(value.y) &&
-                   IsFinite(value.z);
-        }
-
-        private static bool IsFinite(float value)
-        {
-            return !float.IsNaN(value) && !float.IsInfinity(value);
-        }
     }
 }

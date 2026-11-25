@@ -28,7 +28,8 @@ namespace BarPromenade
             Vector3 cityWorldPosition,
             Vector3 cityWorldFacing,
             int paletteVariant,
-            float animationPhase01)
+            float animationPhase01,
+            float railReach = .48f, Vector2? doorOffset = null, int appearance = 0)
         {
             if (string.IsNullOrWhiteSpace(stableId) ||
                 string.IsNullOrWhiteSpace(balconySlotStableId) ||
@@ -61,6 +62,11 @@ namespace BarPromenade
             ArchetypeDesignId = archetypeDesignId.Trim();
             Position = position;
             Facing = horizontal.normalized;
+            RailReach = railReach;
+            DoorOffset = doorOffset ?? new Vector2(-.48f, -.68f);
+            Appearance = appearance;
+            int index = 2 * appearance + (archetypeDesignId == DefaultNpcCatalog.OrdinaryWoman ? 1 : 0);
+            CharacterId = DefaultNpcPopulation.BalconyResidentId(index);
             CityWorldPosition = cityWorldPosition;
             CityWorldFacing = cityHorizontal.normalized;
             int normalizedPalette = paletteVariant % 4;
@@ -76,6 +82,11 @@ namespace BarPromenade
         public string ArchetypeDesignId { get; }
         public Vector3 Position { get; }
         public Vector3 Facing { get; }
+        public string CharacterId { get; }
+        internal Vector2 DoorOffset { get; }
+        private int Appearance { get; }
+        internal float RailReach { get; }
+        internal const float RailHeight = .99f;
         public Vector3 CityWorldPosition { get; }
         public Vector3 CityWorldFacing { get; }
         public Vector3 WorldPosition => CityWorldPosition;
@@ -100,7 +111,7 @@ namespace BarPromenade
                 CityWorldPosition,
                 CityWorldFacing,
                 PaletteVariant,
-                AnimationPhase01);
+                AnimationPhase01, RailReach, DoorOffset, Appearance);
         }
 
         private static Vector3 Horizontal(Vector3 value)
@@ -206,9 +217,10 @@ namespace BarPromenade
                 candidates.Count);
             var selected = new List<CityBalconySmokerDescriptor>(
                 targetCount);
-            for (int index = 0; index < targetCount; index++)
+            for (int index = 0; selected.Count < targetCount && index < candidates.Count; index++)
             {
-                selected.Add(candidates[index]);
+                if (!CityBalconySmokerArchetypeCatalog.UsesCharacter(selected, candidates[index].CharacterId))
+                    selected.Add(candidates[index]);
             }
 
             return new CityBalconySmokerPlan(
@@ -431,6 +443,12 @@ namespace BarPromenade
                 PaletteSalt) % 4u);
             float phase = CityPedestrianStableHash.ToUnitFloat(
                 CityPedestrianStableHash.Combine(baseHash, PhaseSalt));
+            var door = registry.WindowSlots[0];
+            foreach (var opening in registry.WindowSlots)
+                if (opening.SlotId == slot.DoorSlotId) { door = opening; break; }
+            Vector3 delta = door.LocalCenter - slot.LocalNpcDock;
+            Vector2 doorOffset = new Vector2(Vector3.Dot(delta, Vector3.Cross(Vector3.up, slot.LocalOutward)),
+                Vector3.Dot(delta, slot.LocalOutward));
             var descriptor = new CityBalconySmokerDescriptor(
                 stableId,
                 lot.Cell,
@@ -441,7 +459,9 @@ namespace BarPromenade
                 worldPosition,
                 worldFacing,
                 palette,
-                phase);
+                phase, Vector3.Dot(slot.LocalDeckBounds.ClosestPoint(slot.LocalNpcDock + slot.LocalOutward * 2f)
+                    - slot.LocalNpcDock, slot.LocalOutward) - .04f, doorOffset,
+                (int)(slotHash % (DefaultNpcPopulation.BalconyResidentCount / 2)));
             uint selection = CityPedestrianStableHash.Combine(
                 baseHash,
                 SelectionSalt);

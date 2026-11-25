@@ -796,9 +796,20 @@ def validate_prototypes(prototypes: Sequence[PrototypeSpec]) -> None:
                     if any(all(minimum[axis] <= probe[axis] <= maximum[axis]
                                for axis in range(3)) for minimum, maximum in solids):
                         problems.append(f"{prototype.stable_id} passage has an obstruction")
-            if sum(minimum[2] >= clearance - 1e-5
-                                     for minimum, _ in solids) != 1:
+                    above = (x, y, clearance + .03)
+                    if not any(all(minimum[a] <= above[a] <= maximum[a] for a in range(3))
+                               for minimum, maximum in solids):
+                        problems.append(f"{prototype.stable_id} passage lacks its overhead lintel")
+            if prototype.district != "Residential" and sum(low[2] >= clearance - 1e-5 for low, _ in solids) != 1:
                 problems.append(f"{prototype.stable_id} passage must have two piers and a lintel")
+        if prototype.district == "Residential":
+            for door in (s for s in prototype.window_slots if s.opening_kind == "BalconyDoor" and s.floor == 1):
+                x, front, height = door.center_source
+                for dx, depth, filled in ((0., .1, False), (0., 1.6, False), (1.1, .75, False),
+                                          (1.1, .15, True), (0., 1.7, True)):
+                    sample = (x + dx, front - depth, height)
+                    if any(all(a[i] < sample[i] < b[i] for i in range(3)) for a, b in solids) != filled:
+                        problems.append(f"{prototype.stable_id} balcony {door.slot_id} has a blocked or unlined recess")
 
     if set(ids) != set(expected):
         problems.append("prototype stable-ID set differs from the contract")

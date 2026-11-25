@@ -776,9 +776,8 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   Body caps `5/28/22/36/10` at 00/06/10/17/22h, cache 48. Ambient
   `2/8/10/12/4`, cache 18, combined 48, warm≤3. Half-hour ramps,
   arrivals per 12m≤4 combined/2 ambient, hidden handoffs, 60/40 target.
-  Ambient walks use stairs, avoid crossings and enter away from platforms.
-  Ambient walkers sweep sidesteps and leave room to back across joins.
-  Clear kerbs and turnouts can serve a pass. House spurs use the full pavement.
+  Ambient walkers use stairs, skip crossings/platform entries, pass at clear kerbs/turnouts and back across joins.
+  Others lean at quays, wide courts or Ridge rails until departure. House spurs use the full pavement.
   Public circuits turn at the sidewalk. The hero's
   house is private; the pavement in front stays connected. Ordinary
   movement keeps its `.82 m/s` pace; distant idle/walk sampling is bounded while
@@ -1347,10 +1346,9 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
 - Residential:one passive smoker candidate per ordinary house, lowest fog-readable
   balcony row. Session-local appearances around the moving hero prefer `12-22 m`
   across/ahead, ≤two active/one per house, distance release; hero home excluded.
-  Roaming archetypes sample Hero V2 `SmokeLoop`/holds on a hidden native driver;
-  all `31` canonical local bone channels/Blender cigarette-ember/shared-rig mouth
-  exhale transfer. Home's bounded deterministic selection fits complete prototypes
-  in its reconstructed half-space, enabled only in the Balcony shot.
+  Assigned default residents walk through their hinged balcony door. Hero V2
+  `SmokeLoop` drives the draw. Left elbow bears weight, eyes down, smoke from lips.
+  After the last exhale they straighten, open the door and turn into the recessed room before it closes. Home shows the same facades.
   No collision/interaction/speech/sound/light/story state;
 - one residual residential laundry (`CityLaundry{Plan,AssetProvider,Controller}`):
   fixed-metre `8.6x6.6m` L-kit/windows/front closed/side open;two drums/table/shelves/canopy/trolley.

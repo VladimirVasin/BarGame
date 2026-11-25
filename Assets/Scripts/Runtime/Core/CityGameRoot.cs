@@ -758,6 +758,9 @@ namespace BarPromenade
 
             RefreshDistrictRain();
             SelectDistrict(firstDistrict);
+            BalconySmokers = CityBalconySmokerDirector.Create(transform, Layout.Seed,
+                CityBalconySmokerPlan.CreateCandidates(Layout), Player.GameObject.transform, Visibility,
+                position => districtPlan == null || (districtPlan.IsRidge(position) ? RidgeDistrictReady : LowerDistrictReady));
             AmbientPedestrians = CityAmbientPedestrians.Create(this, pedestrianWalkableArea);
             Physics.SyncTransforms();
             while (AmbientPedestrians.WarmNext())

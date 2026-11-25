@@ -162,7 +162,7 @@ namespace BarPromenade
             doorWalkPlayable = AnimationClipPlayable.Create(graph, clips[(int)VillageResidentAction.Walk]);
             doorWalkPlayable.SetSpeed(0); doorWalkPlayable.SetApplyFootIK(false);
             graph.Connect(doorWalkPlayable, 0, contactLayers, 1);
-            doorWalkMask = CreateGustMask(true);
+            doorWalkMask = CreateDoorStepMask();
             contactLayers.SetLayerMaskFromAvatarMask(1, doorWalkMask);
             graph.Connect(contactLayers, 0, weatherLayers, 0);
             weatherLayers.SetInputWeight(0, 1f);
@@ -363,9 +363,16 @@ namespace BarPromenade
             if (action != VillageResidentAction.DoorOpen && action != VillageResidentAction.DoorClose)
                 throw new ArgumentException("A door requires its opening or closing action.", nameof(action));
             Apply(action, elapsedSeconds);
-            float weight = elapsedSeconds < 1f ? Smooth(elapsedSeconds) :
-                elapsedSeconds > 2.5f ? Smooth(3.5f - elapsedSeconds) : 1f;
-            ApplyHandContacts(worldHandle, null, weight);
+            ApplySampledDoorContact(elapsedSeconds, worldHandle);
+        }
+
+        // The City street graph can sample the same resident clip. The arm
+        // bindings survive ReleaseAnimation, so contact needs no second graph.
+        internal void ApplySampledDoorContact(float elapsedSeconds, Vector3 worldHandle)
+        {
+            float weight = elapsedSeconds < DoorGripStartSeconds ? Smooth(elapsedSeconds) :
+                elapsedSeconds > DoorGripEndSeconds ? Smooth(DoorDurationSeconds - elapsedSeconds) : 1f;
+            SolveArm(false, worldHandle, weight, rightHand.rotation);
         }
 
         public void ApplyDoor(VillageResidentAction action, float elapsedSeconds, Vector3 worldHandle,
@@ -459,6 +466,8 @@ namespace BarPromenade
             hand.rotation = handRotation;
             return Vector3.Distance(grip.position, target) <= .025f;
         }
+
+        internal AvatarMask CreateDoorStepMask() => CreateGustMask(lowerOnly: true);
 
         private AvatarMask CreateGustMask(bool lowerOnly = false, bool heldOnly = false)
         {

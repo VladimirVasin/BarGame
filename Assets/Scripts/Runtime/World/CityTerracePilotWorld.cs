@@ -17,12 +17,15 @@ namespace BarPromenade
         }
 
         public static GameObject Build(Transform parent, CityTerraceDistrictPlan district)
-            => district.IsEnabled ? BuildParts(parent, district.Floors, district.Flights, null, district) : null;
+            => Build(parent, district, null);
+
+        internal static GameObject Build(Transform parent, CityTerraceDistrictPlan district, List<CityRailRestSpot> rests)
+            => district.IsEnabled ? BuildParts(parent, district.Floors, district.Flights, null, district, rests) : null;
 
         private static GameObject BuildParts(Transform parent,
             IReadOnlyList<CityTerracePilotFloor> floors,
             IReadOnlyList<CityExteriorStairFlightDescriptor> flights,
-            CityTerracePilotPlan pilot, CityTerraceDistrictPlan district)
+            CityTerracePilotPlan pilot, CityTerraceDistrictPlan district, List<CityRailRestSpot> rests = null)
         {
             if (parent == null) throw new ArgumentNullException(nameof(parent));
             var root = new GameObject("Terraced Courtyards");
@@ -75,7 +78,7 @@ namespace BarPromenade
                         floor.Center - Vector3.up * thickness, floor.Size, foundationBottom);
                 if (district == null || !floor.Id.StartsWith("residence-entry-", StringComparison.Ordinal))
                     BuildFloorRails(root.transform, templates[floor.Id == "link-inner-turn" || floor.Id == "link-bottom-turn"
-                        ? "CourtReturnRail" : "TerraceRail"], floors, flights, floor, district);
+                        ? "CourtReturnRail" : "TerraceRail"], floors, flights, floor, district, rests: rests);
             }
             foreach (CityExteriorStairFlightDescriptor flight in flights)
                 BuildFlight(root.transform, flight, templates["TerraceFlight"], templates["TerraceSupport"], foundationBottom);
@@ -434,7 +437,8 @@ namespace BarPromenade
 
         private static void BuildFloorRails(Transform root, GameObject template,
             IReadOnlyList<CityTerracePilotFloor> floors, IReadOnlyList<CityExteriorStairFlightDescriptor> flights,
-            CityTerracePilotFloor floor, CityTerraceDistrictPlan district, CityHillsideShortcut stair = null)
+            CityTerracePilotFloor floor, CityTerraceDistrictPlan district, CityHillsideShortcut stair = null,
+            List<CityRailRestSpot> rests = null)
         {
             for (int axis = 0; axis < 2; axis++)
             for (int sign = -1; sign <= 1; sign += 2)
@@ -529,6 +533,11 @@ namespace BarPromenade
                         Vector3 position = center + tangent * start - normal * inset;
                         Quaternion yaw = Quaternion.LookRotation(tangent);
                         Model(template, root, floor.Id + " edge rail", position, yaw, new Vector3(1f, 1f, run / 2.4f));
+                        // One mid-module contact per uninterrupted edge of a wide court.
+                        // Openings were already subtracted above. Keep both ends clear.
+                        if (rests != null && halfNormal >= 2f && length >= 6f && i == (count - 1) / 2)
+                            rests.Add(CityRailRestSpot.OnPublicEdge(root.TransformPoint(position + tangent * (run * .5f)),
+                                root.TransformDirection(normal), 1.05f));
                         Box(root, floor.Id + " edge guard", position + tangent * run * .5f + Vector3.up * .525f,
                             new Vector3(.12f, 1.05f, run), yaw);
                     }

@@ -232,6 +232,7 @@ namespace BarPromenade
 
         private void ReleaseDistrict(CityDistrict district)
         {
+            AmbientPedestrians?.ReleaseRailRests(district.World);
             DayNight.SetDistrictNight(district.Ridge, null);
             if (!district.Ridge) Cannery?.RestorePresentation();
             district.Root.gameObject.SetActive(false);
@@ -254,7 +255,6 @@ namespace BarPromenade
                 YardWheelchair = null;
                 DryingYardBabushkas = null;
                 CourtyardResidents = null;
-                BalconySmokers = null;
                 ArchShelterPresentation = null;
                 ArchShelterConversations = null;
                 CemeteryMourner = null;

@@ -516,6 +516,74 @@ def prism(polygon: Sequence[Vec2], bottom: float, top: float) -> Geometry:
     return Geometry(vertices, tuple(faces), (0,) * len(faces))
 
 
+def open_balcony_reveals(shell: Geometry, front: float, doors: Sequence[WindowSlot]) -> Geometry:
+    """Cut the flat facade, retaining the authored bevels and the lower entrance."""
+    intact, inserts = [], []
+    for face in shell.faces:
+        vertices = [shell.vertices[i] for i in face]
+        if len(face) != 4 or not all(abs(y - front) < 1e-6 for _, y, _ in vertices):
+            intact.append(face)
+            continue
+        x0, x1 = min(v[0] for v in vertices), max(v[0] for v in vertices)
+        z0, z1 = min(v[2] for v in vertices), max(v[2] for v in vertices)
+        overlaps = [(d.center_source[0] - .36, d.center_source[0] + .36,
+                     d.center_source[2] - 1.1, d.center_source[2] + 1.06) for d in doors
+                    if x0 < d.center_source[0] + .36 and x1 > d.center_source[0] - .36
+                    and z0 < d.center_source[2] + 1.06 and z1 > d.center_source[2] - 1.1]
+        if not overlaps:
+            intact.append(face)
+            continue
+        cuts = sorted({x0, x1, *(max(x0, min(x1, x)) for box in overlaps for x in box[:2])})
+        for a, b in zip(cuts, cuts[1:]):
+            middle = (a+b)*.5
+            bottom = z0
+            for left, right, sill, head in sorted(overlaps, key=lambda box: box[2]):
+                if not left < middle < right:
+                    continue
+                if sill > bottom:
+                    inserts.append(facade_panel("Front", (middle, front, (sill+bottom)*.5), b-a, sill-bottom, 0, 0))
+                bottom = max(bottom, head)
+            if z1 > bottom:
+                inserts.append(facade_panel("Front", (middle, front, (z1+bottom)*.5), b-a, z1-bottom, 0, 0))
+    return merge([Geometry(shell.vertices, tuple(intact), (0,)*len(intact)), *inserts])
+
+
+def cut_balcony_room(solids, x, front, floor):
+    # A narrow masonry throat opens into a wider room behind the right jamb.
+    # Keep the same partition order as the Unity logical collider builder.
+    for left, right, back, edge in ((x - .36, x + .36, front - .40, front),
+                                     (x - .55, x + 1.65, front - 1.65, front - .40)):
+        result = []
+        for low, high in solids:
+            a, b = max(left, low[0]), min(right, high[0])
+            c, d = max(back, low[1]), min(edge, high[1])
+            e, f = max(floor, low[2]), min(floor + 2.16, high[2])
+            if b - a < 1e-5 or d - c < 1e-5 or f - e < 1e-5:
+                result.append((low, high))
+                continue
+            pieces = ((low, (high[0], high[1], e)), ((low[0], low[1], f), high),
+                      ((low[0], low[1], e), (a, high[1], f)), ((b, low[1], e), (high[0], high[1], f)),
+                      ((a, low[1], e), (b, c, f)), ((a, d, e), (b, high[1], f)))
+            result.extend((p, q) for p, q in pieces if all(v-u > 1e-5 for u, v in zip(p, q)))
+        solids = result
+    return tuple(solids)
+
+
+def balcony_room(x, front, floor):
+    # Inside-facing lining follows the actual void. Ease each exposed corner,
+    # leave the mouth open, and join floor/ceiling to the existing deck datum.
+    outline = ((-.37, 0.), (-.36, -.018), (-.36, -.39), (-.37, -.40),
+               (-.54, -.40), (-.55, -.41), (-.55, -1.64), (-.54, -1.65),
+               (1.64, -1.65), (1.65, -1.64), (1.65, -.41), (1.64, -.40),
+               (.37, -.40), (.36, -.39), (.36, -.018), (.37, 0.))
+    n = len(outline)
+    vertices = tuple((x + dx, front + dy, floor + h)
+                     for h in (0., 2.16) for dx, dy in outline)
+    faces = [tuple(range(n)), tuple(reversed(range(n, 2*n)))]
+    faces.extend((i, i+n, i+1+n, i+1) for i in range(n-1))
+    return Geometry(vertices, tuple(faces), (0,) * len(faces))
+
+
 def facade_prism(polygon: Sequence[Vec2], bottom: float, top: float) -> Geometry:
     """Ease the exposed convex arrises while retaining each face's datum."""
     outline = []
@@ -731,8 +799,14 @@ def coastal_prototype(district: str, variant: int) -> PrototypeSpec:
                          (.075, .10, body_top - .4)))
     for floor_band in (2.8, 5.6, 8.4, 11.2):
         if district != "Industrial" and floor_band + .2 < body_top:
-            secondary.append(trim_box((0, front_y - .055, floor_band + .12),
-                                 (width - .12, .24, .12)))
+            spans = [(-half_w + .06, half_w - .06)]
+            if district == "Residential" and floor_band == 2.8:
+                for door_x in (-width*.28-.48, width*.28-.48):
+                    spans = [(a, b) for left, right in spans
+                             for a, b in ((left, min(right, door_x-.375)), (max(left, door_x+.375), right)) if b > a]
+            for left, right in spans:
+                secondary.append(trim_box(((left+right)*.5, front_y - .055, floor_band + .12),
+                                          (right-left, .24, .12)))
     slots: list[WindowSlot] = []
     balconies: list[BalconySlot] = []
     if district == "Residential":
@@ -837,6 +911,22 @@ def coastal_prototype(district: str, variant: int) -> PrototypeSpec:
             (half_w - 0.2, 0.25, 0.5), (half_w, front_y - 0.25, body_top - 0.5))
     attachments[0] = FacadeAttachmentBounds("Front",
         (-half_w + 0.25, front_y - 0.2, 0.5), (half_w - 0.25, front_y, body_top - 0.5))
+    if balconies:
+        doors = [slot for slot in slots if slot.opening_kind == "BalconyDoor" and slot.floor == 1]
+        if passage:
+            # The joined upper/lower masses have internal caps at the arch crown.
+            # Only the downward-facing soffit over the open passage is exposed.
+            keep = tuple(face for face in facade_primary.faces
+                         if not all(abs(facade_primary.vertices[i][2] - passage_top) < 1e-6 for i in face))
+            soffit = Geometry(((-1.8, -half_d, passage_top), (-1.8, front_y, passage_top),
+                               (1.8, front_y, passage_top), (1.8, -half_d, passage_top)), ((0, 1, 2, 3),), (0,))
+            facade_primary = combine(Geometry(facade_primary.vertices, keep, (0,) * len(keep)), soffit)
+        facade_primary = open_balcony_reveals(facade_primary, front_y, doors)
+        for door in doors:
+            x, _, center_z = door.center_source
+            floor = center_z - door.size_m[1] * .5
+            secondary.append(balcony_room(x, front_y, floor))
+            solids = cut_balcony_room(solids, x, front_y, floor)
     role_geometry = {"FacadePrimary": facade_primary, "FacadeSecondary": merge(secondary),
         "Plinth": plinth, "Roof": roof, "Metal": merge(metal),
         "WindowFrame": frame, "WindowGlass": glass}

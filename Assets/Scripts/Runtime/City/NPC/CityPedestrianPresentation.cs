@@ -46,6 +46,9 @@ namespace BarPromenade
         private AnimationClipPlayable walkPlayable;
         private AnimationClipPlayable sitPlayable;
         private AnimationClipPlayable authoredActionPlayable;
+        private AnimationLayerMixerPlayable doorStepLayer;
+        private AnimationClipPlayable doorSteps;
+        private AvatarMask doorStepMask;
         private AnimationClip authoredActionClip;
         private bool hasSitPlayable;
         private bool hasAuthoredActionPlayable;
@@ -55,6 +58,21 @@ namespace BarPromenade
         private CityBusStandingPose standing;
         private CityPedestrianShoeContacts shoes;
         private CityPedestrianSeatedPose seatedPose;
+        private CityRailRestPose railRest;
+        internal bool IsRestingAtRail => railRest != null && railRest.Bound;
+        internal bool IsSmokingAtRail => IsRestingAtRail && railRest.Smoking;
+
+        internal void RestAtRail(CityRailRestSpot spot, bool smoking, float phase)
+        {
+            ClearAttention();
+            // Take a grounded idle once. A stationary encounter owns its pose
+            // from activation, including Unity's first Animator update.
+            SetMoving(false);
+            EvaluateGraph(0f);
+            railRest ??= new CityRailRestPose(registry);
+            railRest.Bind(spot, smoking, phase);
+            Advance(0f, false, true);
+        }
         private Vector3 seatLocalUp;
         private CityPedestrianSeatedRide seatedRide;
         private CityPedestrianAssetRegistry registry;
@@ -82,6 +100,7 @@ namespace BarPromenade
             new Player3DProceduralLocomotionLayer();
         private bool legLayerBound;
         private bool walkingThroughBusDoor;
+        internal bool UseAuthoredFloor { get; set; }
         private readonly NpcAttentionHeadLayer attention =
             new NpcAttentionHeadLayer();
         private readonly NpcAttentionNotice heroNotice = new NpcAttentionNotice();
@@ -408,6 +427,30 @@ namespace BarPromenade
             return true;
         }
 
+        internal void SampleWalkingDoor(VillageResidentPresentation character, float seconds, float signedMetres, float delta)
+        {
+            if (!doorStepLayer.IsValid())
+            {
+                doorStepMask = character.CreateDoorStepMask();
+                doorStepLayer = AnimationLayerMixerPlayable.Create(graph, 2);
+                doorSteps = AnimationClipPlayable.Create(graph, activeWalkClip);
+                doorSteps.SetSpeed(0d);
+                doorSteps.SetApplyFootIK(false);
+                doorSteps.SetApplyPlayableIK(false);
+                graph.Connect(locomotionMixer, 0, doorStepLayer, 0);
+                graph.Connect(doorSteps, 0, doorStepLayer, 1);
+                doorStepLayer.SetInputWeight(0, 1f);
+                doorStepLayer.SetLayerMaskFromAvatarMask(1, doorStepMask);
+                graph.GetOutput(0).SetSourcePlayable(doorStepLayer);
+            }
+            if (authoredActionWeight == 0f) doorSteps.SetTime(walkPlayable.GetTime());
+            float clipTime = (float)doorSteps.GetTime() + signedMetres * activeWalkClip.length / walkCycleMetres;
+            doorSteps.SetTime(Mathf.Repeat(clipTime, activeWalkClip.length));
+            doorStepLayer.SetInputWeight(1, delta > 0f ? Mathf.Clamp01(Mathf.Abs(signedMetres) / (delta * .65f)) : 0f);
+            ApplyAuthoredAction(character.GetClip(VillageResidentAction.DoorOpen),
+                seconds / VillageResidentPresentation.DoorDurationSeconds, 1f);
+        }
+
         public void ClearAuthoredAction()
         {
             if (!IsInitialized || !locomotionMixer.IsValid())
@@ -416,6 +459,7 @@ namespace BarPromenade
             }
 
             FlushPendingEvaluation();
+            if (doorStepLayer.IsValid()) doorStepLayer.SetInputWeight(1, 0f);
             authoredActionWeight = 0f;
             ApplyMixerWeights();
             EvaluateGraph(0f);
@@ -567,9 +611,17 @@ namespace BarPromenade
 
         private void EvaluateAnimation(float elapsed)
         {
-            EvaluateGraph(elapsed);
-            BlendGroundSeatTransition(elapsed);
-            attention.Apply(elapsed);
+            if (IsRestingAtRail)
+            {
+                railRest.RestoreBones();
+                railRest.Apply(elapsed);
+            }
+            else
+            {
+                EvaluateGraph(elapsed);
+                BlendGroundSeatTransition(elapsed);
+                attention.Apply(elapsed);
+            }
             LastAdvanceDeltaTime = elapsed;
             Advanced?.Invoke(elapsed);
         }
@@ -581,6 +633,13 @@ namespace BarPromenade
                 return;
             }
 
+            railRest?.Release();
+            if (doorStepMask != null)
+            {
+                if (Application.isPlaying) Destroy(doorStepMask);
+                else DestroyImmediate(doorStepMask);
+                doorStepMask = null;
+            }
             standing?.Release();
             seatedPose?.Release();
             CancelGroundSeatTransition();
@@ -742,7 +801,7 @@ namespace BarPromenade
                 return;
             }
 
-            if (walkingThroughBusDoor)
+            if (walkingThroughBusDoor || UseAuthoredFloor)
             {
                 // The scripted root carries the pavement, threshold and aisle
                 // heights. Keep the clip's relative foot lift and put the
@@ -891,6 +950,7 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            railRest?.Release();
             walkingThroughBusDoor = false;
             standing?.Release();
             seatedPose?.Release();

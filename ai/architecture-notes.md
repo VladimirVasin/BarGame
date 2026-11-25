@@ -2788,11 +2788,8 @@
   within `22 m` of the moving hero, prefers the `12-22 m` cross-street band
   ahead of the current travel direction, bounds an empty eligible area to one
   missed opportunity, keeps at most two
-  active and releases them beyond `36 m` or after the hero leaves the facade
-  side.
-  Presentation remains passive and unchanged; Home retains a separate bounded
-  deterministic composition because its exterior view is a modal reconstruction,
-  not the live City runtime.
+  active. Accepted 2026-11-25: assigned default residents emerge through their
+  own balcony door, lean through the draw, then use DoorOpen and turn behind the jamb before the leaf closes. Mesh and collision share a 1.65 m recess. Distance release applies. Home shares the visit.
 - **Accepted:** Domain reload is disabled on entering play mode
   (`m_EnterPlayModeOptions: 1`); scene reload is kept, being cheap and safe.
   This makes every mutable static field in `Assets/Scripts/Runtime` survive

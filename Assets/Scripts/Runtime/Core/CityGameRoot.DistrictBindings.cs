@@ -82,16 +82,6 @@ namespace BarPromenade
                     CityCourtyardResidentPlan.Create(
                         Layout,
                         world.DecorationPlan));
-                // Passive residents make authored Residential balconies read as
-                // real apartments. Every ordinary building contributes one
-                // deterministic candidate dock; a small per-session population
-                // appears and disappears around the moving hero, outside the
-                // roaming pedestrian pool and never on the hero's own building.
-                BalconySmokers = CityBalconySmokerDirector.Create(
-                    owner,
-                    Layout.Seed,
-                    CityBalconySmokerPlan.CreateCandidates(Layout),
-                    Player.GameObject.transform, Visibility);
                 if (world.ArchShelterPlan.IsEnabled)
                 {
                     ArchShelterPresentation = world.ArchShelter.Root

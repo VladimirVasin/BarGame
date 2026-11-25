@@ -472,18 +472,8 @@ namespace BarPromenade
                 CityRiverPromenadeDescriptor promenade =
                     layout.River.Promenades[bankIndex];
                 Rect physicalBounds = layout.River.GetPromenadeSurfaceBounds(promenade);
-                float railX = promenade.WestBank
-                    ? layout.River.Segments[0].WaterBounds.xMin -
-                      CityRiverPlanner.QuayEdgeOffset
-                    : layout.River.Segments[0].WaterBounds.xMax +
-                      CityRiverPlanner.QuayEdgeOffset;
-                List<AxisRange> openings = CreateQuayOpeningRanges(
-                    layout.River,
-                    promenade.WestBank);
-                List<AxisRange> spans = SubtractRanges(
-                    promenade.Bounds.yMin,
-                    promenade.Bounds.yMax,
-                    openings);
+                float railX = QuayRailX(layout.River, promenade);
+                List<AxisRange> spans = QuayRailSpans(layout.River, promenade);
                 for (int spanIndex = 0;
                      spanIndex < spans.Count;
                      spanIndex++)
@@ -1873,6 +1863,15 @@ namespace BarPromenade
             return result;
         }
 
+        internal static float QuayRailX(CityRiverPlan river, CityRiverPromenadeDescriptor bank) =>
+            bank.WestBank ? river.Segments[0].WaterBounds.xMin - CityRiverPlanner.QuayEdgeOffset
+                : river.Segments[0].WaterBounds.xMax + CityRiverPlanner.QuayEdgeOffset;
+
+        internal const float QuayRailTop = RailHeight + RailThickness * .5f;
+
+        internal static List<AxisRange> QuayRailSpans(CityRiverPlan river, CityRiverPromenadeDescriptor bank) =>
+            SubtractRanges(bank.Bounds.yMin, bank.Bounds.yMax, CreateQuayOpeningRanges(river, bank.WestBank));
+
         private static List<AxisRange> CreateQuayOpeningRanges(
             CityRiverPlan plan,
             bool westBank)
@@ -2233,7 +2232,7 @@ namespace BarPromenade
                 tint);
         }
 
-        private readonly struct AxisRange
+        internal readonly struct AxisRange
         {
             internal AxisRange(float minimum, float maximum)
             {

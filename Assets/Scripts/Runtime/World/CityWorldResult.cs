@@ -50,10 +50,11 @@ namespace BarPromenade
             CityResidentialCourtyardPlan residentialCourtyards = null,
             GameObject residentialCourtyardRoot = null,
             IReadOnlyList<Collider> kioskRainShelters = null,
-            GameObject ridgeRoot = null)
+            GameObject ridgeRoot = null, IReadOnlyList<CityRailRestSpot> railRests = null)
         {
             Root = root;
             RidgeRoot = ridgeRoot;
+            RailRests = railRests ?? Array.Empty<CityRailRestSpot>();
             Cafe = cafe;
             CafeSite = cafeSite;
             CafeRainShelter = cafeRainShelter;
@@ -138,9 +139,11 @@ namespace BarPromenade
         }
 
         internal CityWorldResult(GameObject root, HomeEntrance home, RoadWalkableArea walkableArea,
-            IReadOnlyList<Collider> shelters, CityLayout layout, CityMountainBoundaryPlan mountain)
+            IReadOnlyList<Collider> shelters, CityLayout layout, CityMountainBoundaryPlan mountain,
+            IReadOnlyList<CityRailRestSpot> railRests)
         {
             Root = RidgeRoot = root;
+            RailRests = railRests;
             PlayerHome = home;
             WalkableArea = walkableArea;
             KioskRainShelters = shelters;
@@ -156,6 +159,7 @@ namespace BarPromenade
             barsById = new Dictionary<string, BarEntrance>(StringComparer.Ordinal);
         }
 
+        internal IReadOnlyList<CityRailRestSpot> RailRests { get; }
         public GameObject Root { get; }
         public GameObject RidgeRoot { get; }
         public MountainRoadCafeWorldResult Cafe { get; }

@@ -15,8 +15,8 @@ namespace BarPromenade.Tests.PlayMode
     /// A deliberately isolated visual proof for the Residential balcony
     /// contract. It uses the packaged Blender prototype and the production
     /// balcony-smoker factory, then photographs one selected authored slot.
-    /// The two 1280x720 frames should be viewed at half size to judge the
-    /// intended 640x360 presentation.
+    /// Records the uninterrupted visit on the live frame loop before sampling
+    /// individual contact poses on both ordinary bodies.
     /// </summary>
     public sealed class CityResidentialBalconyVisualCapturePlayModeTests
     {
@@ -174,6 +174,40 @@ namespace BarPromenade.Tests.PlayMode
                 Is.True,
                 "The Blender-authored rail/threshold/handle surface must " +
                 "be visible in the capture.");
+            ConfigureRenderState(descriptor.Facing);
+            Camera camera = CreateCamera();
+            CreateBuffers(camera);
+            string folder = Path.Combine(Directory.GetCurrentDirectory(), "Captures", CaptureFolder);
+            Directory.CreateDirectory(folder);
+            Vector3 outward = descriptor.Facing.normalized;
+            Vector3 right = Vector3.Cross(Vector3.up, outward).normalized;
+            Vector3 focus = descriptor.Position + Vector3.up * .88f;
+            Transform visitor = presentation.Registry.transform;
+            Vector3 sill = buildingRegistry.transform.TransformPoint(door.LocalCenter - Vector3.up * (door.SizeMeters.y * .5f));
+            Assert.That(Vector3.Dot(visitor.position - sill, outward), Is.LessThan(-.40f));
+            Vector3 localSill = buildingRegistry.transform.InverseTransformPoint(sill);
+            var throughOpening = new Ray(localSill + Vector3.up + Vector3.forward * .1f, Vector3.back);
+            float rearWall = float.PositiveInfinity;
+            foreach (Bounds solid in buildingRegistry.ColliderBounds)
+                if (solid.IntersectRay(throughOpening, out float distance)) rearWall = Mathf.Min(rearWall, distance);
+            Assert.That(rearWall, Is.EqualTo(1.75f).Within(.02f), "The open threshold leads to the recessed rear wall.");
+            yield return RecordVisit(camera, presentation, folder, focus, outward, right);
+            smokerRuntime.SetVisible(false);
+            smokerRuntime.SetVisible(true);
+            for (int i = 0; i < 18; i++) presentation.Advance(.1f);
+            Assert.That(presentation.OperatingDoor && presentation.DoorFraction > .25f, Is.True);
+            Assert.That(presentation.HeldCigarette.gameObject.activeSelf, Is.False);
+            for (int i = 0; i < 20; i++) presentation.Advance(.1f);
+            Assert.That(Vector3.Dot(visitor.position - sill, outward), Is.GreaterThan(.05f));
+            yield return null;
+            Capture(camera, folder, "residential-balcony-outward.png",
+                focus + outward * 2.8f + right * 2f + Vector3.up * .65f, focus, 46f);
+            for (int i = 0; i < 34; i++) presentation.Advance(.1f);
+            Assert.That(presentation.AtRail, Is.True);
+            AssertRailSupport(presentation);
+            yield return null;
+            Capture(camera, folder, "residential-balcony-settled.png",
+                focus + outward * 1.9f + right * 3f + Vector3.up * .85f, focus, 46f);
             AssertHeroSmokeLoop(presentation);
             AssertSmokingProps(presentation);
             AssertEveryEligibleArchetypeReachesInhaleContact(root.transform);
@@ -202,7 +236,7 @@ namespace BarPromenade.Tests.PlayMode
 
             AdvanceToReadableInhale(presentation);
             Assert.That(
-                AssertPoseMatchesLiteralDriver(
+                AssertSupportedInhale(
                     presentation,
                     descriptor.ArchetypeDesignId),
                 Is.LessThan(0.20f),
@@ -219,22 +253,7 @@ namespace BarPromenade.Tests.PlayMode
                 restart: false,
                 fixedTimeStep: false);
 
-            ConfigureRenderState(descriptor.Facing);
-            Camera camera = CreateCamera();
-            CreateBuffers(camera);
-            string folder = Path.Combine(
-                Directory.GetCurrentDirectory(),
-                "Captures",
-                CaptureFolder);
-            Directory.CreateDirectory(folder);
-
-            // Give the freshly emitted plume one rendered frame while
-            // retaining the readable exhale pose selected above.
             yield return null;
-
-            Vector3 outward = descriptor.Facing.normalized;
-            Vector3 right = Vector3.Cross(Vector3.up, outward).normalized;
-            Vector3 focus = descriptor.Position + Vector3.up * 0.88f;
             Capture(
                 camera,
                 folder,
@@ -247,10 +266,107 @@ namespace BarPromenade.Tests.PlayMode
                 camera,
                 folder,
                 "residential-balcony-detail.png",
-                focus + outward * 4.2f + right * 1.65f +
+                focus + outward * 1.9f + right * 3.0f +
                 Vector3.up * 0.85f,
                 focus,
                 46f);
+
+            for (int i = 0; i < 400 && presentation.AtRail; i++) presentation.Advance(.1f);
+            Assert.That(presentation.AtRail, Is.False);
+            Assert.That(presentation.SmokeBurstCount, Is.GreaterThanOrEqualTo(2));
+            var character = visitor.GetComponent<CityPedestrianDefaultNpcBody>().Character;
+            for (int i = 0; i < 11; i++) presentation.Advance(.1f);
+            Assert.That(presentation.DoorFraction, Is.Zero, "Approach precedes opening.");
+            Assert.That(Vector3.Distance(visitor.position, presentation.transform.position), Is.GreaterThan(.12f));
+            Assert.That(visitor.GetComponent<CityPedestrianPresentation>().IsMoving, Is.True);
+            Transform elbow = FindDescendant(presentation.Registry.ModelRoot, "forearm.L");
+            Assert.That(elbow.parent.position.y - elbow.position.y, Is.GreaterThan(.13f), "Leave the rail upright.");
+            yield return null;
+            Capture(camera, folder, "residential-balcony-approach.png",
+                focus + outward * 2.8f + right * 2f + Vector3.up * .65f, focus, 46f);
+            for (int i = 0; i < 24; i++) presentation.Advance(.1f);
+            Assert.That(visitor.GetComponent<CityPedestrianPresentation>().AuthoredActionClip,
+                Is.SameAs(character.GetClip(VillageResidentAction.DoorOpen)));
+            Assert.That(presentation.DoorFraction, Is.InRange(.3f, .9f));
+            Assert.That(Vector3.Distance(character.RightGrip.position, presentation.DoorHandle), Is.LessThan(.08f));
+            yield return null;
+            Capture(camera, folder, "residential-balcony-handle.png",
+                focus + outward * 2.8f + right * 2f + Vector3.up * .65f, focus, 46f);
+            for (int i = 0; i < 31; i++) presentation.Advance(.1f);
+            Assert.That(Vector3.Dot(visitor.position - sill, outward), Is.InRange(-.35f, .1f));
+            Assert.That(presentation.DoorFraction, Is.EqualTo(1f));
+            yield return null;
+            Capture(camera, folder, "residential-balcony-return.png",
+                focus + outward * 2.8f + right * 2f + Vector3.up * .65f, focus, 46f);
+            for (int i = 0; i < 48 && visitor.gameObject.activeSelf; i++) presentation.Advance(.1f);
+            Assert.That(visitor.gameObject.activeSelf, Is.False);
+            Assert.That(presentation.DoorFraction, Is.GreaterThan(.92f), "Resident is inside before the leaf closes.");
+            for (int i = 0; i < 14; i++) presentation.Advance(.1f);
+            Assert.That(presentation.Finished && !visitor.gameObject.activeSelf, Is.True);
+            Assert.That(presentation.transform.Find("Balcony doorway").gameObject.activeSelf, Is.False);
+        }
+
+        private IEnumerator RecordVisit(Camera camera, CityBalconySmokerPresentation presentation,
+            string folder, Vector3 focus, Vector3 outward, Vector3 right)
+        {
+            const int width = 384, height = 216, columns = 4, rows = 4;
+            const int frameRate = 24, sampleEvery = 3;
+            var target = RenderTexture.GetTemporary(width, height, 24, RenderTextureFormat.ARGB32);
+            var sheet = new Texture2D(width * columns, height * rows, TextureFormat.RGB24, false);
+            float previousStep = Time.captureDeltaTime;
+            int sample = 0;
+            bool reachedRail = false;
+            float stepLiftAtHandle = 0f;
+            try
+            {
+                Time.captureDeltaTime = 1f / frameRate;
+                camera.targetTexture = target;
+                camera.transform.position = focus + outward * 3.1f + right * 1.35f + Vector3.up * .48f;
+                camera.transform.LookAt(focus);
+                camera.fieldOfView = 41f;
+                camera.enabled = true;
+                for (int frame = 0; frame < frameRate * 90; frame++)
+                {
+                    yield return null;
+                    reachedRail |= presentation.AtRail;
+                    if (reachedRail && presentation.OperatingDoor && presentation.DoorFraction is > .1f and < .9f)
+                    {
+                        float lift = presentation.Registry.LeftFoot.position.y - presentation.Registry.RightFoot.position.y;
+                        stepLiftAtHandle = Mathf.Max(stepLiftAtHandle, Mathf.Abs(lift));
+                    }
+                    if (frame % sampleEvery != 0 && !presentation.Finished) continue;
+                    int cell = sample % (columns * rows);
+                    var previous = RenderTexture.active;
+                    try
+                    {
+                        RenderTexture.active = target;
+                        int lastCell = presentation.Finished ? columns * rows - 1 : cell;
+                        for (int tile = cell; tile <= lastCell; tile++)
+                            sheet.ReadPixels(new Rect(0, 0, width, height), tile % columns * width,
+                                (rows - 1 - tile / columns) * height, false);
+                    }
+                    finally { RenderTexture.active = previous; }
+
+                    if (cell == columns * rows - 1 || presentation.Finished)
+                    {
+                        string name = $"visit-{sample / (columns * rows):D2}.jpg";
+                        File.WriteAllBytes(Path.Combine(folder, name), sheet.EncodeToJPG(88));
+                    }
+                    sample++;
+                    if (presentation.Finished) break;
+                }
+                Assert.That(presentation.Finished, Is.True, "The uninterrupted visit must reach a closed door.");
+                Assert.That(presentation.DoorFraction, Is.Zero);
+                Assert.That(stepLiftAtHandle, Is.GreaterThan(.025f), "Step back with the opening leaf while gripping its handle.");
+            }
+            finally
+            {
+                Time.captureDeltaTime = previousStep;
+                camera.enabled = false;
+                camera.targetTexture = renderTarget;
+                RenderTexture.ReleaseTemporary(target);
+                Object.Destroy(sheet);
+            }
         }
 
         private void ConfigureRenderState(Vector3 balconyOutward)
@@ -426,6 +542,10 @@ namespace BarPromenade.Tests.PlayMode
                 registry.transform.InverseTransformPoint(
                     presentation.transform.position);
             Bounds deck = balcony.LocalDeckBounds;
+            Vector3 rail = localPresentation + balcony.LocalOutward * descriptor.RailReach +
+                Vector3.up * CityBalconySmokerDescriptor.RailHeight;
+            Assert.That(rail.z, Is.EqualTo(deck.max.z - .04f).Within(.002f));
+            Assert.That(rail.y, Is.EqualTo(deck.max.y + .99f).Within(.002f));
             Assert.That(
                 localPresentation.x,
                 Is.InRange(deck.min.x, deck.max.x));
@@ -444,6 +564,19 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 Vector3.Dot(presentation.transform.forward, expectedFacing),
                 Is.GreaterThan(0.999f));
+        }
+
+        private static void AssertRailSupport(CityBalconySmokerPresentation smoker)
+        {
+            Transform left = FindDescendant(smoker.Registry.ModelRoot, "forearm.L");
+            Vector3 top = smoker.transform.position + smoker.transform.forward * smoker.Descriptor.RailReach +
+                Vector3.up * CityBalconySmokerDescriptor.RailHeight;
+            Vector3 bearing = Vector3.ProjectOnPlane(left.position - top, smoker.transform.right);
+            Assert.That(bearing.magnitude, Is.LessThan(.085f),
+                $"{smoker.Descriptor.ArchetypeDesignId}: supporting elbow to beam {bearing:F3}");
+            Vector3 feet = (smoker.Registry.LeftFoot.position + smoker.Registry.RightFoot.position) * .5f;
+            Assert.That(Vector3.Dot(left.parent.position - feet, smoker.transform.forward), Is.GreaterThan(.23f));
+            Assert.That(Vector3.Dot(smoker.ExhaleEffect.MouthAnchor.up, Vector3.down), Is.GreaterThan(.15f));
         }
 
         private static void AssertHeroSmokeLoop(
@@ -466,7 +599,7 @@ namespace BarPromenade.Tests.PlayMode
                 "The resident must sample the literal production Hero V2 " +
                 "SmokeLoop asset.");
             Assert.That(
-                presentation.Registry.Animator.avatar,
+                presentation.GetComponentInChildren<Player3DAssetRegistry>(true).Animator.avatar,
                 Is.SameAs(hero.Animator.avatar));
             Assert.That(
                 presentation.AnimationDefinition.LoopClipName,
@@ -574,49 +707,16 @@ namespace BarPromenade.Tests.PlayMode
         private static void AssertEveryEligibleArchetypeReachesInhaleContact(
             Transform parent)
         {
-            GameObject heroPrefab = Player3DResources.LoadPrefab();
-            Player3DAssetRegistry hero = heroPrefab != null
-                ? heroPrefab.GetComponent<Player3DAssetRegistry>()
-                : null;
-            Assert.That(hero, Is.Not.Null);
-            Assert.That(
-                hero.TryGetAnimation(
-                    CityBalconySmokerPresentation.SmokeLoopClipName,
-                    out Player3DAnimationBinding smokeBinding),
-                Is.True);
-            PlayerAnimatedInteractionDefinition definition =
-                CityBalconySmokerPresentation.CreateAnimationDefinition();
             var compatibilityRoot = new GameObject(
                 "Balcony Smoker Archetype Compatibility");
             compatibilityRoot.transform.SetParent(parent, false);
             compatibilityRoot.transform.position =
                 new Vector3(1000f, 0f, 1000f);
 
-            var observed = CityBalconySmokerArchetypeCatalog
-                .EligibleDesignIds;
-            Assert.That(observed.Count, Is.GreaterThanOrEqualTo(2));
-            Assert.That(
-                observed.Count,
-                Is.EqualTo(
-                    CityPedestrianResources.OrdinaryResidentArchetypes.Count),
-                "Every ordinary resident should remain compatible with " +
-                "the shared smoking rig.");
+            var observed = DefaultNpcCatalog.ModelIds;
             for (int index = 0; index < observed.Count; index++)
             {
                 string designId = observed[index];
-                Assert.That(
-                    CityPedestrianResources.TryGetArchetype(
-                        designId,
-                        out CityPedestrianArchetype archetype),
-                    Is.True,
-                    designId);
-                Assert.That(
-                    CityPedestrianResources.TryInstantiate(
-                        CityPedestrianResources.LoadPrefab(archetype),
-                        compatibilityRoot.transform,
-                        out CityPedestrianAssetRegistry registry),
-                    Is.True,
-                    designId);
                 var descriptor = new CityBalconySmokerDescriptor(
                     $"capture-compatibility/{designId}",
                     new Vector2Int(index, 0),
@@ -628,29 +728,26 @@ namespace BarPromenade.Tests.PlayMode
                     Vector3.forward,
                     index,
                     0.39f);
-                var candidate = registry.gameObject.AddComponent<
-                    CityBalconySmokerPresentation>();
-                candidate.Initialize(
-                    registry,
-                    descriptor,
-                    smokeBinding.Clip,
-                    hero.Animator.avatar,
-                    definition,
-                    poseIsParentLocal: true);
+                var localPlan = CityBalconySmokerPlan.CreateSelection(0, CityBalconySmokerSpace.HomeLocal,
+                    new[] { descriptor });
+                var localCast = CityBalconySmokerFactory.Create(compatibilityRoot.transform, localPlan);
+                var candidate = localCast.Presentations[0];
+                Assert.That(candidate.Registry.GetComponent<CityPedestrianDefaultNpcBody>().CharacterId,
+                    Is.EqualTo(descriptor.CharacterId));
+                compatibilityRoot.transform.SetPositionAndRotation(new Vector3(2f, -1f, 4f), Quaternion.Euler(0f, 77f, 0f));
                 AdvanceToReadableInhale(candidate);
 
                 Assert.That(
-                    AssertPoseMatchesLiteralDriver(candidate, designId),
+                    AssertSupportedInhale(candidate, designId),
                     Is.LessThan(0.20f),
                     $"{designId} must retain Hero V2's readable inhale " +
                     "reach.");
                 AssertSmokingProps(candidate);
-                candidate.Shutdown();
-                registry.gameObject.SetActive(false);
+                localCast.Shutdown();
             }
         }
 
-        private static float AssertPoseMatchesLiteralDriver(
+        private static float AssertSupportedInhale(
             CityBalconySmokerPresentation presentation,
             string designId)
         {
@@ -677,13 +774,11 @@ namespace BarPromenade.Tests.PlayMode
             float residentDistance = Vector3.Distance(
                 mouth.position,
                 cigarette.position);
-            float driverDistance = Vector3.Distance(
-                driverMouth.position,
-                driverCigarette.position);
-            Assert.That(
-                residentDistance,
-                Is.EqualTo(driverDistance).Within(0.001f),
-                $"{designId} must receive the literal Hero V2 bone pose.");
+            Assert.That(Vector3.Distance(driverMouth.position, driverCigarette.position), Is.LessThan(.12f));
+            var paper = presentation.HeldCigarette.FindRenderer("ACC_Cigarette");
+            Assert.That(Vector3.Distance(mouth.position, MeasureMeshCentre(paper)), Is.LessThan(.067f),
+                designId + " cigarette must reach the lips.");
+            AssertRailSupport(presentation);
 
             // The attached prop rides the socket the pose transfer
             // moved: its ember must be within a cigarette's length of

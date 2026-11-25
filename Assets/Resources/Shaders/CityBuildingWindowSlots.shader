@@ -7,6 +7,8 @@ Shader "Bar Promenade/City Building Window Slots"
         _DayColor("Day Glass", Color) = (0.045, 0.055, 0.062, 1)
         _WarmColor("Street Lamp Light", Color) = (1.0, 0.72, 0.42, 1)
         _EmissionStrength("Emission Strength", Range(0, 2)) = 0.48
+        [HideInInspector] _OpenBalconyPane("Open balcony pane", Float) = 0
+        [HideInInspector] _BalconyLeafState("Hinged leaf window state", Float) = -1
     }
 
     SubShader
@@ -50,6 +52,8 @@ Shader "Bar Promenade/City Building Window Slots"
                 half4 _DayColor;
                 half4 _WarmColor;
                 half _EmissionStrength;
+                float _OpenBalconyPane;
+                float _BalconyLeafState;
                 float4 _BaseMap_TexelSize;
             CBUFFER_END
 
@@ -94,13 +98,16 @@ Shader "Bar Promenade/City Building Window Slots"
                         input.slotUv.x * CITY_WINDOW_SLOT_DIVISOR),
                     0,
                     63);
-                output.positionCS = positionInputs.positionCS;
+                // The serialized facade is closed by default. Move only this pane
+                // out of the opening while the resident operates the hinged leaf.
+                output.positionCS = slot + 1 == (int)_OpenBalconyPane
+                    ? float4(2, 2, 2, 1) : positionInputs.positionCS;
                 output.positionWS = positionInputs.positionWS;
                 output.normalWS = normalInputs.normalWS;
                 output.fogFactor = ComputeFogFactor(
                     positionInputs.positionCS.z);
                 output.paneUv = input.paneUv;
-                output.encodedState = _CityBuildingWindowStates[slot];
+                output.encodedState = _BalconyLeafState >= 0 ? _BalconyLeafState : _CityBuildingWindowStates[slot];
                 return output;
             }
 

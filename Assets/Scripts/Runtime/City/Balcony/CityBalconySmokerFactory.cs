@@ -5,10 +5,7 @@ using UnityEngine;
 namespace BarPromenade
 {
     /// <summary>
-    /// Builds passive balcony smokers from compatible current roaming bodies
-    /// and the literal production Hero V2 SmokeLoop clip. No navigation,
-    /// interaction, collision, sound or light component is introduced; a
-    /// missing cigarette is borrowed from YardBabushka3D as authored mesh.
+    /// Builds visits from the globally assigned default residents in City and the Home exterior.
     /// </summary>
     public static class CityBalconySmokerFactory
     {
@@ -73,56 +70,15 @@ namespace BarPromenade
                     out Avatar heroAvatar);
                 bool poseIsParentLocal =
                     plan.Space == CityBalconySmokerSpace.HomeLocal;
-                var prefabs = new Dictionary<string, GameObject>(
-                    StringComparer.Ordinal);
-                for (int index = 0;
-                     index < plan.Smokers.Count;
-                     index++)
+                foreach (var descriptor in plan.Smokers)
                 {
-                    CityBalconySmokerDescriptor descriptor =
-                        plan.Smokers[index];
-                    CityPedestrianArchetype archetype = ResolveArchetype(
-                        descriptor.ArchetypeDesignId);
-                    if (!prefabs.TryGetValue(
-                            archetype.DesignId,
-                            out GameObject prefab))
-                    {
-                        prefab = CityPedestrianResources.LoadPrefab(archetype);
-                        if (prefab == null)
-                        {
-                            throw new InvalidOperationException(
-                                $"Roaming pedestrian '{archetype.DesignId}' " +
-                                "is missing at Resources/" +
-                                archetype.PrefabResourcePath + ".");
-                        }
-
-                        prefabs.Add(archetype.DesignId, prefab);
-                    }
-
-                    if (!CityPedestrianResources.TryInstantiate(
-                            prefab,
-                            root,
-                            out CityPedestrianAssetRegistry registry))
-                    {
-                        throw new InvalidOperationException(
-                            $"Roaming pedestrian '{archetype.DesignId}' " +
-                            "lost its " +
-                            nameof(CityPedestrianAssetRegistry) + ".");
-                    }
-
-                    registry.gameObject.name =
-                        $"Balcony Smoker {index + 1:00} " +
-                        $"({archetype.DesignId})";
-                    var presentation = registry.gameObject.AddComponent<
-                        CityBalconySmokerPresentation>();
-                    presentation.Initialize(
-                        registry,
-                        descriptor,
-                        smokeLoop,
-                        heroAvatar,
-                        definition,
-                        poseIsParentLocal);
-                    ValidatePassivePresentation(registry.gameObject);
+                    var visit = new GameObject("Balcony visit " + descriptor.StableId).transform;
+                    visit.SetParent(root, false);
+                    var body = CityPedestrianFactory.CreateAmbientPresentation(visit, descriptor.CharacterId);
+                    NpcFootstepSources.Unregister(body.transform);
+                    var presentation = visit.gameObject.AddComponent<CityBalconySmokerPresentation>();
+                    presentation.Initialize(body, descriptor, smokeLoop, heroAvatar, definition, poseIsParentLocal);
+                    ValidatePassivePresentation(visit.gameObject);
                     presentations.Add(presentation);
                 }
 
@@ -152,22 +108,6 @@ namespace BarPromenade
                 CityPedestrianResources.DestroyObject(rootObject);
                 throw;
             }
-        }
-
-        private static CityPedestrianArchetype ResolveArchetype(
-            string designId)
-        {
-            if (!CityPedestrianResources.TryGetArchetype(
-                    designId,
-                    out CityPedestrianArchetype archetype) ||
-                !CityBalconySmokerArchetypeCatalog.IsEligible(designId))
-            {
-                throw new InvalidOperationException(
-                    $"Pedestrian design '{designId}' is not technically " +
-                    "eligible for the Hero V2 balcony-smoking pose.");
-            }
-
-            return archetype;
         }
 
         private static void ResolveHeroSmokeLoop(

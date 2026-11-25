@@ -28,7 +28,8 @@ namespace BarPromenade
             yield return new CompositionStep("ridge_terrain_and_homes", .57f);
 
             var shelters = new List<Collider>();
-            BuildRidgeDressing(root, layout, shelters);
+            var railRests = new List<CityRailRestSpot>();
+            BuildRidgeDressing(root, layout, shelters, railRests);
             foreach (var kiosk in CityKioskSites.ForLayout(layout).Sites)
                 if (kiosk.IsRidge)
                 {
@@ -45,7 +46,7 @@ namespace BarPromenade
 
             ground.SetGrassContext(layout);
             yield return ground.FinalizeSurfaceSteps(true);
-            completed(new CityWorldResult(root.gameObject, home, walkable, shelters, layout, mountain));
+            completed(new CityWorldResult(root.gameObject, home, walkable, shelters, layout, mountain, railRests));
             yield return new CompositionStep("ridge_complete", 1f);
         }
 

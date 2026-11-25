@@ -52,7 +52,7 @@
   },
   "prototype_count": 23,
   "mesh_count": 188,
-  "triangle_count": 33130,
+  "triangle_count": 34402,
   "prototypes": [
     {
       "stable_id": "old-town-prototype-01",
@@ -1285,7 +1285,7 @@
           "bounds_max_source": [
             -0.7,
             4.601,
-            12.2
+            2.8
           ],
           "bounds_min_unity": [
             -5.801,
@@ -1294,8 +1294,184 @@
           ],
           "bounds_max_unity": [
             -0.7,
+            2.8,
+            4.601
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -5.801,
+            -5.801,
+            4.96
+          ],
+          "bounds_max_source": [
+            -0.7,
+            4.601,
+            12.2
+          ],
+          "bounds_min_unity": [
+            -5.801,
+            4.96,
+            -5.801
+          ],
+          "bounds_max_unity": [
+            -0.7,
             12.2,
             4.601
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -5.801,
+            -5.801,
+            2.8
+          ],
+          "bounds_max_source": [
+            -4.27856,
+            4.601,
+            4.96
+          ],
+          "bounds_min_unity": [
+            -5.801,
+            2.8,
+            -5.801
+          ],
+          "bounds_max_unity": [
+            -4.27856,
+            4.96,
+            4.601
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -4.27856,
+            -5.801,
+            2.8
+          ],
+          "bounds_max_source": [
+            -4.08856,
+            2.951,
+            4.96
+          ],
+          "bounds_min_unity": [
+            -4.27856,
+            2.8,
+            -5.801
+          ],
+          "bounds_max_unity": [
+            -4.08856,
+            4.96,
+            2.951
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -4.27856,
+            4.201,
+            2.8
+          ],
+          "bounds_max_source": [
+            -4.08856,
+            4.601,
+            4.96
+          ],
+          "bounds_min_unity": [
+            -4.27856,
+            2.8,
+            4.201
+          ],
+          "bounds_max_unity": [
+            -4.08856,
+            4.96,
+            4.601
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -2.07856,
+            -5.801,
+            2.8
+          ],
+          "bounds_max_source": [
+            -0.7,
+            4.601,
+            4.96
+          ],
+          "bounds_min_unity": [
+            -2.07856,
+            2.8,
+            -5.801
+          ],
+          "bounds_max_unity": [
+            -0.7,
+            4.96,
+            4.601
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -3.36856,
+            -5.801,
+            2.8
+          ],
+          "bounds_max_source": [
+            -2.07856,
+            2.951,
+            4.96
+          ],
+          "bounds_min_unity": [
+            -3.36856,
+            2.8,
+            -5.801
+          ],
+          "bounds_max_unity": [
+            -2.07856,
+            4.96,
+            2.951
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -3.36856,
+            4.201,
+            2.8
+          ],
+          "bounds_max_source": [
+            -2.07856,
+            4.601,
+            4.96
+          ],
+          "bounds_min_unity": [
+            -3.36856,
+            2.8,
+            4.201
+          ],
+          "bounds_max_unity": [
+            -2.07856,
+            4.96,
+            4.601
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -4.08856,
+            -5.801,
+            2.8
+          ],
+          "bounds_max_source": [
+            -3.36856,
+            2.951,
+            4.96
+          ],
+          "bounds_min_unity": [
+            -4.08856,
+            2.8,
+            -5.801
+          ],
+          "bounds_max_unity": [
+            -3.36856,
+            4.96,
+            2.951
           ]
         },
         {
@@ -1307,7 +1483,7 @@
           "bounds_max_source": [
             5.801,
             4.601,
-            12.2
+            2.8
           ],
           "bounds_min_unity": [
             0.7,
@@ -1316,8 +1492,184 @@
           ],
           "bounds_max_unity": [
             5.801,
+            2.8,
+            4.601
+          ]
+        },
+        {
+          "bounds_min_source": [
+            0.7,
+            -5.801,
+            4.96
+          ],
+          "bounds_max_source": [
+            5.801,
+            4.601,
+            12.2
+          ],
+          "bounds_min_unity": [
+            0.7,
+            4.96,
+            -5.801
+          ],
+          "bounds_max_unity": [
+            5.801,
             12.2,
             4.601
+          ]
+        },
+        {
+          "bounds_min_source": [
+            0.7,
+            -5.801,
+            2.8
+          ],
+          "bounds_max_source": [
+            2.21856,
+            4.601,
+            4.96
+          ],
+          "bounds_min_unity": [
+            0.7,
+            2.8,
+            -5.801
+          ],
+          "bounds_max_unity": [
+            2.21856,
+            4.96,
+            4.601
+          ]
+        },
+        {
+          "bounds_min_source": [
+            2.21856,
+            -5.801,
+            2.8
+          ],
+          "bounds_max_source": [
+            2.40856,
+            2.951,
+            4.96
+          ],
+          "bounds_min_unity": [
+            2.21856,
+            2.8,
+            -5.801
+          ],
+          "bounds_max_unity": [
+            2.40856,
+            4.96,
+            2.951
+          ]
+        },
+        {
+          "bounds_min_source": [
+            2.21856,
+            4.201,
+            2.8
+          ],
+          "bounds_max_source": [
+            2.40856,
+            4.601,
+            4.96
+          ],
+          "bounds_min_unity": [
+            2.21856,
+            2.8,
+            4.201
+          ],
+          "bounds_max_unity": [
+            2.40856,
+            4.96,
+            4.601
+          ]
+        },
+        {
+          "bounds_min_source": [
+            4.41856,
+            -5.801,
+            2.8
+          ],
+          "bounds_max_source": [
+            5.801,
+            4.601,
+            4.96
+          ],
+          "bounds_min_unity": [
+            4.41856,
+            2.8,
+            -5.801
+          ],
+          "bounds_max_unity": [
+            5.801,
+            4.96,
+            4.601
+          ]
+        },
+        {
+          "bounds_min_source": [
+            3.12856,
+            -5.801,
+            2.8
+          ],
+          "bounds_max_source": [
+            4.41856,
+            2.951,
+            4.96
+          ],
+          "bounds_min_unity": [
+            3.12856,
+            2.8,
+            -5.801
+          ],
+          "bounds_max_unity": [
+            4.41856,
+            4.96,
+            2.951
+          ]
+        },
+        {
+          "bounds_min_source": [
+            3.12856,
+            4.201,
+            2.8
+          ],
+          "bounds_max_source": [
+            4.41856,
+            4.601,
+            4.96
+          ],
+          "bounds_min_unity": [
+            3.12856,
+            2.8,
+            4.201
+          ],
+          "bounds_max_unity": [
+            4.41856,
+            4.96,
+            4.601
+          ]
+        },
+        {
+          "bounds_min_source": [
+            2.40856,
+            -5.801,
+            2.8
+          ],
+          "bounds_max_source": [
+            3.12856,
+            2.951,
+            4.96
+          ],
+          "bounds_min_unity": [
+            2.40856,
+            2.8,
+            -5.801
+          ],
+          "bounds_max_unity": [
+            3.12856,
+            4.96,
+            2.951
           ]
         },
         {
@@ -1365,7 +1717,7 @@
           ]
         }
       ],
-      "triangle_count": 2034,
+      "triangle_count": 2298,
       "bounds_min_source": [
         -5.831,
         -5.831,
@@ -2319,8 +2671,8 @@
           "surface_kind": "FacadePrimary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 104,
-          "triangles": 200,
+          "vertices": 132,
+          "triangles": 212,
           "bounds_min_source": [
             -5.801,
             -5.801,
@@ -2359,11 +2711,11 @@
           "surface_kind": "FacadeSecondary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 168,
-          "triangles": 412,
+          "vertices": 280,
+          "triangles": 664,
           "bounds_min_source": [
             -5.761,
-            4.426,
+            2.951,
             2.56
           ],
           "bounds_max_source": [
@@ -2374,7 +2726,7 @@
           "bounds_min_unity": [
             -5.761,
             2.56,
-            4.426
+            2.951
           ],
           "bounds_max_unity": [
             5.761,
@@ -2386,7 +2738,7 @@
             0.193516
           ],
           "uv0_max": [
-            0.78268,
+            0.813447,
             0.996
           ],
           "uv2_slot_ids": [
@@ -5718,7 +6070,7 @@
           "bounds_max_source": [
             -0.7,
             4.55,
-            14.6
+            2.8
           ],
           "bounds_min_unity": [
             -7.75,
@@ -5727,8 +6079,184 @@
           ],
           "bounds_max_unity": [
             -0.7,
+            2.8,
+            4.55
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -7.75,
+            -5.75,
+            4.96
+          ],
+          "bounds_max_source": [
+            -0.7,
+            4.55,
+            14.6
+          ],
+          "bounds_min_unity": [
+            -7.75,
+            4.96,
+            -5.75
+          ],
+          "bounds_max_unity": [
+            -0.7,
             14.6,
             4.55
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -7.75,
+            -5.75,
+            2.8
+          ],
+          "bounds_max_source": [
+            -5.37,
+            4.55,
+            4.96
+          ],
+          "bounds_min_unity": [
+            -7.75,
+            2.8,
+            -5.75
+          ],
+          "bounds_max_unity": [
+            -5.37,
+            4.96,
+            4.55
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -5.37,
+            -5.75,
+            2.8
+          ],
+          "bounds_max_source": [
+            -5.18,
+            2.9,
+            4.96
+          ],
+          "bounds_min_unity": [
+            -5.37,
+            2.8,
+            -5.75
+          ],
+          "bounds_max_unity": [
+            -5.18,
+            4.96,
+            2.9
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -5.37,
+            4.15,
+            2.8
+          ],
+          "bounds_max_source": [
+            -5.18,
+            4.55,
+            4.96
+          ],
+          "bounds_min_unity": [
+            -5.37,
+            2.8,
+            4.15
+          ],
+          "bounds_max_unity": [
+            -5.18,
+            4.96,
+            4.55
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -3.17,
+            -5.75,
+            2.8
+          ],
+          "bounds_max_source": [
+            -0.7,
+            4.55,
+            4.96
+          ],
+          "bounds_min_unity": [
+            -3.17,
+            2.8,
+            -5.75
+          ],
+          "bounds_max_unity": [
+            -0.7,
+            4.96,
+            4.55
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -4.46,
+            -5.75,
+            2.8
+          ],
+          "bounds_max_source": [
+            -3.17,
+            2.9,
+            4.96
+          ],
+          "bounds_min_unity": [
+            -4.46,
+            2.8,
+            -5.75
+          ],
+          "bounds_max_unity": [
+            -3.17,
+            4.96,
+            2.9
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -4.46,
+            4.15,
+            2.8
+          ],
+          "bounds_max_source": [
+            -3.17,
+            4.55,
+            4.96
+          ],
+          "bounds_min_unity": [
+            -4.46,
+            2.8,
+            4.15
+          ],
+          "bounds_max_unity": [
+            -3.17,
+            4.96,
+            4.55
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -5.18,
+            -5.75,
+            2.8
+          ],
+          "bounds_max_source": [
+            -4.46,
+            2.9,
+            4.96
+          ],
+          "bounds_min_unity": [
+            -5.18,
+            2.8,
+            -5.75
+          ],
+          "bounds_max_unity": [
+            -4.46,
+            4.96,
+            2.9
           ]
         },
         {
@@ -5740,7 +6268,7 @@
           "bounds_max_source": [
             7.75,
             4.55,
-            14.6
+            2.8
           ],
           "bounds_min_unity": [
             0.7,
@@ -5749,8 +6277,184 @@
           ],
           "bounds_max_unity": [
             7.75,
+            2.8,
+            4.55
+          ]
+        },
+        {
+          "bounds_min_source": [
+            0.7,
+            -5.75,
+            4.96
+          ],
+          "bounds_max_source": [
+            7.75,
+            4.55,
+            14.6
+          ],
+          "bounds_min_unity": [
+            0.7,
+            4.96,
+            -5.75
+          ],
+          "bounds_max_unity": [
+            7.75,
             14.6,
             4.55
+          ]
+        },
+        {
+          "bounds_min_source": [
+            0.7,
+            -5.75,
+            2.8
+          ],
+          "bounds_max_source": [
+            3.31,
+            4.55,
+            4.96
+          ],
+          "bounds_min_unity": [
+            0.7,
+            2.8,
+            -5.75
+          ],
+          "bounds_max_unity": [
+            3.31,
+            4.96,
+            4.55
+          ]
+        },
+        {
+          "bounds_min_source": [
+            3.31,
+            -5.75,
+            2.8
+          ],
+          "bounds_max_source": [
+            3.5,
+            2.9,
+            4.96
+          ],
+          "bounds_min_unity": [
+            3.31,
+            2.8,
+            -5.75
+          ],
+          "bounds_max_unity": [
+            3.5,
+            4.96,
+            2.9
+          ]
+        },
+        {
+          "bounds_min_source": [
+            3.31,
+            4.15,
+            2.8
+          ],
+          "bounds_max_source": [
+            3.5,
+            4.55,
+            4.96
+          ],
+          "bounds_min_unity": [
+            3.31,
+            2.8,
+            4.15
+          ],
+          "bounds_max_unity": [
+            3.5,
+            4.96,
+            4.55
+          ]
+        },
+        {
+          "bounds_min_source": [
+            5.51,
+            -5.75,
+            2.8
+          ],
+          "bounds_max_source": [
+            7.75,
+            4.55,
+            4.96
+          ],
+          "bounds_min_unity": [
+            5.51,
+            2.8,
+            -5.75
+          ],
+          "bounds_max_unity": [
+            7.75,
+            4.96,
+            4.55
+          ]
+        },
+        {
+          "bounds_min_source": [
+            4.22,
+            -5.75,
+            2.8
+          ],
+          "bounds_max_source": [
+            5.51,
+            2.9,
+            4.96
+          ],
+          "bounds_min_unity": [
+            4.22,
+            2.8,
+            -5.75
+          ],
+          "bounds_max_unity": [
+            5.51,
+            4.96,
+            2.9
+          ]
+        },
+        {
+          "bounds_min_source": [
+            4.22,
+            4.15,
+            2.8
+          ],
+          "bounds_max_source": [
+            5.51,
+            4.55,
+            4.96
+          ],
+          "bounds_min_unity": [
+            4.22,
+            2.8,
+            4.15
+          ],
+          "bounds_max_unity": [
+            5.51,
+            4.96,
+            4.55
+          ]
+        },
+        {
+          "bounds_min_source": [
+            3.5,
+            -5.75,
+            2.8
+          ],
+          "bounds_max_source": [
+            4.22,
+            2.9,
+            4.96
+          ],
+          "bounds_min_unity": [
+            3.5,
+            2.8,
+            -5.75
+          ],
+          "bounds_max_unity": [
+            4.22,
+            4.96,
+            2.9
           ]
         },
         {
@@ -5798,7 +6502,7 @@
           ]
         }
       ],
-      "triangle_count": 2268,
+      "triangle_count": 2532,
       "bounds_min_source": [
         -7.78,
         -5.78,
@@ -6957,8 +7661,8 @@
           "surface_kind": "FacadePrimary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 104,
-          "triangles": 200,
+          "vertices": 132,
+          "triangles": 212,
           "bounds_min_source": [
             -7.75,
             -5.75,
@@ -6997,11 +7701,11 @@
           "surface_kind": "FacadeSecondary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 184,
-          "triangles": 436,
+          "vertices": 296,
+          "triangles": 688,
           "bounds_min_source": [
             -7.71,
-            4.375,
+            2.9,
             2.56
           ],
           "bounds_max_source": [
@@ -7012,7 +7716,7 @@
           "bounds_min_unity": [
             -7.71,
             2.56,
-            4.375
+            2.9
           ],
           "bounds_max_unity": [
             7.71,
@@ -7024,7 +7728,7 @@
             0.164729
           ],
           "uv0_max": [
-            0.782935,
+            0.813974,
             0.996
           ],
           "uv2_slot_ids": [
@@ -9824,7 +10528,7 @@
           "bounds_max_source": [
             -0.7,
             5.8,
-            11.6
+            2.8
           ],
           "bounds_min_unity": [
             -7.5,
@@ -9833,8 +10537,184 @@
           ],
           "bounds_max_unity": [
             -0.7,
+            2.8,
+            5.8
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -7.5,
+            0.0,
+            4.96
+          ],
+          "bounds_max_source": [
+            -0.7,
+            5.8,
+            11.6
+          ],
+          "bounds_min_unity": [
+            -7.5,
+            4.96,
+            0.0
+          ],
+          "bounds_max_unity": [
+            -0.7,
             11.6,
             5.8
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -7.5,
+            0.0,
+            2.8
+          ],
+          "bounds_max_source": [
+            -5.23,
+            5.8,
+            4.96
+          ],
+          "bounds_min_unity": [
+            -7.5,
+            2.8,
+            0.0
+          ],
+          "bounds_max_unity": [
+            -5.23,
+            4.96,
+            5.8
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -5.23,
+            0.0,
+            2.8
+          ],
+          "bounds_max_source": [
+            -5.04,
+            4.15,
+            4.96
+          ],
+          "bounds_min_unity": [
+            -5.23,
+            2.8,
+            0.0
+          ],
+          "bounds_max_unity": [
+            -5.04,
+            4.96,
+            4.15
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -5.23,
+            5.4,
+            2.8
+          ],
+          "bounds_max_source": [
+            -5.04,
+            5.8,
+            4.96
+          ],
+          "bounds_min_unity": [
+            -5.23,
+            2.8,
+            5.4
+          ],
+          "bounds_max_unity": [
+            -5.04,
+            4.96,
+            5.8
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -3.03,
+            0.0,
+            2.8
+          ],
+          "bounds_max_source": [
+            -0.7,
+            5.8,
+            4.96
+          ],
+          "bounds_min_unity": [
+            -3.03,
+            2.8,
+            0.0
+          ],
+          "bounds_max_unity": [
+            -0.7,
+            4.96,
+            5.8
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -4.32,
+            0.0,
+            2.8
+          ],
+          "bounds_max_source": [
+            -3.03,
+            4.15,
+            4.96
+          ],
+          "bounds_min_unity": [
+            -4.32,
+            2.8,
+            0.0
+          ],
+          "bounds_max_unity": [
+            -3.03,
+            4.96,
+            4.15
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -4.32,
+            5.4,
+            2.8
+          ],
+          "bounds_max_source": [
+            -3.03,
+            5.8,
+            4.96
+          ],
+          "bounds_min_unity": [
+            -4.32,
+            2.8,
+            5.4
+          ],
+          "bounds_max_unity": [
+            -3.03,
+            4.96,
+            5.8
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -5.04,
+            0.0,
+            2.8
+          ],
+          "bounds_max_source": [
+            -4.32,
+            4.15,
+            4.96
+          ],
+          "bounds_min_unity": [
+            -5.04,
+            2.8,
+            0.0
+          ],
+          "bounds_max_unity": [
+            -4.32,
+            4.96,
+            4.15
           ]
         },
         {
@@ -9846,7 +10726,7 @@
           "bounds_max_source": [
             7.5,
             5.8,
-            11.6
+            2.8
           ],
           "bounds_min_unity": [
             0.7,
@@ -9855,8 +10735,184 @@
           ],
           "bounds_max_unity": [
             7.5,
+            2.8,
+            5.8
+          ]
+        },
+        {
+          "bounds_min_source": [
+            0.7,
+            0.0,
+            4.96
+          ],
+          "bounds_max_source": [
+            7.5,
+            5.8,
+            11.6
+          ],
+          "bounds_min_unity": [
+            0.7,
+            4.96,
+            0.0
+          ],
+          "bounds_max_unity": [
+            7.5,
             11.6,
             5.8
+          ]
+        },
+        {
+          "bounds_min_source": [
+            0.7,
+            0.0,
+            2.8
+          ],
+          "bounds_max_source": [
+            3.17,
+            5.8,
+            4.96
+          ],
+          "bounds_min_unity": [
+            0.7,
+            2.8,
+            0.0
+          ],
+          "bounds_max_unity": [
+            3.17,
+            4.96,
+            5.8
+          ]
+        },
+        {
+          "bounds_min_source": [
+            3.17,
+            0.0,
+            2.8
+          ],
+          "bounds_max_source": [
+            3.36,
+            4.15,
+            4.96
+          ],
+          "bounds_min_unity": [
+            3.17,
+            2.8,
+            0.0
+          ],
+          "bounds_max_unity": [
+            3.36,
+            4.96,
+            4.15
+          ]
+        },
+        {
+          "bounds_min_source": [
+            3.17,
+            5.4,
+            2.8
+          ],
+          "bounds_max_source": [
+            3.36,
+            5.8,
+            4.96
+          ],
+          "bounds_min_unity": [
+            3.17,
+            2.8,
+            5.4
+          ],
+          "bounds_max_unity": [
+            3.36,
+            4.96,
+            5.8
+          ]
+        },
+        {
+          "bounds_min_source": [
+            5.37,
+            0.0,
+            2.8
+          ],
+          "bounds_max_source": [
+            7.5,
+            5.8,
+            4.96
+          ],
+          "bounds_min_unity": [
+            5.37,
+            2.8,
+            0.0
+          ],
+          "bounds_max_unity": [
+            7.5,
+            4.96,
+            5.8
+          ]
+        },
+        {
+          "bounds_min_source": [
+            4.08,
+            0.0,
+            2.8
+          ],
+          "bounds_max_source": [
+            5.37,
+            4.15,
+            4.96
+          ],
+          "bounds_min_unity": [
+            4.08,
+            2.8,
+            0.0
+          ],
+          "bounds_max_unity": [
+            5.37,
+            4.96,
+            4.15
+          ]
+        },
+        {
+          "bounds_min_source": [
+            4.08,
+            5.4,
+            2.8
+          ],
+          "bounds_max_source": [
+            5.37,
+            5.8,
+            4.96
+          ],
+          "bounds_min_unity": [
+            4.08,
+            2.8,
+            5.4
+          ],
+          "bounds_max_unity": [
+            5.37,
+            4.96,
+            5.8
+          ]
+        },
+        {
+          "bounds_min_source": [
+            3.36,
+            0.0,
+            2.8
+          ],
+          "bounds_max_source": [
+            4.08,
+            4.15,
+            4.96
+          ],
+          "bounds_min_unity": [
+            3.36,
+            2.8,
+            0.0
+          ],
+          "bounds_max_unity": [
+            4.08,
+            4.96,
+            4.15
           ]
         },
         {
@@ -9926,7 +10982,7 @@
           ]
         }
       ],
-      "triangle_count": 1986,
+      "triangle_count": 2250,
       "bounds_min_source": [
         -7.53,
         -7.03,
@@ -10676,8 +11732,8 @@
           "surface_kind": "FacadePrimary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 128,
-          "triangles": 248,
+          "vertices": 156,
+          "triangles": 260,
           "bounds_min_source": [
             -7.5,
             -7.0,
@@ -10716,11 +11772,11 @@
           "surface_kind": "FacadeSecondary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 168,
-          "triangles": 412,
+          "vertices": 280,
+          "triangles": 664,
           "bounds_min_source": [
             -7.46,
-            5.625,
+            4.15,
             2.56
           ],
           "bounds_max_source": [
@@ -10731,7 +11787,7 @@
           "bounds_min_unity": [
             -7.46,
             2.56,
-            5.625
+            4.15
           ],
           "bounds_max_unity": [
             7.46,
@@ -10743,7 +11799,7 @@
             0.2024
           ],
           "uv0_max": [
-            0.777768,
+            0.803264,
             0.996
           ],
           "uv2_slot_ids": [
@@ -13873,7 +14929,7 @@
           "bounds_max_source": [
             -4.3,
             4.55,
-            3.2
+            2.8
           ],
           "bounds_min_unity": [
             -7.75,
@@ -13882,8 +14938,140 @@
           ],
           "bounds_max_unity": [
             -4.3,
+            2.8,
+            4.55
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -7.75,
+            -5.75,
+            2.8
+          ],
+          "bounds_max_source": [
+            -5.37,
+            4.55,
+            3.2
+          ],
+          "bounds_min_unity": [
+            -7.75,
+            2.8,
+            -5.75
+          ],
+          "bounds_max_unity": [
+            -5.37,
             3.2,
             4.55
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -5.37,
+            -5.75,
+            2.8
+          ],
+          "bounds_max_source": [
+            -5.18,
+            2.9,
+            3.2
+          ],
+          "bounds_min_unity": [
+            -5.37,
+            2.8,
+            -5.75
+          ],
+          "bounds_max_unity": [
+            -5.18,
+            3.2,
+            2.9
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -5.37,
+            4.15,
+            2.8
+          ],
+          "bounds_max_source": [
+            -5.18,
+            4.55,
+            3.2
+          ],
+          "bounds_min_unity": [
+            -5.37,
+            2.8,
+            4.15
+          ],
+          "bounds_max_unity": [
+            -5.18,
+            3.2,
+            4.55
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -4.46,
+            -5.75,
+            2.8
+          ],
+          "bounds_max_source": [
+            -4.3,
+            2.9,
+            3.2
+          ],
+          "bounds_min_unity": [
+            -4.46,
+            2.8,
+            -5.75
+          ],
+          "bounds_max_unity": [
+            -4.3,
+            3.2,
+            2.9
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -4.46,
+            4.15,
+            2.8
+          ],
+          "bounds_max_source": [
+            -4.3,
+            4.55,
+            3.2
+          ],
+          "bounds_min_unity": [
+            -4.46,
+            2.8,
+            4.15
+          ],
+          "bounds_max_unity": [
+            -4.3,
+            3.2,
+            4.55
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -5.18,
+            -5.75,
+            2.8
+          ],
+          "bounds_max_source": [
+            -4.46,
+            2.9,
+            3.2
+          ],
+          "bounds_min_unity": [
+            -5.18,
+            2.8,
+            -5.75
+          ],
+          "bounds_max_unity": [
+            -4.46,
+            3.2,
+            2.9
           ]
         },
         {
@@ -13939,7 +15127,7 @@
           "bounds_max_source": [
             -2.9,
             4.55,
-            3.2
+            2.8
           ],
           "bounds_min_unity": [
             -4.3,
@@ -13948,6 +15136,72 @@
           ],
           "bounds_max_unity": [
             -2.9,
+            2.8,
+            4.55
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -3.17,
+            2.75,
+            2.8
+          ],
+          "bounds_max_source": [
+            -2.9,
+            4.55,
+            3.2
+          ],
+          "bounds_min_unity": [
+            -3.17,
+            2.8,
+            2.75
+          ],
+          "bounds_max_unity": [
+            -2.9,
+            3.2,
+            4.55
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -4.3,
+            2.75,
+            2.8
+          ],
+          "bounds_max_source": [
+            -3.17,
+            2.9,
+            3.2
+          ],
+          "bounds_min_unity": [
+            -4.3,
+            2.8,
+            2.75
+          ],
+          "bounds_max_unity": [
+            -3.17,
+            3.2,
+            2.9
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -4.3,
+            4.15,
+            2.8
+          ],
+          "bounds_max_source": [
+            -3.17,
+            4.55,
+            3.2
+          ],
+          "bounds_min_unity": [
+            -4.3,
+            2.8,
+            4.15
+          ],
+          "bounds_max_unity": [
+            -3.17,
             3.2,
             4.55
           ]
@@ -13961,11 +15215,99 @@
           "bounds_max_source": [
             7.75,
             4.55,
-            3.2
+            2.8
           ],
           "bounds_min_unity": [
             1.8,
             0.0,
+            -5.75
+          ],
+          "bounds_max_unity": [
+            7.75,
+            2.8,
+            4.55
+          ]
+        },
+        {
+          "bounds_min_source": [
+            1.8,
+            -5.75,
+            2.8
+          ],
+          "bounds_max_source": [
+            3.31,
+            4.55,
+            3.2
+          ],
+          "bounds_min_unity": [
+            1.8,
+            2.8,
+            -5.75
+          ],
+          "bounds_max_unity": [
+            3.31,
+            3.2,
+            4.55
+          ]
+        },
+        {
+          "bounds_min_source": [
+            3.31,
+            -5.75,
+            2.8
+          ],
+          "bounds_max_source": [
+            3.5,
+            2.9,
+            3.2
+          ],
+          "bounds_min_unity": [
+            3.31,
+            2.8,
+            -5.75
+          ],
+          "bounds_max_unity": [
+            3.5,
+            3.2,
+            2.9
+          ]
+        },
+        {
+          "bounds_min_source": [
+            3.31,
+            4.15,
+            2.8
+          ],
+          "bounds_max_source": [
+            3.5,
+            4.55,
+            3.2
+          ],
+          "bounds_min_unity": [
+            3.31,
+            2.8,
+            4.15
+          ],
+          "bounds_max_unity": [
+            3.5,
+            3.2,
+            4.55
+          ]
+        },
+        {
+          "bounds_min_source": [
+            5.51,
+            -5.75,
+            2.8
+          ],
+          "bounds_max_source": [
+            7.75,
+            4.55,
+            3.2
+          ],
+          "bounds_min_unity": [
+            5.51,
+            2.8,
             -5.75
           ],
           "bounds_max_unity": [
@@ -13976,9 +15318,75 @@
         },
         {
           "bounds_min_source": [
+            4.22,
+            -5.75,
+            2.8
+          ],
+          "bounds_max_source": [
+            5.51,
+            2.9,
+            3.2
+          ],
+          "bounds_min_unity": [
+            4.22,
+            2.8,
+            -5.75
+          ],
+          "bounds_max_unity": [
+            5.51,
+            3.2,
+            2.9
+          ]
+        },
+        {
+          "bounds_min_source": [
+            4.22,
+            4.15,
+            2.8
+          ],
+          "bounds_max_source": [
+            5.51,
+            4.55,
+            3.2
+          ],
+          "bounds_min_unity": [
+            4.22,
+            2.8,
+            4.15
+          ],
+          "bounds_max_unity": [
+            5.51,
+            3.2,
+            4.55
+          ]
+        },
+        {
+          "bounds_min_source": [
+            3.5,
+            -5.75,
+            2.8
+          ],
+          "bounds_max_source": [
+            4.22,
+            2.9,
+            3.2
+          ],
+          "bounds_min_unity": [
+            3.5,
+            2.8,
+            -5.75
+          ],
+          "bounds_max_unity": [
+            4.22,
+            3.2,
+            2.9
+          ]
+        },
+        {
+          "bounds_min_source": [
             -7.75,
             -5.75,
-            3.2
+            4.96
           ],
           "bounds_max_source": [
             7.75,
@@ -13987,7 +15395,7 @@
           ],
           "bounds_min_unity": [
             -7.75,
-            3.2,
+            4.96,
             -5.75
           ],
           "bounds_max_unity": [
@@ -13995,9 +15403,295 @@
             14.6,
             4.55
           ]
+        },
+        {
+          "bounds_min_source": [
+            -7.75,
+            -5.75,
+            3.2
+          ],
+          "bounds_max_source": [
+            -5.37,
+            4.55,
+            4.96
+          ],
+          "bounds_min_unity": [
+            -7.75,
+            3.2,
+            -5.75
+          ],
+          "bounds_max_unity": [
+            -5.37,
+            4.96,
+            4.55
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -5.37,
+            -5.75,
+            3.2
+          ],
+          "bounds_max_source": [
+            -5.18,
+            2.9,
+            4.96
+          ],
+          "bounds_min_unity": [
+            -5.37,
+            3.2,
+            -5.75
+          ],
+          "bounds_max_unity": [
+            -5.18,
+            4.96,
+            2.9
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -5.37,
+            4.15,
+            3.2
+          ],
+          "bounds_max_source": [
+            -5.18,
+            4.55,
+            4.96
+          ],
+          "bounds_min_unity": [
+            -5.37,
+            3.2,
+            4.15
+          ],
+          "bounds_max_unity": [
+            -5.18,
+            4.96,
+            4.55
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -3.17,
+            -5.75,
+            3.2
+          ],
+          "bounds_max_source": [
+            3.31,
+            4.55,
+            4.96
+          ],
+          "bounds_min_unity": [
+            -3.17,
+            3.2,
+            -5.75
+          ],
+          "bounds_max_unity": [
+            3.31,
+            4.96,
+            4.55
+          ]
+        },
+        {
+          "bounds_min_source": [
+            3.31,
+            -5.75,
+            3.2
+          ],
+          "bounds_max_source": [
+            3.5,
+            2.9,
+            4.96
+          ],
+          "bounds_min_unity": [
+            3.31,
+            3.2,
+            -5.75
+          ],
+          "bounds_max_unity": [
+            3.5,
+            4.96,
+            2.9
+          ]
+        },
+        {
+          "bounds_min_source": [
+            3.31,
+            4.15,
+            3.2
+          ],
+          "bounds_max_source": [
+            3.5,
+            4.55,
+            4.96
+          ],
+          "bounds_min_unity": [
+            3.31,
+            3.2,
+            4.15
+          ],
+          "bounds_max_unity": [
+            3.5,
+            4.96,
+            4.55
+          ]
+        },
+        {
+          "bounds_min_source": [
+            5.51,
+            -5.75,
+            3.2
+          ],
+          "bounds_max_source": [
+            7.75,
+            4.55,
+            4.96
+          ],
+          "bounds_min_unity": [
+            5.51,
+            3.2,
+            -5.75
+          ],
+          "bounds_max_unity": [
+            7.75,
+            4.96,
+            4.55
+          ]
+        },
+        {
+          "bounds_min_source": [
+            4.22,
+            -5.75,
+            3.2
+          ],
+          "bounds_max_source": [
+            5.51,
+            2.9,
+            4.96
+          ],
+          "bounds_min_unity": [
+            4.22,
+            3.2,
+            -5.75
+          ],
+          "bounds_max_unity": [
+            5.51,
+            4.96,
+            2.9
+          ]
+        },
+        {
+          "bounds_min_source": [
+            4.22,
+            4.15,
+            3.2
+          ],
+          "bounds_max_source": [
+            5.51,
+            4.55,
+            4.96
+          ],
+          "bounds_min_unity": [
+            4.22,
+            3.2,
+            4.15
+          ],
+          "bounds_max_unity": [
+            5.51,
+            4.96,
+            4.55
+          ]
+        },
+        {
+          "bounds_min_source": [
+            3.5,
+            -5.75,
+            3.2
+          ],
+          "bounds_max_source": [
+            4.22,
+            2.9,
+            4.96
+          ],
+          "bounds_min_unity": [
+            3.5,
+            3.2,
+            -5.75
+          ],
+          "bounds_max_unity": [
+            4.22,
+            4.96,
+            2.9
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -4.46,
+            -5.75,
+            3.2
+          ],
+          "bounds_max_source": [
+            -3.17,
+            2.9,
+            4.96
+          ],
+          "bounds_min_unity": [
+            -4.46,
+            3.2,
+            -5.75
+          ],
+          "bounds_max_unity": [
+            -3.17,
+            4.96,
+            2.9
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -4.46,
+            4.15,
+            3.2
+          ],
+          "bounds_max_source": [
+            -3.17,
+            4.55,
+            4.96
+          ],
+          "bounds_min_unity": [
+            -4.46,
+            3.2,
+            4.15
+          ],
+          "bounds_max_unity": [
+            -3.17,
+            4.96,
+            4.55
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -5.18,
+            -5.75,
+            3.2
+          ],
+          "bounds_max_source": [
+            -4.46,
+            2.9,
+            4.96
+          ],
+          "bounds_min_unity": [
+            -5.18,
+            3.2,
+            -5.75
+          ],
+          "bounds_max_unity": [
+            -4.46,
+            4.96,
+            2.9
+          ]
         }
       ],
-      "triangle_count": 2496,
+      "triangle_count": 2712,
       "bounds_min_source": [
         -7.78,
         -5.78,
@@ -15054,8 +16748,8 @@
           "surface_kind": "FacadePrimary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 184,
-          "triangles": 352,
+          "vertices": 232,
+          "triangles": 316,
           "bounds_min_source": [
             -7.75,
             -5.75,
@@ -15094,11 +16788,11 @@
           "surface_kind": "FacadeSecondary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 208,
-          "triangles": 504,
+          "vertices": 320,
+          "triangles": 756,
           "bounds_min_source": [
             -7.71,
-            4.375,
+            2.9,
             2.56
           ],
           "bounds_max_source": [
@@ -15109,7 +16803,7 @@
           "bounds_min_unity": [
             -7.71,
             2.56,
-            4.375
+            2.9
           ],
           "bounds_max_unity": [
             7.71,
@@ -15121,7 +16815,7 @@
             0.164729
           ],
           "uv0_max": [
-            0.782935,
+            0.813974,
             0.996
           ],
           "uv2_slot_ids": [
@@ -17880,7 +19574,7 @@
           "bounds_max_source": [
             -0.7,
             1.8,
-            8.8
+            2.8
           ],
           "bounds_min_unity": [
             -5.0,
@@ -17889,8 +19583,184 @@
           ],
           "bounds_max_unity": [
             -0.7,
+            2.8,
+            1.8
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -5.0,
+            -3.0,
+            4.96
+          ],
+          "bounds_max_source": [
+            -0.7,
+            1.8,
+            8.8
+          ],
+          "bounds_min_unity": [
+            -5.0,
+            4.96,
+            -3.0
+          ],
+          "bounds_max_unity": [
+            -0.7,
             8.8,
             1.8
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -5.0,
+            -3.0,
+            2.8
+          ],
+          "bounds_max_source": [
+            -3.83,
+            1.8,
+            4.96
+          ],
+          "bounds_min_unity": [
+            -5.0,
+            2.8,
+            -3.0
+          ],
+          "bounds_max_unity": [
+            -3.83,
+            4.96,
+            1.8
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -3.83,
+            -3.0,
+            2.8
+          ],
+          "bounds_max_source": [
+            -3.64,
+            0.15,
+            4.96
+          ],
+          "bounds_min_unity": [
+            -3.83,
+            2.8,
+            -3.0
+          ],
+          "bounds_max_unity": [
+            -3.64,
+            4.96,
+            0.15
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -3.83,
+            1.4,
+            2.8
+          ],
+          "bounds_max_source": [
+            -3.64,
+            1.8,
+            4.96
+          ],
+          "bounds_min_unity": [
+            -3.83,
+            2.8,
+            1.4
+          ],
+          "bounds_max_unity": [
+            -3.64,
+            4.96,
+            1.8
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -1.63,
+            -3.0,
+            2.8
+          ],
+          "bounds_max_source": [
+            -0.7,
+            1.8,
+            4.96
+          ],
+          "bounds_min_unity": [
+            -1.63,
+            2.8,
+            -3.0
+          ],
+          "bounds_max_unity": [
+            -0.7,
+            4.96,
+            1.8
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -2.92,
+            -3.0,
+            2.8
+          ],
+          "bounds_max_source": [
+            -1.63,
+            0.15,
+            4.96
+          ],
+          "bounds_min_unity": [
+            -2.92,
+            2.8,
+            -3.0
+          ],
+          "bounds_max_unity": [
+            -1.63,
+            4.96,
+            0.15
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -2.92,
+            1.4,
+            2.8
+          ],
+          "bounds_max_source": [
+            -1.63,
+            1.8,
+            4.96
+          ],
+          "bounds_min_unity": [
+            -2.92,
+            2.8,
+            1.4
+          ],
+          "bounds_max_unity": [
+            -1.63,
+            4.96,
+            1.8
+          ]
+        },
+        {
+          "bounds_min_source": [
+            -3.64,
+            -3.0,
+            2.8
+          ],
+          "bounds_max_source": [
+            -2.92,
+            0.15,
+            4.96
+          ],
+          "bounds_min_unity": [
+            -3.64,
+            2.8,
+            -3.0
+          ],
+          "bounds_max_unity": [
+            -2.92,
+            4.96,
+            0.15
           ]
         },
         {
@@ -17902,7 +19772,7 @@
           "bounds_max_source": [
             5.0,
             1.8,
-            8.8
+            2.8
           ],
           "bounds_min_unity": [
             0.7,
@@ -17911,8 +19781,184 @@
           ],
           "bounds_max_unity": [
             5.0,
+            2.8,
+            1.8
+          ]
+        },
+        {
+          "bounds_min_source": [
+            0.7,
+            -3.0,
+            4.96
+          ],
+          "bounds_max_source": [
+            5.0,
+            1.8,
+            8.8
+          ],
+          "bounds_min_unity": [
+            0.7,
+            4.96,
+            -3.0
+          ],
+          "bounds_max_unity": [
+            5.0,
             8.8,
             1.8
+          ]
+        },
+        {
+          "bounds_min_source": [
+            0.7,
+            -3.0,
+            2.8
+          ],
+          "bounds_max_source": [
+            1.77,
+            1.8,
+            4.96
+          ],
+          "bounds_min_unity": [
+            0.7,
+            2.8,
+            -3.0
+          ],
+          "bounds_max_unity": [
+            1.77,
+            4.96,
+            1.8
+          ]
+        },
+        {
+          "bounds_min_source": [
+            1.77,
+            -3.0,
+            2.8
+          ],
+          "bounds_max_source": [
+            1.96,
+            0.15,
+            4.96
+          ],
+          "bounds_min_unity": [
+            1.77,
+            2.8,
+            -3.0
+          ],
+          "bounds_max_unity": [
+            1.96,
+            4.96,
+            0.15
+          ]
+        },
+        {
+          "bounds_min_source": [
+            1.77,
+            1.4,
+            2.8
+          ],
+          "bounds_max_source": [
+            1.96,
+            1.8,
+            4.96
+          ],
+          "bounds_min_unity": [
+            1.77,
+            2.8,
+            1.4
+          ],
+          "bounds_max_unity": [
+            1.96,
+            4.96,
+            1.8
+          ]
+        },
+        {
+          "bounds_min_source": [
+            3.97,
+            -3.0,
+            2.8
+          ],
+          "bounds_max_source": [
+            5.0,
+            1.8,
+            4.96
+          ],
+          "bounds_min_unity": [
+            3.97,
+            2.8,
+            -3.0
+          ],
+          "bounds_max_unity": [
+            5.0,
+            4.96,
+            1.8
+          ]
+        },
+        {
+          "bounds_min_source": [
+            2.68,
+            -3.0,
+            2.8
+          ],
+          "bounds_max_source": [
+            3.97,
+            0.15,
+            4.96
+          ],
+          "bounds_min_unity": [
+            2.68,
+            2.8,
+            -3.0
+          ],
+          "bounds_max_unity": [
+            3.97,
+            4.96,
+            0.15
+          ]
+        },
+        {
+          "bounds_min_source": [
+            2.68,
+            1.4,
+            2.8
+          ],
+          "bounds_max_source": [
+            3.97,
+            1.8,
+            4.96
+          ],
+          "bounds_min_unity": [
+            2.68,
+            2.8,
+            1.4
+          ],
+          "bounds_max_unity": [
+            3.97,
+            4.96,
+            1.8
+          ]
+        },
+        {
+          "bounds_min_source": [
+            1.96,
+            -3.0,
+            2.8
+          ],
+          "bounds_max_source": [
+            2.68,
+            0.15,
+            4.96
+          ],
+          "bounds_min_unity": [
+            1.96,
+            2.8,
+            -3.0
+          ],
+          "bounds_max_unity": [
+            2.68,
+            4.96,
+            0.15
           ]
         },
         {
@@ -17960,7 +20006,7 @@
           ]
         }
       ],
-      "triangle_count": 1712,
+      "triangle_count": 1976,
       "bounds_min_source": [
         -5.03,
         -3.03,
@@ -18675,8 +20721,8 @@
           "surface_kind": "FacadePrimary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 104,
-          "triangles": 200,
+          "vertices": 132,
+          "triangles": 212,
           "bounds_min_source": [
             -5.0,
             -3.0,
@@ -18715,11 +20761,11 @@
           "surface_kind": "FacadeSecondary",
           "uv_scheme": "building_side_atlas_0_1",
           "meters_per_tile": 0.0,
-          "vertices": 128,
-          "triangles": 320,
+          "vertices": 240,
+          "triangles": 572,
           "bounds_min_source": [
             -4.96,
-            1.625,
+            0.15,
             2.56
           ],
           "bounds_max_source": [
@@ -18730,7 +20776,7 @@
           "bounds_min_unity": [
             -4.96,
             2.56,
-            1.625
+            0.15
           ],
           "bounds_max_unity": [
             4.96,
@@ -18742,7 +20788,7 @@
             0.257952
           ],
           "uv0_max": [
-            0.809458,
+            0.86895,
             0.996
           ],
           "uv2_slot_ids": [
@@ -22814,5 +24860,5 @@
       ]
     }
   ],
-  "build_signature": "671675ad0dcac8c4551deaff1e4bcb524ebe3d0b29d30cfebcf2eeee5acbb9ba"
+  "build_signature": "2ad30a4ea426d65e80b10be2c3dc9e68c3b83a86295392d0f27b189e7f49eebd"
 }

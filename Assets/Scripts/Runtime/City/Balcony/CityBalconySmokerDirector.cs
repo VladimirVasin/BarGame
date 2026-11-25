@@ -25,6 +25,7 @@ namespace BarPromenade
             RuntimeSceneSetup.CityFarClipPlane - 2f;
         public const float DespawnDistance = 36f;
         private CityAltitudeVisibility streetVisibility;
+        private Predicate<Vector3> districtReady;
         public const float BacksideDespawnDistance = 18f;
         public const float MinimumFrontFacingDot = 0.05f;
         public const float MinimumInitialSpawnDelay = 0.5f;
@@ -80,7 +81,8 @@ namespace BarPromenade
             Transform parent,
             int seed,
             IReadOnlyList<CityBalconySmokerDescriptor> source,
-            Transform playerTransform, CityAltitudeVisibility visibility = null)
+            Transform playerTransform, CityAltitudeVisibility visibility = null,
+            Predicate<Vector3> districtReady = null)
         {
             if (parent == null)
             {
@@ -99,6 +101,7 @@ namespace BarPromenade
                     playerTransform,
                     0u);
                 director.streetVisibility = visibility;
+                director.districtReady = districtReady;
                 return director;
             }
             catch
@@ -198,6 +201,12 @@ namespace BarPromenade
 
             float safeDeltaTime = SanitizeDeltaTime(deltaTime);
             RefreshTravelHeading();
+            // A completed visit ends indoors, behind the closed door, even in view.
+            releaseBuffer.Clear();
+            foreach (var pair in active)
+                if (pair.Value.Runtime.Presentations[0].Finished) releaseBuffer.Add(pair.Key);
+            if (releaseBuffer.Count > 0) spawnCooldown = GetRandomRange(MinimumSpawnCooldown, MaximumSpawnCooldown);
+            foreach (string id in releaseBuffer) Release(id, true);
             bool released = ReleaseDistantSmokers();
             spawnCooldown = Mathf.Max(
                 0f,
@@ -343,8 +352,8 @@ namespace BarPromenade
                         candidate.Position - player.position) >
                     MaximumVisibleSpawnDistance *
                     MaximumVisibleSpawnDistance ||
-                    !FacesPlayer(candidate) ||
-                    (streetVisibility != null && !streetVisibility.CanChangeBodyAt(candidate.Position)))
+                    !FacesPlayer(candidate) || districtReady != null && !districtReady(candidate.Position) ||
+                    CharacterOutside(candidate.CharacterId))
                 {
                     continue;
                 }
@@ -439,6 +448,13 @@ namespace BarPromenade
                        offset.normalized) >= MinimumAheadDot;
         }
 
+        private bool CharacterOutside(string id)
+        {
+            foreach (var visitor in active.Values)
+                if (visitor.Descriptor.CharacterId == id) return true;
+            return false;
+        }
+
         private void Spawn(CityBalconySmokerDescriptor descriptor)
         {
             CityBalconySmokerRuntime runtime =
@@ -475,7 +491,9 @@ namespace BarPromenade
                 float distanceSquared = PlanarSquaredDistance(
                     pair.Value.Descriptor.Position,
                     player.position);
-                if (distanceSquared > maximumSquared ||
+                if (districtReady != null && !districtReady(pair.Value.Descriptor.Position))
+                    releaseBuffer.Add(pair.Key);
+                else if (distanceSquared > maximumSquared ||
                     (distanceSquared > backsideSquared &&
                      !FacesPlayer(pair.Value.Descriptor)))
                 {

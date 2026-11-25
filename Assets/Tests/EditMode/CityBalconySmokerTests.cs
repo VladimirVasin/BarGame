@@ -365,13 +365,8 @@ namespace BarPromenade.Tests.EditMode
             IReadOnlyList<string> eligible =
                 CityBalconySmokerArchetypeCatalog.EligibleDesignIds;
             Assert.That(eligible.Count, Is.GreaterThanOrEqualTo(2));
-            CollectionAssert.AreEqual(
-                CityPedestrianResources.OrdinaryResidentArchetypes.Select(
-                    item => item.DesignId),
-                eligible,
-                "Every ordinary resident has the shared Hero V2 Avatar and " +
-                "canonical smoking sockets; none needs an arbitrary " +
-                "silhouette exclusion.");
+            CollectionAssert.AreEquivalent(DefaultNpcCatalog.ModelIds, eligible);
+            Assert.That(eligible, Does.Not.Contain(CityPedestrianResources.BabushkaDesignId));
             var observed = new HashSet<string>();
             var cell = new Vector2Int(7, 11);
             for (int seed = 0; seed < 128; seed++)
@@ -429,13 +424,7 @@ namespace BarPromenade.Tests.EditMode
         [Test]
         public void AttachedCigarette_IsTheHandPropUnderTheCigaretteSocket()
         {
-            string designId = CityBalconySmokerArchetypeCatalog
-                .EligibleDesignIds
-                .First(item => item !=
-                    CityPedestrianResources.BabushkaDesignId);
-            Assert.That(CityPedestrianResources.TryGetArchetype(
-                designId,
-                out CityPedestrianArchetype archetype), Is.True);
+            string designId = DefaultNpcCatalog.OrdinaryWorker;
             Assert.That(
                 CityPedestrianHandProps.IsAvailable(
                     CityPedestrianHandPropId.Cigarette),
@@ -444,10 +433,7 @@ namespace BarPromenade.Tests.EditMode
             var parent = new GameObject("Attached Cigarette Test");
             try
             {
-                Assert.That(CityPedestrianResources.TryInstantiate(
-                    CityPedestrianResources.LoadPrefab(archetype),
-                    parent.transform,
-                    out CityPedestrianAssetRegistry target), Is.True);
+                var target = CityPedestrianDefaultNpcBody.Create(parent.transform, DefaultNpcPopulation.BalconyResidentId(0), null);
 
                 CityPedestrianHandPropRegistry cigarette =
                     CityPedestrianHandProps.Attach(
@@ -528,7 +514,7 @@ namespace BarPromenade.Tests.EditMode
                     Assert.That(presentation.Registry.DesignId,
                         Is.EqualTo(
                             presentation.Descriptor.ArchetypeDesignId));
-                    Assert.That(presentation.Registry.Animator.avatar,
+                    Assert.That(presentation.GetComponentInChildren<Player3DAssetRegistry>(true).Animator.avatar,
                         Is.SameAs(hero.Animator.avatar));
                     Assert.That(presentation.ActiveClip,
                         Is.SameAs(smokeBinding.Clip));

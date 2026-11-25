@@ -115,6 +115,8 @@ namespace BarPromenade
             new SlotConstraint("scarf", null, "scarf.warm"),
             new SlotConstraint("headwear", null, "headwear.everyday")
         };
+        internal const int BalconyResidentCount = 8;
+        internal static string BalconyResidentId(int index) => "city.balcony.resident." + index;
         public static int PedestrianCount => CityResidentLifeRules.ResidentCount;
         /// <summary>A character whose model the population picks from the whole catalog.</summary>
         public const string AnyCatalogModel = null;
@@ -489,6 +491,10 @@ namespace BarPromenade
                 new SlotConstraint("headwear", new string[] { null }), new SlotConstraint("scarf", new string[] { null }),
                 new SlotConstraint("gloves", new string[] { null }), new SlotConstraint("shirt", "shirt.everyday"),
                 new SlotConstraint("trousers", "trousers.work"), new SlotConstraint("boots", "boots.everyday")));
+            for (int i = 0; i < BalconyResidentCount; i++)
+                roster.Add(i % 2 == 0
+                    ? new CharacterDefinition(BalconyResidentId(i), model, WorkerStreetClothes)
+                    : new CharacterDefinition(BalconyResidentId(i), DefaultNpcCatalog.OrdinaryWoman, WomanStreetClothes));
             return roster.ToArray();
 
             void RegisterCafeMan(MountainRoadCafeCastRole role, string coat, string hat, string apron) =>

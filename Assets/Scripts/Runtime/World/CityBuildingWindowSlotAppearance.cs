@@ -97,6 +97,7 @@ namespace BarPromenade
 
             registry.LitWindowMask = litWindowMask;
             registry.WindowGlassRenderer = renderer;
+            registry.RegisterBalconies(lot.Cell);
             registry.WindowStateBuffer = states;
             renderer.sharedMaterial = Material;
             var properties = new MaterialPropertyBlock();

@@ -216,16 +216,48 @@ MonoBehaviour:
     metersPerTile: 0
     renderer: {fileID: 3460082951138751098}
   localBounds:
-    m_Center: {x: -0.0149998665, y: 4.999999, z: -0.014999509}
+    m_Center: {x: -0.0149998665, y: 4.999999, z: -0.01499939}
     m_Extent: {x: 5.015, y: 5, z: 3.0150003}
   roofAttachmentBounds:
     m_Center: {x: 0, y: 9.4, z: -0.59999996}
     m_Extent: {x: 4.6, y: 0.5999999, z: 2}
   colliderBounds:
-  - m_Center: {x: -2.85, y: 4.4, z: -0.6}
-    m_Extent: {x: 2.15, y: 4.4, z: 2.4}
-  - m_Center: {x: 2.85, y: 4.4, z: -0.6}
-    m_Extent: {x: 2.15, y: 4.4, z: 2.4}
+  - m_Center: {x: -2.85, y: 1.4, z: -0.6}
+    m_Extent: {x: 2.15, y: 1.4, z: 2.4}
+  - m_Center: {x: -2.85, y: 6.88, z: -0.6}
+    m_Extent: {x: 2.15, y: 1.9200001, z: 2.4}
+  - m_Center: {x: -4.415, y: 3.88, z: -0.6}
+    m_Extent: {x: 0.58500004, y: 1.08, z: 2.4}
+  - m_Center: {x: -3.7350001, y: 3.88, z: -1.425}
+    m_Extent: {x: 0.09499991, y: 1.08, z: 1.575}
+  - m_Center: {x: -3.7350001, y: 3.88, z: 1.5999999}
+    m_Extent: {x: 0.09499991, y: 1.08, z: 0.19999999}
+  - m_Center: {x: -1.165, y: 3.88, z: -0.6}
+    m_Extent: {x: 0.465, y: 1.08, z: 2.4}
+  - m_Center: {x: -2.275, y: 3.88, z: -1.425}
+    m_Extent: {x: 0.64500004, y: 1.08, z: 1.575}
+  - m_Center: {x: -2.275, y: 3.88, z: 1.5999999}
+    m_Extent: {x: 0.64500004, y: 1.08, z: 0.19999999}
+  - m_Center: {x: -3.2800002, y: 3.88, z: -1.425}
+    m_Extent: {x: 0.36, y: 1.08, z: 1.575}
+  - m_Center: {x: 2.85, y: 1.4, z: -0.6}
+    m_Extent: {x: 2.15, y: 1.4, z: 2.4}
+  - m_Center: {x: 2.85, y: 6.88, z: -0.6}
+    m_Extent: {x: 2.15, y: 1.9200001, z: 2.4}
+  - m_Center: {x: 1.235, y: 3.88, z: -0.6}
+    m_Extent: {x: 0.53499997, y: 1.08, z: 2.4}
+  - m_Center: {x: 1.865, y: 3.88, z: -1.425}
+    m_Extent: {x: 0.09500003, y: 1.08, z: 1.575}
+  - m_Center: {x: 1.865, y: 3.88, z: 1.5999999}
+    m_Extent: {x: 0.09500003, y: 1.08, z: 0.19999999}
+  - m_Center: {x: 4.485, y: 3.88, z: -0.6}
+    m_Extent: {x: 0.515, y: 1.08, z: 2.4}
+  - m_Center: {x: 3.325, y: 3.88, z: -1.425}
+    m_Extent: {x: 0.645, y: 1.08, z: 1.575}
+  - m_Center: {x: 3.325, y: 3.88, z: 1.5999999}
+    m_Extent: {x: 0.645, y: 1.08, z: 0.19999999}
+  - m_Center: {x: 2.3200002, y: 3.88, z: -1.425}
+    m_Extent: {x: 0.36, y: 1.08, z: 1.575}
   - m_Center: {x: 0, y: 4.4, z: -1.5}
     m_Extent: {x: 0.7, y: 4.4, z: 1.5}
   - m_Center: {x: 0, y: 5.6000004, z: 0.9}
@@ -523,10 +555,10 @@ MonoBehaviour:
   depth: 6
   height: 10
   unitFactor: 1
-  sourceTriangleCount: 1712
+  sourceTriangleCount: 1976
   sourceGeneratorVersion: 4.3.0
   designId: city_buildings_coastal_v4
-  buildSignature: 671675ad0dcac8c4551deaff1e4bcb524ebe3d0b29d30cfebcf2eeee5acbb9ba
+  buildSignature: 2ad30a4ea426d65e80b10be2c3dc9e68c3b83a86295392d0f27b189e7f49eebd
 --- !u!1 &3726770373809790218
 GameObject:
   m_ObjectHideFlags: 0

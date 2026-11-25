@@ -191,9 +191,50 @@ namespace BarPromenade
             CityDistrictKind district, int variantIndex)
         {
             IReadOnlyList<Bounds> solids = GetMassBounds(district, variantIndex);
+            if (district == CityDistrictKind.Residential)
+            {
+                Vector3 envelope = GetExpectedEnvelope(district, variantIndex);
+                float front = envelope.z * .5f - 1.2f;
+                foreach (float center in new[] { -envelope.x * .28f, envelope.x * .28f })
+                {
+                    float x = center - .48f;
+                    solids = CutBalconyVolume(solids, Solid(x - .36f, 2.8f, front - .40f, x + .36f, 4.96f, front));
+                    solids = CutBalconyVolume(solids, Solid(x - .55f, 2.8f, front - 1.65f, x + 1.65f, 4.96f, front - .40f));
+                }
+                return solids;
+            }
             return district == CityDistrictKind.Industrial
                 ? CityIndustrialEntranceGeometry.Cut(solids, variantIndex)
                 : solids;
+        }
+
+        private static IReadOnlyList<Bounds> CutBalconyVolume(IReadOnlyList<Bounds> solids, Bounds cut)
+        {
+            // Match the disjoint floor, ceiling, sides, back and front in city_building_parts.py.
+            var result = new List<Bounds>(solids.Count + 5);
+            foreach (Bounds solid in solids)
+            {
+                Vector3 low = solid.min, high = solid.max;
+                Vector3 a = Vector3.Max(low, cut.min), b = Vector3.Min(high, cut.max);
+                if (b.x - a.x < .00001f || b.y - a.y < .00001f || b.z - a.z < .00001f)
+                {
+                    result.Add(solid);
+                    continue;
+                }
+                Add(low.x, low.y, low.z, high.x, a.y, high.z);
+                Add(low.x, b.y, low.z, high.x, high.y, high.z);
+                Add(low.x, a.y, low.z, a.x, b.y, high.z);
+                Add(b.x, a.y, low.z, high.x, b.y, high.z);
+                Add(a.x, a.y, low.z, b.x, b.y, a.z);
+                Add(a.x, a.y, b.z, b.x, b.y, high.z);
+            }
+            return result;
+
+            void Add(float x, float y, float z, float endX, float endY, float endZ)
+            {
+                if (endX - x > .00001f && endY - y > .00001f && endZ - z > .00001f)
+                    result.Add(Solid(x, y, z, endX, endY, endZ));
+            }
         }
 
         private static IReadOnlyList<Bounds> GetMassBounds(CityDistrictKind district, int variantIndex)

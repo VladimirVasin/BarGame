@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
@@ -7,7 +8,8 @@ namespace BarPromenade
 {
     internal static class RidgeGarageWorld
     {
-        internal static Collider Build(Transform parent, RidgeGaragePlan site, bool interactive)
+        internal static Collider Build(Transform parent, RidgeGaragePlan site, bool interactive,
+            List<CityRailRestSpot> rests = null)
         {
             var root = new GameObject("West Ridge Garages").transform;
             root.SetParent(parent, false);
@@ -27,6 +29,12 @@ namespace BarPromenade
                     var solid = part.gameObject.AddComponent<BoxCollider>();
                     solid.size = b.size;
                     solid.center = b.center;
+                    if (rests != null && part.name == "COL_GuardFront")
+                    {
+                        Vector3 railBase = solid.bounds.center;
+                        railBase.y = root.TransformPoint(Vector3.up * RidgeGaragePlan.RoofHeight).y;
+                        rests.Add(CityRailRestSpot.OnPublicEdge(railBase, root.forward, solid.bounds.max.y - railBase.y));
+                    }
                 }
                 else part.sharedMaterial = surface;
             }

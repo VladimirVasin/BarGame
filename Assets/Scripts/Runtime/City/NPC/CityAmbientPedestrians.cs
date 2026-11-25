@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace BarPromenade
 {
-    /// <summary>City-only visual walkers. The calendar and transit systems never own these bodies.</summary>
+    /// <summary>City-only background pedestrians. The calendar and transit systems never own these bodies.</summary>
     [DefaultExecutionOrder(320)]
     internal sealed class CityAmbientPedestrians : MonoBehaviour
     {
@@ -34,6 +34,7 @@ namespace BarPromenade
         private Transform hero;
         private float heroRadius;
         private int[] lanePopulation;
+        private int railVisits;
         private int cachedBodies;
         private int serial;
         private uint entrySearch;
@@ -51,6 +52,8 @@ namespace BarPromenade
         private struct Walker
         {
             public int Encounter, Look;
+            public CityWorldResult RailWorld;
+            public bool AtRail => RailWorld != null;
             public CityAmbientWalking.Route Walk;
             public float Age, Speed, NextBlockedLog;
         }
@@ -154,7 +157,14 @@ namespace BarPromenade
                     contacts[index] = default;
                     continue;
                 }
-                AdvanceWalker(index, ref walker, body, Mathf.Min(delta, .1f), distanceSquared, contactCount, heroHead);
+                body.MinimumEvaluationInterval = city.Visibility.CanChangeAmbientBodyAt(position) ? 1f / 8f :
+                    distanceSquared < 15f * 15f ? 0f : 1f / 15f;
+                if (walker.AtRail)
+                {
+                    body.Advance(delta, false);
+                    continue;
+                }
+                AdvanceWalker(index, ref walker, body, Mathf.Min(delta, .1f), contactCount, heroHead);
             }
 
             spawnCountdown -= delta;
@@ -168,8 +178,9 @@ namespace BarPromenade
                 return false;
             Vector3 player = hero.position;
             Vector3 interest = player + Vector3.ProjectOnPlane(hero.forward, Vector3.up) * 6f;
-            plan.CollectEntries(player, EntryRadius, entries);
             entrySearch++;
+            if ((warming || entrySearch % 3 == 1) && TrySpawnAtRail(player, warming)) return true;
+            plan.CollectEntries(player, EntryRadius, entries);
             candidates.Clear();
             for (int i = 0; i < entries.Count; i++)
             {
@@ -210,6 +221,44 @@ namespace BarPromenade
             return false;
         }
 
+        internal void ReleaseRailRests(CityWorldResult world)
+        {
+            for (int i = 0; i < walkers.Length; i++)
+                if (walkers[i].AtRail && walkers[i].RailWorld == world) Release(i);
+        }
+
+        private bool TrySpawnAtRail(Vector3 player, bool warming)
+        {
+            var railSpots = city.World.RailRests;
+            // Shared street population and one occupied
+            // rest point per local stretch. Ordinary walkers fill any gap.
+            int nearest = -1;
+            float best = EntryRadius * EntryRadius;
+            for (int i = 0; i < railSpots.Count; i++)
+            {
+                CityRailRestSpot spot = railSpots[i];
+                Vector3 offset = spot.Feet - player;
+                float distance = offset.sqrMagnitude;
+                if (distance >= best || distance < MinimumEntryDistance * MinimumEntryDistance ||
+                    Mathf.Abs(offset.y) > 4f || !HasLocalRoom(spot.Feet) || !ClearOfPeople(spot.Feet)) continue;
+                bool occupied = false;
+                for (int j = 0; j < walkers.Length; j++)
+                {
+                    var other = GetWalkerBody(j);
+                    if (other != null && other.IsRestingAtRail && OnSameStretch(other.transform.position, spot.Feet))
+                    {
+                        occupied = true;
+                        break;
+                    }
+                }
+                if (occupied || !warming && !city.Visibility.CanChangeAmbientBodyAt(spot.Feet) ||
+                    !spot.HasClearApproach()) continue;
+                best = distance;
+                nearest = i;
+            }
+            return nearest >= 0 && Spawn(default, 0, railSpots[nearest]);
+        }
+
         private float ArrivalScore(CityAmbientWalkPlan.Entry entry, int direction, Vector3 interest)
         {
             float available = direction > 0 ? plan.Length(entry.Link) - entry.Distance : entry.Distance;
@@ -241,7 +290,7 @@ namespace BarPromenade
                 hit.rigidbody == null && !(hit.collider is CharacterController);
         }
 
-        private bool Spawn(CityAmbientWalkPlan.Entry entry, int direction)
+        private bool Spawn(CityAmbientWalkPlan.Entry entry, int direction, CityRailRestSpot? rest = null)
         {
             int slot = 0;
             while (slot < walkers.Length && walkers[slot].Encounter != 0) slot++;
@@ -253,21 +302,40 @@ namespace BarPromenade
             float phase = (hash & 255u) / 256f;
             float pace = Mathf.Lerp(.92f, 1.08f, phase);
             CityPedestrianPresentation body = looks[look].Body;
-            plan.Sample(entry.Link, entry.Distance, out Vector3 tangent);
-            body.transform.SetPositionAndRotation(entry.Position, Quaternion.LookRotation(tangent * direction));
+            Vector3 feet, facing;
+            if (rest.HasValue)
+            {
+                feet = rest.Value.Feet;
+                facing = rest.Value.Facing;
+            }
+            else
+            {
+                feet = entry.Position;
+                plan.Sample(entry.Link, entry.Distance, out Vector3 tangent);
+                facing = tangent * direction;
+            }
+            body.transform.SetPositionAndRotation(feet, Quaternion.LookRotation(facing));
             body.gameObject.SetActive(true);
             NpcFootstepSources.Unregister(body.transform);
             body.ConfigureCycle(pace, phase);
-            body.Advance(0f, true, true);
+            if (rest.HasValue)
+            {
+                bool smoking = ((railVisits++ + city.PedestrianPlan.StableSeed) & 1) != 0;
+                body.RestAtRail(rest.Value, smoking, phase);
+            }
+            else
+            {
+                body.Advance(0f, true, true);
+                lanePopulation[entry.Link]++;
+            }
             looks[look].Leased = true;
             looks[look].LastUse = encounter;
             walkers[slot] = new Walker
             {
-                Encounter = encounter, Look = look,
+                Encounter = encounter, Look = look, RailWorld = rest.HasValue ? city.World : null,
                 Walk = new CityAmbientWalking.Route(entry.Link, direction, entry.Distance),
                 Speed = pace * CityResidentWorld.WalkingSpeed
             };
-            lanePopulation[entry.Link]++;
             ActiveCount++;
             return true;
         }
@@ -344,10 +412,11 @@ namespace BarPromenade
             for (int i = 0; i < walkers.Length; i++)
             {
                 Walker walker = walkers[i];
-                contacts[i] = walker.Encounter != 0
-                    ? new CityAmbientWalking.Contact(walker.Encounter, looks[walker.Look].Body.transform.position,
-                        CityAmbientWalking.Radius, walker.Walk)
-                    : default;
+                var body = GetWalkerBody(i);
+                // Stationary contacts have no walking link or right-of-way negotiation.
+                contacts[i] = body == null ? default : new CityAmbientWalking.Contact(
+                    walker.AtRail ? -MaximumStreetBodies - i - 2 : walker.Encounter,
+                    body.transform.position, CityAmbientWalking.Radius, walker.Walk);
             }
 
             int count = walkers.Length;
@@ -363,7 +432,7 @@ namespace BarPromenade
         }
 
         private void AdvanceWalker(int index, ref Walker walker, CityPedestrianPresentation body,
-            float delta, float distanceSquared, int contactCount, Vector3 heroHead)
+            float delta, int contactCount, Vector3 heroHead)
         {
             int link = walker.Walk.Link;
             Vector3 previous = body.transform.position;
@@ -377,8 +446,6 @@ namespace BarPromenade
             contacts[index] = new CityAmbientWalking.Contact(walker.Encounter, position, CityAmbientWalking.Radius, walker.Walk);
             body.transform.SetPositionAndRotation(position, Quaternion.RotateTowards(body.transform.rotation,
                 Quaternion.LookRotation(facing), 210f * delta));
-            body.MinimumEvaluationInterval = city.Visibility.CanChangeAmbientBodyAt(position) ? 1f / 8f :
-                distanceSquared < 15f * 15f ? 0f : 1f / 15f;
             body.UpdateStreetAttention(heroHead, city.Pedestrians);
             body.AdvanceTravelled(delta, moving, position - previous);
 
@@ -430,9 +497,10 @@ namespace BarPromenade
         {
             Walker walker = walkers[index];
             if (walker.Encounter == 0) return;
-            looks[walker.Look].Body.gameObject.SetActive(false);
+            var body = looks[walker.Look].Body;
+            if (!walker.AtRail) lanePopulation[walker.Walk.Link]--;
+            body.gameObject.SetActive(false);
             looks[walker.Look].Leased = false;
-            lanePopulation[walker.Walk.Link]--;
             walkers[index] = default;
             ActiveCount--;
         }

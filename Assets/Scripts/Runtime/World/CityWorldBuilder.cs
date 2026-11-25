@@ -399,7 +399,8 @@ namespace BarPromenade
             GameObject residentialCourtyardRoot = CityResidentialCourtyardWorldBuilder.Build(world, residentialCourtyards);
             CityResidentialCourtyardLife courtyardLife = residentialCourtyardRoot.AddComponent<CityResidentialCourtyardLife>();
             courtyardLife.Initialize(residentialCourtyards, residentialCourtyardRoot.transform);
-            CityTerracePilotWorld.Build(world, terraces);
+            var railRests = CityRailRestSpot.AlongQuays(layout);
+            CityTerracePilotWorld.Build(world, terraces, railRests);
             CityTerracePilotWorld.BuildServiceWalks(world, layout);
             // Compose under the common surface owner until the joint meshes,
             // grass and lighting have read both sides of the approaches.
@@ -416,7 +417,7 @@ namespace BarPromenade
                 yield return BuildRidgeGroundAndHomes(ridge, layout, walkableArea,
                     home => playerHome = home ?? playerHome, false);
                 yield return new CompositionStep("ridge_terrain_and_homes", 0.90f);
-                BuildRidgeDressing(ridge, layout, kioskShelters);
+                BuildRidgeDressing(ridge, layout, kioskShelters, railRests);
             }
 
             CityResidentialEntranceLighting.Build(world);
@@ -528,7 +529,7 @@ namespace BarPromenade
                 cafeSite,
                 cafeRainShelter,
                 residentialCourtyards,
-                residentialCourtyardRoot, kioskShelters, ridge == world ? null : ridge.gameObject));
+                residentialCourtyardRoot, kioskShelters, ridge == world ? null : ridge.gameObject, railRests));
             ReportBlock(
                 "world_complete",
                 blockTimer,
@@ -538,7 +539,8 @@ namespace BarPromenade
             yield return new CompositionStep("world_complete", 1f);
         }
 
-        private static void BuildRidgeDressing(Transform parent, CityLayout layout, List<Collider> rainShelters)
+        private static void BuildRidgeDressing(Transform parent, CityLayout layout, List<Collider> rainShelters,
+            List<CityRailRestSpot> railRests)
         {
             CityHillsideSiteDetails.Build(parent, layout);
             CityHillsideFurnitureWorld.Build(parent, layout);
@@ -563,8 +565,9 @@ namespace BarPromenade
                 foreach (var collider in loft.GetComponentsInChildren<BoxCollider>())
                     if (collider.isTrigger && collider.name == "Pigeon loft rain shelter") rainShelters.Add(collider);
 
+            CityRailRestSpot.AddRidgePorches(layout, railRests);
             if (RidgeGaragePlan.ForLayout(layout) is { } garages)
-                rainShelters.Add(RidgeGarageWorld.Build(parent, garages, true));
+                rainShelters.Add(RidgeGarageWorld.Build(parent, garages, true, railRests));
             RidgeParkingWorld.Build(parent, layout, true);
             if (CityPawnshopPlan.TryCreate(layout, out var pawnshop))
             {
