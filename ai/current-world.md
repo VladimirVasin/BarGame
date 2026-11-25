@@ -1116,7 +1116,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   car at a low table, sitting via `CityBenchSeatClaims`. Routes and hand/foot
   contacts preserve `2.2 m` paths and the west door approach. Child gaze follows
   sampled face orientation, fades with activity; offsets restore before sampling.
-  `CityFairPlanner` grounds supports; decoration/litter/arrivals stay clear.
+  Supports sit on bare soil. Decoration, litter and arrivals stay clear.
   No buying/speech/reward, cat response or story state;
 - one mandatory north-edge waterfront in the default blueprint, dressed as
   the seacoast precinct (`CitySeacoastPlanner`): its connected beach has a
@@ -1486,7 +1486,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   lights, day floor and halos. Twenty original IDs plus three Industrial IDs;
   fronts≤15.5m, L15×14m, wing10×6m, heights6–8.6m. Blender metres and +Z align to
   `DoorPosition+0.08m`. Unique facade/plinth sides, metre equipment/roof/metal/
-  frames, pane-local glass. Home shares the pose and clips crossing shapes;
+  frames and glass. Ground reaching a facade bay leaves solid wall. Home shares the pose;
 - the bar now uses the complete fixed-metre `bar_exterior_v2` from the shared
   bar Blender pipeline instead of the City misc `BarBuildingShell` and generic
   window bands. Its `12.2645 x 13.5237 x 9.3435 m` measured envelope is unchanged;

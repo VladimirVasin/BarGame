@@ -74,6 +74,7 @@ namespace BarPromenade
                 }
 
                 int side = ResolveSideIndex(slot.Side);
+                if ((registry.GroundedWindowMask & (1UL << shaderIndex)) != 0) continue;
                 CityWindowFamily family =
                     CityExteriorAppearance.ResolveWindowFamily(
                         lot,
@@ -163,7 +164,8 @@ namespace BarPromenade
             int selected = -1;
             foreach (CityBuildingWindowSlot slot in registry.WindowSlots)
             {
-                if (slot.OpeningKind != CityBuildingOpeningKind.Window || (guaranteed & (1UL << slot.Uv2SlotId)) != 0) continue;
+                if (slot.OpeningKind != CityBuildingOpeningKind.Window ||
+                    ((guaranteed | registry.GroundedWindowMask) & (1UL << slot.Uv2SlotId)) != 0) continue;
                 uint hash = CityExteriorAppearance.StableHash(citySeed ^ 0x25be13, lot.Cell.x, lot.Cell.y,
                     slot.Floor, slot.Bay, ResolveSideIndex(slot.Side));
                 if (selected >= 0 && hash >= best) continue;
@@ -179,21 +181,29 @@ namespace BarPromenade
             BuildingLot lot, int citySeed)
         {
             if (!lot.IsOrdinaryBuilding) return 0;
+            ulong front = SelectWindow(registry, lot, citySeed, frontOnly: true);
+            // A wholly buried frontage can still have a real window on its
+            // downhill side. Choose it only after exhausting the public front.
+            return front != 0 ? front : SelectWindow(registry, lot, citySeed, frontOnly: false);
+        }
+
+        private static ulong SelectWindow(CityBuildingAssetRegistry registry,
+            BuildingLot lot, int citySeed, bool frontOnly)
+        {
             uint best = uint.MaxValue;
             int selected = -1;
             foreach (CityBuildingWindowSlot slot in registry.WindowSlots)
             {
                 if (slot.OpeningKind != CityBuildingOpeningKind.Window ||
-                    !string.Equals(slot.Side, "Front", StringComparison.Ordinal)) continue;
+                    (registry.GroundedWindowMask & (1UL << slot.Uv2SlotId)) != 0 ||
+                    (frontOnly && !string.Equals(slot.Side, "Front", StringComparison.Ordinal))) continue;
                 uint hash = CityExteriorAppearance.StableHash(citySeed, lot.Cell.x, lot.Cell.y,
                     slot.Floor, slot.Bay, ResolveSideIndex(slot.Side));
                 if (selected >= 0 && hash >= best) continue;
                 best = hash;
                 selected = slot.Uv2SlotId;
             }
-            if (selected < 0)
-                throw new InvalidOperationException($"Ordinary building '{registry.StableId}' has no street-facing window.");
-            return 1UL << selected;
+            return selected >= 0 ? 1UL << selected : 0;
         }
 
         private static Material Material

@@ -213,7 +213,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Player home interior | 12×8×2.9m; fitted sofa, sink, fridge and balcony; locked room/shared sit. | `HomeInteriorModelLibrary`, `HomeDiningSeatPlan` | Current |
 | Apartment calendar appearance | Days1–7 neglect; heavier7/exact debug restore; sleep view7+hero7. | `HomeApartmentDressing`, `HomeApartmentDay{Rules,Controller}` | Current |
 | Player-home stairwell | Three puzzles/pickup shots/equip;crowbar wakes crowd after return.Safe room3/retry. | `StairwellLabyrinth*`, `StairwellPickup*`, `StairwellEncounter*` | Current |
-| City facade presentation | The legacy 4×4 path remains only for clipped Home crossings. | `CityFacade{Grid,Appearance}`, `CityBuilding{SurfaceAppearance,WindowSlotAppearance}` | Current |
+| City facade presentation | Ground contact blanks prototype bays. Clipped Home boxes use legacy 4×4. | `CityGroundSurfaceSystem`, `CityBuildingWindowSlotAppearance` | Current |
 | City windows | Street-front primary/timed extra;paired local wall wash. | `CityWindow{Appearance,Lighting}`, `CityBuildingWindowSlotAppearance` | Current |
 | Stairwell surface presentation | Cached textures and material property blocks apply measured stairwell surfaces without instance materials. | `StairwellSurfaceAppearance`, `SurfaceAppearanceCore` | Current |
 | Exterior ground response | Indexed MPBs share response maps/road masks/snow edges; ridge haze retained. | `GroundSurface{Appearance,Coordinates}`, `GroundSurfaceLit`, `*SurfaceAppearance` | Current |

@@ -205,6 +205,8 @@ namespace BarPromenade
                     Reserve(steps);
                     break;
                 }
+            var fair = CityFairGroundSitePlan.ForLayout(city);
+            if (fair.IsEnabled) ReserveRect(fair.Bounds);
             var dogYard = CityDogParkPlan.ForLayout(city);
             if (dogYard.IsEnabled)
             {

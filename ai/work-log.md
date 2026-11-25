@@ -5,6 +5,10 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-25
 
+Ground contact blanks the facade block and its lights in City, Ridge and full Home models. `CityFacadeGroundContactAtBlockEdge` checked contact outside the frame. Reviewed day/night views.
+
+`CityFair` confirmed that the fair footprint blocks grass roots. Reviewed both approaches and the overview. The city light-count assertion failed.
+
 Uniformed janitors enter and leave off camera on free paving or bare yard earth around the hero. Both wrists follow one shaft through the sweep and rest. `CityJanitorsFollowTheNeighborhood` checks visible fingers against the timber and moves the hero between neighbourhoods.
 
 Residential balconies tie wash to poles, neighbouring rails and clear wall faces. Alternating receivers spreads the spans across the lower city and Ridge. Span length and garment width set the load. `CityBalconyWash` checked the separation, streamed endpoints, fixed pegs, hem reversal and settling. Reviewed street views in both districts.

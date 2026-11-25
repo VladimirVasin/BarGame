@@ -68,12 +68,12 @@ namespace BarPromenade.Tests.PlayMode
                 GameSessionState.BeginNewGame();
                 GameSessionState.TryStartGameTimeFromWake();
                 Time.captureDeltaTime = .05f;
-                AsyncOperation load = SceneManager.LoadSceneAsync(SceneIds.City, LoadSceneMode.Single);
+                yield return SceneManager.LoadSceneAsync(SceneIds.City, LoadSceneMode.Single);
                 float deadline = Time.realtimeSinceStartup + TimeoutSeconds;
                 while (Time.realtimeSinceStartup < deadline)
                 {
                     city = Object.FindAnyObjectByType<CityGameRoot>();
-                    if (load.isDone && city != null && city.IsInitialized && !CompositionDriver.IsComposing) break;
+                    if (city != null && city.IsInitialized && !CompositionDriver.IsComposing) break;
                     yield return null;
                 }
                 Assert.That(city != null && city.IsInitialized, Is.True, "City composition must finish before inspecting the fair.");
@@ -82,6 +82,18 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(fair.Plan.IsEnabled, Is.True);
                 CityFairPlan plan = fair.Plan;
                 CityFairPlanner.ValidateOrThrow(city.Layout, plan);
+                var grass = city.World.Root.GetComponentInChildren<CityGrassField>(true);
+                Assert.That(grass, Is.Not.Null);
+                Rect bounds = plan.Bounds;
+                float spacing = CityGrassPlan.Spacing;
+                for (int z = Mathf.FloorToInt(bounds.yMin / spacing); z < Mathf.CeilToInt(bounds.yMax / spacing); z++)
+                for (int x = Mathf.FloorToInt(bounds.xMin / spacing); x < Mathf.CeilToInt(bounds.xMax / spacing); x++)
+                {
+                    Vector2 root = CityGrassPlan.Root(city.Layout.Seed, x, z);
+                    if (bounds.Contains(root))
+                        Assert.That(grass.Surface.TrySample(root, out _, out _, out _), Is.False,
+                            $"Grass can take root inside the fair at {root:F2}.");
+                }
                 camera = Camera.main;
                 Assert.That(camera, Is.Not.Null);
                 follow = camera.GetComponent<PlayerCameraFollow>();

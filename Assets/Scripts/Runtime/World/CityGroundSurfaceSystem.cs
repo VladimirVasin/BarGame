@@ -296,6 +296,7 @@ namespace BarPromenade
                 if (background) yield return new CompositionStep("ground_dynamic_surface", .98f);
             }
             recordingGrass = false;
+            yield return ApplyGroundedFacades(surface, localSurfaces, background);
             if (background) yield return new CompositionStep("ground_grass", .98f);
             double beforeJoints = timer.Elapsed.TotalMilliseconds;
             yield return PrepareStaticJointSteps(surface, localSurfaces, background);

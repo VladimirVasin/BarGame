@@ -6135,6 +6135,9 @@
   `240`-minute block: start `0–120`, on `20–50`, off≥`70`; no replay/UnityRandom.
   `.35 s` checks reuse MPB/64-state buffers; glass/Light change atomically.
   City/Home keys/clock agree; pause freezes time; lit panes keep day≥`2/3`.
+  Finished ground blanks a whole intersected facade bay. Frame/glass meshes
+  and both light selections share the mask. The fixed light prefers a
+  surviving street pane, then another exposed pane.
   Optional-state generations dirty existing `2×256` reflection cubes with `5 s`
   debounce, no new pass. `CityLightingContinuity` passes;
   range/fog/DoF stay.

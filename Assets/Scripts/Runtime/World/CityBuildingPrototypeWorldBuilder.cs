@@ -44,6 +44,7 @@ namespace BarPromenade
                     registry);
             ApplyPose(registry.transform, pose);
             ApplyAppearance(registry, lot, citySeed);
+            CityGroundSurfaceSystem.RegisterFacade(registry, lot, citySeed);
             BuildFoundation(
                 parent,
                 registry,
@@ -108,6 +109,7 @@ namespace BarPromenade
                     cityPose);
             ApplyPose(registry.transform, homePose);
             ApplyAppearance(registry, lot, context.Layout.Seed);
+            CityGroundSurfaceSystem.RegisterFacade(registry, lot, context.Layout.Seed);
             CityMetalWorkshop.Build(context.Layout, lot, registry);
             CityFishCannerySign.BuildClock(context.Layout, lot, registry);
             BuildFoundation(

@@ -232,7 +232,7 @@ namespace BarPromenade
             nextBuildingRefresh = 0f;
         }
 
-        private static Vector3 LocalOutward(string side)
+        internal static Vector3 LocalOutward(string side)
         {
             switch (side)
             {

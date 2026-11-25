@@ -296,6 +296,7 @@ namespace BarPromenade
 
         private void OnDestroy()
         {
+            groundedWindowMeshes.Dispose();
             foreach (DynamicRegion region in dynamicRegions) region.JointField?.Dispose();
             staticJointField?.Dispose();
             jointPalette?.Dispose();
