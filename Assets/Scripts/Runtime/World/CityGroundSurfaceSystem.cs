@@ -48,6 +48,8 @@ namespace BarPromenade
         private CitySeacoastPlan grassCoast;
         private HomeExteriorContextPlan grassHome;
         private CityGrassSurface grassSupport;
+        internal bool CanGrowGrassAt(Vector2 cityPoint) =>
+            grassSupport != null && grassSupport.TrySample(cityPoint, out _, out _, out _);
         private bool recordingGrass;
         private readonly Dictionary<int, FootstepGroundKind> plantingKinds = new();
         private static readonly int PlantingGroundKindId = Shader.PropertyToID("_GroundKind");

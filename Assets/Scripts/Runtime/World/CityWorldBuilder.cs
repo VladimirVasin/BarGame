@@ -483,7 +483,7 @@ namespace BarPromenade
             GameObject windDressingRoot =
                 CityWindDressingWorldBuilder.Build(
                     world,
-                    windDressingPlan);
+                    windDressingPlan, partition == null ? null : partition.IsLower);
 
             var ridgeVegetation = CityRidgeVegetationPlan.ForLayout(layout);
             if (partition == null) ridgeVegetation.Build(ridge);

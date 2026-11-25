@@ -270,13 +270,9 @@ namespace BarPromenade.Tests.EditMode
                     continue;
                 }
 
-                if (!CityTerrainSurfacePlan.TrySampleGroundTop(
-                        layout,
-                        new Vector2(
-                            cloth.Position.x,
-                            cloth.Position.z),
-                        out float ground,
-                        out _))
+                Vector2 xz = new(cloth.Position.x, cloth.Position.z);
+                if (!CityHillsideGroundPlan.ForLayout(layout).TrySampleTop(xz, out float ground) &&
+                    !CityTerrainSurfacePlan.TrySampleGroundTop(layout, xz, out ground, out _))
                 {
                     continue;
                 }
@@ -404,6 +400,12 @@ namespace BarPromenade.Tests.EditMode
             {
                 CityWindDressingClothDescriptor cloth =
                     plan.Cloths[index];
+                if (cloth.Kind == CityWindDressingKind.BalconyWash)
+                {
+                    Assert.That(plan.BalconyLines.Any(line => Enumerable.Range(0,line.Count).Any(i=>line.Cloth(i).Equals(cloth))), Is.True);
+                    Assert.That(cloth.Zone, Is.EqualTo(CityWindDressingZone.Residential));
+                    continue;
+                }
                 if (balconyPegs.TryGetValue(cloth.StableId, out Vector3 peg))
                 {
                     Assert.That(cloth.Zone, Is.EqualTo(CityWindDressingZone.Residential));

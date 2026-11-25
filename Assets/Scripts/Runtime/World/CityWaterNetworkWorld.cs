@@ -177,7 +177,7 @@ namespace BarPromenade
             if (camera == null || (camera.transform.position-transform.position).sqrMagnitude > 50f*50f) return;
             float phase = Time.time*.82f + transform.position.x*.12f;
             if (Mathf.Sin(phase)<.04f) return;
-            WindSample wind = GameWeatherRules.EvaluateCurrentWind();
+            WindSample wind = CityWindField.Gust(GameWeatherRules.EvaluateCurrentWind(), Time.time);
             var particle = new ParticleSystem.EmitParams {
                 position=transform.position,
                 velocity=Vector3.up*(.48f+.1f*Mathf.Sin(phase*4f)) + basis*wind.HorizontalDirection*(.19f+.48f*wind.Strength01),

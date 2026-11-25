@@ -18,8 +18,7 @@ float3 CoastalGrassOffset(float4 stem, float3 root, float2 metadata,
     float weight = saturate(metadata.y);
     if (motion.x <= 0 || weight <= 0) return 0;
     float phase = dot(root.xz, float2(.71, .53));
-    float wave = .65 + .25 * sin(wind.w * 1.7 + phase) +
-        .10 * sin(wind.w * 3.8 + phase * 1.41);
+    float wave = .90 + .10 * sin(wind.w * 3.8 + phase);
     float2 travel = wind.xy * (motion.y * wind.z * wave);
     float2 away = root.xz - interaction.xz;
     float distance = length(away);

@@ -294,10 +294,13 @@ namespace BarPromenade.Tests.PlayMode
                 AsyncOperation load = SceneManager.LoadSceneAsync(SceneIds.City, LoadSceneMode.Single);
                 CityGameRoot city = null;
                 float deadline = Time.realtimeSinceStartup + TimeoutSeconds;
-                while (Time.realtimeSinceStartup < deadline)
+                // Synchronous scene composition can occupy the entire previous frame.
+                // Observe the loaded root before deciding that the wait expired.
+                while (true)
                 {
                     city = Object.FindAnyObjectByType<CityGameRoot>();
                     if (load.isDone && city != null && city.IsInitialized && !CompositionDriver.IsComposing) break;
+                    if (Time.realtimeSinceStartup >= deadline) break;
                     yield return null;
                 }
                 Assert.That(city != null && city.IsInitialized && load.isDone, Is.True, "Local City acceptance did not finish composition.");

@@ -55,6 +55,7 @@ namespace BarPromenade
                 if (refresh <= 0f)
                 {
                     WindSample wind = GameWeatherRules.EvaluateCurrentWind();
+                    if (gameObject.scene.name == SceneIds.City) wind = CityWindField.Gust(wind, Time.time);
                     breeze = wind.HorizontalDirection * wind.Strength01;
                     refresh = .16f;
                 }

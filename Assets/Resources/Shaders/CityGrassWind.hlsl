@@ -15,11 +15,9 @@ int _CityGrassContactCount;
 float3 CityGrassTravel(float3 root, float height, float4 wind, bool previous)
 {
     float3 city = CityWindCoordinates(root);
-    float phase = CityWindPhase(city.xz);
     float ripple = .90 + .10 * sin(wind.w * 4.1 + dot(city.xz, float2(1.3, .93)));
-    float flex = lerp(.68, .41, saturate(height));
-    float strength = CityWindStrength(wind.z, city.y);
-    float2 travel = wind.xy * (height * flex * strength * CityWindPulse(phase, wind.w) * ripple);
+    float flex = lerp(.68, .41, saturate(height)) * 1.62;
+    float2 travel = wind.xy * (height * flex * wind.z * ripple);
     float pressure = 0;
     bool nearBodies=all(root.xz>=_CityGrassContactBounds.xy)&&all(root.xz<=_CityGrassContactBounds.zw);
     [loop] for(int i=0;i<(nearBodies ? _CityGrassContactCount : 0);i++)

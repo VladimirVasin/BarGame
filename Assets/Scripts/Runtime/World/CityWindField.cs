@@ -10,12 +10,8 @@ namespace BarPromenade
     {
         internal const float MaximumTreeTravel = .75f;
         internal const float MaximumShrubTravel = .20f;
-        private const float SummitGain = 3.25f;
-        private const float Foot = CityAltitudeVisibility.LowlandTop;
-        private const float Climb = CityHillsideStreetRoute.SummitTop - Foot;
         private static readonly int WindId = Shader.PropertyToID("_CityWind");
         private static readonly int PreviousWindId = Shader.PropertyToID("_CityPreviousWind");
-        private static readonly int ProfileId = Shader.PropertyToID("_CityWindProfile");
         private static readonly int FrameId = Shader.PropertyToID("_CityWindWorldToCity");
         private static CityWindField active;
         private CityWeatherController weather;
@@ -24,6 +20,20 @@ namespace BarPromenade
         private bool configured;
 
         internal Vector4 Wind { get; private set; }
+
+        internal static WindSample Gust(WindSample weather, float time)
+        {
+            float strength = 1f - Mathf.Pow(1f - weather.Strength01, 6.75f);
+            float pulse = .62f + .24f * Mathf.Sin(time * 1.5f) + .14f * Mathf.Sin(time * 3.1f);
+            return new WindSample(weather.DirectionDegrees, strength * pulse);
+        }
+
+        internal static WindSample GustForHome(WindSample weather, BuildingLot home)
+        {
+            var gust = Gust(weather, Time.time);
+            var direction = PlayerHomeBalconyGeometry.ToHomeLocalDirection(home, gust.HorizontalDirection);
+            return new WindSample(Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg, gust.Strength01);
+        }
 
         internal void Initialize(CityGrassSurface ground)
         {
@@ -39,7 +49,9 @@ namespace BarPromenade
             Activate();
         }
 
-        internal Vector4 Pack(WindSample sample, float phase)
+        internal Vector4 Pack(WindSample sample, float phase) => PackGust(Gust(sample, phase), phase);
+
+        private Vector4 PackGust(WindSample sample, float phase)
         {
             Vector3 direction = fromCity * sample.HorizontalDirection;
             return new Vector4(direction.x, direction.z, sample.Strength01, phase);
@@ -54,21 +66,22 @@ namespace BarPromenade
         {
             if (!isActiveAndEnabled) return;
             active = this;
-            Shader.SetGlobalVector(ProfileId, new Vector4(Foot, 1f / Climb, SummitGain, 0f));
             Shader.SetGlobalMatrix(FrameId, toCity);
             Wind = ReadWind();
             Publish(Wind);
         }
 
-        private Vector4 ReadWind() => Pack(weather != null ? weather.CurrentWind :
-            GameWeatherRules.EvaluateCurrentWind(), Time.time);
+        private Vector4 ReadWind() => weather != null
+            ? PackGust(weather.CurrentGust, Time.time)
+            : Pack(GameWeatherRules.EvaluateCurrentWind(), Time.time);
 
         private void LateUpdate()
         {
-            if (active != this) return;
             Vector4 previous = Wind;
             if (!GameTimeScaleRuntime.IsPaused) Wind = ReadWind();
-            Publish(previous);
+            // Grass reads its own field while both streamed districts are
+            // visible. Only the active field publishes the global shader frame.
+            if (active == this) Publish(previous);
         }
 
         private void Publish(Vector4 previous)

@@ -778,10 +778,10 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   arrivals per 12m≤4 combined/2 ambient, hidden handoffs, 60/40 target.
   Ambient walkers use stairs, skip crossings/platform entries, pass at clear kerbs/turnouts and back across joins.
   Others lean at quays, wide courts or Ridge rails until departure. House spurs use the full pavement.
-  Public circuits turn at the sidewalk. The hero's
-  house is private; the pavement in front stays connected. Ordinary
-  movement keeps its `.82 m/s` pace; distant idle/walk sampling is bounded while
-  time, collision and input stay live. A spatial index bounds peer avoidance and glance
+  Two uniformed janitors can sweep free paving or yard earth 14–34 m from the hero. New visits 18–32 s apart;
+  after 55–95 s and 14 m separation, or beyond 52 m, they leave outside the shot.
+  Public circuits turn at the sidewalk. Home is private with continuous pavement.
+  Walk speed .82 m/s. Distant poses throttle while time, collision and input stay live. A spatial index bounds peer avoidance and glance
   selection. Street walkers look at the hero or a nearby peer. Oncoming walkers use shoulders on hillside stairs. In single file
   a walker uses a landing then resumes. At corners guests skirt parked yielders; bounded curved-lane probes bypass props, retaining goals. Bus/rest keeps identity.
   `CityPedestrianVehicleTraffic` shares buses, Ferryman, truck and ambient sedans.
@@ -1435,18 +1435,15 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   lot dimensions to meet
   `CityLayoutGenerator.MinimumDistrictPointLotDimension` (`18 m`); smaller
   custom blocks omit the district POIs safely;
-- `CityWindField` peaks at the summit and eases towards the lowland. Grass, crowns and fixed-end wires
-  share it in City/Home. `CityWindDressing*` hangs up to `64` cloth/rope pieces on
+- `CityWindField` sends one smooth gust through City/Home. Cloth, grass, crowns, fixed-end wires,
+  rain and outdoor clothing share it. `CityWindDressing*` hangs up to 137 cloth/rope pieces on
   existing structures — awning rags on up to four Old Town market valances (two
   per stall), grey shrouds on up to three scaffoldings' outer guard rails,
-  up to six residential courtyard drying lines on their own drawn poles and
-  parabola-sagged rope (`CityRopeSpanGeometry`, walk-through wash in the
-  cloth body registry, lines 18 m apart), dark tarpaulin curtains and sling
-  ends on up to four industrial pipe racks' street-side ties (the rooftop
-  gantry is skipped — its beam runs tens of metres up the landmark tower,
-  where cloth is sub-pixel), eight faded fire-escape banners and two rope
-  ends in Nightlife (no billboard skirts — every nightlife billboard rides
-  a ~50 m tower), exactly one
+  up to six courtyard lines, two Ridge racks and up to 16 balcony spans of 3–8 m to poles, rails
+  or gable eyes across lower Residential and Ridge. Each carries 3–6 garments on pegs in
+  City/Home wind. Balcony spans stay 12 m apart. Residential cap 94. Industrial pipe racks carry dark tarps
+  and sling ends at street level, Nightlife has eight fire-escape banners and two rope ends.
+  Tall gantries and billboard roofs stay clear. Exactly one
   remnant pennant on the park bandstand, net rags on the pier rail and
   tarred mooring ends on the slipway chain (the pier head's fisherman
   composition stays clear), two dark wreath ribbons on cemetery enclosure
@@ -1454,8 +1451,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   and utility shed plus dead cable tails off the crossarms. Anchors are
   picked by stride across each district's full anchor list, and a
   street-level per-district floor is test-pinned so the dressing meets an
-  ordinary walk instead of clustering once per city. Every piece is
-  a `ClothPanelFactory` panel on the weather-wind registry; rope-width
+  ordinary walk instead of clustering once per city. Cloth panels and authored garments share the wind registry; rope-width
   strips (`<= 0.12 m`) keep the factory's flat colour while wider pieces
   ride the shared POI cloth sheet; only line poles collide (batched
   collider). Residential lines use the free frontage bay opposite their

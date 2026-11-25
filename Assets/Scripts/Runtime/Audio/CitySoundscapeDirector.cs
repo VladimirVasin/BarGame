@@ -310,7 +310,7 @@ namespace BarPromenade
                 ResolveAbsoluteGameTime(),
                 GameSessionState.IsGameTimeRunning &&
                 Time.timeScale > 0f,
-                GameWeatherRules.EvaluateCurrentWind(),
+                CityWindField.Gust(GameWeatherRules.EvaluateCurrentWind(), Time.time),
                 nightFactorProvider != null
                     ? nightFactorProvider()
                     : 0f);

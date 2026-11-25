@@ -163,12 +163,13 @@ namespace BarPromenade
             if (!observer) observer = Camera.main;
             bool close = observer && (observer.transform.position - transform.position).sqrMagnitude < 28f * 28f;
             nextWindSample = Time.time + (close ? 0f : .125f);
-            WindSample wind = GameWeatherRules.EvaluateCurrentWind();
-            Vector3 local = transform.InverseTransformDirection(wind.HorizontalDirection);
+            WindSample wind = CityWindField.Gust(GameWeatherRules.EvaluateCurrentWind(), Time.time);
+            // The kiosk's local placement rotation is in City space in both views.
+            Vector3 local = Quaternion.Inverse(transform.parent.localRotation) * wind.HorizontalDirection;
             Vector3 axis = new(local.z, 0f, -local.x);
             for (int i = 0; i < canopies.Length; i++)
             {
-                float degrees = (.28f + .18f * Mathf.Sin(Time.time * 2.1f + i * 1.7f)) * wind.Strength01;
+                float degrees = 1.58f * wind.Strength01;
                 // Pivot about the clamp at the mast. Ribs, hem and shade move together.
                 canopies[i].localRotation = canopyRest[i] * Quaternion.AngleAxis(degrees, axis);
             }

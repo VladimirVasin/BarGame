@@ -121,6 +121,8 @@ namespace BarPromenade.Editor
             }
 
             // CPU readers: production rigs, cloth/contact sources and imported geometry fitting/combining.
+            Add("Assets/Resources/City/Laundry/BalconyWash.fbx", "Balcony clothesline and Cloth metre fitting",
+                "Reimport BalconyWash.fbx with Read/Write enabled.");
             Add(Player3DV2AssetSetup.ModelPath, "PlayerJacketClothSurface / PlayerScarfCollisionWorld / NpcHandPose",
                 "BarPromenade.Editor.Player3DV2AssetSetup.RunBatch");
             Add(PlayerScarfAssetSetup.WornPath, "PlayerScarfPresentation CPU cloth geometry",

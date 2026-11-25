@@ -46,7 +46,8 @@ namespace BarPromenade
         WreathRibbon = 10,
         ServiceTarp = 11,
         CableTail = 12,
-        SlingRopeEnd = 13
+        SlingRopeEnd = 13,
+        BalconyWash = 14
     }
 
     /// <summary>
@@ -242,7 +243,7 @@ namespace BarPromenade
     /// </summary>
     public sealed class CityWindDressingPlan
     {
-        public const int MaximumClothCount = 64;
+        public const int MaximumClothCount = CityWindDressingRules.ResidentialClothLimit + 43;
 
         /// <summary>
         /// At or under this width a piece reads as rope, not fabric,
@@ -258,8 +259,10 @@ namespace BarPromenade
 
         internal CityWindDressingPlan(
             IList<CityWindDressingClothDescriptor> clothSource,
-            IList<CityWindDressingSupportDescriptor> supportSource)
+            IList<CityWindDressingSupportDescriptor> supportSource,
+            IReadOnlyList<CityBalconyWashLine> balconyLines)
         {
+            BalconyLines = balconyLines;
             var clothCopy = new List<CityWindDressingClothDescriptor>(
                 clothSource);
             clothCopy.Sort((left, right) => string.Compare(
@@ -285,6 +288,8 @@ namespace BarPromenade
 
         public IReadOnlyList<CityWindDressingSupportDescriptor>
             Supports => supports;
+
+        internal IReadOnlyList<CityBalconyWashLine> BalconyLines { get; }
 
         public int ClothCount => cloths.Count;
 
@@ -319,6 +324,10 @@ namespace BarPromenade
 
     public static class CityWindDressingRules
     {
+        internal const int CourtyardLineLimit = 6;
+        // Each courtyard line carries two garments, and the two Ridge racks carry one each.
+        internal const int ResidentialClothLimit = CityBalconyWashPlan.MaximumGarments + CourtyardLineLimit * 2 + 2;
+
         public static bool BlocksMovement(
             CityWindDressingSupportKind kind)
         {
@@ -345,7 +354,7 @@ namespace BarPromenade
                 case CityWindDressingZone.OldTown:
                     return 12;
                 case CityWindDressingZone.Residential:
-                    return 14;
+                    return ResidentialClothLimit;
                 case CityWindDressingZone.Industrial:
                     return 8;
                 case CityWindDressingZone.Nightlife:

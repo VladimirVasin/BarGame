@@ -49,6 +49,18 @@ namespace BarPromenade
         public const string CityDogParkSeatedOwner = "zzzzz.city.dog-park.seated";
         // Append after every existing identity to retain their allocated looks.
         public const string CityResidentialCourtyardCarrier = "zzzzzz.city.residential-courtyard.carrier";
+        public const string CityJanitorFirst = "city.janitor.first";
+        public const string CityJanitorSecond = "city.janitor.second";
+        private static readonly Color JanitorCanvas = new Color32(64, 101, 103, 255);
+        private static readonly Color JanitorTrim = new Color32(161, 131, 83, 255);
+        private static readonly Dictionary<string, Color> JanitorDyes = new Dictionary<string, Color>
+        {
+            ["CLO_Outer_workBody"] = JanitorCanvas,
+            ["CLO_Outer_workSleeve.L"] = JanitorCanvas, ["CLO_Outer_workSleeve.R"] = JanitorCanvas,
+            ["CLO_Outer_workPocket.L"] = JanitorCanvas, ["CLO_Outer_workPocket.R"] = JanitorCanvas,
+            ["CLO_Outer_workPocketFlap.L"] = JanitorTrim, ["CLO_Outer_workPocketFlap.R"] = JanitorTrim,
+            ["CLO_Hat_workCrown"] = JanitorCanvas, ["CLO_Hat_workFold"] = JanitorTrim
+        };
         public const string ParkChessPlayer = "park.chess-player";
         public const string ParkCheckersPlayer = "park.checkers-player";
         public const string LastRouteFerryman = "last-route.ferryman";
@@ -495,6 +507,12 @@ namespace BarPromenade
                 roster.Add(i % 2 == 0
                     ? new CharacterDefinition(BalconyResidentId(i), model, WorkerStreetClothes)
                     : new CharacterDefinition(BalconyResidentId(i), DefaultNpcCatalog.OrdinaryWoman, WomanStreetClothes));
+            foreach (string id in new[] { CityJanitorFirst, CityJanitorSecond })
+                roster.Add(new CharacterDefinition(id, model,
+                    new SlotConstraint("outerwear", "outerwear.work"), new SlotConstraint("shirt", "shirt.work"),
+                    new SlotConstraint("trousers", "trousers.work"), new SlotConstraint("boots", "boots.work"),
+                    new SlotConstraint("headwear", "headwear.work"), new SlotConstraint("gloves", new string[] { null }),
+                    new SlotConstraint("scarf", new string[] { null }), new SlotConstraint("apron", new string[] { null })));
             return roster.ToArray();
 
             void RegisterCafeMan(MountainRoadCafeCastRole role, string coat, string hat, string apron) =>
@@ -830,8 +848,11 @@ namespace BarPromenade
             if (appearance == null) throw new InvalidOperationException("The default NPC has no appearance owner.");
             var bodyShape = actor.GetComponent<DefaultNpcBodyShape>();
             if (bodyShape == null) throw new InvalidOperationException("The default NPC has no body-shape owner.");
-            actor.GetComponent<NpcWardrobe>().SetGarmentDyes(assignment.CharacterId == Severin ? CarpenterDyes :
-                assignment.CharacterId == Marta ? SeamstressDyes : null);
+            actor.GetComponent<NpcWardrobe>().SetGarmentDyes(assignment.CharacterId switch
+            {
+                Severin => CarpenterDyes, Marta => SeamstressDyes,
+                CityJanitorFirst or CityJanitorSecond => JanitorDyes, _ => null
+            });
             appearance.ApplySelection(assignment.CharacterId, assignment.FaceId, assignment.HairColorId, assignment.ItemIds);
             if (assignment.UsesRandomBody) bodyShape.Apply(assignment.HeightCm, assignment.Build);
             else bodyShape.PreserveAuthoredAnatomy();

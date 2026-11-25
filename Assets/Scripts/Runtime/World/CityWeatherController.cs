@@ -33,11 +33,11 @@ namespace BarPromenade
         public WeatherVisualSample CurrentSample { get; private set; }
 
         /// <summary>
-        /// The wind actually applied this frame, after any shaping. Read it
-        /// rather than re-evaluating the schedule, or a place that shapes its
-        /// weather will disagree with itself.
+        /// The weather wind after the area's shaper. City consumers use CurrentGust
+        /// for the shared short-period variation.
         /// </summary>
         public WindSample CurrentWind { get; private set; }
+        internal WindSample CurrentGust { get; private set; }
 
         public int WeatherApplicationCount { get; private set; }
         public float SurfaceWetness =>
@@ -161,8 +161,12 @@ namespace BarPromenade
             }
 
             CurrentWind = wind;
-            CityClothWindRegistry.SetWind(wind);
-            Vector3 velocity = wind.Velocity(
+            CurrentGust = shaper is CityEternalRainShaper ? CityWindField.Gust(wind, Time.time) : wind;
+            if (shaper is CityEternalRainShaper)
+                CityClothWindRegistry.SetCityWind(CurrentGust);
+            else
+                CityClothWindRegistry.SetWind(wind);
+            Vector3 velocity = CurrentGust.Velocity(
                 GameWeatherRules.WindSpeedAtFullStrength);
             rain.SetWindDrift(
                 new Vector2(velocity.x, velocity.z));

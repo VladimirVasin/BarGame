@@ -5,6 +5,12 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-25
 
+Uniformed janitors enter and leave off camera on free paving or bare yard earth around the hero. Both wrists follow one shaft through the sweep and rest. `CityJanitorsFollowTheNeighborhood` checks visible fingers against the timber and moves the hero between neighbourhoods.
+
+Residential balconies tie wash to poles, neighbouring rails and clear wall faces. Alternating receivers spreads the spans across the lower city and Ridge. Span length and garment width set the load. `CityBalconyWash` checked the separation, streamed endpoints, fixed pegs, hem reversal and settling. Reviewed street views in both districts.
+
+City and Home now share a stronger gust across elevations. Cloth gets sustained force and small jitter. Conductors stay inside the surveyed sweep. `CityBalconyWash` measured the greater hem deflection, reversal and settling. Reviewed matched street views in both districts.
+
 Street residents lean with grounded feet at quays, wide courtyards and Ridge rails. Smokers keep one elbow planted through the draw. `LiveCity_RailRestsLeaveThePromenadeClear` and `LiveCity_CourtyardAndRidgeRailsCarryWeight` checked support and opposing passes. Ordinary balcony residents use the same lean, straighten, open their door and step behind the jamb before it closes. The Blender facade and collision share a recessed room. `ResidentialPrototype_ShowsDoorDeckRailsAndSmokingResident` covers the visit and hand contacts.
 
 The west Ridge garages connect two streets over a sheltered repair bay. An opal ceiling lamp lights the bay walls, with broad overlapping beams at the bench, motor and entrance. One fabrication hall has wired roof glazing and a street window onto the hoist. The clock gable carries a second matte cannery print with one head and one tail. `LiveCity_GarageRoofAndWorkshopHaveSeparateArrivals` walked both levels and boarded from the public pavement. Matched night frames showed the garage diffuser lifting the side walls, the entry lamp reaching the adjacent gate and both clock floodlights illuminating the lettering and tin. The garage ImageGen sheet omitted its stair connection.

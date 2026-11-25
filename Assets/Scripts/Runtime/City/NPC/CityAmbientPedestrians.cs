@@ -41,6 +41,7 @@ namespace BarPromenade
         private float spawnCountdown, crowdCheckCountdown;
 
         internal int ActiveCount { get; private set; }
+        internal CityAmbientWalkPlan WalkPlan => plan;
 
         private struct Look
         {
@@ -474,7 +475,7 @@ namespace BarPromenade
             return true;
         }
 
-        private bool ClearOfPeople(Vector3 point)
+        internal bool ClearOfPeople(Vector3 point)
         {
             float squared = SpawnSpacing * SpawnSpacing;
             if ((point - hero.position).sqrMagnitude < squared) return false;

@@ -269,13 +269,9 @@ namespace BarPromenade
             // The schedule's wind blows along CITY axes; the street below
             // is that city turned so the facade faces +X, and the streaks
             // must lean the way the city's own do.
-            Vector3 windVelocity =
-                PlayerHomeBalconyGeometry.ToHomeLocalDirection(
-                    homeLot,
-                    GameWeatherRules
-                        .EvaluateCurrentWind()
-                        .Velocity(
-                            GameWeatherRules.WindSpeedAtFullStrength));
+            WindSample gust = CityWindField.GustForHome(GameWeatherRules.EvaluateCurrentWind(), homeLot);
+            CityClothWindRegistry.SetCityWind(gust);
+            Vector3 windVelocity = gust.Velocity(GameWeatherRules.WindSpeedAtFullStrength);
             RainField.SetWindDrift(
                 new Vector2(windVelocity.x, windVelocity.z));
             FogField.SetWindDrift(new Vector2(windVelocity.x, windVelocity.z));

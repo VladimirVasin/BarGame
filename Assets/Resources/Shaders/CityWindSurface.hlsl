@@ -14,9 +14,10 @@ float3 CityWindSurfaceOffset(float3 position, float3 root, float3 lateral, float
     {
         // The mesh carries the surveyed lateral vector with its pinned-end envelope.
         float2 axis = lateral.xz / max(length(lateral.xz), 1e-5);
-        float force = dot(wind.xy, axis) * CityWindPulse(cable.y, wind.w);
+        float force = dot(wind.xy, axis);
         force += .12 * sin(wind.w * 3.8 + cable.y);
-        return lateral * (CityWindStrength(wind.z, cable.x) * clamp(force, -1, 1));
+        float load = 1.75 * wind.z * force;
+        return lateral * (load / sqrt(1 + load * load));
     }
 
     float3 city = CityWindCoordinates(root);
@@ -26,9 +27,11 @@ float3 CityWindSurfaceOffset(float3 position, float3 root, float3 lateral, float
     float height = max(0, position.y - root.y - (shrub ? .08 : 1.45));
     float lever = saturate(height / reference);
     float2 crosswind = float2(-wind.y, wind.x);
-    float2 force = wind.xy * CityWindPulse(phase, wind.w) +
+    float2 force = wind.xy +
         crosswind * (.23 * sin(wind.w * 2.3 + phase * 1.3));
-    force *= (shrub ? .18 : .72) * CityWindStrength(wind.z, city.y);
+    float travel = shrub ? .18 : .72;
+    force *= travel * wind.z * 1.48;
+    force *= min(1, travel / max(.001, length(force)));
     normalSlope = force * (lever < 1 ? 2 * lever / reference : 0);
     return float3(force.x, 0, force.y) * lever * lever;
 }

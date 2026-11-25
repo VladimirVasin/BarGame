@@ -1,0 +1,69 @@
+{
+  "sha256": "452a7cf53d8e6d82c1bf2a0d509d39cd1557ed68008acd0674112fb6fdf6e84a",
+  "parts": {
+    "Sheet": {
+      "triangles": 160,
+      "size_m": [
+        1.28,
+        0.89,
+        0.0932
+      ]
+    },
+    "Towel": {
+      "triangles": 96,
+      "size_m": [
+        0.56,
+        0.7,
+        0.0
+      ]
+    },
+    "Shirt": {
+      "triangles": 120,
+      "size_m": [
+        0.8,
+        0.67,
+        0.0932
+      ]
+    },
+    "Rope": {
+      "triangles": 268,
+      "size_m": [
+        1.0,
+        0.028,
+        0.028
+      ]
+    },
+    "PoleLoop": {
+      "triangles": 256,
+      "size_m": [
+        0.318,
+        0.026,
+        0.318
+      ]
+    },
+    "RailLoop": {
+      "triangles": 256,
+      "size_m": [
+        0.114,
+        0.026,
+        0.114
+      ]
+    },
+    "WallEye": {
+      "triangles": 284,
+      "size_m": [
+        0.085,
+        0.115,
+        0.082
+      ]
+    },
+    "Peg": {
+      "triangles": 84,
+      "size_m": [
+        0.023,
+        0.081,
+        0.034
+      ]
+    }
+  }
+}

@@ -25,7 +25,7 @@ namespace BarPromenade
 
         public static GameObject Build(
             Transform parent,
-            CityWindDressingPlan plan)
+            CityWindDressingPlan plan, Predicate<Vector3> includeBalcony = null)
         {
             if (parent == null)
             {
@@ -46,6 +46,7 @@ namespace BarPromenade
 
             BuildSupports(root, plan);
             BuildCloths(root, plan);
+            CityBalconyWashWorld.Build(root, plan.BalconyLines, include: includeBalcony);
             return root.gameObject;
         }
 
@@ -110,6 +111,7 @@ namespace BarPromenade
             {
                 CityWindDressingClothDescriptor descriptor =
                     plan.Cloths[index];
+                if (descriptor.Kind == CityWindDressingKind.BalconyWash) continue;
                 GameObject rag = ClothPanelFactory.CreateHangingRag(
                     $"Wind Dressing {descriptor.StableId}",
                     root,

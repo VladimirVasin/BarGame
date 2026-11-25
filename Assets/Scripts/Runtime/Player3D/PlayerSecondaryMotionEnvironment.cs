@@ -24,7 +24,8 @@ namespace BarPromenade
         {
             outside = false;
             wind = new WindSample(0f, 0f);
-            if (city != null && city.Weather != null) { outside = true; wind = city.Weather.CurrentWind; }
+            if (city != null && city.Weather != null)
+            { outside = true; wind = city.Weather.CurrentGust; }
             else if (road != null && road.Weather != null)
             { outside = road.CabinSeat == null || !road.CabinSeat.IsSeated; wind = road.Weather.CurrentWind; }
             else if (village != null && village.Weather != null)
@@ -37,7 +38,7 @@ namespace BarPromenade
             {
                 Vector3 position = home.transform.InverseTransformPoint(runtime.GameObject.transform.position);
                 outside = home.BalconyLayout.BalconyBounds.Contains(new Vector2(position.x, position.z));
-                if (outside) wind = GameWeatherRules.EvaluateCurrentWind();
+                if (outside) wind = CityWindField.GustForHome(GameWeatherRules.EvaluateCurrentWind(), home.ExteriorContext.PlayerHome);
             }
             outside &= !GameSessionState.IsRidingAVehicle && !SceneTransitionService.IsTransitioning;
         }

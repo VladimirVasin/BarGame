@@ -167,7 +167,7 @@ namespace BarPromenade
         public void RefreshPresentation()
         {
             if (!isActiveAndEnabled) return;
-            AppliedWind = DebugWind ?? (weather != null ? weather.CurrentWind : new WindSample(0f, 0f));
+            AppliedWind = DebugWind ?? (weather != null ? weather.CurrentGust : new WindSample(0f, 0f));
             AppliedPhaseSeconds = DebugPhaseSeconds ?? phaseSeconds;
             AppliedInteractionPosition = DebugInteractionPosition ?? (hero != null ? hero.position : Vector3.zero);
             Vector3 direction = AppliedWind.HorizontalDirection;

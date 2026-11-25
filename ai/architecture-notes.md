@@ -7690,26 +7690,20 @@
   URP chromatic aberration 0..0.45 and lens distortion 0..-0.14 at priority 8;
   native scene effects retain the same shared input and exclusions.
 - **Accepted — Cross-zone anchor-consumer dressing:** `CityWindDressingPlanner`
-  is the first planner that consumes other plans' public descriptors instead
-  of the layout alone: it reads decoration, seacoast, cemetery and fringe-yard
-  descriptors (kinds, positions, rotations, sizes) and rederives each recipe's
-  drawn geometry (the decoration builder's cardinal-snapped forward, lot-width
-  clamps and part offsets) to compute hang points on members that exist in the
-  render. The coupling is deliberate and bounded: only public descriptor data,
-  null/empty anchor sets degrade to fewer props (budgets are maxima, not
-  guarantees), and the physics cap and the art-restraint cap are one number in
-  one validator (`64` cloths city-wide plus per-zone maxima, zero-zones by
-  rule). Anchors are picked by stride across each district's whole anchor
-  list — a head-of-list pick planned one market in twelve and read as an
-  empty city — and roof-landmark anchors are skipped where the piece would
-  hang tens of metres up (the industrial gantry, the tower billboard):
-  street-level presence per urban district is pinned by an EditMode floor. Simulated cloth cannot join combined batches, so the world builder
-  lives with the swing seats and fountain water after every static dresser;
-  its static supports (line poles, parabolic rope chords via
-  `CityRopeSpanGeometry`, pin battens) do batch, and only line poles carry the
-  batch collider. Cloth at rope width (`<= 0.12 m`) keeps the factory's flat
-  colour — the weave is sub-pixel — while wider panels ride the shared POI
-  cloth sheet through `ApplyClothPanel`.
+  reads anchor geometry from decoration, seacoast, cemetery and fringe-yard
+  descriptors. Missing anchors yield fewer props. Stride selection spreads
+  dressing district-wide and leaves tower roofs clear. Only line poles in
+  the static support batches collide. Cloth shares the POI weave above
+  `0.12 m` and uses flat colour at rope width.
+  `CityBalconyWashPlan` alternates between pole and building anchors across
+  the lower city and Ridge. There are up to 16 spans and 80 balcony garments,
+  plus courtyard lines and two racks within the residential cap of 94.
+  The city-wide validator caps all wind dressing at 137. Spans stay in one
+  streamed district and share their authored meshes and weather across City/Home.
+  City and Home sample one amplified gust from the weather wind and scaled clock.
+  The shader and cloth solver share its strength and direction. Cloth uses
+  sustained force with small jitter and a wider sweep where clearance permits.
+  Conductors stay within surveyed travel and retain their fixed ends.
 - **Accepted and implemented 2026-09-04 — Hero V2 is the sole packaged player;
   the retained Hero V1 is removed:** by the user's explicit decision, the old
   rollback route is deleted rather than carried beside production. All nine

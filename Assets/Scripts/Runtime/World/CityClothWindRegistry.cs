@@ -28,7 +28,7 @@ namespace BarPromenade
         public const float RandomLiftFraction = 0.2f;
 
         private static readonly List<Cloth> entries = new List<Cloth>();
-        private static WindSample lastWind = new WindSample(0f, 0f);
+        private static Vector3 acceleration, flutter;
 
         public static int Count => entries.Count;
 
@@ -40,33 +40,37 @@ namespace BarPromenade
             }
 
             entries.Add(cloth);
-            Apply(cloth, lastWind);
+            Apply(cloth);
         }
 
-        public static void SetWind(WindSample sample)
+        public static void SetWind(WindSample sample) => UpdateWind(sample, false);
+
+        internal static void SetCityWind(WindSample gust) => UpdateWind(gust, true);
+
+        private static void UpdateWind(WindSample sample, bool city)
         {
-            lastWind = sample;
+            float push = sample.Strength01 * ClothAccelerationAtFullStrength;
+            Vector3 steady = sample.HorizontalDirection * push;
+            // Let the common gust move the hem. Leave only a small random solver input.
+            acceleration = city ? steady * 5.2f + Vector3.up * (3.2f * sample.Strength01) : steady;
+            flutter = steady * (city ? .13f : RandomAccelerationFraction) + Vector3.up * (push * RandomLiftFraction);
             for (int index = entries.Count - 1; index >= 0; index--)
             {
-                if (entries[index] == null)
+                Cloth cloth = entries[index];
+                if (cloth == null)
                 {
                     entries.RemoveAt(index);
                     continue;
                 }
 
-                Apply(entries[index], sample);
+                if (cloth.enabled && cloth.gameObject.activeInHierarchy) Apply(cloth);
             }
         }
 
-        private static void Apply(Cloth cloth, in WindSample wind)
+        private static void Apply(Cloth cloth)
         {
-            float push =
-                wind.Strength01 * ClothAccelerationAtFullStrength;
-            Vector3 steady = wind.HorizontalDirection * push;
-            cloth.externalAcceleration = steady;
-            cloth.randomAcceleration =
-                (steady * RandomAccelerationFraction) +
-                (Vector3.up * (push * RandomLiftFraction));
+            cloth.externalAcceleration = acceleration;
+            cloth.randomAcceleration = flutter;
         }
 
         [RuntimeInitializeOnLoadMethod(
@@ -74,7 +78,7 @@ namespace BarPromenade
         private static void ResetEntries()
         {
             entries.Clear();
-            lastWind = new WindSample(0f, 0f);
+            acceleration = flutter = Vector3.zero;
         }
     }
 

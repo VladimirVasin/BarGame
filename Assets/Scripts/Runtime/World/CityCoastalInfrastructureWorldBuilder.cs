@@ -211,7 +211,6 @@ namespace BarPromenade
                 }
                 Vector3 right=span.Lateral;
                 Vector3 centre=(sourceSpan.Start+sourceSpan.End)*.5f;
-                float height=centre.y-(sourceSpan.IsServiceDrop ? 5f : CityCoastalInfrastructurePlan.PoleCableHeight);
                 float phase=centre.x*.17f+centre.z*.11f;
                 int offset=vertices.Count;
                 for(int v=0;v<cableVertices.Length;v++)
@@ -222,7 +221,7 @@ namespace BarPromenade
                     vertices.Add(span.Sample(along)+right*source.x+Vector3.up*(source.y+.70f*4f*t*(1f-t)));
                     uv.Add(cableUv[v]);
                     float swing=sourceSpan.WindSwing*CityCoastalCableSpan.WindEnvelope(along);
-                    motion.Add(new Vector4(right.x*swing,right.z*swing,height,phase));
+                    motion.Add(new Vector4(right.x*swing,right.z*swing,0f,phase));
                 }
                 for(int t=0;t<cableTriangles.Length;t++)
                     triangles.Add(offset+cableTriangles[t]);

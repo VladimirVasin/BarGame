@@ -143,7 +143,8 @@ namespace BarPromenade
             {
                 Woman.ApplyFaceAt(LifeSeconds, FactoryConversation?.Bubbles);
                 Woman.Hair?.ApplyForObserver(LifeSeconds, !GameSessionState.IsGameTimeRunning || GameTimeScaleRuntime.IsPaused,
-                    factoryWaitingOutside[CanneryWomanPresentation.WorkerSlot], GameWeatherRules.EvaluateCurrentWind(),
+                    factoryWaitingOutside[CanneryWomanPresentation.WorkerSlot],
+                    CityWindField.Gust(GameWeatherRules.EvaluateCurrentWind(), Time.time),
                     hero != null ? hero.position : (Vector3?)null, hairDetailCamera, ForcePresentation);
             }
         }

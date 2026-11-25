@@ -206,7 +206,7 @@ namespace BarPromenade.Tests.PlayMode
                 wind = root.GetComponent<CityWindField>();
                 var grass = root.GetComponentInChildren<CityGrassField>();
                 Assert.That(wind, Is.Not.Null);
-                Assert.That(wind.Wind.z, Is.EqualTo(city.Weather.CurrentWind.Strength01).Within(.001f));
+                Assert.That(wind.Wind.z, Is.EqualTo(city.Weather.CurrentGust.Strength01).Within(.001f));
                 AssertKioskApproachesClear(grass, city.Layout);
                 var vegetation = CityRidgeVegetationPlan.ForLayout(city.Layout);
                 var added = city.World.RidgeRoot.transform.Find(CityRidgeVegetationPlan.RootName);
@@ -288,17 +288,10 @@ namespace BarPromenade.Tests.PlayMode
                 Vector3 treeAim = crown.bounds.center - Vector3.up * .4f;
                 Vector3 treeEye = tree.position + new Vector3(4.4f, 2.2f, -5.2f);
                 var treeWind = new WindSample(90, .50f);
-                Vector4 profile = Shader.GetGlobalVector("_CityWindProfile");
                 AddWindPair("tree", treeEye, treeAim, treeWind);
                 var shrub = vegetation.Plants.Where(item => !item.IsTree).OrderByDescending(item => item.Origin.y).First();
                 Vector3 shrubAim = shrub.Origin + Vector3.up * .62f;
                 AddWindPair("shrub", FrameRidgeGrass(shrubAim, 3.1f, .40f), shrubAim, new WindSample(75, .68f));
-                shots.Add(Shot.At("ridge-wind-tree-lowland", treeEye, treeAim, 62f, readyWhen: () =>
-                {
-                    Shader.SetGlobalVector("_CityWind", wind.Pack(treeWind, 1.4f));
-                    Shader.SetGlobalVector("_CityWindProfile", new Vector4(profile.x, profile.y, 0f, profile.w));
-                    return true;
-                }));
 
                 var network = CityCoastalInfrastructurePlan.ForLayout(city.Layout);
                 var wire = ElectricalMesh(root.Find(CityCoastalInfrastructureWorldBuilder.RootName));
@@ -347,7 +340,6 @@ namespace BarPromenade.Tests.PlayMode
                         shots.Add(Shot.At("ridge-wind-" + subject + (gust ? "-gust" : "-still"), eye, aim, 62f,
                             readyWhen: () =>
                             {
-                                Shader.SetGlobalVector("_CityWindProfile", profile);
                                 Shader.SetGlobalVector("_CityWind", gust ? wind.Pack(sample, 1.4f) : Vector4.zero);
                                 return true;
                             }));

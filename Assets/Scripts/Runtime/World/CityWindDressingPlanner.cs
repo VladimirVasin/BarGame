@@ -99,7 +99,7 @@ namespace BarPromenade
                 new List<CityWindDressingSupportDescriptor>(24);
 
             AddOldTown(cloths, layout, decorationPlan);
-            AddResidential(cloths, supports, layout, decorationPlan);
+            var balconyLines = CityBalconyWashPlan.ForLayout(layout);
             AddIndustrial(cloths, layout, decorationPlan);
             AddNightlife(cloths, layout, decorationPlan);
             AddPark(cloths, layout, decorationPlan);
@@ -107,7 +107,9 @@ namespace BarPromenade
             AddCemetery(cloths, layout, cemeteryPlan);
             AddFringeYards(cloths, layout, fringeYardPlan);
 
-            var plan = new CityWindDressingPlan(cloths, supports);
+            AddResidential(cloths, supports, layout, decorationPlan, balconyLines);
+
+            var plan = new CityWindDressingPlan(cloths, supports, balconyLines);
             CityWindDressingValidator.ValidateOrThrow(layout, plan);
             return plan;
         }
@@ -273,7 +275,8 @@ namespace BarPromenade
             ICollection<CityWindDressingClothDescriptor> cloths,
             ICollection<CityWindDressingSupportDescriptor> supports,
             CityLayout layout,
-            CityDecorationPlan decorationPlan)
+            CityDecorationPlan decorationPlan,
+            IReadOnlyList<CityBalconyWashLine> balconyLines)
         {
             Rect dryingYard = default;
             bool hasDryingYard = false;
@@ -300,10 +303,21 @@ namespace BarPromenade
                 CityDecorationKind.ResidentialDiscardedFurniture);
             List<Bounds> blockingDecoration =
                 CollectBlockingDecorationBounds(layout, decorationPlan);
-            var chosenCenters = new List<Vector3>(6);
+            var chosenCenters = new List<Vector3>(CityWindDressingRules.CourtyardLineLimit);
+            int remaining = Mathf.Min(CityWindDressingRules.MaximumClothCount(CityWindDressingZone.Residential),
+                CityWindDressingPlan.MaximumClothCount - cloths.Count);
+            var hillside = CityHillsideNeighborhoodPlan.ForLayout(layout);
+            foreach (var house in hillside.AllBuildings)
+                if (house.HasAirer) remaining--;
+            foreach (var line in balconyLines)
+            {
+                for (int i = 0; i < line.Count; i++) cloths.Add(line.Cloth(i));
+                remaining -= line.Count;
+            }
+            int yardLimit = Mathf.Min(CityWindDressingRules.CourtyardLineLimit, remaining / 2);
             int lineOrdinal = 0;
             for (int index = 0;
-                 index < anchors.Count && lineOrdinal < 6;
+                 index < anchors.Count && lineOrdinal < yardLimit;
                  index++)
             {
                 CityDecorationDescriptor anchor = anchors[index];
@@ -355,6 +369,16 @@ namespace BarPromenade
                     continue;
                 }
 
+                foreach (var line in balconyLines)
+                {
+                    Vector3 delta = line.Center - center;
+                    delta.y = 0f;
+                    if (delta.sqrMagnitude >= CityBalconyWashPlan.Spacing * CityBalconyWashPlan.Spacing) continue;
+                    crowded = true;
+                    break;
+                }
+                if (crowded) continue;
+
                 AddCourtyardLine(
                     cloths,
                     supports,
@@ -368,9 +392,8 @@ namespace BarPromenade
                 lineOrdinal++;
             }
 
-            // The two quarter rack locations use the remaining two residential
-            // slots. Unlike yard lines the folded rack already owns its supports.
-            foreach (var house in CityHillsideNeighborhoodPlan.ForLayout(layout).AllBuildings)
+            // The two authored racks own their supports and their reserved fabric slots.
+            foreach (var house in hillside.AllBuildings)
                 if (house.HasAirer)
                     cloths.Add(new CityWindDressingClothDescriptor("upper-balcony-" + house.Lot.Cell,
                         CityWindDressingKind.CourtyardLaundry, CityWindDressingZone.Residential,

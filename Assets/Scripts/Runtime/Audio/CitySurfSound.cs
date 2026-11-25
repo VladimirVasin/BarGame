@@ -343,7 +343,7 @@ namespace BarPromenade
                 return;
             }
 
-            WindSample wind = GameWeatherRules.EvaluateCurrentWind();
+            WindSample wind = CityWindField.Gust(GameWeatherRules.EvaluateCurrentWind(), Time.time);
             player.SetIntensity(Mathf.Clamp01(
                 0.72f + 0.28f * wind.Strength01));
             player.SetListenerPosition(listener.position);

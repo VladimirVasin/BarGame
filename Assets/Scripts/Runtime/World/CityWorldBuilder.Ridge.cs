@@ -38,6 +38,7 @@ namespace BarPromenade
                 }
             CityCoastalInfrastructureWorldBuilder.Build(root, CityCoastalInfrastructurePlan.ForLayout(layout), partition.IsRidge);
             CityWaterNetworkWorld.Build(root, CityWaterNetwork.ForLayout(layout), partition.IsRidge);
+            CityBalconyWashWorld.Build(root, CityBalconyWashPlan.ForLayout(layout), include: partition.IsRidge);
             CityResidentialEntranceLighting.Build(root);
             var vegetation = CityRidgeVegetationPlan.ForLayout(layout);
             vegetation.Build(root);
