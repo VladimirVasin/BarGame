@@ -7311,7 +7311,7 @@
         }
       ],
       "normal_sha256": "8ab0243b0a3eee0b0b0e370fe0596aaf7c98fd63193110d2e7f784657c5c4df6",
-      "response_sha256": "986f5fb3296edb49c36ab88a17f9611a10e362b3a3bd45b36bc6ecc2d25c7d67"
+      "response_sha256": "532c0cd3ddc141e3c7ddae855bb1c0a21579142f3083d3215a6fae1ad245c9ef"
     },
     {
       "recipe": "Skin",
@@ -7566,7 +7566,7 @@
         }
       ],
       "normal_sha256": "bacf0ed93d76e45bb53c522ec99c6770e671b72c7fbaf36044fe4b211a782df5",
-      "response_sha256": "a0c4e1ffea022b6a1548e3483a22f808495921b509bbf14674fa80b91292aeb1"
+      "response_sha256": "1de2b66fb566b8af73479050fbe10014acfad6665f1f2cc148ca8ef35548659c"
     },
     {
       "recipe": "Hair",
@@ -7660,14 +7660,14 @@
           "height_px": 128
         }
       ],
-      "normal_sha256": "fe911300cd2977299c6c6c871a9b47f19adc5fa5ea26516b8e300c9e9d3c38e4",
-      "response_sha256": "e260d44248bb6b18c54bfb76ee39c558de14d7a64107c3b429d7a287ef6634b9"
+      "normal_sha256": "cb7f7f0cc69a74b9878ac8238bcd3606b21e91c121133ada779585672bee248c",
+      "response_sha256": "99eac8ea954250423210bcb1e8b3520f2c46e4e68e82205101d9da839a3055e6"
     }
   ],
   "surface_authoring": {
     "generator": "tools/player_body_hair_surfaces.py",
-    "version": "1.0.0",
-    "sha256": "063a7ac2ab88338b14ecf4d6497bff79d8088dbec2b350dd920a98d3ce3b4431"
+    "version": "1.1.0",
+    "sha256": "4cf718deeeeafde087e31cef22b74f21c1a2145f6eb5049dbc43201cc7643b8e"
   },
   "stride_authoring_sha256": "aff3991fec071867a8116b2616a3829f92055f860a36598509a62e878611fbb9",
   "ordinary_strides": {

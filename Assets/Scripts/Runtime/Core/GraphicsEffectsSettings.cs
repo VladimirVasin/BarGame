@@ -10,6 +10,7 @@ namespace BarPromenade
         private const string CleanHalationKey = "graphics.clean_halation";
         private const string CleanDirectionalHighlightsKey = "graphics.clean_directional_highlights";
         private const string CleanBounceKey = "graphics.clean_bounce";
+        private const string DirectionalAmbientKey = "graphics.directional_ambient";
         private const string DepthOfFieldKey = "graphics.dof";
         private const string IntoxicationLensFxKey =
             "graphics.intoxication_fx";
@@ -22,6 +23,7 @@ namespace BarPromenade
         private static bool cleanHalationEnabled;
         private static bool cleanDirectionalHighlightsEnabled;
         private static bool cleanBounceEnabled;
+        private static bool directionalAmbientEnabled;
         private static bool depthOfFieldEnabled;
         private static bool intoxicationLensFxEnabled;
         private static bool aspectRatio43Enabled;
@@ -66,6 +68,17 @@ namespace BarPromenade
         {
             get { EnsureLoaded(); return cleanBounceEnabled; }
             set => Apply(ref cleanBounceEnabled, value, CleanBounceKey);
+        }
+
+        public static bool DirectionalAmbientEnabled
+        {
+            get { EnsureLoaded(); return directionalAmbientEnabled; }
+            set
+            {
+                if (DirectionalAmbientEnabled == value) return;
+                Apply(ref directionalAmbientEnabled, value, DirectionalAmbientKey);
+                SceneAmbientLight.RefreshPreference();
+            }
         }
 
         public static bool DepthOfFieldEnabled
@@ -133,6 +146,7 @@ namespace BarPromenade
             cleanHalationEnabled = ReadFlag(CleanHalationKey);
             cleanDirectionalHighlightsEnabled = ReadFlag(CleanDirectionalHighlightsKey);
             cleanBounceEnabled = ReadFlag(CleanBounceKey);
+            directionalAmbientEnabled = ReadFlag(DirectionalAmbientKey);
             depthOfFieldEnabled = ReadFlag(DepthOfFieldKey);
             intoxicationLensFxEnabled =
                 ReadFlag(IntoxicationLensFxKey);

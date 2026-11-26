@@ -2609,7 +2609,6 @@ namespace BarPromenade.Tests.PlayMode
             private readonly bool weatherEnabled;
             private readonly bool lightningEnabled;
             private readonly bool dayNightEnabled;
-            private readonly bool cloudsVisible;
             private readonly bool fogFieldActive;
             private readonly bool pedestriansEnabled;
             private readonly bool[] busEnabled;
@@ -2699,11 +2698,6 @@ namespace BarPromenade.Tests.PlayMode
                 }
 
                 // 4. Atmosphere off the frame.
-                if (city.Clouds != null)
-                {
-                    cloudsVisible = city.Clouds.IsVisible;
-                    city.Clouds.SetVisible(false);
-                }
 
                 if (city.Night != null && city.Night.FogField != null)
                 {
@@ -3046,10 +3040,6 @@ namespace BarPromenade.Tests.PlayMode
                         city.Night.FogField.gameObject.SetActive(fogFieldActive);
                     }
 
-                    if (city.Clouds != null)
-                    {
-                        city.Clouds.SetVisible(cloudsVisible);
-                    }
                 });
                 Step(() =>
                 {

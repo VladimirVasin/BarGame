@@ -229,10 +229,10 @@ namespace BarPromenade
 
         private void ApplyInteriorMood()
         {
-            RenderSettings.ambientLight = Color.Lerp(
+            SceneAmbientLight.Apply(Color.Lerp(
                 NightAmbientColor,
                 DayAmbientColor,
-                WindowDayFactor);
+                WindowDayFactor));
             Light sun = RenderSettings.sun;
             if (sun != null && sun.type == LightType.Directional)
             {

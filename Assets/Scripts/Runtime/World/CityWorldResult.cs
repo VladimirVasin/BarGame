@@ -50,17 +50,29 @@ namespace BarPromenade
             CityResidentialCourtyardPlan residentialCourtyards = null,
             GameObject residentialCourtyardRoot = null,
             IReadOnlyList<Collider> kioskRainShelters = null,
-            GameObject ridgeRoot = null, IReadOnlyList<CityRailRestSpot> railRests = null)
+            GameObject ridgeRoot = null, IReadOnlyList<CityRailRestSpot> railRests = null,
+            IReadOnlyList<CityPlaygroundBalanceStation> balanceStations = null)
         {
             Root = root;
             RidgeRoot = ridgeRoot;
             RailRests = railRests ?? Array.Empty<CityRailRestSpot>();
+            BalanceStations = balanceStations ?? Array.Empty<CityPlaygroundBalanceStation>();
             Cafe = cafe;
             CafeSite = cafeSite;
             CafeRainShelter = cafeRainShelter;
             KioskRainShelters = kioskRainShelters ?? Array.Empty<Collider>();
             ResidentialCourtyards = residentialCourtyards;
             ResidentialCourtyardRoot = residentialCourtyardRoot;
+            if (residentialCourtyardRoot != null)
+            {
+                Seesaw = residentialCourtyardRoot.GetComponentInChildren<CityPlaygroundSeesaw>();
+                foreach (CityCourtyardPlayground playground in residentialCourtyardRoot.GetComponentsInChildren<CityCourtyardPlayground>())
+                {
+                    if (playground.Site.HasBridge) BridgePlayground = playground;
+                    else if (playground.Site.HasSlide) SlidePlayground = playground;
+                    else CourtyardPlayground = playground;
+                }
+            }
             Fair = root != null ? root.GetComponentInChildren<CityFairWorld>(true) : null;
             WalkableArea = walkableArea;
             Bars = new ReadOnlyCollection<BarEntrance>(
@@ -99,6 +111,7 @@ namespace BarPromenade
                 ? decorationRoot
                 : throw new ArgumentNullException(nameof(decorationRoot));
             Gazebo = DecorationRoot.GetComponentInChildren<CityParkGazeboWorld>(true);
+            PlaygroundSwings = DecorationRoot.GetComponentsInChildren<CityPlaygroundSwing>(true);
             RiverRoot = riverRoot;
             RiverQuayLampAnchors = riverQuayLampAnchors ??
                 Array.Empty<Transform>();
@@ -160,6 +173,12 @@ namespace BarPromenade
         }
 
         internal IReadOnlyList<CityRailRestSpot> RailRests { get; }
+        internal CityPlaygroundSwing[] PlaygroundSwings { get; } = Array.Empty<CityPlaygroundSwing>();
+        internal CityCourtyardPlayground CourtyardPlayground { get; }
+        internal CityCourtyardPlayground SlidePlayground { get; }
+        internal CityCourtyardPlayground BridgePlayground { get; }
+        internal CityPlaygroundSeesaw Seesaw { get; }
+        internal IReadOnlyList<CityPlaygroundBalanceStation> BalanceStations { get; } = Array.Empty<CityPlaygroundBalanceStation>();
         public GameObject Root { get; }
         public GameObject RidgeRoot { get; }
         public MountainRoadCafeWorldResult Cafe { get; }

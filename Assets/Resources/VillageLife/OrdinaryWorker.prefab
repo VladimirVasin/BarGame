@@ -627,6 +627,7 @@ MonoBehaviour:
   - slot: headwear
     renderer: {fileID: 2699568132946974610}
     color: {r: 0.3921568, g: 0.38431367, b: 0.35294113, a: 1}
+    materialOverride: {fileID: 2100000, guid: d2ca73805d6041ada5a8a91ec816977a, type: 2}
   - slot: scarf
     renderer: {fileID: 122387478024541423}
     color: {r: 0.61568624, g: 0.5803921, b: 0.47450978, a: 1}
@@ -660,6 +661,7 @@ MonoBehaviour:
   - slot: headwear
     renderer: {fileID: 4008546033618438372}
     color: {r: 0.3921568, g: 0.38431367, b: 0.35294113, a: 1}
+    materialOverride: {fileID: 2100000, guid: d2ca73805d6041ada5a8a91ec816977a, type: 2}
   - slot: scarf
     renderer: {fileID: 6824616086495943317}
     color: {r: 0.61568624, g: 0.5803921, b: 0.47450978, a: 1}
@@ -1502,6 +1504,7 @@ MonoBehaviour:
     - slot: headwear
       renderer: {fileID: 2699568132946974610}
       color: {r: 0.3921568, g: 0.38431367, b: 0.35294113, a: 1}
+      materialOverride: {fileID: 2100000, guid: d2ca73805d6041ada5a8a91ec816977a, type: 2}
     coveredRenderers:
     - {fileID: 3820940317089940655}
     - {fileID: 6856235112650347069}
@@ -1546,6 +1549,7 @@ MonoBehaviour:
     - slot: headwear
       renderer: {fileID: 4008546033618438372}
       color: {r: 0.3921568, g: 0.38431367, b: 0.35294113, a: 1}
+      materialOverride: {fileID: 2100000, guid: d2ca73805d6041ada5a8a91ec816977a, type: 2}
     coveredRenderers:
     - {fileID: 3820940317089940655}
     - {fileID: 6856235112650347069}
@@ -4694,7 +4698,7 @@ PrefabInstance:
     - target: {fileID: -6162536843684102001, guid: 939391c8cc08d21600dc1d86bac29678, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value:
-      objectReference: {fileID: 2100000, guid: 326672fc39f54450192d18ff795c9d82, type: 2}
+      objectReference: {fileID: 2100000, guid: d2ca73805d6041ada5a8a91ec816977a, type: 2}
     - target: {fileID: -6162536843684102001, guid: 939391c8cc08d21600dc1d86bac29678, type: 3}
       propertyPath: m_BlendShapeWeights.Array.size
       value: 2
@@ -5118,7 +5122,7 @@ PrefabInstance:
     - target: {fileID: -5139248272785285127, guid: 939391c8cc08d21600dc1d86bac29678, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value:
-      objectReference: {fileID: 2100000, guid: 326672fc39f54450192d18ff795c9d82, type: 2}
+      objectReference: {fileID: 2100000, guid: d2ca73805d6041ada5a8a91ec816977a, type: 2}
     - target: {fileID: -5139248272785285127, guid: 939391c8cc08d21600dc1d86bac29678, type: 3}
       propertyPath: m_BlendShapeWeights.Array.size
       value: 2
@@ -6494,7 +6498,7 @@ PrefabInstance:
     - target: {fileID: -1322406966394200095, guid: 939391c8cc08d21600dc1d86bac29678, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value:
-      objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
+      objectReference: {fileID: 2100000, guid: 86cc50dc01d048aba8294b72b7364f7b, type: 2}
     - target: {fileID: -1320631320683690618, guid: 939391c8cc08d21600dc1d86bac29678, type: 3}
       propertyPath: m_Enabled
       value: 0
@@ -8038,7 +8042,7 @@ PrefabInstance:
     - target: {fileID: 4182220576517673906, guid: 939391c8cc08d21600dc1d86bac29678, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value:
-      objectReference: {fileID: 2100000, guid: 326672fc39f54450192d18ff795c9d82, type: 2}
+      objectReference: {fileID: 2100000, guid: d2ca73805d6041ada5a8a91ec816977a, type: 2}
     - target: {fileID: 4510016258599026193, guid: 939391c8cc08d21600dc1d86bac29678, type: 3}
       propertyPath: m_Enabled
       value: 0
@@ -8478,7 +8482,7 @@ PrefabInstance:
     - target: {fileID: 5776625251926574368, guid: 939391c8cc08d21600dc1d86bac29678, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value:
-      objectReference: {fileID: 2100000, guid: 326672fc39f54450192d18ff795c9d82, type: 2}
+      objectReference: {fileID: 2100000, guid: d2ca73805d6041ada5a8a91ec816977a, type: 2}
     - target: {fileID: 5807755767728912552, guid: 939391c8cc08d21600dc1d86bac29678, type: 3}
       propertyPath: m_Enabled
       value: 0

@@ -22,6 +22,10 @@ namespace BarPromenade
                 model.name = prop.StableId;
             }
             CityStaticCollisionBuilder.AddColliderGroup(root.transform, "Court Solid Contacts", plan.CollisionBounds);
+            CityPlaygroundSwingBuilder.BuildCourtyard(root.transform, plan.Playground);
+            CityPlaygroundSwingBuilder.BuildCourtyard(root.transform, plan.SlidePlayground);
+            CityPlaygroundSwingBuilder.BuildCourtyard(root.transform, plan.BridgePlayground);
+            CityPlaygroundSwingBuilder.BuildCourtyard(root.transform, plan.SeesawPlayground);
             return root;
         }
 
@@ -52,6 +56,10 @@ namespace BarPromenade
                     PlayerHomeBalconyGeometry.ToHomeLocalDirection(home.PlayerHome, prop.Forward),
                     PlayerHomeBalconyGeometry.ToHomeLocalDirection(home.PlayerHome, prop.Rotation * Vector3.up));
             }
+            CityPlaygroundSwingBuilder.BuildCourtyard(root.transform, plan.Playground, home);
+            CityPlaygroundSwingBuilder.BuildCourtyard(root.transform, plan.SlidePlayground, home);
+            CityPlaygroundSwingBuilder.BuildCourtyard(root.transform, plan.BridgePlayground, home);
+            CityPlaygroundSwingBuilder.BuildCourtyard(root.transform, plan.SeesawPlayground, home);
             return root;
         }
     }

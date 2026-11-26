@@ -93,6 +93,11 @@ namespace BarPromenade
             night.BusStopPoles = poles;
             ground.SetBuildingPerimeters(CityBuildingPerimeterPlan.ForLayout(context.Layout), context);
             ground.SetResidentialCourtyards(courtyards, context);
+            CityPlaygroundLandscapePlan playgrounds = CityPlaygroundLandscapePlan.Create(
+                context.Layout, courtyards, context.NearbyDecorations);
+            ground.SetPlaygroundLandscape(playgrounds);
+            foreach (CityPlaygroundLandscapePlan.Site site in playgrounds.Sites)
+                CityPlaygroundSwingBuilder.BuildBalanceStation(root, site.Balance, context);
             ground.SetGrassContext(context.Layout, home: context);
             ground.FinalizeSurface();
             // The retained exterior is presentation only. Shared fixture

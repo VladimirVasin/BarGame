@@ -74,5 +74,29 @@ namespace BarPromenade
         public static float SeatReach =>
             (Mathf.Sin(SwingLimitDegrees * Mathf.Deg2Rad) * RopeLength) +
             (SeatDepth * 0.5f);
+
+        internal static Vector2[] ParkGroundFootprint(CityLayout layout, CityDecorationDescriptor descriptor)
+        {
+            CityDecorationWorldBuilder.GetDecorationFrame(layout, descriptor,
+                out Vector3 origin, out Vector3 tangent, out Vector3 forward);
+            Rect bounds = ParkGroundBounds;
+            return new[] { Point(bounds.xMin, bounds.yMin), Point(bounds.xMax, bounds.yMin),
+                Point(bounds.xMax, bounds.yMax), Point(bounds.xMin, bounds.yMax) };
+
+            Vector2 Point(float x, float z)
+            {
+                Vector3 point = origin + tangent * x + forward * z;
+                return new Vector2(point.x, point.z);
+            }
+        }
+
+        internal static Rect ParkGroundBounds
+        {
+            get
+            {
+                float side = TopBeamWidth * .5f + .55f;
+                return Rect.MinMaxRect(-side, -SeatReach - .55f, side, BenchZ + .77f);
+            }
+        }
     }
 }

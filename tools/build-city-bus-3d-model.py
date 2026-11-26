@@ -29,7 +29,7 @@ from typing import Iterable, Sequence
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import city_bus_forms as forms
-from city_bus_surfaces import paint_uv
+from city_bus_surfaces import STEP_SECTION, STEP_SPANS, paint_uv
 from last_route_car_forms import round_headlight
 
 try:
@@ -99,10 +99,6 @@ DOORWAY_SPECS = (
         ),
     ),
 )
-# Stop the steps in front of the two wheel envelopes on the boarding side.
-STEP_SPANS = ((-3.764, -2.735), (.626, 1.765))
-STEP_SECTION = ((1.079, .502, .111, .094), (1.177, .361, .101, .093))
-
 # Source coordinates in metres. Seat 07 and the two doorways keep their
 # original contacts. Indices 06 and 10 share the transverse rear bench.
 REAR_BENCH_Y = 3.44

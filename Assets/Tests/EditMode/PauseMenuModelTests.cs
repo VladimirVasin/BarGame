@@ -182,6 +182,7 @@ namespace BarPromenade.Tests.EditMode
         [TestCase(PauseMenuOptionsRow.CleanHalation)]
         [TestCase(PauseMenuOptionsRow.CleanDirectionalHighlights)]
         [TestCase(PauseMenuOptionsRow.CleanBounce)]
+        [TestCase(PauseMenuOptionsRow.DirectionalAmbient)]
         public void OptionsToggleRow_ReportsToggleAndStaysOnPage(PauseMenuOptionsRow row)
         {
             var model = new PauseMenuModel();

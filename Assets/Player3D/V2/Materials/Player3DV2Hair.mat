@@ -91,7 +91,7 @@ Material:
     - _Blend: 0
     - _BlendModePreserveSpecular: 1
     - _BumpScale: 0.5
-    - _ClearCoatMask: 0
+    - _ClearCoatMask: -0.55
     - _ClearCoatSmoothness: 0
     - _Cull: 2
     - _Cutoff: 0.5

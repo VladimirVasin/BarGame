@@ -50,6 +50,9 @@ namespace BarPromenade.Editor
             CharacterSurfaceBinding[] bindings)
         {
             var result = new Dictionary<string, Material>(StringComparer.Ordinal);
+            result.Add("GEO_FaceSurface", CharacterSurfaceMaterialSetup.Face);
+            result.Add("CLO_ShirtBody", AssetDatabase.LoadAssetAtPath<Material>(CharacterSurfaceMaterialSetup.ShirtPath)
+                ?? throw new InvalidOperationException("Missing shared shirt material."));
             foreach (CharacterSurfaceBinding binding in bindings)
             {
                 var recipe = (CharacterSurfaceRecipe)Enum.Parse(typeof(CharacterSurfaceRecipe), binding.recipe);

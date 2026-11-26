@@ -82,7 +82,7 @@ namespace BarPromenade
             Light sun = RenderSettings.sun;
             Color light = sun != null ? sun.color * sun.intensity : Color.black;
             Vector3 direction = sun != null ? sun.transform.forward : Vector3.down;
-            Color ambient = RenderSettings.ambientLight * RenderSettings.ambientIntensity;
+            Color ambient = SceneAmbientLight.ReferenceColor * RenderSettings.ambientIntensity;
             float night = CityWaterResources.NightFactor;
             float warmth = owner != null ? owner.WarmthGrade : 0f;
             bool changed = lightingGeneration == 0 || Mathf.Abs(night - nightReference) >= .12f ||

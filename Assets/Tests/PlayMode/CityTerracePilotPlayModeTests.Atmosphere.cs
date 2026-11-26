@@ -86,7 +86,7 @@ namespace BarPromenade.Tests.PlayMode
             try
             {
                 RuntimeSceneSetup.ApplyCityExteriorLighting(GameTimeDayNightRules.Evaluate(0d), false);
-                CityDayNightController.SetSkyFill(city.Camera, city.Clouds, 0f);
+                CityDayNightController.SetSkyFill(city.Camera, 0f);
                 AreaCaptureFixture.CaptureCurrentCamera(city.Camera, folder, "06-street-previous-fill");
             }
             finally { city.DayNight.ApplyCurrentTime(true); }

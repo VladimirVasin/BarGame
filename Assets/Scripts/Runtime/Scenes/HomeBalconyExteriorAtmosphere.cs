@@ -56,6 +56,7 @@ namespace BarPromenade
         private LightingSnapshot homeLighting;
         private VolumeProfile runtimeCityProfile;
         private ColorAdjustments cityColorAdjustments;
+        private ShadowsMidtonesHighlights cityTones;
         private DayNightVisualSample exteriorLightingSample;
         private bool hasExteriorLightingSample;
         private long lastThunderStrikeId = long.MinValue;
@@ -90,7 +91,6 @@ namespace BarPromenade
             private set;
         }
         public Volume CityPostProcessVolume { get; private set; }
-        public ExteriorCloudField Clouds { get; private set; }
         public VolumeProfile RuntimeCityProfile => runtimeCityProfile;
 
         public void Initialize(
@@ -150,7 +150,7 @@ namespace BarPromenade
                 exteriorNight,
                 exteriorContext,
                 lightingFocus);
-            BuildExteriorClouds(citySeed);
+
             BuildCityPostProcessVolume();
             CityWetSurfaceRegistry.InitializeOrResume(
                 CityEternalRainShaper.FloorIntensity(
@@ -216,8 +216,8 @@ namespace BarPromenade
         {
             exteriorLightingSample = sample;
             hasExteriorLightingSample = true;
-            RuntimeSceneSetup.ApplyCityExteriorSaturation(
-                cityColorAdjustments, sample.NightFactor);
+            RuntimeSceneSetup.ApplyCityExteriorGrade(
+                cityColorAdjustments, cityTones, sample.NightFactor);
             if (!IsInitialized || !IsBalconyVisibilityActive)
             {
                 return;
@@ -398,24 +398,6 @@ namespace BarPromenade
             RainField.SetLocalShelters(new[] { RainShelter });
         }
 
-        private void BuildExteriorClouds(int citySeed)
-        {
-            Vector3 cityForwardInHome =
-                PlayerHomeBalconyGeometry.ToHomeLocalDirection(
-                    homeLot,
-                    Vector3.forward);
-            Quaternion canonicalFrame = Quaternion.LookRotation(
-                cityForwardInHome.normalized,
-                Vector3.up);
-            Clouds = ExteriorCloudField.Create(
-                transform,
-                targetCamera,
-                ExteriorCloudProfiles.City,
-                citySeed,
-                canonicalFrame);
-            Clouds.SetVisible(false);
-        }
-
         /// <summary>
         /// The hero's own building, as a volume rain dies in. The field is
         /// born on the facade plane, but the wind carries live streaks
@@ -518,8 +500,8 @@ namespace BarPromenade
                 fixedCamera.ActiveShotKind ==
                 HomeCameraShotKind.Balcony;
             if (useCityVisibility || force)
-                RuntimeSceneSetup.ApplyCityExteriorSaturation(
-                    cityColorAdjustments,
+                RuntimeSceneSetup.ApplyCityExteriorGrade(
+                    cityColorAdjustments, cityTones,
                     GameTimeDayNightRules.Evaluate(
                         GameSessionState.GameTimeOfDayMinutes).NightFactor);
             if (!force &&
@@ -551,7 +533,7 @@ namespace BarPromenade
                 // The elevated observer already sees continuous depth fog over the city.
                 FogField.FogRenderer.enabled = !summitHome;
                 RainField.RainRenderer.enabled = true;
-                Clouds.SetVisible(true);
+
                 CityPostProcessVolume.weight = 1f;
                 IsBalconyVisibilityActive = true;
                 SetPedestriansActive(true);
@@ -563,7 +545,7 @@ namespace BarPromenade
             SetBalconySmokersVisible(false);
             FogField.FogRenderer.enabled = false;
             RainField.RainRenderer.enabled = false;
-            Clouds.SetVisible(false);
+
             ThunderSound.StopAll();
             SetExteriorLightingEnabled(false);
             CityPostProcessVolume.weight = 0f;
@@ -594,8 +576,11 @@ namespace BarPromenade
                 return;
             }
 
-            homeVisibility.Restore(targetCamera);
-            homeLighting.Restore();
+            if (gameObject.scene == UnityEngine.SceneManagement.SceneManager.GetActiveScene())
+            {
+                homeVisibility.Restore(targetCamera);
+                homeLighting.Restore();
+            }
             SetExteriorLightingEnabled(false);
             if (CityPostProcessVolume != null)
             {
@@ -610,10 +595,6 @@ namespace BarPromenade
                 RainField.RainRenderer != null)
             {
                 RainField.RainRenderer.enabled = false;
-            }
-            if (Clouds != null)
-            {
-                Clouds.SetVisible(false);
             }
             if (RainSound != null)
             {
@@ -686,6 +667,7 @@ namespace BarPromenade
             if (summitHome) RuntimeSceneSetup.AddGaussianDepthOfField(runtimeCityProfile, 65f, 235f, .58f);
             CityPostProcessVolume.profile = runtimeCityProfile;
             runtimeCityProfile.TryGet(out cityColorAdjustments);
+            cityTones = Rendering.WorldTonalGrade.Configure(runtimeCityProfile, 1f, 1f, 1f);
             volumeObject
                 .AddComponent<DepthOfFieldSettingsBinder>()
                 .Initialize(runtimeCityProfile);
@@ -714,6 +696,7 @@ namespace BarPromenade
 
             runtimeCityProfile = null;
             cityColorAdjustments = null;
+            cityTones = null;
         }
 
         private readonly struct VisibilitySnapshot
@@ -777,8 +760,7 @@ namespace BarPromenade
                 float sunIntensity,
                 LightShadows sunShadows,
                 float sunShadowStrength,
-                AmbientMode ambientMode,
-                Color ambientLight,
+                SceneAmbientLight ambient,
                 float reflectionIntensity)
             {
                 Sun = sun;
@@ -787,8 +769,7 @@ namespace BarPromenade
                 SunIntensity = sunIntensity;
                 SunShadows = sunShadows;
                 SunShadowStrength = sunShadowStrength;
-                AmbientMode = ambientMode;
-                AmbientLight = ambientLight;
+                Ambient = ambient;
                 ReflectionIntensity = reflectionIntensity;
             }
 
@@ -798,8 +779,7 @@ namespace BarPromenade
             private float SunIntensity { get; }
             private LightShadows SunShadows { get; }
             private float SunShadowStrength { get; }
-            private AmbientMode AmbientMode { get; }
-            private Color AmbientLight { get; }
+            private SceneAmbientLight Ambient { get; }
             private float ReflectionIntensity { get; }
 
             public static LightingSnapshot Capture()
@@ -822,8 +802,7 @@ namespace BarPromenade
                     sun != null
                         ? sun.shadowStrength
                         : 0f,
-                    RenderSettings.ambientMode,
-                    RenderSettings.ambientLight,
+                    SceneAmbientLight.Capture(),
                     RenderSettings.reflectionIntensity);
             }
 
@@ -839,8 +818,7 @@ namespace BarPromenade
                     Sun.shadowStrength = SunShadowStrength;
                 }
 
-                RenderSettings.ambientMode = AmbientMode;
-                RenderSettings.ambientLight = AmbientLight;
+                Ambient.Restore();
                 RenderSettings.reflectionIntensity =
                     ReflectionIntensity;
                 DynamicGI.UpdateEnvironment();

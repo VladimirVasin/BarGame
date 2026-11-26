@@ -33,8 +33,9 @@ with applicability separate. Group trivial work; record lasting facts.
    structural/depth/shadow occlusion; separate lit air from particles/glow.
 5. **Shadows:** appropriate softness, stable cascades/range/resolution and bias;
    preserve accepted local hard, soft and shadowless exceptions.
-6. **Colour grading/tonemapping:** palette, skin/shadow/highlight detail;
-   compare actual materials without erasing district identity.
+6. **Colour grading/tonemapping:** preserve the local palette and black point.
+   `WorldTonalGrade` sets neutral shadow, midtone and highlight gains in the existing LUT.
+   Compare steps, faces, lamp housings and unlit gaps along the same eye-level walk.
 
 ## Ten material, motion and accent effects
 

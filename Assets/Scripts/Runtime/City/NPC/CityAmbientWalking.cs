@@ -330,12 +330,14 @@ namespace BarPromenade
             {
                 int link = neighbours[i];
                 if (link == walk.Link || plan.Length(link) <= 0f ||
-                    walk.IsChild && !plan.AllowsChild(link)) continue;
+                    (walk.IsChild ? !plan.AllowsChild(link) : plan.IsPlaygroundLink(link))) continue;
                 connected = true;
                 int candidateDirection = plan.DirectionFrom(link, node);
                 float distance = candidateDirection > 0 ? 0f : plan.Length(link);
                 plan.Sample(link, distance, out Vector3 axis);
                 float score = Vector3.Dot(incoming, axis * candidateDirection);
+                if (walk.IsChild && !walk.Backing && !plan.IsPlaygroundLink(walk.Link) && plan.IsPlaygroundLink(link))
+                    score += 2.1f;
                 uint choice = CityPedestrianStableHash.Combine((uint)encounter, (uint)node);
                 if (!walk.Backing && (choice & 3u) == 0 && plan.IsStair(link) && !plan.IsStair(walk.Link)) score += 1.15f;
                 if (score <= bestScore || !TryJoin(link, distance + candidateDirection * .32f, feet, keepLane, walk.Kerb,

@@ -207,6 +207,7 @@ namespace BarPromenade
                 runtimeProfile.Add<ColorAdjustments>(true);
             color.postExposure.Override(0.30f);
             color.contrast.Override(5f);
+            Rendering.WorldTonalGrade.Configure(runtimeProfile, shadowGain: 1.10f, midtoneGain: 1.23f, highlightGain: .90f);
             color.saturation.Override(-4f);
             color.colorFilter.Override(
                 new Color(1f, 0.94f, 0.88f, 1f));

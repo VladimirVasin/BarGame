@@ -2,6 +2,22 @@
 #ifndef BAR_PROMENADE_SURFACE_DAMAGE_COMMON_INCLUDED
 #define BAR_PROMENADE_SURFACE_DAMAGE_COMMON_INCLUDED
 // Callers declare SurfaceDamageFields inside their shared material CBUFFER.
+#if defined(_WORLD_CONTACT_FINISH)
+TEXTURE2D(_ContactFinishMap); SAMPLER(sampler_ContactFinishMap);
+
+void ApplyContactFinish(float3 positionOS, float2 uv, inout SurfaceData surface)
+{
+    float3 chartPosition = positionOS;
+    if (_ContactFinishUseUV > .5)
+        chartPosition = float3((uv - _BaseMap_ST.zw) / _BaseMap_ST.xy, 0);
+    float4 p = float4(chartPosition, 1);
+    float2 chart = float2(dot(p, _ContactFinishU), dot(p, _ContactFinishV));
+    half4 finish = SAMPLE_TEXTURE2D(_ContactFinishMap, sampler_ContactFinishMap, saturate(chart));
+    surface.albedo = lerp(surface.albedo, _ContactSubstrate.rgb, finish.g) * (.5h + finish.b);
+    surface.metallic = finish.r;
+    surface.smoothness = finish.a;
+}
+#endif
 TEXTURE2D(_SurfaceDamageAtlas); SAMPLER(sampler_SurfaceDamageAtlas);
 
 float2 SurfaceDamageChartUv(float3 positionOS, float3 normalOS)

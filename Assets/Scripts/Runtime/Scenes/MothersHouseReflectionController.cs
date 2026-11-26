@@ -157,7 +157,7 @@ namespace BarPromenade
                 hash = Hash(hash, light.color.g, 16f);
                 hash = Hash(hash, light.color.b, 16f);
             }
-            Color ambient = RenderSettings.ambientLight * RenderSettings.ambientIntensity;
+            Color ambient = SceneAmbientLight.ReferenceColor * RenderSettings.ambientIntensity;
             hash = Hash(hash, ambient.r, 16f); hash = Hash(hash, ambient.g, 16f);
             return Hash(hash, ambient.b, 16f);
         }

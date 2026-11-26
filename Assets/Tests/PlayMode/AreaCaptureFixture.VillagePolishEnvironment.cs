@@ -101,8 +101,6 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(RenderSettings.sun.intensity,
                     Is.EqualTo(night.DirectionalLightIntensity * 1.06f).Within(.0001f),
                     "Overcast daylight must not darken the established night fill.");
-                Assert.That(ExteriorCloudProfiles.AlpineVillage.Coverage, Is.GreaterThan(.95f));
-                Assert.That(ExteriorCloudProfiles.AlpineVillage.SupportsLightning, Is.False);
             }
             finally
             {

@@ -32,7 +32,17 @@ half4 ProjectLitFragmentPBR(inout InputData inputData, SurfaceData surfaceData)
 {
     // URP applies this coordinate after shading, including the reflection.
     inputData.fogCoord = CityValleyFogFactor(inputData.fogCoord, inputData.positionWS.y);
-    directionalMetalAmount = min(_ClearCoatMask, .3h) * _WarehouseCleanEffects.y;
+    directionalMetalAmount = clamp(_ClearCoatMask, 0, .3h) * _WarehouseCleanEffects.y;
+#if defined(_NORMALMAP)
+    // Character hair uses a negative mask and UV-V follows the large locks.
+    // The skinned frame moves with the head in both sun and local lighting.
+    [branch] if (_ClearCoatMask < 0)
+    {
+        directionalMetalAxis = inputData.tangentToWorld[1];
+        directionalMetalAmount = -_ClearCoatMask;
+    }
+    else
+#endif
     [branch] if (directionalMetalAmount > 0)
     {
         float3 fallbackTangent = TransformObjectToWorldDir(float3(1, 0, 0));

@@ -5,7 +5,7 @@ using UnityEngine;
 namespace BarPromenade
 {
     internal enum CityGrassSpecies { Lawn, Soft, Broad, Tussock, Tall, Dry, Sedge, Reed }
-    internal enum CityGrassHabitat { Park, Courtyard, Ridge, Industrial, OldStreet, River, Beach, Cemetery, Garden, Fringe }
+    internal enum CityGrassHabitat { Park, Courtyard, Ridge, Industrial, OldStreet, River, Beach, Cemetery, Garden, Fringe, PlaygroundEdge }
 
     /// <summary>Pure seeded ecology. Grid coordinates belong to City, including the Home view.</summary>
     internal static class CityGrassPlan
@@ -65,10 +65,11 @@ namespace BarPromenade
                 CityGrassHabitat.River => pick < .65f ? CityGrassSpecies.Sedge : CityGrassSpecies.Soft,
                 CityGrassHabitat.Beach => patch > .56f && pick > .25f ? CityGrassSpecies.Reed : CityGrassSpecies.Tussock,
                 CityGrassHabitat.Cemetery => pick < .75f ? CityGrassSpecies.Lawn : CityGrassSpecies.Soft,
-                CityGrassHabitat.Garden => CityGrassSpecies.Lawn,
+                CityGrassHabitat.Garden or CityGrassHabitat.PlaygroundEdge => CityGrassSpecies.Lawn,
                 _ => pick < .65f ? CityGrassSpecies.Dry : CityGrassSpecies.Tussock
             };
             if (habitat == CityGrassHabitat.Garden) scale *= .55f;
+            if (habitat == CityGrassHabitat.PlaygroundEdge) scale *= .72f;
             if (habitat == CityGrassHabitat.Cemetery) scale *= .65f;
             // The composition varies in broad patches as well as individual leaves.
             scale *= .78f + .40f * patch;
@@ -84,7 +85,8 @@ namespace BarPromenade
         private readonly List<Face> faces = new List<Face>();
         private readonly Dictionary<Vector2Int,List<int>> buckets = new Dictionary<Vector2Int,List<int>>();
         private readonly Dictionary<Vector2Int,List<Obstacle>> obstacles = new Dictionary<Vector2Int,List<Obstacle>>();
-        private readonly List<int>[] habitatFaces = new List<int>[10];
+        private readonly List<int>[] habitatFaces = new List<int>[(int)CityGrassHabitat.PlaygroundEdge + 1];
+        private const float GroomedMargin = .92f;
         private readonly CityLayout layout;
         private readonly CitySeacoastPlan coast;
         private readonly Rect garden;
@@ -104,14 +106,14 @@ namespace BarPromenade
         }
         internal Rect Bounds { get; private set; }
         internal CityGrassSurface(CityLayout city, HomeExteriorContextPlan home = null, CitySeacoastPlan shore = null,
-            IReadOnlyList<CityDecorationDescriptor> decorations = null)
+            IReadOnlyList<CityDecorationDescriptor> decorations = null, CityPlaygroundLandscapePlan playgrounds = null)
         {
             layout = city; Home = home; coast = shore;
             garden=CityWorldPlans.GetOrCreate(city).Church?.Grounds??default;
             foreach(var road in CityHillsideStreetPlan.ForLayout(city).Routes)
                 ridge.Add(CityHillsideNeighborhoodPlan.TerrainBounds(road));
             ridge.Add(CityHillsideQuarterPlan.ForLayout(city).TerrainBounds);
-            ReserveWalkways(city, decorations ?? home?.NearbyDecorations);
+            ReserveWalkways(city, decorations ?? home?.NearbyDecorations, playgrounds);
         }
         internal void SetExcavation(CityCemeteryGroundExcavation owner,Rect bounds)
         {excavation=owner;cemetery=bounds;}
@@ -179,7 +181,8 @@ namespace BarPromenade
             IndexObstacle(new Obstacle(bounds, preciseShape));
         }
 
-        private void ReserveWalkways(CityLayout city, IReadOnlyList<CityDecorationDescriptor> decorations)
+        private void ReserveWalkways(CityLayout city, IReadOnlyList<CityDecorationDescriptor> decorations,
+            CityPlaygroundLandscapePlan playgrounds)
         {
             if (decorations != null)
                 foreach (var gazebo in decorations)
@@ -242,6 +245,14 @@ namespace BarPromenade
                 ReserveRect(house.CourtBounds);
                 ReserveRect(house.ApproachBounds);
             }
+            if (playgrounds != null)
+                foreach (CityPlaygroundLandscapePlan.Site playground in playgrounds.Sites)
+                {
+                    Reserve(playground.Pad, groomed: true);
+                    Reserve(playground.Connector, groomed: true);
+                    Reserve(playground.BalancePad, groomed: true);
+                    Reserve(playground.BalanceConnector, groomed: true);
+                }
             var decoration = CityWorldPlans.GetOrCreate(city).GetDecoration(CityLayoutCache.GetOrCreateNightPlan(city));
             foreach (var dock in CityStreetUtilityDock.CreateAll(city, decoration))
             {
@@ -284,14 +295,14 @@ namespace BarPromenade
                 if (rect.width > 0f && rect.height > 0f) Reserve(CityRoadPolygon.Rectangle(rect));
             }
 
-            void Reserve(Vector2[] outline, bool exact = false)
+            void Reserve(Vector2[] outline, bool exact = false, bool groomed = false)
             {
                 if (outline.Length < 3) return;
                 Rect rect = CityRoadPolygon.Bounds(outline);
-                float padding = exact ? 0f : 2f * PathMargin;
+                float padding = exact ? 0f : 2f * (groomed ? GroomedMargin : PathMargin);
                 var bounds = new Bounds(new Vector3(rect.center.x, 0f, rect.center.y),
                     new Vector3(rect.width + padding, 0f, rect.height + padding));
-                IndexObstacle(new Obstacle(bounds, null, outline, exact));
+                IndexObstacle(new Obstacle(bounds, null, outline, exact, groomed));
             }
         }
 
@@ -335,6 +346,7 @@ namespace BarPromenade
                 Mathf.Lerp(1f, 1.55f, CityGrassPlan.Unit(marginSeed));
             if (!Sample(p + outer, out Face margin, out float marginY) || !Eligible(margin.Kind) ||
                 Mathf.Abs(marginY - height) > .22f) return false;
+            bool groomed = false;
             if(obstacles.TryGetValue(new Vector2Int(Bucket(p.x),Bucket(p.y)),out var blocks))
                 foreach(var obstacle in blocks)
                 {
@@ -343,10 +355,14 @@ namespace BarPromenade
                     if (obstacle.Path != null)
                     {
                         float clearance = Mathf.Lerp(.18f, PathMargin, CityGrassPlan.Unit(marginSeed));
-                        if (!(obstacle.Exact ? CityRoadPolygon.Contains(obstacle.Path, p) :
-                            NearPath(obstacle.Path, p, clearance))) continue;
-                        LastBlocker = block;
-                        return false;
+                        if (obstacle.Exact ? CityRoadPolygon.Contains(obstacle.Path, p) :
+                            NearPath(obstacle.Path, p, clearance))
+                        {
+                            LastBlocker = block;
+                            return false;
+                        }
+                        if (obstacle.Groomed && !groomed) groomed = NearPath(obstacle.Path, p, GroomedMargin);
+                        continue;
                     }
                     if(height<block.min.y-.25f || height>=block.max.y-.08f)continue;
                     // A combined collision mesh can span the entire city with
@@ -366,7 +382,7 @@ namespace BarPromenade
                     p.y < coast.Frame.BeachRowBounds.yMin+2f || p.y > coast.Frame.BeachRowBounds.yMax-10f) return false;
                 habitat=CityGrassHabitat.Beach; return true;
             }
-            habitat=Habitat(root,face.Kind);
+            habitat=groomed ? CityGrassHabitat.PlaygroundEdge : Habitat(root,face.Kind);
             return true;
         }
 
@@ -449,8 +465,9 @@ namespace BarPromenade
             internal readonly Collider Shape;
             internal readonly Vector2[] Path;
             internal readonly bool Exact;
-            internal Obstacle(Bounds bounds, Collider shape, Vector2[] path = null, bool exact = false)
-            { Bounds=bounds; Shape=shape; Path=path; Exact=exact; }
+            internal readonly bool Groomed;
+            internal Obstacle(Bounds bounds, Collider shape, Vector2[] path = null, bool exact = false, bool groomed = false)
+            { Bounds=bounds; Shape=shape; Path=path; Exact=exact; Groomed=groomed; }
         }
     }
 }

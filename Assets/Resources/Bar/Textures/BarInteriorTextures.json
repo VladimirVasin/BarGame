@@ -183,7 +183,7 @@
     {
       "resource": "Bar/Textures/BarInteriorResponse",
       "size": 2048,
-      "sha256": "5d39c73cb7b68578655094d3c506b8be2132d5d737b5eebbaf14dfc228374ef1",
+      "sha256": "1c7cde51af8e7cb9720caaadc07e9ae0ef6a946ea88a5db5a257812c841690f6",
       "sRGB": false,
       "wrap": "Clamp",
       "readable": false
@@ -193,5 +193,5 @@
   "windows_compression": "BC7",
   "estimated_gpu_bytes": 27962080,
   "gpu_budget_bytes": 29360128,
-  "surface_contract_sha256": "7c0547c8fcc258d9556dc3b6def6f6b1250a855dc966a8237354e6c419a32601"
+  "surface_contract_sha256": "78a71acbb356dc04b2fee58459bc3d4a09f34b964171ba55b7fa191c580b912e"
 }

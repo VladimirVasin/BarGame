@@ -32,8 +32,9 @@ namespace BarPromenade
         CleanHalation = 6,
         CleanDirectionalHighlights = 7,
         CleanBounce = 8,
-        Back = 9,
-        Count = 10
+        DirectionalAmbient = 9,
+        Back = 10,
+        Count = 11
     }
 
     public enum PauseMenuAction

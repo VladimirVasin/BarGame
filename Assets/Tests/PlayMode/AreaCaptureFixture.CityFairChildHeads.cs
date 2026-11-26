@@ -42,7 +42,7 @@ namespace BarPromenade.Tests.PlayMode
             try
             {
                 GameSessionState.BeginNewGame();
-                GameSessionState.TryStartGameTimeFromWake();
+                GameSessionState.TryStartGameTimeAt(12 * 60);
                 Time.captureDeltaTime = .05f;
                 AsyncOperation load = SceneManager.LoadSceneAsync(SceneIds.City, LoadSceneMode.Single);
                 float deadline = Time.realtimeSinceStartup + TimeoutSeconds;

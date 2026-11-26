@@ -9,6 +9,9 @@ half4 UniversalFragmentMetaLit(Varyings input) : SV_Target
 {
     SurfaceData surfaceData;
     InitializeStandardLitSurfaceData(input.uv, surfaceData);
+#if defined(_WORLD_CONTACT_FINISH)
+    ApplyContactFinish(input.damagePositionOS, input.uv, surfaceData);
+#endif
     ApplySurfaceDamage(input.damagePositionOS, input.damageNormalOS, surfaceData);
 
     BRDFData brdfData;

@@ -211,18 +211,23 @@ MonoBehaviour:
   - slot: hair
     renderer: {fileID: 1781434371547036242}
     color: {r: 0.4431372, g: 0.42745093, b: 0.39999995, a: 1}
+    materialOverride: {fileID: 2100000, guid: d2ca73805d6041ada5a8a91ec816977a, type: 2}
   - slot: hair
     renderer: {fileID: 8524087128091907714}
     color: {r: 0.4431372, g: 0.42745093, b: 0.39999995, a: 1}
+    materialOverride: {fileID: 2100000, guid: d2ca73805d6041ada5a8a91ec816977a, type: 2}
   - slot: hair
     renderer: {fileID: 533885534808166504}
     color: {r: 0.4431372, g: 0.42745093, b: 0.39999995, a: 1}
+    materialOverride: {fileID: 2100000, guid: d2ca73805d6041ada5a8a91ec816977a, type: 2}
   - slot: hair
     renderer: {fileID: 8551557483956937046}
     color: {r: 0.4431372, g: 0.42745093, b: 0.39999995, a: 1}
+    materialOverride: {fileID: 2100000, guid: d2ca73805d6041ada5a8a91ec816977a, type: 2}
   - slot: hair
     renderer: {fileID: 3052065872694485815}
     color: {r: 0.4431372, g: 0.42745093, b: 0.39999995, a: 1}
+    materialOverride: {fileID: 2100000, guid: d2ca73805d6041ada5a8a91ec816977a, type: 2}
   - slot: headwear
     renderer: {fileID: 8805958203707402322}
     color: {r: 0.40784308, g: 0.39999995, b: 0.34901956, a: 1}
@@ -487,6 +492,7 @@ MonoBehaviour:
     - slot: hair
       renderer: {fileID: 1781434371547036242}
       color: {r: 0.4431372, g: 0.42745093, b: 0.39999995, a: 1}
+      materialOverride: {fileID: 2100000, guid: d2ca73805d6041ada5a8a91ec816977a, type: 2}
     coveredRenderers: []
   - id: hair.ponytail
     slot: hair
@@ -494,9 +500,11 @@ MonoBehaviour:
     - slot: hair
       renderer: {fileID: 8524087128091907714}
       color: {r: 0.4431372, g: 0.42745093, b: 0.39999995, a: 1}
+      materialOverride: {fileID: 2100000, guid: d2ca73805d6041ada5a8a91ec816977a, type: 2}
     - slot: hair
       renderer: {fileID: 533885534808166504}
       color: {r: 0.4431372, g: 0.42745093, b: 0.39999995, a: 1}
+      materialOverride: {fileID: 2100000, guid: d2ca73805d6041ada5a8a91ec816977a, type: 2}
     coveredRenderers: []
   - id: hair.braid
     slot: hair
@@ -504,9 +512,11 @@ MonoBehaviour:
     - slot: hair
       renderer: {fileID: 8551557483956937046}
       color: {r: 0.4431372, g: 0.42745093, b: 0.39999995, a: 1}
+      materialOverride: {fileID: 2100000, guid: d2ca73805d6041ada5a8a91ec816977a, type: 2}
     - slot: hair
       renderer: {fileID: 3052065872694485815}
       color: {r: 0.4431372, g: 0.42745093, b: 0.39999995, a: 1}
+      materialOverride: {fileID: 2100000, guid: d2ca73805d6041ada5a8a91ec816977a, type: 2}
     coveredRenderers: []
   - id: headwear.everyday
     slot: headwear
@@ -1287,7 +1297,7 @@ PrefabInstance:
     - target: {fileID: -4669274002069150516, guid: bf8fa0594163c421ca6aee709835d7cc, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: 326672fc39f54450192d18ff795c9d82, type: 2}
+      objectReference: {fileID: 2100000, guid: d2ca73805d6041ada5a8a91ec816977a, type: 2}
     - target: {fileID: -4623525400448838888, guid: bf8fa0594163c421ca6aee709835d7cc, type: 3}
       propertyPath: m_Enabled
       value: 0
@@ -1299,7 +1309,7 @@ PrefabInstance:
     - target: {fileID: -4623525400448838888, guid: bf8fa0594163c421ca6aee709835d7cc, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: 326672fc39f54450192d18ff795c9d82, type: 2}
+      objectReference: {fileID: 2100000, guid: d2ca73805d6041ada5a8a91ec816977a, type: 2}
     - target: {fileID: -4618555235626597931, guid: bf8fa0594163c421ca6aee709835d7cc, type: 3}
       propertyPath: m_UpdateWhenOffscreen
       value: 1
@@ -1475,7 +1485,7 @@ PrefabInstance:
     - target: {fileID: -3332627425582577636, guid: bf8fa0594163c421ca6aee709835d7cc, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: 326672fc39f54450192d18ff795c9d82, type: 2}
+      objectReference: {fileID: 2100000, guid: d2ca73805d6041ada5a8a91ec816977a, type: 2}
     - target: {fileID: -3329073870310851844, guid: bf8fa0594163c421ca6aee709835d7cc, type: 3}
       propertyPath: m_Enabled
       value: 0
@@ -2115,7 +2125,7 @@ PrefabInstance:
     - target: {fileID: 4231837537370602937, guid: bf8fa0594163c421ca6aee709835d7cc, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
+      objectReference: {fileID: 2100000, guid: 86cc50dc01d048aba8294b72b7364f7b, type: 2}
     - target: {fileID: 5021055154686501882, guid: bf8fa0594163c421ca6aee709835d7cc, type: 3}
       propertyPath: m_Enabled
       value: 0
@@ -2147,7 +2157,7 @@ PrefabInstance:
     - target: {fileID: 5625121333120836134, guid: bf8fa0594163c421ca6aee709835d7cc, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: 326672fc39f54450192d18ff795c9d82, type: 2}
+      objectReference: {fileID: 2100000, guid: d2ca73805d6041ada5a8a91ec816977a, type: 2}
     - target: {fileID: 5631648947575997785, guid: bf8fa0594163c421ca6aee709835d7cc, type: 3}
       propertyPath: m_Enabled
       value: 0
@@ -2351,7 +2361,7 @@ PrefabInstance:
     - target: {fileID: 7143783926427439481, guid: bf8fa0594163c421ca6aee709835d7cc, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: 326672fc39f54450192d18ff795c9d82, type: 2}
+      objectReference: {fileID: 2100000, guid: d2ca73805d6041ada5a8a91ec816977a, type: 2}
     - target: {fileID: 7160476771349061818, guid: bf8fa0594163c421ca6aee709835d7cc, type: 3}
       propertyPath: m_UpdateWhenOffscreen
       value: 1

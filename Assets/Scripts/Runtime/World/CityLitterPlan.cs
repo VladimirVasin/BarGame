@@ -92,6 +92,25 @@ namespace BarPromenade
         public int GetCount(CityDistrictKind district) =>
             districtCounts.TryGetValue(district, out int count) ? count : 0;
 
+        internal CityLitterPlan Exclude(Rect footprint)
+        {
+            List<CityLitterPart> clear = null;
+            for (int index = 0; index < Parts.Count; index++)
+            {
+                CityLitterPart part = Parts[index];
+                if (!part.Footprint.Overlaps(footprint))
+                {
+                    clear?.Add(part);
+                    continue;
+                }
+                if (clear != null) continue;
+                clear = new List<CityLitterPart>(Parts.Count - 1);
+                for (int previous = 0; previous < index; previous++)
+                    clear.Add(Parts[previous]);
+            }
+            return clear == null ? this : new CityLitterPlan(clear);
+        }
+
         /// <summary>How far the same authored variant must stay from its twin.</summary>
         public static float SameVariantRadius(CityLitterItem item)
         {

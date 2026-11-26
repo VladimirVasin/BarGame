@@ -16,8 +16,8 @@ namespace BarPromenade
         private static CityDayNightController skyOwner;
         private CityNightWorldResult night, lowerNight, ridgeNight;
         private Camera sceneCamera;
-        private ExteriorCloudField clouds;
         private ColorAdjustments colorAdjustments;
+        private ShadowsMidtonesHighlights tones;
         private int appliedDayIndex = int.MinValue;
         private int appliedMinute = int.MinValue;
         private bool hasAppliedSample;
@@ -42,6 +42,7 @@ namespace BarPromenade
                     volume.sharedProfile.name == "CityNoirVolumeProfile")
                 {
                     volume.profile.TryGet(out colorAdjustments);
+                    tones = Rendering.WorldTonalGrade.Configure(volume.profile, 1f, 1f, 1f);
                     volume.profile.TryGet(out DepthOfField depth);
                     SceneDepthOfField = depth;
                     break;
@@ -57,12 +58,6 @@ namespace BarPromenade
             fixtures?.SetNightFactor(CurrentSample.NightFactor, true);
         }
 
-        internal void BindClouds(ExteriorCloudField field)
-        {
-            clouds = field;
-            clouds.SetVisibility(RenderSettings.fogColor);
-        }
-
         public void ApplyCurrentTime(bool force = false)
         {
             if (night == null)
@@ -72,12 +67,12 @@ namespace BarPromenade
 
             double timeOfDayMinutes =
                 GameSessionState.GameTimeOfDayMinutes;
-            // Only sun pose and one cached grade parameter follow fractional
+            // Only sun pose and cached colour grading follow fractional
             // time. Fixture/probe work remains behind the game-minute gate.
             DayNightVisualSample nextSample =
                 GameTimeDayNightRules.Evaluate(timeOfDayMinutes);
-            RuntimeSceneSetup.ApplyCityExteriorSaturation(
-                colorAdjustments, nextSample.NightFactor);
+            RuntimeSceneSetup.ApplyCityExteriorGrade(
+                colorAdjustments, tones, nextSample.NightFactor);
             Light sun = RenderSettings.sun;
             if (sun != null && sun.type == LightType.Directional)
                 sun.transform.rotation = nextSample.DirectionalLightRotation;
@@ -107,7 +102,7 @@ namespace BarPromenade
             if (skyChanged)
             {
                 skyOwner = this;
-                SetSkyFill(sceneCamera, clouds, CurrentSample.NightFactor);
+                SetSkyFill(sceneCamera, CurrentSample.NightFactor);
             }
             RuntimeSceneSetup.ApplyCityExteriorLighting(
                 CurrentSample,
@@ -129,7 +124,7 @@ namespace BarPromenade
                 sample.ShadowStrength, sample.DirectionalLightRotation, nightFactor);
         }
 
-        internal static void SetSkyFill(Camera camera, ExteriorCloudField clouds, float nightFactor)
+        internal static void SetSkyFill(Camera camera, float nightFactor)
         {
             float fillLoss = (1f - NightSkyFill) * Mathf.Clamp01(nightFactor);
             Color haze = RuntimeSceneSetup.CityFogColor;
@@ -142,7 +137,6 @@ namespace BarPromenade
             }
             RenderSettings.fogColor = haze;
             camera.backgroundColor = haze;
-            if (clouds != null) clouds.SetVisibility(haze);
             Shader.SetGlobalFloat(SkyFillLossId, fillLoss);
         }
 

@@ -1,5 +1,9 @@
 """Shared atlas coordinates for the midibus mesh and its texture baker."""
 
+# Stop the steps in front of the two wheel envelopes on the boarding side.
+STEP_SPANS = ((-3.764, -2.735), (.626, 1.765))
+STEP_SECTION = ((1.079, .502, .111, .094), (1.177, .361, .101, .093))
+
 PAINT_SIDE = (.035, .225)
 PAINT_END = (.425, .605)
 PAINT_ROOF = .802

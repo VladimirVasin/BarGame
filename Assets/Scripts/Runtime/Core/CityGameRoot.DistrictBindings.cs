@@ -217,14 +217,6 @@ namespace BarPromenade
                 SoundscapePlan = CitySoundscapeAnchorPlanner.Create(
                     Layout,
                     world.DecorationPlan);
-                // The swings are found rather than handed over: they are built
-                // inside the world's decoration pass and are the only moving
-                // physical owner the root does not create itself.
-                CityPlaygroundSwing[] playgroundSwings =
-                    world.Root != null
-                        ? world.Root
-                            .GetComponentsInChildren<CityPlaygroundSwing>(true)
-                        : null;
                 Soundscape = CitySoundscapeDirector.Create(
                     owner,
                     SoundscapePlan,
@@ -232,7 +224,7 @@ namespace BarPromenade
                     Layout,
                     DryingYardBabushkas,
                     WeighbridgeNeedle,
-                    playgroundSwings,
+                    world.PlaygroundSwings,
                     () => Night.NightFactor);
             }
 

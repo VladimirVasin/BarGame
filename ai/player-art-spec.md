@@ -190,10 +190,10 @@ This opt-in applies only during the interaction handoff without an active clip.
   volume from final rig swing through `135°`, ignoring axial twist. Registered
   bones remain gameplay anchors. Shirt follows body fields; trousers and loose
   sleeves own wider fields/folds; hair chains own long-lock weights.
-  `CharacterSurfaceMaterialSetup` owns shared shared lit shader Clothing/Skin/Hair;
-  hero: `Player3DV2CharacterSurfaces`, manifest UV0 regions/map hashes.
-  Linear mipmapped maps: normal `.65/.35/.5`; MPB colour/skin atlas stay.
-  Cloth/mirror/arm tangents follow deformation; UV-less anatomy stays flat.
+  Hero and ordinary adults share a sculpted face finish. Hair highlights follow UV-V.
+  `CharacterSurfaceMaterialSetup` binds linear mipmapped UV0 maps by manifest hash
+  (cloth/skin/hair normals .65/.35/.5). MPBs own colour and expressions.
+  Cloth, mirror and arm tangents follow deformation.
 - The registry serializes mesh-to-bone bindings, the 16 anatomical bindings,
   animation bindings, source metrics and head/chest/pelvis/feet/grip/mouth
   anchors, including the explicit lower `Spine` anchor. Runtime code does not

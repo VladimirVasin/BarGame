@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 MODEL = ROOT / "Assets/Player3D/V2/Models/PlayerCharacter3DV2.json"
 REPORT = ROOT / "ArtSource/Player/player-body-hair-surfaces.json"
 SIZE = 256
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 SKIN_MATERIALS = {"MAT_Skin", "MAT_SkinShadow", "MAT_SkinDark"}
 EXTRA_SKIN_RECTS = {
     "SkinUpperArm": (128, 128, 64, 64),
@@ -133,10 +133,9 @@ def make_maps(binding: dict) -> tuple[bytes, bytes, list]:
                 if hair:
                     # U crosses the locks; V follows their authored root-to-tip
                     # direction. Broad ribbons, not individual photoreal fibres.
-                    strand = math.sin(x * math.tau / 7 + .28 * math.sin(y * math.tau / 67))
-                    broad = math.sin(x * math.tau / 23 + .15 * math.sin(y * math.tau / 53))
-                    value = .070 * strand + .035 * broad
-                    smoothness = .19 + .033 * broad + .012 * strand
+                    broad = math.sin(x * math.tau / 27 + .48 * math.sin(y * math.tau / 89))
+                    value = .23 * broad + .024 * broad**3
+                    smoothness = .49 + .055 * broad
                 else:
                     # Restrained skin microrelief only: no albedo/painted hair,
                     # anatomy, scars or freckles are interpreted as displacement.
@@ -144,7 +143,8 @@ def make_maps(binding: dict) -> tuple[bytes, bytes, list]:
                              math.sin(y * 1.31 + math.sin(x * .61))) * .5
                     broad = math.sin(x * .19 + y * .13)
                     value = .014 * grain + .008 * broad
-                    smoothness = .13 + .014 * broad + .007 * grain
+                    base = .42 if r["name"] in ("SkinHead", "SkinHand") else .36
+                    smoothness = base + .019 * broad + .006 * grain
                 row.append(value)
                 a = encoded(smoothness)
                 alphas.append(a)
@@ -167,7 +167,7 @@ def make_maps(binding: dict) -> tuple[bytes, bytes, list]:
                          encoded(.5 / length + .5), 255)
                 max_deviation = max(max_deviation, abs(pixel[0] - 128), abs(pixel[1] - 128))
                 normal.put(x0 + x, SIZE - 1 - y0 - y, pixel)
-        low, high = ((.14, .24) if hair else (.10, .16))
+        low, high = ((.43, .55) if hair else (.33, .45))
         if not encoded(low) <= min(alphas) <= max(alphas) <= encoded(high):
             raise ValueError("Surface response exceeded its restrained recipe range")
         metrics.append(dict(name=r["name"], rect_px=list(rect), smoothness_u8_min=min(alphas),
@@ -194,8 +194,11 @@ def verify_binding_layout(binding: dict) -> None:
 def publish_maps(check: bool = False) -> None:
     payload = json.loads(MODEL.read_text(encoding="utf-8"))
     expected = make_bindings(payload)
-    if payload.get("surface_bindings") != expected:
-        raise ValueError("Model surface bindings differ; run the Hero V2 --surfaces-only authoring pass")
+    def layout(bindings):
+        return [{k: v for k, v in item.items() if k not in ("normal_sha256", "response_sha256")}
+                for item in bindings]
+    if layout(payload["surface_bindings"]) != layout(expected):
+        raise ValueError("UV layout changed; run the Hero V2 --surfaces-only authoring pass")
     sources = {}
     for binding in (payload["face_atlas"], payload["texture_bindings"][0], payload["bare_skin_atlas"]):
         path = binding["texture_asset"]
@@ -221,11 +224,14 @@ def publish_maps(check: bool = False) -> None:
         normal_neutral_gutter_px=2, normal_fade_px=3, cap_neutral_patch_px=[12, 12],
         recipes=recipes, outputs={path.relative_to(ROOT).as_posix(): digest(data) for path, data in outputs.items()})
     outputs[REPORT] = json_bytes(report)
+    payload["surface_bindings"] = expected
+    payload["surface_authoring"].update(version=VERSION, sha256=digest(Path(__file__).read_bytes()))
+    outputs[MODEL] = json_bytes(payload)
     for path, data in outputs.items():
         if check:
             if not path.is_file() or path.read_bytes() != data:
                 raise ValueError("Stale deterministic output: " + path.relative_to(ROOT).as_posix())
-        else:
+        elif not path.is_file() or path.read_bytes() != data:
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(data)
     print("HERO BODY/HAIR SURFACES OK: " + ("deterministic maps, bindings and unchanged albedos verified" if check else

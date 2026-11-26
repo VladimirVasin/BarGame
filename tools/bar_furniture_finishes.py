@@ -2,6 +2,8 @@
 import math
 import numpy as np
 
+import world_contact_finishes as finishes
+
 
 def applies(name):
     return name.startswith(("Counter ", "Bar Counter", "Bar Stool ", "Bar Drink Service Stool",
@@ -37,7 +39,9 @@ def fields(u, v, chart, original):
         elif name=="Backbar Shelves" and top:
             polish=np.exp(-((v-3.391)/.074)**2)
         pigment=pigment*(.92+.107*grain+.14*polish+.09*lip)
-        rough=np.clip(rough-.19*polish-.055*lip+.025*grain,.28,.97)
+        chip = np.clip(lip * (.55 + .45*np.sin(along*19)) - .54, 0., 1.)
+        smooth, _ = finishes.response(finishes.WOOD, polish + .16*lip, chip)
+        rough = np.clip(1. - smooth + .025*grain, .20, .96)
         height+=.00034*grain
     elif sheet=="WornLeather":
         # Work in the physical width of each upholstered panel. Narrow side charts
@@ -70,7 +74,12 @@ def fields(u, v, chart, original):
         patina=(.5+.5*np.sin(16*u+1.8*np.sin(11*v))*np.sin(v*23+u*4))*(1-polish)
         brush=np.sin(v*180+np.sin(u*7))*.5+.5*np.sin(133*v+8*u)
         pigment=pigment*(.93+.19*polish-.23*patina+.022*brush)
-        rough=np.clip(rough-.16*polish+.08*patina,.25,.96)
+        if sheet == "Ceramic":
+            rough = np.clip(rough-.16*polish+.08*patina,.25,.96)
+        else:
+            finish = finishes.BARE_METAL if sheet == "AgedBrass" else finishes.PAINTED_STEEL
+            smooth, _ = finishes.response(finish, polish)
+            rough = np.clip(1.-smooth+.09*patina,.20,.94)
         cavity=np.clip(cavity-.045*patina,.84,1)
         height+=.00009*brush
     return height,rough,cavity,pigment

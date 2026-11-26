@@ -703,9 +703,9 @@ namespace BarPromenade.Tests.PlayMode
                     .Within(0.001f));
             Assert.That(
                 RenderSettings.ambientMode,
-                Is.EqualTo(AmbientMode.Flat));
+                Is.EqualTo(GraphicsEffectsSettings.DirectionalAmbientEnabled ? AmbientMode.Trilight : AmbientMode.Flat));
             Assert.That(
-                RenderSettings.ambientLight,
+                SceneAmbientLight.ReferenceColor,
                 Is.EqualTo(expectedSample.AmbientLightColor));
             Assert.That(
                 RenderSettings.reflectionIntensity,
@@ -773,7 +773,7 @@ namespace BarPromenade.Tests.PlayMode
                 RenderSettings.ambientMode,
                 Is.EqualTo(expectedAmbientMode));
             Assert.That(
-                RenderSettings.ambientLight,
+                SceneAmbientLight.ReferenceColor,
                 Is.EqualTo(expectedAmbient));
             Assert.That(
                 RenderSettings.reflectionIntensity,

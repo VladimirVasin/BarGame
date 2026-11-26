@@ -467,41 +467,49 @@ MonoBehaviour:
     RestRotation: {x: 0.017877687, y: 0.02233826, z: 0.01239254, w: 0.9995138}
     LongitudinalAxis: {x: -0.0000005274604, y: 1, z: -0.00000040498506}
     Shape: 0
+    ShapeName: JointVolume.Elbow.L
   - Renderer: {fileID: 303645723525869865}
     Bone: {fileID: 2803629910772493177}
     RestRotation: {x: 0.0129169, y: -0.022518253, z: -0.019055707, w: 0.9994814}
     LongitudinalAxis: {x: 0.00000017309854, y: 1, z: -0.00000032496803}
     Shape: 0
+    ShapeName: JointVolume.Elbow.R
   - Renderer: {fileID: 6926576545145504576}
     Bone: {fileID: 4232582579575236326}
     RestRotation: {x: -0.020317057, y: -0.015963241, z: -0.015225763, w: 0.9995502}
     LongitudinalAxis: {x: 0.000000011935024, y: 1, z: -0.00000052514105}
     Shape: 0
+    ShapeName: JointVolume.Knee.L
   - Renderer: {fileID: 5237029561299919189}
     Bone: {fileID: 430554017864990612}
     RestRotation: {x: 0.012595064, y: 0.014988453, z: 0.0154044945, w: 0.99968964}
     LongitudinalAxis: {x: 0, y: 1, z: 0.00000003819806}
     Shape: 0
+    ShapeName: JointVolume.Knee.R
   - Renderer: {fileID: 282945346043875271}
     Bone: {fileID: 4232582579575236326}
     RestRotation: {x: -0.020317057, y: -0.015963241, z: -0.015225763, w: 0.9995502}
     LongitudinalAxis: {x: 0.000000011935024, y: 1, z: -0.00000052514105}
     Shape: 0
+    ShapeName: JointVolume.Knee.L
   - Renderer: {fileID: 7740419658653072870}
     Bone: {fileID: 430554017864990612}
     RestRotation: {x: 0.012595064, y: 0.014988453, z: 0.0154044945, w: 0.99968964}
     LongitudinalAxis: {x: 0, y: 1, z: 0.00000003819806}
     Shape: 0
+    ShapeName: JointVolume.Knee.R
   - Renderer: {fileID: 3919230774712271586}
     Bone: {fileID: 3400269259606850649}
     RestRotation: {x: 0.017877687, y: 0.02233826, z: 0.01239254, w: 0.9995138}
     LongitudinalAxis: {x: -0.0000005274604, y: 1, z: -0.00000040498506}
     Shape: 0
+    ShapeName: JointVolume.Elbow.L
   - Renderer: {fileID: 4033010876895944386}
     Bone: {fileID: 2803629910772493177}
     RestRotation: {x: 0.0129169, y: -0.022518253, z: -0.019055707, w: 0.9994814}
     LongitudinalAxis: {x: 0.00000017309854, y: 1, z: -0.00000032496803}
     Shape: 0
+    ShapeName: JointVolume.Elbow.R
 --- !u!1 &1897193864476602828
 GameObject:
   m_ObjectHideFlags: 0

@@ -117,11 +117,22 @@ namespace BarPromenade
             groundSurface.SetResidentialCourtyards(residentialCourtyards);
             CityDecorationPlan decorationPlan =
                 plans.GetDecoration(nightPlan, walkableArea);
+            CityPlaygroundLandscapePlan playLandscape = CityPlaygroundLandscapePlan.Create(
+                layout, residentialCourtyards, decorationPlan.Descriptors);
+            groundSurface.SetPlaygroundLandscape(playLandscape);
             // Planned before the ground pass: when the seacoast will
             // draw its own animated sea, the ground pass must not lay
             // the flat municipal slab under it.
             CitySeacoastPlan seacoastPlan = plans.Seacoast;
             CityLitterPlan litterPlan = plans.GetLitter(nightPlan);
+            foreach (CityPlaygroundLandscapePlan.Site playground in playLandscape.Sites)
+            {
+                litterPlan = litterPlan.Exclude(CityRoadPolygon.Bounds(playground.Pad));
+                if (playground.Connector.Length != 0)
+                    litterPlan = litterPlan.Exclude(CityRoadPolygon.Bounds(playground.Connector));
+                if (playground.Balance != null)
+                    litterPlan = litterPlan.Exclude(playground.Balance.Footprint);
+            }
             ReportBlock(
                 "world_plans",
                 blockTimer,
@@ -434,6 +445,10 @@ namespace BarPromenade
                     layout,
                     decorationPlan);
             CityParkFurnitureWorldBuilder.Build(world, layout, decorationPlan);
+            var balanceStations = new List<CityPlaygroundBalanceStation>(4);
+            foreach (CityPlaygroundLandscapePlan.Site playground in playLandscape.Sites)
+                if (CityPlaygroundSwingBuilder.BuildBalanceStation(world, playground.Balance) is { } station)
+                    balanceStations.Add(station);
             ReportBlock("street_dressing", blockTimer);
             yield return new CompositionStep("street_dressing", 0.94f);
             blockTimer.Restart();
@@ -449,23 +464,12 @@ namespace BarPromenade
             yield return new CompositionStep("litter", 0.955f);
             blockTimer.Restart();
 
-            // The playground's seats hang outside the batched decoration
-            // layer on purpose: they are the one piece of it that moves.
-            CityPlaygroundSwingBuilder.Build(
-                world,
-                layout,
-                decorationPlan,
-                CityDecorationWorldBuilder.MasonryBatchColor,
-                CityDecorationWorldBuilder.StreetBatchColor);
-
-            // The fountain's water lives outside the batch for the
-            // swing's reason: animated sheets and scrolling streams
-            // are neither one static mesh nor one batch material.
+            // Animated fountain water is separate from its static stone.
             CityFountainWaterBuilder.Build(
                 world,
                 layout,
                 decorationPlan);
-            ReportBlock("fountain_and_swings", blockTimer);
+            ReportBlock("fountain_water", blockTimer);
             yield return new CompositionStep("wind_dressing", 0.97f);
             blockTimer.Restart();
 
@@ -529,7 +533,8 @@ namespace BarPromenade
                 cafeSite,
                 cafeRainShelter,
                 residentialCourtyards,
-                residentialCourtyardRoot, kioskShelters, ridge == world ? null : ridge.gameObject, railRests));
+                residentialCourtyardRoot, kioskShelters, ridge == world ? null : ridge.gameObject, railRests,
+                balanceStations.AsReadOnly()));
             ReportBlock(
                 "world_complete",
                 blockTimer,

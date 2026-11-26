@@ -5,7 +5,7 @@ using UnityEngine;
 namespace BarPromenade
 {
     /// <summary>The imported fair and its physical owners, retained with the City root.</summary>
-    public sealed class CityFairWorld : MonoBehaviour
+    public sealed partial class CityFairWorld : MonoBehaviour
     {
         internal const string GarlandLampPrefix = "Fair Garland Lamp ";
         private static readonly string[] Goods = { "Bread", "Fruit", "Pottery", "WoodenToys" };
@@ -56,6 +56,7 @@ namespace BarPromenade
             Vendors = CityFairVendors.Build(transform, plan);
             Adults = CityFairAdults.Build(transform, plan);
             Children = CityFairChildren.Build(transform, plan);
+            InitializeSchedule();
         }
 
         public void InstallInteractions(PlayerRuntime player, Camera camera)
@@ -68,6 +69,7 @@ namespace BarPromenade
                 "CrankPivot", "CrankGripAnchor", null, player, controller);
             Bell = Attach(bell, CityFairInteractionKind.Bell, new Vector3(.47f, 0f, .76f),
                 "RopePivot", "RopeGripAnchor", "BellSwingPivot", player, controller);
+            Organ.enabled = Bell.enabled = IsOpen;
         }
 
         private CityFairInteraction Attach(GameObject item, CityFairInteractionKind kind, Vector3 localDock,

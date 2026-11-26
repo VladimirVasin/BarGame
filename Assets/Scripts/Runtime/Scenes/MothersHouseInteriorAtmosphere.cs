@@ -223,10 +223,9 @@ namespace BarPromenade
                 sun.transform.rotation = Quaternion.Euler(48f, -128f, 0f);
             }
 
-            RenderSettings.ambientMode = AmbientMode.Flat;
             // Keep only a restrained indirect floor. The visible hearth and
             // floor lamp now explain the readable pools of warmth.
-            RenderSettings.ambientLight = new Color(0.17f, 0.145f, 0.115f);
+            SceneAmbientLight.Apply(new Color(0.17f, 0.145f, 0.115f));
             RenderSettings.reflectionIntensity = 0.36f;
             RenderSettings.fog = false;
             DynamicGI.UpdateEnvironment();

@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-player-clothing-surfaces.py",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "source_model": "Assets/Player3D/V2/Models/PlayerCharacter3DV2.json",
   "source_clothing_binding_sha256": "6d25554abebd0933c1cc8fda4834504c2785547c2903459575c894f5531f1dd1",
   "source_albedo": "Assets/Player3D/V2/Textures/PlayerClothingAtlas.png",
@@ -17,17 +17,21 @@
   "normal_encoding": "RGB tangent-space positive Y; A opaque",
   "response_encoding": "linear RGBA: R=metallic zero, G=fabric, B=wear, A=absolute smoothness",
   "smoothness_limits": {
-    "fabric": [
-      0.05,
-      0.1
+    "jacket": [
+      0.24,
+      0.44
+    ],
+    "denim": [
+      0.12,
+      0.22
     ],
     "leather": [
-      0.16,
-      0.25
+      0.26,
+      0.39
     ],
     "sole": [
-      0.03,
-      0.03
+      0.06,
+      0.06
     ]
   },
   "forearm_maps_identical": true,
@@ -39,8 +43,8 @@
       "y_px": 128,
       "width_px": 128,
       "height_px": 128,
-      "smoothness_u8_min": 15,
-      "smoothness_u8_max": 23,
+      "smoothness_u8_min": 66,
+      "smoothness_u8_max": 102,
       "normal_xy_u8_max_deviation": 30
     },
     {
@@ -50,8 +54,8 @@
       "y_px": 192,
       "width_px": 64,
       "height_px": 64,
-      "smoothness_u8_min": 15,
-      "smoothness_u8_max": 23,
+      "smoothness_u8_min": 66,
+      "smoothness_u8_max": 101,
       "normal_xy_u8_max_deviation": 28
     },
     {
@@ -61,8 +65,8 @@
       "y_px": 192,
       "width_px": 64,
       "height_px": 64,
-      "smoothness_u8_min": 13,
-      "smoothness_u8_max": 23,
+      "smoothness_u8_min": 66,
+      "smoothness_u8_max": 101,
       "normal_xy_u8_max_deviation": 35
     },
     {
@@ -72,8 +76,8 @@
       "y_px": 128,
       "width_px": 64,
       "height_px": 64,
-      "smoothness_u8_min": 13,
-      "smoothness_u8_max": 23,
+      "smoothness_u8_min": 66,
+      "smoothness_u8_max": 100,
       "normal_xy_u8_max_deviation": 31
     },
     {
@@ -83,8 +87,8 @@
       "y_px": 128,
       "width_px": 64,
       "height_px": 64,
-      "smoothness_u8_min": 15,
-      "smoothness_u8_max": 23,
+      "smoothness_u8_min": 35,
+      "smoothness_u8_max": 46,
       "normal_xy_u8_max_deviation": 30
     },
     {
@@ -94,8 +98,8 @@
       "y_px": 64,
       "width_px": 64,
       "height_px": 64,
-      "smoothness_u8_min": 15,
-      "smoothness_u8_max": 23,
+      "smoothness_u8_min": 35,
+      "smoothness_u8_max": 46,
       "normal_xy_u8_max_deviation": 30
     },
     {
@@ -105,8 +109,8 @@
       "y_px": 64,
       "width_px": 64,
       "height_px": 64,
-      "smoothness_u8_min": 15,
-      "smoothness_u8_max": 23,
+      "smoothness_u8_min": 35,
+      "smoothness_u8_max": 46,
       "normal_xy_u8_max_deviation": 30
     },
     {
@@ -116,8 +120,8 @@
       "y_px": 64,
       "width_px": 64,
       "height_px": 64,
-      "smoothness_u8_min": 15,
-      "smoothness_u8_max": 23,
+      "smoothness_u8_min": 35,
+      "smoothness_u8_max": 46,
       "normal_xy_u8_max_deviation": 30
     },
     {
@@ -127,8 +131,8 @@
       "y_px": 64,
       "width_px": 64,
       "height_px": 64,
-      "smoothness_u8_min": 15,
-      "smoothness_u8_max": 23,
+      "smoothness_u8_min": 35,
+      "smoothness_u8_max": 46,
       "normal_xy_u8_max_deviation": 30
     },
     {
@@ -138,8 +142,8 @@
       "y_px": 0,
       "width_px": 64,
       "height_px": 64,
-      "smoothness_u8_min": 8,
-      "smoothness_u8_max": 63,
+      "smoothness_u8_min": 15,
+      "smoothness_u8_max": 95,
       "normal_xy_u8_max_deviation": 19
     },
     {
@@ -149,8 +153,8 @@
       "y_px": 0,
       "width_px": 64,
       "height_px": 64,
-      "smoothness_u8_min": 8,
-      "smoothness_u8_max": 63,
+      "smoothness_u8_min": 15,
+      "smoothness_u8_max": 95,
       "normal_xy_u8_max_deviation": 19
     },
     {
@@ -160,13 +164,13 @@
       "y_px": 0,
       "width_px": 64,
       "height_px": 64,
-      "smoothness_u8_min": 13,
-      "smoothness_u8_max": 23,
+      "smoothness_u8_min": 66,
+      "smoothness_u8_max": 100,
       "normal_xy_u8_max_deviation": 31
     }
   ],
   "outputs": {
     "Assets/Player3D/V2/Textures/PlayerClothingNormal.png": "8ab0243b0a3eee0b0b0e370fe0596aaf7c98fd63193110d2e7f784657c5c4df6",
-    "Assets/Player3D/V2/Textures/PlayerClothingResponse.png": "986f5fb3296edb49c36ab88a17f9611a10e362b3a3bd45b36bc6ecc2d25c7d67"
+    "Assets/Player3D/V2/Textures/PlayerClothingResponse.png": "532c0cd3ddc141e3c7ddae855bb1c0a21579142f3083d3215a6fae1ad245c9ef"
   }
 }

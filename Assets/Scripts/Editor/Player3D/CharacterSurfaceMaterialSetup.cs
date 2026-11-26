@@ -33,6 +33,11 @@ namespace BarPromenade.Editor
     /// </summary>
     public static class CharacterSurfaceMaterialSetup
     {
+        internal const string FacePath = "Assets/Player3D/V2/Materials/CharacterFace.mat";
+        internal const string ShirtPath = "Assets/Player3D/V2/Materials/Player3DV2Shirt.mat";
+        internal static Material Face => AssetDatabase.LoadAssetAtPath<Material>(FacePath)
+            ?? throw new InvalidOperationException("Missing shared sculpted face material.");
+
         public static float NormalScale(CharacterSurfaceRecipe recipe) => recipe switch
         {
             CharacterSurfaceRecipe.Clothing => .65f,
@@ -82,6 +87,7 @@ namespace BarPromenade.Editor
             material.SetFloat("_SmoothnessTextureChannel", 0f);
             material.SetFloat("_WorkflowMode", 1f);
             material.SetFloat("_SpecularHighlights", 1f);
+            material.SetFloat("_ClearCoatMask", recipe == CharacterSurfaceRecipe.Hair ? -.55f : 0f);
             material.SetFloat("_EnvironmentReflections", 0f);
             material.EnableKeyword("_NORMALMAP");
             material.EnableKeyword("_METALLICSPECGLOSSMAP");
@@ -126,6 +132,7 @@ namespace BarPromenade.Editor
             material.GetFloat("_Smoothness") == 1f && material.GetFloat("_Metallic") == 0f &&
             material.GetFloat("_SmoothnessTextureChannel") == 0f && material.GetFloat("_WorkflowMode") == 1f &&
             material.GetFloat("_SpecularHighlights") == 1f && material.GetFloat("_EnvironmentReflections") == 0f &&
+            material.GetFloat("_ClearCoatMask") == (recipe == CharacterSurfaceRecipe.Hair ? -.55f : 0f) &&
             material.IsKeywordEnabled("_NORMALMAP") && material.IsKeywordEnabled("_METALLICSPECGLOSSMAP") &&
             !material.IsKeywordEnabled("_SPECULAR_SETUP") && !material.IsKeywordEnabled("_SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A") &&
             !material.IsKeywordEnabled("_SPECULARHIGHLIGHTS_OFF") && material.IsKeywordEnabled("_ENVIRONMENTREFLECTIONS_OFF");

@@ -3,6 +3,11 @@ Shader "Bar Promenade/Surface Damage Lit"
 {
     Properties
     {
+        [NoScaleOffset] _ContactFinishMap("Contact finish (metal/substrate/pigment/smoothness)", 2D) = "white" {}
+        _ContactFinishU("Contact chart U", Vector) = (1,0,0,0)
+        _ContactFinishV("Contact chart V", Vector) = (0,1,0,0)
+        _ContactFinishUseUV("Use original UV instead of local position", Float) = 0
+        _ContactSubstrate("Exposed substrate", Color) = (.35,.32,.29,1)
         [NoScaleOffset] _SurfaceDamageAtlas("Unique object damage masks", 2D) = "black" {}
         _SurfaceDamageRect("Damage chart x/y/width/height", Vector) = (0,0,1,1)
         _SurfaceDamageBoundsMin("Damage domain minimum", Vector) = (0,0,0,0)
@@ -56,7 +61,7 @@ Shader "Bar Promenade/Surface Damage Lit"
         [Normal] _DetailNormalMap("Normal Map", 2D) = "bump" {}
 
         // Reserved URP slots: Lit never shades clear coat. Preserve its CBUFFER.
-        [HideInInspector] _ClearCoatMask("Directional metal response", Float) = 0.0
+        [HideInInspector] _ClearCoatMask("Directional response (metal positive, hair negative)", Float) = 0.0
         [HideInInspector] _ClearCoatSmoothness("Matte metal contact smoothness", Float) = 0.0
 
         // Blending state
@@ -154,6 +159,7 @@ Shader "Bar Promenade/Surface Damage Lit"
             #pragma shader_feature_local_fragment _ALPHATEST_ON
             #pragma shader_feature_local_fragment _ _ALPHAPREMULTIPLY_ON _ALPHAMODULATE_ON
             #pragma shader_feature_local_fragment _EMISSION
+            #pragma shader_feature_local_fragment _WORLD_CONTACT_FINISH
             #pragma shader_feature_local_fragment _METALLICSPECGLOSSMAP
             #pragma shader_feature_local_fragment _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A
             #pragma shader_feature_local_fragment _OCCLUSIONMAP
@@ -308,6 +314,7 @@ Shader "Bar Promenade/Surface Damage Lit"
             #pragma shader_feature_local_fragment _ALPHATEST_ON
             //#pragma shader_feature_local_fragment _ALPHAPREMULTIPLY_ON
             #pragma shader_feature_local_fragment _EMISSION
+            #pragma shader_feature_local_fragment _WORLD_CONTACT_FINISH
             #pragma shader_feature_local_fragment _METALLICSPECGLOSSMAP
             #pragma shader_feature_local_fragment _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A
             #pragma shader_feature_local_fragment _OCCLUSIONMAP
@@ -489,6 +496,7 @@ Shader "Bar Promenade/Surface Damage Lit"
             // Material Keywords
             #pragma shader_feature_local_fragment _SPECULAR_SETUP
             #pragma shader_feature_local_fragment _EMISSION
+            #pragma shader_feature_local_fragment _WORLD_CONTACT_FINISH
             #pragma shader_feature_local_fragment _METALLICSPECGLOSSMAP
             #pragma shader_feature_local_fragment _ALPHATEST_ON
             #pragma shader_feature_local_fragment _ _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A

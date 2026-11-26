@@ -257,6 +257,7 @@ namespace BarPromenade
                 cleanVolume = GraphicsEffectsSettings.CleanVolumeEnabled,
                 cleanHalation = GraphicsEffectsSettings.CleanHalationEnabled,
                 cleanDirectionalHighlights = GraphicsEffectsSettings.CleanDirectionalHighlightsEnabled,
+                directionalAmbient = GraphicsEffectsSettings.DirectionalAmbientEnabled,
                 cleanBounce = GraphicsEffectsSettings.CleanBounceEnabled,
                 qualityLevel = QualitySettings.GetQualityLevel(),
                 vSyncCount = QualitySettings.vSyncCount,
@@ -655,7 +656,7 @@ namespace BarPromenade
         public bool mainThreadAvailable, renderThreadAvailable, gcCounterAvailable, gpuTimingAvailable;
         public bool combatCountersAvailable, npcCountersAvailable, warehouseProbeCountersAvailable, npcPopulationTruncated;
         public bool depthOfField, intoxicationLens, aspect43;
-        public bool cleanAntialiasing, cleanReflections, cleanVolume, cleanHalation, cleanDirectionalHighlights, cleanBounce;
+        public bool cleanAntialiasing, cleanReflections, cleanVolume, cleanHalation, cleanDirectionalHighlights, cleanBounce, directionalAmbient;
         public int gameDayAtStart, gameDayAtEnd, gameMinuteAtStart, gameMinuteAtEnd;
         public int intoxicationAtStart, intoxicationAtEnd;
         public string globalWeatherAtStart, globalWeatherAtEnd;

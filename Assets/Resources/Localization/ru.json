@@ -610,6 +610,10 @@
       "value": "БЛИКИ МЕТАЛЛА"
     },
     {
+      "key": "options.directional_ambient",
+      "value": "РАССЕЯННЫЙ СВЕТ"
+    },
+    {
       "key": "options.clean_bounce",
       "value": "ОТРАЖЁННЫЙ СВЕТ"
     },

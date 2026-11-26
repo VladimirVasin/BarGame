@@ -59,7 +59,8 @@ namespace BarPromenade
             public CityWorldResult RailWorld;
             public bool AtRail => RailWorld != null;
             public CityAmbientWalking.Route Walk;
-            public float Age, Speed, NextBlockedLog;
+            public float Age, Speed, NextBlockedLog, NextPlaygroundProbe;
+            public CityPlaygroundVisit Playground;
         }
 
         private readonly struct SpawnCandidate
@@ -91,7 +92,9 @@ namespace BarPromenade
             foreach (CityFringeYardDescriptor yard in city.World.FringeYardPlan.Yards)
                 if (yard.Kind == CityFringeYardKind.EastUtilityEdge)
                     childExclusions.Add(yard.AreaBounds);
-            ambient.plan = new CityAmbientWalkPlan(city.PedestrianPlan, city.Layout, city.BusPlans, childExclusions);
+            ambient.plan = new CityAmbientWalkPlan(city.PedestrianPlan, city.Layout, city.BusPlans, childExclusions,
+                city.World.CourtyardPlayground?.Site.RoutePrefix, city.World.SlidePlayground?.Site.RoutePrefix,
+                city.World.BridgePlayground?.Site.RoutePrefix, city.World.Seesaw?.Site.RoutePrefix);
             ambient.movement = new CityAmbientWalking(ambient.plan, pavement, CityStreetSupportPlan.ForLayout(city.Layout),
                 city.Pedestrians.VehicleTraffic);
             ambient.lanePopulation = new int[city.PedestrianPlan.Links.Count];
@@ -133,6 +136,8 @@ namespace BarPromenade
             return walker.Encounter != 0 ? looks[walker.Look].Body : null;
         }
 
+        internal CityPlaygroundVisit.Phase GetPlaygroundPhase(int index) => walkers[index].Playground.CurrentPhase;
+
         private int Target() => Mathf.Min(MaximumActive,
             CityResidentLifeRules.TargetAmbientPopulation(GameSessionState.GameTimeOfDayMinutes));
 
@@ -143,6 +148,10 @@ namespace BarPromenade
             if (city == null || !city.IsInitialized || city.IsDormant || delta <= 0f) return;
             using var marker = TickMarker.Auto();
             int target = Target();
+            bool daylight = GameTimeDayNightRules.IsDaylight(GameSessionState.GameTimeOfDayMinutes);
+            float step = Mathf.Min(delta, .1f);
+            CityPlaygroundSeesaw seesaw = city.World.Seesaw;
+            if (seesaw != null) seesaw.Advance(step, daylight);
             int contactCount = CollectContacts();
             Vector3 heroHead = city.Pedestrians.ResolveHeroFocus();
             crowdCheckCountdown -= delta;
@@ -157,11 +166,13 @@ namespace BarPromenade
                 float distanceSquared = (position - hero.position).sqrMagnitude;
                 walker.Age += delta;
                 bool beyondLocalStreets = distanceSquared > ReleaseRadius * ReleaseRadius;
+                bool atPlayground = walker.Playground.CurrentPhase != CityPlaygroundVisit.Phase.None;
+                bool childLeaving = walker.Walk.IsChild && !daylight && !atPlayground;
                 bool canRotateCast = distanceSquared > 15f * 15f &&
                     (walker.Age > 28f || ActiveCount > target || walker.Age > 12f && distanceSquared > 24f * 24f);
-                if ((beyondLocalStreets || canRotateCast || checkCrowd && walker.Age > 5f) &&
+                if ((childLeaving || beyondLocalStreets || !atPlayground && (canRotateCast || checkCrowd && walker.Age > 5f)) &&
                     city.Visibility.CanChangeAmbientBodyAt(position) &&
-                    (beyondLocalStreets || canRotateCast || !HasLocalRoom(position, index)))
+                    (childLeaving || beyondLocalStreets || canRotateCast || !HasLocalRoom(position, index)))
                 {
                     Release(index);
                     contacts[index] = default;
@@ -169,17 +180,43 @@ namespace BarPromenade
                 }
                 body.MinimumEvaluationInterval = city.Visibility.CanChangeAmbientBodyAt(position) ? 1f / 8f :
                     distanceSquared < 15f * 15f ? 0f : 1f / 15f;
+                if (walker.Walk.IsChild && AdvancePlayground(index, ref walker, body, step, daylight))
+                    continue;
                 if (walker.AtRail)
                 {
                     body.Advance(delta, false);
                     continue;
                 }
-                AdvanceWalker(index, ref walker, body, Mathf.Min(delta, .1f), contactCount, heroHead);
+                AdvanceWalker(index, ref walker, body, step, contactCount, heroHead);
             }
 
             spawnCountdown -= delta;
             if (ActiveCount >= target || spawnCountdown > 0f) return;
             spawnCountdown = TrySpawn(false) ? .9f : 1.2f;
+        }
+
+        private bool AdvancePlayground(int index, ref Walker walker, CityPedestrianPresentation body, float delta, bool daylight)
+        {
+            if (walker.Playground.CurrentPhase == CityPlaygroundVisit.Phase.None)
+            {
+                if (!daylight || walker.Age < walker.NextPlaygroundProbe || walker.Walk.Backing ||
+                    walker.Walk.IsChild && plan.IsStair(walker.Walk.Link)) return false;
+                walker.NextPlaygroundProbe = walker.Age + .8f;
+                if (!walker.Playground.TryStart(city.World.PlaygroundSwings, walker.Encounter, body.transform.position,
+                    city.World.CourtyardPlayground, city.World.SlidePlayground, city.World.BridgePlayground,
+                    city.World.Seesaw, city.World.BalanceStations))
+                    return false;
+            }
+            if (!walker.Playground.Advance(body, walker.Encounter, walker.Speed, delta, daylight))
+            {
+                walker.Age = 0f;
+                walker.NextPlaygroundProbe = 45f;
+                walker.Walk.NextProbe = 0f;
+                return false;
+            }
+            contacts[index] = new CityAmbientWalking.Contact(-MaximumStreetBodies - index - 2,
+                body.transform.position, CityAmbientWalking.Radius);
+            return true;
         }
 
         private bool TrySpawn(bool warming)
@@ -191,10 +228,14 @@ namespace BarPromenade
             entrySearch++;
             if ((warming || entrySearch % 3 == 1) && TrySpawnAtRail(player, warming)) return true;
             plan.CollectEntries(player, EntryRadius, entries);
+            int childTarget = Mathf.Min(MaximumActiveChildren, Target() / 5);
+            bool childSlot = !warming && activeChildren < childTarget &&
+                GameTimeDayNightRules.IsDaylight(GameSessionState.GameTimeOfDayMinutes);
             candidates.Clear();
             for (int i = 0; i < entries.Count; i++)
             {
                 CityAmbientWalkPlan.Entry entry = entries[i];
+                if (plan.IsPlaygroundLink(entry.Link) && (!childSlot || !plan.AllowsChild(entry.Link))) continue;
                 Vector3 offset = entry.Position - player;
                 float distance = offset.magnitude;
                 if (distance < MinimumEntryDistance || distance > EntryRadius || Mathf.Abs(offset.y) > 4f ||
@@ -209,6 +250,7 @@ namespace BarPromenade
                 uint hash = CityPedestrianStableHash.Combine(entrySearch, unchecked((uint)i));
                 float score = Mathf.Min(plus, minus) + Mathf.Abs(distance - (warming ? 13f : 19f)) * .5f +
                     lanePopulation[entry.Link] * 6f - (plan.IsBusy(entry.Link) ? 2f : 0f) + (hash & 255u) / 96f;
+                if (plan.IsPlaygroundLink(entry.Link)) score -= 10f;
                 score += warming ? FramingPenalty(entry.Position) : hidden ? 0f : 2f;
                 int rank = 0;
                 while (rank < candidates.Count && score >= candidates[rank].Score) rank++;
@@ -226,9 +268,9 @@ namespace BarPromenade
                     !movement.HasClearance(chosen.Position) ||
                     !movement.HasClearance(ahead))
                     continue;
-                int childTarget = Mathf.Min(MaximumActiveChildren, Target() / 5);
-                bool child = !warming && activeChildren < childTarget && plan.AllowsChild(chosen.Link);
-                return Spawn(chosen, direction, child: child) || child && Spawn(chosen, direction);
+                bool child = childSlot && plan.AllowsChild(chosen.Link);
+                if (Spawn(chosen, direction, child: child)) return true;
+                if (child && !plan.IsPlaygroundLink(chosen.Link) && Spawn(chosen, direction)) return true;
             }
             return false;
         }
@@ -304,6 +346,7 @@ namespace BarPromenade
 
         private bool Spawn(CityAmbientWalkPlan.Entry entry, int direction, CityRailRestSpot? rest = null, bool child = false)
         {
+            if (child && !GameTimeDayNightRules.IsDaylight(GameSessionState.GameTimeOfDayMinutes)) return false;
             int slot = 0;
             while (slot < walkers.Length && walkers[slot].Encounter != 0) slot++;
             if (slot == walkers.Length) return false;
@@ -437,7 +480,8 @@ namespace BarPromenade
                 var body = GetWalkerBody(i);
                 // Stationary contacts have no walking link or right-of-way negotiation.
                 contacts[i] = body == null ? default : new CityAmbientWalking.Contact(
-                    walker.AtRail ? -MaximumStreetBodies - i - 2 : walker.Encounter,
+                    walker.AtRail || walker.Playground.CurrentPhase != CityPlaygroundVisit.Phase.None
+                        ? -MaximumStreetBodies - i - 2 : walker.Encounter,
                     body.transform.position, CityAmbientWalking.Radius, walker.Walk);
             }
 
@@ -520,6 +564,7 @@ namespace BarPromenade
             Walker walker = walkers[index];
             if (walker.Encounter == 0) return;
             var body = looks[walker.Look].Body;
+            walker.Playground.Cancel(body, walker.Encounter);
             if (!walker.AtRail) lanePopulation[walker.Walk.Link]--;
             body.gameObject.SetActive(false);
             looks[walker.Look].Leased = false;

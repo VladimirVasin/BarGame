@@ -35,6 +35,7 @@ namespace BarPromenade
 
         public static void ApplyAmbient()
         {
+            SceneAmbientLight.Release();
             RenderSettings.sun = null;
             RenderSettings.skybox = null;
             RenderSettings.fog = false;

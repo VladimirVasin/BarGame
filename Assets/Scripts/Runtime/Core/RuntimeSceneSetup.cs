@@ -146,6 +146,7 @@ namespace BarPromenade
 
             RenderSettings.fog = false;
             RenderSettings.sun = null;
+            SceneAmbientLight.Release();
             RenderSettings.ambientMode = AmbientMode.Flat;
             RenderSettings.ambientLight = new Color(0.012f, 0.010f, 0.009f);
             RenderSettings.reflectionIntensity = 0f;
@@ -165,6 +166,7 @@ namespace BarPromenade
 
             RenderSettings.fog = false;
             RenderSettings.sun = null;
+            SceneAmbientLight.Release();
             RenderSettings.ambientMode = AmbientMode.Flat;
             RenderSettings.ambientLight = Color.black;
             RenderSettings.reflectionIntensity = 0f;
@@ -373,7 +375,7 @@ namespace BarPromenade
                 sample.DirectionalLightIntensity,
                 sample.AmbientLightColor,
                 sample.ShadowStrength,
-                shadows: LightShadows.Soft);
+                shadows: LightShadows.Soft, exterior: true);
             directional.transform.rotation =
                 sample.DirectionalLightRotation;
             RenderSettings.reflectionIntensity =
@@ -399,7 +401,7 @@ namespace BarPromenade
                 Mathf.Lerp(
                     sample.ShadowStrength,
                     0.52f,
-                    0.35f));
+                    0.35f), exterior: true);
             directional.transform.rotation =
                 sample.DirectionalLightRotation;
             RenderSettings.reflectionIntensity =
@@ -527,7 +529,7 @@ namespace BarPromenade
                 Mathf.Lerp(
                     Mathf.Lerp(sample.ShadowStrength, 0.44f, 0.45f),
                     Mathf.Lerp(sample.ShadowStrength, 0.55f, 0.30f),
-                    dim) * Mathf.Lerp(1f, 0.65f, daylight));
+                    dim) * Mathf.Lerp(1f, 0.65f, daylight), exterior: true);
             directional.transform.rotation =
                 sample.DirectionalLightRotation;
             RenderSettings.reflectionIntensity =
@@ -548,6 +550,13 @@ namespace BarPromenade
                 CityDaySaturation, CityNightSaturation, nightFactor);
             if (color.saturation.value != saturation)
                 color.saturation.value = saturation;
+        }
+
+        internal static void ApplyCityExteriorGrade(
+            ColorAdjustments color, ShadowsMidtonesHighlights tones, float nightFactor)
+        {
+            ApplyCityExteriorSaturation(color, nightFactor);
+            Rendering.WorldTonalGrade.SetStreetNight(tones, nightFactor);
         }
 
         public static VolumeProfile CreateCityNoirRuntimeProfile()
@@ -741,7 +750,8 @@ namespace BarPromenade
             Color ambientColor,
             float shadowStrength,
             Quaternion? rotation = null,
-            LightShadows shadows = LightShadows.Hard)
+            LightShadows shadows = LightShadows.Hard,
+            bool exterior = false)
         {
             Light directional = RenderSettings.sun;
             if (directional == null ||
@@ -780,8 +790,7 @@ namespace BarPromenade
             directional.shadowNearPlane = PlayerMeshShadowNearPlane;
             RenderSettings.sun = directional;
 
-            RenderSettings.ambientMode = AmbientMode.Flat;
-            RenderSettings.ambientLight = ambientColor;
+            SceneAmbientLight.Apply(ambientColor, exterior);
             return directional;
         }
 

@@ -621,9 +621,6 @@
     "Assets/Scripts/Runtime/World/ClothPanelFactory.cs": {
       "sha256": "9ea98477ca9ffe45e410e2d6b89ae6fb8897bb8470250c78107649c0ec278278"
     },
-    "Assets/Scripts/Runtime/World/ExteriorCloudResources.cs": {
-      "sha256": "31f4b9333ae95202bdf5862af072a4c8e13d57a31558b340495ede3f98f6c625"
-    },
     "Assets/Scripts/Runtime/World/GroundSurfaceAppearance.cs": {
       "sha256": "73ecb223b0c248cf1033b3f7058fa48e03ea99066d8c9f8d60a4d22134bb158a"
     },

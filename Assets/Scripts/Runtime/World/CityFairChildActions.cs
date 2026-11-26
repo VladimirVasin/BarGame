@@ -8,7 +8,7 @@ namespace BarPromenade
     public enum CityFairChildAction
     {
         Idle, Walk, Turn, Stop, GoodsEnter, GoodsLoop, GoodsExit,
-        ToyEnter, ToyLoop, ToyExit, SitEnter, SitLoop, SitExit, AdjustSleeve, AdjustCap, StreetWalk
+        ToyEnter, ToyLoop, ToyExit, SitEnter, SitLoop, SitExit, AdjustSleeve, AdjustCap, StreetWalk, SwingEnter, SwingPump, SwingExit, BarsCross, BeamCross, SlideCross, SlideViaBridge, SeesawMount, BalanceStep
     }
 
     public readonly struct CityFairChildFrame
@@ -32,15 +32,19 @@ namespace BarPromenade
         public const float StreetCycleMetres = .66f;
         public static readonly Vector3 SeatedPelvisFromDock = new Vector3(0f, .57f, -.54f);
         private static Manifest manifest;
+        private static AnimationClip[] clips;
         private static Dictionary<CityFairChildAction, Track> tracks;
         public static string[] BoneNames { get { Get(CityFairChildAction.Idle); return manifest.bones; } }
         public static string ClipName(CityFairChildAction action) => "FairChild" + action;
         public static float Duration(CityFairChildAction action) => Get(action).duration_seconds;
         public static bool IsLoop(CityFairChildAction action) => Get(action).loop;
+        internal static AnimationClip GetClip(CityFairChildAction action) => LoadClips()[(int)action];
+
         public static AnimationClip[] LoadClips()
         {
+            if (clips != null) return clips;
             AnimationClip[] available = Resources.LoadAll<AnimationClip>(ResourcePath);
-            return Enum.GetValues(typeof(CityFairChildAction)).Cast<CityFairChildAction>().Select(action =>
+            return clips = Enum.GetValues(typeof(CityFairChildAction)).Cast<CityFairChildAction>().Select(action =>
             {
                 AnimationClip clip = available.SingleOrDefault(value => value.name == ClipName(action));
                 if (clip == null || Mathf.Abs(clip.length - Duration(action)) > .003f || clip.isLooping != IsLoop(action) || clip.events.Length != 0)

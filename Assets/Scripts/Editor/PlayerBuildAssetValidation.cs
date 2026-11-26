@@ -97,7 +97,6 @@ namespace BarPromenade.Editor
             RegisterGenerated("Stairwell cat", StairwellCatAssetSetup.ValidateOrThrow, "StairwellCatAssetSetup");
             Register("Stairwell labyrinth collision", StairwellLabyrinthAssetSetup.ValidateOrThrow,
                 "BarPromenade.Editor.StairwellLabyrinthAssetSetup.EnsureAssets");
-            RegisterGenerated("Exterior cloud", ExteriorCloudAssetSetup.ValidateOrThrow, "ExteriorCloudAssetSetup");
         }
 
         /// <summary>Register an additional read-only owner validator at Editor initialization.</summary>

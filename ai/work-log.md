@@ -5,7 +5,15 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-26
 
-City's ambient pool rotates three boys and three girls through two slots. The shared stride follows route distance and the street leg layer tracks support. `CityFairChildActionAssetSetup` verified imported contacts. `City Street Girls Model Contract` checked deterministic geometry and the FBX rig round-trip. `CityAmbientChildren` verified a live girl walker and shared stride, distinct outfits and blink tiles. Reviewed all three outfits in City light.
+`WorldTonalReadability` compared stairs, faces and night street. `CityNightSaturation` checked balcony return. `WorldContactFinishes` checked rails, bus grips/treads and pub fittings. `CharacterLightOnStreetAndInBar` checked skin, cloth and hair in colour/grayscale turns.
+
+Cut exterior clouds. `DirectionalAmbientWorld` checked clock/pause light on street, road, village, indoors and on balcony return.
+
+The fair runs 09:00–22:00. Sellers and visitors leave through both aisles for separate nearby homes selected by walking distance. `CityFairDailyHours` checked the seated child's exit, night occupancy, morning reopening and the next evening's assignments. Reviewed closing and opening views.
+
+Children visit swings, bars, slides and balance modules. `CityParkPlaygroundChildVisit`, `CityCourtyardPlaygroundChildVisit`, `CitySlidePlaygroundChildVisit` and `CityBridgePlaygroundChildVisit` checked contacts, climbs and return. `CitySeesawDaylight` checked five layouts, paved paths, paired play, solo timeout, return and sunset. Reviewed City frames.
+
+City rotates three boys and three girls through two daylight slots. `CityFairChildActionAssetSetup` verified contacts. `City Street Girls Model Contract` checked deterministic geometry and the FBX rig. `CityAmbientChildren` checked the common metre gait, distinct outfits and blink tiles. Reviewed City frames.
 
 Fair children have distinct painted faces and hair, fitted coats and boots, and skinned trousers joined from each ankle through the waist. The garments reuse the default NPC normal and response maps. `City Fair Child Model Contract` checked deterministic export and FBX rig and mesh round-trip. Reviewed standing, walking and seated Blender views.
 

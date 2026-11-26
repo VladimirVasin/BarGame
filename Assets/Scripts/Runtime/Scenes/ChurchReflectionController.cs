@@ -65,7 +65,7 @@ namespace BarPromenade
                 if (light != null)
                 { state = Hash(state, light.color.r, 16f); state = Hash(state, light.color.g, 16f); state = Hash(state, light.color.b, 16f); }
             }
-            Color ambient = RenderSettings.ambientLight * RenderSettings.ambientIntensity;
+            Color ambient = SceneAmbientLight.ReferenceColor * RenderSettings.ambientIntensity;
             state = Hash(state, ambient.r, 16f); state = Hash(state, ambient.g, 16f); state = Hash(state, ambient.b, 16f);
             Light directional = RenderSettings.sun;
             state = Hash(state, Power(directional), 16f);

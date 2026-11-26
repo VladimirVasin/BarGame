@@ -2,11 +2,19 @@
 
 ## Current facts
 
-- **2026-11-26, child art.** Skinned trousers, PNG face rows, hair and shared
-  `DefaultNpcDetail` maps. Child bones own contacts. Five fair spots retain the
-  day floor. Three fair boys and three street girls have stable looks.
-  City leases two child slots, with one child-native step by metres. Quiet yards excluded. Shared City
-  bounce/SSAO/fog/shadows/grade/post, road SSR. Matte skin/fabric use no local FX.
+- **2026-11-26, children.** Stable looks, skinned trousers, face rows, shared
+  material maps and metre gait. Five fair spots keep the day floor. Two street
+  slots spawn from sunrise to sunset and retire off camera. Park swings and fitted court modules share
+  City light/fog/post. One reservation covers the swing, bars/beam loop or
+  slide, including both approaches at the two-deck site. Sockets join the
+  stair, rung frame, decks and chute. Completed runs alternate the stair
+  and bridge with the rung climb. A child waits seated for a clear runout
+  and rejoins the route along the side. The seesaw waits for two street
+  encounters, shares the pivot clock and finishes before either rider leaves.
+  The landscape plan joins flush concrete yards and the gravel park pad to
+  existing paths. Each site fits multiple modules. The City seed selects a
+  beam or stepping trail and compact balance variants. Coating outlines own
+  footsteps and a low-grass edge in City and Home.
 
 - **Accepted 2026-11-22, user — wristwatch.** H loans the existing camera and
   holds stationary context. Right pinch tracks the left cuff. Forearm bezel, session-minute LCD, bevels, matte finish and area fog/light/post.
@@ -1556,7 +1564,7 @@
   lived-in scale stays. Expansion `13–30 m`; route/yard/sightline crown gaps.
 
 - **Accepted — 2026-09-24, overcast village daylight:**
-  Day key/shadows/reflections down, neutral fill, darker grey haze/clouds;
+  Day key/shadows/reflections down, neutral fill, darker grey haze;
   warm windows/garlands. Night/story/gust stay; no clock/thunder/lightning/whiteout.
 
 - **Accepted — 2026-09-24, frost saturation silence:**
@@ -6155,25 +6163,8 @@
   City/balcony:2026-11-03;road/village unchanged. Weather clears/refills snow/fog
   under road tunnel/terminal/village canopy. City weather shares the shelter
   mask with fog;the tunnel owner also hides the ridge.
-- **Accepted — One camera-relative cloud ceiling for every true exterior:**
-  a deterministic Blender build owns one passive `220`-triangle unit
-  hemisphere and one packed linear RGB density texture; runtime owns three
-  profiles through `MaterialPropertyBlock`, never cloned materials. The field
-  follows camera translation but retains a canonical compass rotation. Its
-  `47 / 119 / 109 m` radii sit just inside City, MountainRoad and
-  AlpineVillage far planes (`48 / 120 / 110 m`), but are rendering distance,
-  not a physical cloud base: translation produces no parallax, so the layer
-  cannot read as clouds hanging tens of metres above roofs. City and the Home
-  balcony use the same seed, profile, compass frame and phase from absolute
-  session time; the road and village only change density, scale and colour,
-  while all three integrate the existing `GameWeatherRules` wind schedule.
-  The horizon is mixed into the haze already owned by each area; the village
-  passes its live haze/storm/warmth values into that same property block. The
-  cloud system creates no Light, shadow, collider, fog, grade or visibility
-  rule. It exists in City, MountainRoad and AlpineVillage, is enabled in Home
-  only for the active Balcony shot, and is absent from true interiors and
-  technical transition scenes. The fountain reflection camera opts in with a
-  marker; unrelated preview/UI cameras do not inherit the world shell.
+- **Accepted 2026-11-26, user — directional ambient fill.** The authored ambient tint drives the horizontal reference for reflections and three diffuse bands. Outdoor contrast is stronger than indoor contrast. Pause settings restore flat fill, including after balcony travel. Warehouse and labyrinth darkness keep their own environment.
+- **Accepted 2026-11-26, user — remove rendered clouds everywhere.** Exterior skies use the area background and existing weather haze. The terrain and the valley mist remain part of the mountain vista.
 - **Accepted — The city never dries:** `CityEternalRainShaper` floors City
   rain and `ShapeSurfaceWetness` at `0.18`. The field, river, bus wipers and
   Home balcony share the floor. Wind and slot kind pass through. Snow areas

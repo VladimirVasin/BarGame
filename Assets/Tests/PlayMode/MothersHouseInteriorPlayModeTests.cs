@@ -1537,7 +1537,7 @@ namespace BarPromenade.Tests.PlayMode
                 "The floor-lamp light moved off its visible shade.");
             AssertNoTableLamp(interior);
             Assert.That(
-                RenderSettings.ambientLight.maxColorComponent,
+                SceneAmbientLight.ReferenceColor.maxColorComponent,
                 Is.LessThanOrEqualTo(0.171f),
                 "Ambient illumination must stay below the motivated lights.");
             Assert.That(

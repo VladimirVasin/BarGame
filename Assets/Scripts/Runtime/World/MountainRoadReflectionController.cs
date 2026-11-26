@@ -243,7 +243,7 @@ namespace BarPromenade
             Light sun = RenderSettings.sun;
             Color sunlight = sun != null && sun.isActiveAndEnabled ? sun.color * sun.intensity : Color.black;
             Vector3 sunDirection = sun != null ? sun.transform.forward : Vector3.down;
-            Color ambient = RenderSettings.ambientLight * RenderSettings.ambientIntensity;
+            Color ambient = SceneAmbientLight.ReferenceColor * RenderSettings.ambientIntensity;
             bool changed = lightingGeneration == 0 || ColorDelta(sunlight, sunReference) > .12f ||
                 ColorDelta(ambient, ambientReference) > .08f || ColorDelta(RenderSettings.fogColor, fogReference) > .08f ||
                 Vector3.Dot(sunDirection, sunDirectionReference) < .978f;

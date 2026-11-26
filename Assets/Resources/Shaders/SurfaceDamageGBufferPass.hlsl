@@ -220,6 +220,9 @@ GBufferFragOutput LitGBufferPassFragment(Varyings input)
 
     SurfaceData surfaceData;
     InitializeStandardLitSurfaceData(input.uv, surfaceData);
+#if defined(_WORLD_CONTACT_FINISH)
+    ApplyContactFinish(TransformWorldToObject(input.positionWS), input.uv, surfaceData);
+#endif
     ApplySurfaceDamage(TransformWorldToObject(input.positionWS),
         TransformWorldToObjectNormal(input.normalWS), surfaceData);
 

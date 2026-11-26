@@ -23,7 +23,8 @@ ROOT = Path(__file__).resolve().parents[1]
 MODEL = ROOT / "Assets/Player3D/V2/Models/PlayerCharacter3DV2.json"
 TEXTURES = ROOT / "Assets/Player3D/V2/Textures"
 REPORT = ROOT / "ArtSource/Player/player-clothing-surfaces.json"
-VERSION = "1.0.0"
+VERSION = "1.1.0"
+SMOOTHNESS = {"jacket": (.24, .44), "denim": (.12, .22), "leather": (.26, .39), "sole": (.06, .06)}
 REGIONS = {
     "JacketBody", "JacketSleeveLeft", "JacketSleeveRight",
     "JacketForearmLeft", "JacketForearmRight", "JeansPelvis",
@@ -47,7 +48,7 @@ def byte(value: float) -> int:
 def kind_at(name: str, y: int) -> str:
     if name.startswith("Boot"):
         return "sole" if y < 7 else "leather"
-    return "fabric"
+    return "jacket" if name.startswith("Jacket") else "denim"
 
 
 def cell_pixels(pixels: bytes, size: int, region: dict) -> list[list[tuple]]:
@@ -68,7 +69,7 @@ def make_cell(region: dict, colors: list[list[tuple]]) -> tuple[list, list]:
     width, height = region["width_px"], region["height_px"]
     # Each garment keeps its own response; the shin charts are all cloth.
     dominant = {}
-    for kind in ("fabric", "leather", "sole"):
+    for kind in SMOOTHNESS:
         samples = [colors[y][x] for y in range(height) for x in range(width)
                    if kind_at(name, y) == kind]
         if samples:
@@ -83,20 +84,27 @@ def make_cell(region: dict, colors: list[list[tuple]]) -> tuple[list, list]:
             # Only a bounded local seam signal, never full albedo displacement.
             seam = max(-1.0, min(1.0, colour_delta / 36.0))
             worn = min(1.0, abs(colour_delta) / 42.0)
-            if kind == "fabric":
+            if kind in ("jacket", "denim"):
                 weave = math.sin(x * math.tau / 4) * math.sin(y * math.tau / 4)
                 diagonal = math.sin((x + y) * math.tau / 9)
                 value = .050 * weave + .020 * diagonal + .022 * seam
-                smoothness = .075 + .014 * diagonal - .011 * worn
+                if kind == "jacket":
+                    # Sleeves and forearms terminate at the shoulder/elbow.
+                    # A broad polished patch survives the weave's lower mips.
+                    u, v = (x + .5) / width, (y + .5) / height
+                    contact = math.exp(-((v - .79) / .23)**2) * math.sin(math.pi * u)**2
+                    smoothness = .27 + .11 * contact + .04 * worn + .012 * diagonal
+                else:
+                    smoothness = .15 + .045 * worn + .012 * diagonal
             elif kind == "leather":
                 grain = (math.sin(x * 1.73 + math.sin(y * .71)) +
                          math.sin(y * 1.29 + math.sin(x * .59))) * .5
                 value = .041 * grain + .028 * seam
-                smoothness = max(.16, min(.25, .235 - .065 * worn + .012 * grain))
+                smoothness = .36 - .075 * worn + .012 * grain
             else:
-                value, smoothness, worn = 0.0, .03, 0.0
+                value, smoothness, worn = 0.0, .06, 0.0
             row.append(value)
-            response.append((0, 255 if kind == "fabric" else 0,
+            response.append((0, 255 if kind in ("jacket", "denim") else 0,
                              byte(worn), byte(smoothness)))
         heights.append(row)
         responses.append(response)
@@ -162,7 +170,7 @@ def build() -> dict[Path, bytes]:
                 normal.put(x0 + x, size - 1 - y0 - y, cell_normal[y][x])
                 response.put(x0 + x, size - 1 - y0 - y, cell_response[y][x])
                 surface = kind_at(region["name"], y)
-                low, high = {"fabric": (.05, .10), "leather": (.16, .25), "sole": (.03, .03)}[surface]
+                low, high = SMOOTHNESS[surface]
                 if cell_response[y][x][0] != 0 or not byte(low) <= cell_response[y][x][3] <= byte(high):
                     raise ValueError("Metallic/smoothness response exceeds its material range")
                 if min(x, y, width - 1 - x, height - 1 - y) < 2 and cell_normal[y][x] != (128, 128, 255, 255):
@@ -187,7 +195,7 @@ def build() -> dict[Path, bytes]:
         "normal_fade_px": 3, "recommended_bump_scale": .65,
         "normal_encoding": "RGB tangent-space positive Y; A opaque",
         "response_encoding": "linear RGBA: R=metallic zero, G=fabric, B=wear, A=absolute smoothness",
-        "smoothness_limits": {"fabric": [.05, .10], "leather": [.16, .25], "sole": [.03, .03]},
+        "smoothness_limits": SMOOTHNESS,
         "forearm_maps_identical": True, "regions": measured,
         "outputs": {
             "Assets/Player3D/V2/Textures/PlayerClothingNormal.png": sha(normal_bytes),

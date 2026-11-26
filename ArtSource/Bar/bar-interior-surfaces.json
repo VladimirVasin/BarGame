@@ -126133,8 +126133,8 @@
     "roughness",
     "cavity"
   ],
-  "recipe_sha256": "da0609c9a73ba845ed86ee641e150bef5548902f597cee0f12acc2af0466b03c",
-  "furniture_recipe_sha256": "6e4708b4d87384d3d9dbda668faf3be8a650f885ff43c8c2dd0e593770684ad7",
+  "recipe_sha256": "21d7bdfdd5daca313a7e0c9c527957de5ea7ea421274fcb89234d8fe20faa222",
+  "furniture_recipe_sha256": "9a2448fd7869af2799fe1ad196e0da6c2d83c2870003b38866cba6384edfb2bd",
   "washroom_recipe_sha256": "2ef42f16d332a14952b37605f02766bcff52365b61107f091d4be2270abba8b9",
   "source_sha256": {
     "AgedBrass": "1c18dbf450ba6f17eaffef99666b19a4ccef1e94ad59f19535a827fe04625d61",
@@ -126148,5 +126148,6 @@
     "WornFabric": "791444887e97dc89ef024170e7b670cf709776e572747061da6d34c3530a22c6",
     "WornLeather": "4af39b259ed3b13bd314f8a679217292eecf7588e5e731bd20262865fd8d37de",
     "WornPlank": "249583b161d6ec5d98e4af2b204195560984f3042af9380f3f56c83b62e81f6e"
-  }
+  },
+  "contact_recipe_sha256": "9c7f19510d09ba5f659e028ee23d90ea93bb99e5e4c608d19b98a8ff6026bae4"
 }

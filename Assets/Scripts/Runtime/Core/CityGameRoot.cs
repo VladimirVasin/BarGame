@@ -51,7 +51,6 @@ namespace BarPromenade
         public CityLightningFlashLight Lightning { get; private set; }
         public CityThunderSoundPlayer Thunder { get; private set; }
         public CityWeatherController Weather { get; private set; }
-        public ExteriorCloudField Clouds { get; private set; }
         public RetroAudioService Audio { get; private set; }
         public CityMusicPlayer Music { get; private set; }
         public CityLocationMusicDirector LocationMusic
@@ -655,12 +654,7 @@ namespace BarPromenade
                 Night.FogField);
             GameLogPhases.Report("city", "soundscape_and_weather", stepTimer);
             stepTimer.Restart();
-            Clouds = ExteriorCloudField.Create(
-                transform,
-                camera,
-                ExteriorCloudProfiles.City,
-                GameSessionState.CitySeed);
-            DayNight.BindClouds(Clouds);
+
             // Lines spoken by somebody who is not talking to the hero.
             // Raised here rather than with the two men because it needs
             // the camera, which does not exist until this far down.

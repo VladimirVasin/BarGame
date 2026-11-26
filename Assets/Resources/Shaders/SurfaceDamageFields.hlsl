@@ -2,6 +2,9 @@
 #ifndef BAR_PROMENADE_SURFACE_DAMAGE_FIELDS_INCLUDED
 #define BAR_PROMENADE_SURFACE_DAMAGE_FIELDS_INCLUDED
 // Include INSIDE UnityPerMaterial in every pass, including non-colour passes.
+float4 _ContactFinishU, _ContactFinishV;
+half4 _ContactSubstrate;
+float _ContactFinishUseUV;
 float4 _SurfaceDamageRect;
 float4 _SurfaceDamageBoundsMin;
 float4 _SurfaceDamageInvSize;

@@ -42,6 +42,24 @@ namespace BarPromenade
         private Collider lastNonWalkerCollider;
         private float previousSignedSpeed;
         private float halfSwingPeakSpeed;
+        private Quaternion restingLocalRotation;
+        private int rider;
+        private float targetAngle;
+        internal const float DockOffset = .50f;
+        internal const float StagingOffset = 2.38f;
+        internal Transform Pelvis { get; private set; }
+        internal Transform LeftGrip { get; private set; }
+        internal Transform RightGrip { get; private set; }
+        internal int Rider => rider;
+        internal Vector3 RestForward => transform.parent.rotation * restingLocalRotation * Vector3.forward;
+        internal Quaternion RestRotation => Quaternion.LookRotation(RestForward);
+        internal Vector3 GroundCenter => transform.position - Vector3.up * CityPlaygroundGeometry.RopeAnchorY;
+        internal Vector3 Dock => GroundCenter + RestForward * DockOffset;
+        internal Vector3 Staging => GroundCenter + RestForward * StagingOffset;
+        internal Vector3 RiderRoot => Pelvis.position - transform.rotation * new Vector3(0f, .74f, -DockOffset);
+        internal float Angle => Vector3.SignedAngle(Vector3.up, body.rotation * Vector3.up, transform.right);
+        internal float AngularSpeed => Vector3.Dot(body.angularVelocity, transform.right);
+        internal bool ReadyToMount => Mathf.Abs(Angle) < .8f && Mathf.Abs(AngularSpeed) < .045f;
 
         /// <summary>Raised once per half-swing, at the top of the arc,
         /// when that half-swing was wide enough to be heard. The
@@ -74,7 +92,8 @@ namespace BarPromenade
         public Vector3 SeatCenter =>
             transform.TransformPoint(seatLocalCenter);
 
-        public void Initialize(Rigidbody seatBody, Vector3 localSeatCenter)
+        public void Initialize(Rigidbody seatBody, Vector3 localSeatCenter,
+            Transform pelvis = null, Transform leftGrip = null, Transform rightGrip = null)
         {
             if (seatBody == null)
             {
@@ -82,6 +101,10 @@ namespace BarPromenade
             }
 
             body = seatBody;
+            restingLocalRotation = transform.localRotation;
+            Pelvis = pelvis;
+            LeftGrip = leftGrip;
+            RightGrip = rightGrip;
             seatLocalCenter = localSeatCenter;
             Vector3 axis = Vector3.Cross(transform.right, Vector3.up);
             axis.y = 0f;
@@ -91,11 +114,48 @@ namespace BarPromenade
             IsInitialized = true;
         }
 
+        internal bool TryReserve(int encounter)
+        {
+            if (!isActiveAndEnabled || encounter <= 0 || rider != 0 || Pelvis == null) return false;
+            rider = encounter;
+            targetAngle = 0f;
+            return true;
+        }
+
+        internal void DriveRider(int encounter, float angle)
+        {
+            if (rider == encounter) targetAngle = angle;
+        }
+
+        internal void ReleaseRider(int encounter)
+        {
+            if (rider != encounter) return;
+            rider = 0;
+            targetAngle = 0f;
+        }
+
+        private void OnDisable()
+        {
+            rider = 0;
+            targetAngle = 0f;
+            previousSignedSpeed = halfSwingPeakSpeed = 0f;
+        }
+
         private void FixedUpdate()
         {
             if (!IsInitialized || body == null)
             {
                 return;
+            }
+
+            if (rider != 0)
+            {
+                float error = (targetAngle - Angle) * Mathf.Deg2Rad;
+                float acceleration = Mathf.Clamp(18f * error - 5f * AngularSpeed, -8f, 8f);
+                // The occupied plank is the pendulum's mass. Drive it tangentially
+                // at that mass so the hinge receives the full lever arm.
+                Vector3 tangent = Vector3.Cross(transform.right, body.worldCenterOfMass - body.position);
+                body.AddForce(tangent * acceleration, ForceMode.Acceleration);
             }
 
             float signed = Vector3.Dot(
@@ -138,7 +198,7 @@ namespace BarPromenade
             // trigger cloth capsule beside his controller, and one
             // walker must not push twice in a step.
             if (!IsInitialized ||
-                body == null ||
+                body == null || rider != 0 ||
                 other == null ||
                 other.isTrigger)
             {

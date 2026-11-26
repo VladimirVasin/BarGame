@@ -18,7 +18,7 @@ Bench:`build-city-bench-{access-stair,pigeon-statue,flowerbed}-3d-model.py`
 Exit: `--near-only`, `--distance-only`, `--dressing-only`.
 `build-east-checkpoint-finishes.py --check`: atlas; `build-city-east-ground-texture.py --verify`: verge.
 
-`build-city-{buildings,coastal-infrastructure,street-profile,terrace,misc}-3d-model.py`:
+`build-city-{buildings,coastal-infrastructure,street-profile,terrace,misc,playground}-3d-model.py`:
 launcher/`--validate-only`. Buildings: `Assets/City/Models/CityBuildings3D.{fbx,json}`;
 `CityBuildingAssetSetup.BuildOrThrow`. Coast: `Resources/City/CoastalInfrastructure`;
 `CityCoastalInfrastructureAssetSetup.{Build,Validate}OrThrow`.

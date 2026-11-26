@@ -187,6 +187,13 @@ namespace BarPromenade
             return IsNightMinute(NormalizeMinute(timeOfDayMinutes));
         }
 
+        public static bool IsDaylight(double timeOfDayMinutes)
+        {
+            ValidateTimeOfDay(timeOfDayMinutes);
+            double minute = NormalizeMinute(timeOfDayMinutes);
+            return minute >= SunriseMinutes && minute < SunsetMinutes;
+        }
+
         /// <summary>
         /// Height of the sun above the horizon, in degrees. Zero at
         /// 06:00 and 18:00, <see cref="PeakSunElevationDegrees"/> at

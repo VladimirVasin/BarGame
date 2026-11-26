@@ -90,7 +90,7 @@ namespace BarPromenade
             properties.GetVector(ModeId).x > 0f && !HomeFurnitureSurface.IsMaterial(original) ? Lit : original;
 
         internal static void Apply(Renderer renderer, MaterialPropertyBlock properties, Entry entry,
-            Transform room, float strength, Material originalMaterial = null)
+            Transform room, float strength, Material originalMaterial = null, string finishFamily = null)
         {
             bool dither = renderer.sharedMaterial != null && renderer.sharedMaterial.shader != null &&
                 renderer.sharedMaterial.shader.name == "Bar Promenade/Home Occluder Dither";
@@ -100,13 +100,14 @@ namespace BarPromenade
                 if (!dither && originalMaterial != null) renderer.sharedMaterial = originalMaterial;
                 return;
             }
-            bool fitted = HomeFurnitureSurface.IsMaterial(originalMaterial);
+            bool fitted = HomeFurnitureSurface.IsMaterial(originalMaterial) ||
+                (originalMaterial != null && originalMaterial.IsKeywordEnabled("_WORLD_CONTACT_FINISH"));
             if (!dither) renderer.sharedMaterial = fitted ? originalMaterial : Lit;
             Ensure();
             if (pages[entry.page] == null)
                 pages[entry.page] = Resources.Load<Texture2D>(manifest.pages[entry.page].resource);
             if (pages[entry.page] == null) throw new InvalidOperationException("Missing damage atlas page.");
-            Family family = families[entry.domain + ":" + entry.family];
+            Family family = families[entry.domain + ":" + (finishFamily ?? entry.family)];
             if (!fitted && !string.IsNullOrEmpty(family.micro_resource_override))
             {
                 if (family.Micro == null) family.Micro = Resources.Load<Texture2D>(family.micro_resource_override);

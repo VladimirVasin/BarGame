@@ -293,7 +293,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   the cableway cut. Snow reaches foundations outside the clear door aprons,
   and its rise run varies along trodden edges without changing movement.
   The cableway valley shares the rise material. Overcast
-  daylight uses weaker neutral direct light, grey fill and darker haze/clouds;
+  daylight uses weaker neutral direct light, grey fill and darker haze;
   windows/garlands retain the lived-in warmth. Night fill and story dimming
   remain separate. The fog breathes: `RuntimeSceneSetup.EvaluateAlpineVillageFogDensity`
   runs `0.017` between gusts (`9 %` of the mother's door at `91 m` from the
@@ -640,11 +640,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   glass beads and eave drips. Downpipes throw water along their own axes;
   shallow pools ripple toward open grates. Bus beads follow the wiper mask.
   Home runs contacts only in the balcony shot.
-- Camera-following cloud ceiling uses a passive `220`-triangle hemisphere,
-  one packed density texture and three profiles (`47 / 119 / 109 m`). City
-  and Home balcony share the seed, frame and absolute phase. Road and Village
-  vary density, scale and colour. The upper City sky sits behind the expanded
-  view. The shell is visual only;
+- Gameplay ambient follows surface direction outdoors and indoors. Pause can select the flat fill.
 - 16:9;4:3 unsupported.SMAA High/on:3passes after native/intoxication;
   crop/UI last;previews/probes off.Flags:`SceneLightingPresentation` (4 owners).
   Warehouse:fan/steel/bounce. Village:window/garland air-snow/clip,
@@ -777,7 +773,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   `2/8/10/12/4`, cache 18, combined 48, warm≤3. Half-hour ramps,
   arrivals per 12m≤4 combined/2 ambient, hidden handoffs, 60/40 target.
   Ambient walks use stairs, skip crossings/platforms and pass at kerbs.
-  Three boys and three girls rotate through two street child slots with a springing walk.
+  Six child looks share two slots. Children swing, cross yard bars and beam, or climb and slide. Each detour rejoins the route. Equipment footprints keep grass clear.
   Adults lean at quays, courts or Ridge rails. House spurs use full pavement.
   Two uniformed janitors can sweep free paving or yard earth 14–34 m from the hero. New visits 18–32 s apart;
   after 55–95 s and 14 m separation, or beyond 52 m, they leave outside the shot.
@@ -1108,10 +1104,8 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   Five flame/ember parts, spill/sparks, one warm Point Light and bounded
   synthesized crackle belong to the barrel. Rain dies under the
   roof; no local fog;
-- fair `[11;3]`/`[11;4]`: four staffed displays, shared organ/bell actions,
-  two seats, clutter and five warm garland spots for counters and aisles.
-  Three silent adults idle at the first three stalls' inner ends:
-  global `fair.visitor.0..2` identities/wardrobe, no aprons, grounded collision.
+- fair `[11;3–4]`, 09:00–22:00. Four sellers and all visitors walk to distinct nearby homes at closing and return by opening. Organ/bell, two seats, clutter, five warm garland spots.
+  Three silent adults at stall ends use `fair.visitor.0..2` wardrobes, no aprons, grounded collision.
   Three silent children share a child rig/body. Distinct painted faces, 3D hair
   and fitted costumes use shared default NPC finishes. They look at toys, roll a
   car at a low table and sit via `CityBenchSeatClaims`. Routes and hand/foot
@@ -1333,8 +1327,10 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   Its 24 visual families include chimneys/scaffolding/balconies/laundry/tanks/
   pipe racks/billboards/fire escapes/markets/discarded furniture/cargo/vending
   queues/legacy shelter/phone booths/roadworks/fountain-statue/bandstand/chess/
-  playground. Only the two swings remain unbatched: hinged rigid seats hang
-  from the top beam and move on hero contact. Random roadside excludes bus
+  playground. The park places a modular frame, separate bench and two hinged
+  seats. Contact moves empty seats. Seeded play modules share concrete yards
+  or park gravel at grade. Children spawn 06:00–18:00 and return to their
+  walks after play. Random roadside excludes bus
   shelters; the bus network owns stop poles and shelters. Ground frontage/
   roadside descriptors sample final XZ rendered terrain; geometry/collision/
   interaction docks share pavement heights, not lot datums;

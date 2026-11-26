@@ -19,26 +19,26 @@ SCHEMA = "default_npc_surfaces_v1"
 # separate finish, even where two pieces touch. The last atlas quarter
 # contains the worker's existing face and blink cells.
 FINISHES = {
-    "skin": ("skin", .16, .24, .14),
-    "shortHair": ("hair", .46, .36, .10),
-    "looseHair": ("hair", .55, .36, .12),
-    "boundHair": ("hair", .42, .38, .09),
-    "shirt": ("plain", .32, .22, .20),
-    "workShirt": ("twill", .47, .17, .24),
+    "skin": ("skin", .16, .40, .14),
+    "shortHair": ("hair", .46, .49, .10),
+    "looseHair": ("hair", .55, .48, .12),
+    "boundHair": ("hair", .42, .50, .09),
+    "shirt": ("plain", .32, .16, .20),
+    "workShirt": ("twill", .47, .19, .24),
     "flannel": ("brushed", .48, .14, .20),
     "vest": ("canvas", .57, .18, .24),
-    "workJacket": ("canvas", .65, .17, .29),
-    "quilt": ("quilt", .69, .21, .23),
+    "workJacket": ("canvas", .65, .32, .29),
+    "quilt": ("quilt", .69, .29, .23),
     "cardigan": ("knit", .78, .12, .18),
     "woolCoat": ("brushed", .59, .14, .25),
     "overshirt": ("twill", .43, .22, .22),
-    "oilcloth": ("canvas", .38, .31, .26),
+    "oilcloth": ("canvas", .38, .37, .26),
     "uniform": ("twill", .39, .24, .20),
     "tee": ("plain", .36, .16, .21),
-    "shortJacket": ("canvas", .52, .23, .21),
-    "slacks": ("twill", .39, .18, .22),
-    "workTrousers": ("twill", .58, .17, .32),
-    "winterTrousers": ("brushed", .51, .14, .21),
+    "shortJacket": ("canvas", .52, .31, .21),
+    "slacks": ("twill", .39, .21, .22),
+    "workTrousers": ("twill", .58, .20, .32),
+    "winterTrousers": ("brushed", .51, .16, .21),
     "shoe": ("leather", .37, .34, .23),
     "workBoot": ("leather", .57, .26, .35),
     "winterBoot": ("leather", .46, .29, .28),
@@ -156,6 +156,12 @@ def painted_fields():
         ox, bottom = tile_rect(finish)
         oy = SIZE - bottom - TILE
         heights = [[profile(kind, x, y) for x in range(TILE)] for y in range(TILE)]
+        relief_field = heights
+        if kind == "hair":
+            # The pigment atlas keeps its painted identity. Only the normal and
+            # polish follow these wide, continuous locks along chart V.
+            relief_field = [[math.cos(x * math.tau / 16 + .50 * math.sin(y / 14))
+                             for x in range(TILE)] for y in range(TILE)]
         for y in range(TILE):
             sy = min(TILE - GUTTER - 1, max(GUTTER, y))
             for x in range(TILE):
@@ -167,11 +173,15 @@ def painted_fields():
                 tone = round(pigment + 6 * height + wear * (16 * edge - 28 * fade))
                 tone = min(tone, 255)
                 # The PNG runs downward; tangent V runs upward.
-                dx = (heights[sy][sx - 1] - heights[sy][sx + 1]) * relief * .30
-                dy = (heights[sy + 1][sx] - heights[sy - 1][sx]) * relief * .30
+                dx = (relief_field[sy][sx - 1] - relief_field[sy][sx + 1]) * relief * .30
+                dy = (relief_field[sy + 1][sx] - relief_field[sy - 1][sx]) * relief * .30
                 length = math.sqrt(dx * dx + dy * dy + 1.)
                 vector = tuple(round(127.5 + 127.5 * axis / length) for axis in (dx, dy, 1.))
                 polish = smooth + .035 * height + wear * (.21 * edge - .12 * fade)
+                if kind == "hair":
+                    polish = smooth + .045 * relief_field[sy][sx]
+                elif finish in ("shortJacket", "workJacket", "oilcloth", "quilt"):
+                    polish += .060 * edge
                 base.put(ox + x, oy + y, (tone, tone, tone, 255))
                 normal.put(ox + x, oy + y, (*vector, 255))
                 response.put(ox + x, oy + y, (0, round(edge * wear * 255),

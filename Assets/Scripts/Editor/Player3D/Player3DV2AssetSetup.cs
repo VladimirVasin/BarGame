@@ -1549,6 +1549,8 @@ namespace BarPromenade.Editor
                 DependencyStamp(Player3DV2CharacterSurfaces.SkinResponsePath),
                 DependencyStamp(Player3DV2CharacterSurfaces.HairNormalPath),
                 DependencyStamp(Player3DV2CharacterSurfaces.HairResponsePath),
+                DependencyStamp(CharacterSurfaceMaterialSetup.FacePath),
+                DependencyStamp(CharacterSurfaceMaterialSetup.ShirtPath),
                 DependencyStamp("Assets/Scripts/Editor/Player3D/CharacterSurfaceMaterialSetup.cs"),
                 DependencyStamp("Assets/Scripts/Editor/Player3D/Player3DV2CharacterSurfaces.cs"),
                 DependencyStamp(BareSkinAtlasPath),

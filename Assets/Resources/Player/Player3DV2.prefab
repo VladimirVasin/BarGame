@@ -1210,7 +1210,7 @@ MonoBehaviour:
   sourceGeneratorVersion: 2.0.0
   sourcePose: apose
   sourceTriangleCount: 9784
-  buildSignature: a887e77ffebb72f17e23c7e1aa85090f
+  buildSignature: dcfb23b5266c02e97a4f75566ce5b561
   faceAtlas:
     renderer: {fileID: 5003129424709676154}
     texture: {fileID: 2800000, guid: d6f6d740cb0367244abd513c4b15dbea, type: 3}
@@ -6720,7 +6720,7 @@ PrefabInstance:
     - target: {fileID: -4982809648151221208, guid: 17afea68fb0f9bc4795dc60cd0eef0cf, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value:
-      objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
+      objectReference: {fileID: 2100000, guid: ded2953e03e7454e80b13fab41c6c0ab, type: 2}
     - target: {fileID: -4909098274808759875, guid: 17afea68fb0f9bc4795dc60cd0eef0cf, type: 3}
       propertyPath: m_Enabled
       value: 0
@@ -7012,7 +7012,7 @@ PrefabInstance:
     - target: {fileID: 4231837537370602937, guid: 17afea68fb0f9bc4795dc60cd0eef0cf, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value:
-      objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
+      objectReference: {fileID: 2100000, guid: 86cc50dc01d048aba8294b72b7364f7b, type: 2}
     - target: {fileID: 4377081714404483797, guid: 17afea68fb0f9bc4795dc60cd0eef0cf, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value:

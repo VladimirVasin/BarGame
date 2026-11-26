@@ -51,7 +51,7 @@ namespace BarPromenade
         private bool ownsEnvironment;
         private bool previousFog;
         private FogMode previousFogMode;
-        private Color previousFogColor, previousBackground, previousAmbient;
+        private Color previousFogColor, previousBackground;
         private float previousFogStart, previousFogEnd;
         private Light sceneSun;
         private Color previousSunColor;
@@ -79,7 +79,7 @@ namespace BarPromenade
         private bool labyrinthDarkness;
         private bool suppressLampCue;
         private float previousReflectionIntensity, previousAmbientIntensity;
-        private AmbientMode previousAmbientMode;
+        private SceneAmbientLight previousAmbient;
         private SphericalHarmonicsL2 previousAmbientProbe, lowerAmbientProbe;
         private static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
         private float nextLabyrinthUpdate;
@@ -272,6 +272,7 @@ namespace BarPromenade
             {
                 lowerAmbientProbe = RenderSettings.ambientProbe;
                 RenderSettings.fog = false;
+                SceneAmbientLight.Release();
                 RenderSettings.ambientMode = AmbientMode.Flat;
                 RenderSettings.ambientLight = Color.black;
                 RenderSettings.ambientIntensity = 0f;
@@ -288,8 +289,7 @@ namespace BarPromenade
                 RenderSettings.fogStartDistance = CorruptedFogStart;
                 RenderSettings.fogEndDistance = CorruptedFogEnd;
                 RenderSettings.reflectionIntensity = previousReflectionIntensity;
-                RenderSettings.ambientMode = AmbientMode.Flat;
-                RenderSettings.ambientLight = new Color(.13f, .16f, .13f);
+                SceneAmbientLight.Apply(new Color(.13f, .16f, .13f));
                 RenderSettings.ambientIntensity = previousAmbientIntensity;
                 RenderSettings.ambientProbe = lowerAmbientProbe;
                 if (sceneSun != null) sceneSun.intensity = .38f;
@@ -586,8 +586,7 @@ namespace BarPromenade
             previousFogColor = RenderSettings.fogColor;
             previousFogStart = RenderSettings.fogStartDistance;
             previousFogEnd = RenderSettings.fogEndDistance;
-            previousAmbient = RenderSettings.ambientLight;
-            previousAmbientMode = RenderSettings.ambientMode;
+            previousAmbient = SceneAmbientLight.Capture();
             previousAmbientProbe = RenderSettings.ambientProbe;
             lowerAmbientProbe = previousAmbientProbe;
             previousAmbientIntensity = RenderSettings.ambientIntensity;
@@ -603,7 +602,7 @@ namespace BarPromenade
                 sceneSun.intensity = .38f;
                 sceneSun.transform.rotation = Quaternion.LookRotation(new Vector3(.15f, -.55f, -1f));
             }
-            RenderSettings.ambientLight = new Color(.13f, .16f, .13f);
+            SceneAmbientLight.Apply(new Color(.13f, .16f, .13f));
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.Linear;
             RenderSettings.fogColor = CorruptedFogColor;
@@ -628,8 +627,7 @@ namespace BarPromenade
                 RenderSettings.fogColor = previousFogColor;
                 RenderSettings.fogStartDistance = previousFogStart;
                 RenderSettings.fogEndDistance = previousFogEnd;
-                RenderSettings.ambientLight = previousAmbient;
-                RenderSettings.ambientMode = previousAmbientMode;
+                previousAmbient.Restore();
                 RenderSettings.ambientProbe = previousAmbientProbe;
                 RenderSettings.ambientIntensity = previousAmbientIntensity;
                 RenderSettings.reflectionIntensity = previousReflectionIntensity;
@@ -762,6 +760,8 @@ namespace BarPromenade
                 runtimeProfile.Add<ColorAdjustments>(true);
             color.postExposure.Override(corrupted ? -.04f : -.12f);
             color.contrast.Override(12f);
+            if (!corrupted)
+                Rendering.WorldTonalGrade.Configure(runtimeProfile, shadowGain: 1.55f, midtoneGain: 1.24f, highlightGain: .92f);
             color.saturation.Override(corrupted ? -18f : -28f);
             color.colorFilter.Override(
                 corrupted ? new Color(.76f, .83f, .70f, 1f) : new Color(0.72f, 0.82f, 0.71f, 1f));

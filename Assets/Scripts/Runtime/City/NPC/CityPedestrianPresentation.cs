@@ -413,7 +413,8 @@ namespace BarPromenade
         public bool ApplyAuthoredAction(
             AnimationClip clip,
             float normalizedTime,
-            float weight)
+            float weight,
+            bool preserveAuthoredContacts = false)
         {
             if (!IsInitialized ||
                 clip == null ||
@@ -431,6 +432,17 @@ namespace BarPromenade
             authoredActionPlayable.SetSpeed(0d);
             authoredActionWeight = Mathf.Clamp01(weight);
             ApplyMixerWeights();
+            if (preserveAuthoredContacts)
+            {
+                // Contact poses are authoritative even before the rider enters
+                // the camera frame. Ordinary locomotion keeps its culling.
+                Animator animator = registry.Animator;
+                AnimatorCullingMode culling = animator.cullingMode;
+                animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+                try { EvaluateGraph(0f, true); }
+                finally { animator.cullingMode = culling; }
+                return true;
+            }
             EvaluateGraph(0f);
             return true;
         }
@@ -779,7 +791,7 @@ namespace BarPromenade
             hasAuthoredActionPlayable = true;
         }
 
-        private void EvaluateGraph(float deltaTime)
+        private void EvaluateGraph(float deltaTime, bool preserveAuthoredContacts = false)
         {
             if (!graph.IsValid())
             {
@@ -802,6 +814,7 @@ namespace BarPromenade
                 streetBlinkPhase = Mathf.Repeat(streetBlinkPhase + deltaTime, StreetBlinkPeriod);
                 streetBlink.SetEyesClosed(streetBlinkPhase >= StreetBlinkPeriod - .13f);
             }
+            if (preserveAuthoredContacts) return;
             if (IsStandingInBus)
             {
                 standing.Apply();

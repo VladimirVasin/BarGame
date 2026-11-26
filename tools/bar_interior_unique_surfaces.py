@@ -163,6 +163,7 @@ def prepare(asset, *, write=False, apply=True):
         "uv1_contract": "exact original metre UV0; geometry/anchors/collision/special sheets preserved",
         "channels": ["signed_physical_slope_u", "signed_physical_slope_v", "roughness", "cavity"],
         "recipe_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+        "contact_recipe_sha256": hashlib.sha256(Path(furniture_finishes.finishes.__file__).read_bytes()).hexdigest(),
         "furniture_recipe_sha256": hashlib.sha256(Path(furniture_finishes.__file__).read_bytes()).hexdigest(),
         "washroom_recipe_sha256": hashlib.sha256(Path(washroom_surfaces.__file__).read_bytes()).hexdigest(),
         "source_sha256": {sheet: hashlib.sha256((OUTPUT / f"Bar{sheet}Albedo.png").read_bytes()).hexdigest()
@@ -313,6 +314,8 @@ def publish(contract, *, validate_only):
         raise RuntimeError("Bar surface recipe changed; regenerate its chart contract")
     if contract["washroom_recipe_sha256"] != hashlib.sha256(Path(washroom_surfaces.__file__).read_bytes()).hexdigest():
         raise RuntimeError("Bar washroom physical recipe changed; regenerate its chart contract")
+    if contract["contact_recipe_sha256"] != hashlib.sha256(Path(furniture_finishes.finishes.__file__).read_bytes()).hexdigest():
+        raise RuntimeError("Stale common contact finishes")
     if contract["furniture_recipe_sha256"] != hashlib.sha256(Path(furniture_finishes.__file__).read_bytes()).hexdigest():
         raise RuntimeError("Stale pub furniture finish recipe")
     unique_meshes = sorted(part["mesh"] for part in contract["parts"] if part["unique_surface"])
@@ -423,6 +426,7 @@ if __name__ == "__main__":
     contract=json.loads(MANIFEST.read_text(encoding="utf8"))
     if args.repaint:
         contract["recipe_sha256"]=hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
+        contract["contact_recipe_sha256"]=hashlib.sha256(Path(furniture_finishes.finishes.__file__).read_bytes()).hexdigest()
         contract["furniture_recipe_sha256"]=hashlib.sha256(Path(furniture_finishes.__file__).read_bytes()).hexdigest()
         contract["washroom_recipe_sha256"]=hashlib.sha256(Path(washroom_surfaces.__file__).read_bytes()).hexdigest()
         publish(contract,validate_only=False)

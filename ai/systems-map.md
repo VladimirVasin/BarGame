@@ -51,7 +51,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Residential dog park | Residual fenced yard; three articulated dogs, two permanent owners; open entry and local voices. | `CityDogPark{Plan,AssetProvider,Controller,WorldBuilder}`, `CityDogPose`, `CityDogActivity` | Current |
 | City Blender low-rise landmarks | Metric Home03–04, bar, grocery with lit enamel sign. | `CityBarFacadeWorldBuilder`, `CitySupermarketFacadeWorldBuilder` | Current |
 | Unity URP foundation | 15 scenes; PC Neutral/Bloom/Vignette. | `6000.6.8f1`, `17.6.0` | Current |
-| Scene presentation | 16:9/native/SMAA;4:3 unsupported;Editor gamma;City/warehouse SSR. | `Scene*Feature`, `GraphicsEffectsSettings` | Current |
+| Scene presentation | 16:9/native/SMAA, saved ambient, City/warehouse SSR. Stair, bar and night street share tonal bands. | `Scene*Feature`, `GraphicsEffectsSettings`, `WorldTonalGrade` | Current |
 | Village local lighting | Real emitters; bounded air/snow/bounce, metal and spring reflections. | `AlpineVillageLightingPresentation`, `SceneReflectionCapture` | Current |
 | Road lighting | Bounded air/snow/headlights/halos/metal/bounce; station reflections. | `MountainRoad{LightingPresentation,ReflectionController,MetalAppearance}` | Current |
 | Depth of field tiers | City Gaussian 8–28 m, interiors radius 0.55. Owned inspection Bokeh. | `RuntimeSceneSetup`, `DepthOfFieldSettingsBinder`, `CinematicDepthOfField` | Current |
@@ -96,7 +96,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Yard wheelchair rider | One staged yard rider follows its reserved circuit, with authored wheelchair motion and existing local lighting. | `YardWheelchair{Motion,Plan,Presentation,Actor,Factory,Provider}` | Current |
 | Home-yard composition | Original house gap retains tree, wheelchair circuit and fixed cold wall spotlight after Bar relocation. | `CityOpenAreaDecoration{Plan,Planner}`, `CityOpenAreaWorldBuilder` | Current |
 | Cemetery precinct | Deterministic graves, paths, fences and practical lamps dress the separate eastern cemetery. | `CityCemetery{Plan,Planner,WorldBuilder,SurfaceAppearance}`, `CityBenchSitPlan.CreateAll` | Current |
-| Residential street fair | Four staffed stalls, three adult visitors and three children; shared seats/actions and clear paths. | `CityFair{Plan,World,Adults,Children,Interaction}` | Current |
+| Residential street fair | 09:00–22:00. Sellers and visitors walk to separate nearby homes. Shared seats and actions. | `CityFair{Plan,World,HomeRoutes,Adults,Children,Interaction}` | Current |
 | Church precinct and interior | Metric shell/openings match exterior; crafted garden, bounded bounce/air/cube. | `CityChurch*`, `ChurchInterior*`, `ChurchGarden*` | Current |
 | Residential courtyard pockets | Plan-owned residential courtyards preserve walkable approaches and bounded authored dressing. | `CityCourtyardPocket{Planner,Geometry}`, `CityCourtyardResident{Plan,Factory,Presentation}` | Current |
 | Residential courts | Shared ground/spine/green edges/wall groups; seats/carrier/Home. | `CityResidentialCourtyard*` | Current |
@@ -136,7 +136,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Central Park surfaces | The divided park uses shared gravel, paths and bridge geometry from its pure surface plan. | `CityParkSurfaceAppearance`, `CityWorldBuilder` | Current |
 | Pedestrian personal space | Above alcohol `60`: guarding palm; above `80`: close shove. | `CityPedestrianPersonalSpace{Rules,Controller}`, `PlayerMotor` | Current |
 | Pedestrian street insults | Insult responses need the authored proximity/facing gates; the twenty-line bag deals once a round, surviving reloads. | `CityPedestrianInsult{Rules,Lines,Walk,SessionState,Controller}`, `CityPedestrianPersonalSpaceController` | Current |
-| City/Home pedestrians | 192 commutes. City ≤36 + ≤12 ambient (≤2 children) + ≤2 janitors. Home 5/2. | `CityResidentJourneyDirector`, `CityPedestrianDirector`, `CityAmbientPedestrians`, `CityJanitorDirector` | Current |
+| City/Home pedestrians | 192 commutes. City ≤36 + ≤12 ambient (≤2 daylight children) + ≤2 janitors. Home 5/2. Playground visits. | `CityResidentJourneyDirector`, `CityAmbientPedestrians`, `CityPlaygroundVisit`, `CityJanitorDirector` | Current |
 | NPC Human V2 anatomy, appearance and visibility | Shared rigs; joint fields/volume and shaped hands/clothes retain UVs. | `NpcHumanV2AssetSetup`, `NpcDesignAppearanceCatalog`, `CharacterJointDeformation` | Current |
 | City district buses | Two/ring,shared transfers. Gap:no Home service/live map buses. | `City{District,Hillside}BusPlanner`, `CityBus{Director,Actor,Factory}` | Partial |
 | Midibus | Sedan lights, sliding leaves, fixed NPCs. | `CityBus{Presentation,DriverRig}` | Current |
@@ -155,7 +155,6 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Supermarket fluorescent atmosphere | Visible fixtures own the store's restrained light, flicker and sound within explicit shared-resource budgets. | `SupermarketInteriorAtmosphere`, `SupermarketFluorescentFlicker` | Current |
 | City day/night presentation | Fog48m;night dims sky/fill. Ridge roads, booths and benches use fixed lamps/day floor. | `City{NightWorldBuilder,NightAtmosphere,AltitudeVisibility,DayNightController}`, `HomeBalconyExteriorAtmosphere` | Current |
 | Exterior weather | Rain contacts, wet film, snow and audio follow the clock. Gap: weather-driven grade. | `GameWeatherRules`, `CityWeatherController`, `CityRainContactField` | Partial |
-| Exterior cloud ceiling | A passive shared-density shell supplies a camera-relative cloud ceiling with bounded horizon coverage. | `ExteriorCloud{AssetMetadata,Profile,MotionRules,Resources,Field,CaptureCamera}`, `ExteriorCloud.shader` | Current |
 | Runtime cloth rags | Visible cloth uses shared bounded wind response and explicit attachment constraints. | `ClothPanelFactory`, `CityClothWindRegistry` | Current |
 | City wind | One gust for City/Home, cloth, vegetation and fixed-end wires. | `CityWindField`, `CityWindDressing*`, `CityCoastalInfrastructureWorldBuilder` | Current |
 | City vegetation | City/Home grass off paths, Ridge trees and shrubs. | `CityGrass{Plan,Surface,Field}`, `CityRidgeVegetationPlan` | Current |
@@ -216,7 +215,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Player-home stairwell | Three puzzles/pickup shots/equip;crowbar wakes crowd after return.Safe room3/retry. | `StairwellLabyrinth*`, `StairwellPickup*`, `StairwellEncounter*` | Current |
 | City facade presentation | Ground contact blanks prototype bays. Clipped Home boxes use legacy 4×4. | `CityGroundSurfaceSystem`, `CityBuildingWindowSlotAppearance` | Current |
 | City windows | Street-front primary/timed extra;paired local wall wash. | `CityWindow{Appearance,Lighting}`, `CityBuildingWindowSlotAppearance` | Current |
-| Stairwell surface presentation | Cached textures and material property blocks apply measured stairwell surfaces without instance materials. | `StairwellSurfaceAppearance`, `SurfaceAppearanceCore` | Current |
+| Stairwell surface presentation | Shared maps and property blocks give timber rail caps and painted supports distinct contact wear. | `StairwellSurfaceAppearance`, `StairwellRailFinish`, `SurfaceAppearanceCore` | Current |
 | Exterior ground response | Indexed MPBs share response maps/road masks/snow edges; ridge haze retained. | `GroundSurface{Appearance,Coordinates}`, `GroundSurfaceLit`, `*SurfaceAppearance` | Current |
 | Home/Stairwell surfaces | Original micro sheets/unique macro charts/shared variants; exact earlier-state restore. | `HomeSurfaceAppearance`, `HomeAuthoredVisualFactory`, `SurfaceDamageLibrary` | Current |
 | Stairwell cat | Ordinary talk/feed; statue: silent camera cut/hero hidden only close-up; quest stays. | `StairwellCat*`, `StairwellCatInteraction` | Current |

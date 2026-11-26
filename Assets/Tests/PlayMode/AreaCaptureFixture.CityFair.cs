@@ -66,7 +66,7 @@ namespace BarPromenade.Tests.PlayMode
             try
             {
                 GameSessionState.BeginNewGame();
-                GameSessionState.TryStartGameTimeFromWake();
+                GameSessionState.TryStartGameTimeAt(12 * 60);
                 Time.captureDeltaTime = .05f;
                 yield return SceneManager.LoadSceneAsync(SceneIds.City, LoadSceneMode.Single);
                 float deadline = Time.realtimeSinceStartup + TimeoutSeconds;
@@ -194,6 +194,99 @@ namespace BarPromenade.Tests.PlayMode
                 string folder = Path.Combine(Directory.GetCurrentDirectory(), "Captures", "CityFair");
                 Directory.CreateDirectory(folder);
                 File.WriteAllText(Path.Combine(folder, "verification.json"), JsonUtility.ToJson(report, true));
+            }
+        }
+
+        [UnityTest]
+        [Explicit("Check the fair's daily schedule, closing walks and return to the same stalls.")]
+        [Timeout(180000)]
+        public IEnumerator CityFairDailyHours()
+        {
+            GameSessionState.BeginNewGame();
+            GameSessionState.TryStartGameTimeAt(21 * 60 + 45);
+            yield return SceneManager.LoadSceneAsync(SceneIds.City, LoadSceneMode.Single);
+            CityGameRoot city = Object.FindAnyObjectByType<CityGameRoot>();
+            float deadline = Time.realtimeSinceStartup + TimeoutSeconds;
+            while ((!city.IsInitialized || CompositionDriver.IsComposing) && Time.realtimeSinceStartup < deadline) yield return null;
+            Assert.That(city.IsInitialized, Is.True);
+            CityFairWorld fair = city.World.Fair;
+            Transform[] people = fair.Vendors.Actors.Select(a => a.transform)
+                .Concat(fair.Adults.Actors.Select(a => a.transform)).Concat(fair.Children.Actors.Select(a => a.transform)).ToArray();
+            Assert.That(people, Has.Length.EqualTo(10));
+            Vector3[] stations = fair.Plan.Stalls.Select(s => s.VendorPosition).Concat(fair.Plan.AdultPositions)
+                .Concat(Enumerable.Range(0, fair.Children.ActorCount).Select(i => fair.Children.Route(i)[0])).ToArray();
+            var calendar = Object.FindAnyObjectByType<GameTimeRuntime>();
+            Camera camera = Camera.main;
+            var follow = camera.GetComponent<PlayerCameraFollow>();
+            bool followEnabled = follow.enabled;
+            float previousDelta = Time.captureDeltaTime;
+            try
+            {
+                calendar.enabled = false;
+                follow.enabled = false;
+                Time.captureDeltaTime = .1f;
+                Vector3 center = (fair.Plan.CenterPathNorth + fair.Plan.CenterPathSouth) * .5f;
+                city.Player.Motor.Teleport(fair.Plan.CenterPathSouth + Vector3.up * PlayerFactory.GroundedRootOffset);
+                camera.transform.position = center + new Vector3(-9f, 3.2f, .3f);
+                camera.transform.LookAt(center + Vector3.up);
+                for (int i = 0; i < 300 && fair.Children.Phase(2) != CityFairChildPhase.Looping; i++) yield return null;
+                Assert.That(fair.Children.OwnsBench, Is.True);
+                At(21 * 60 + 59);
+                Assert.That(fair.IsOpen && fair.Organ.enabled && fair.Bell.enabled, Is.True);
+                Vector3[] before = people.Select(p => p.position).ToArray();
+                At(22 * 60);
+                Assert.That(fair.IsOpen || fair.Organ.enabled || fair.Bell.enabled, Is.False);
+                Assert.That(people.All(p => p.gameObject.activeInHierarchy), Is.True);
+                for (int i = 0; i < people.Length; i++)
+                    Assert.That(Vector3.Distance(before[i], people[i].position), Is.LessThan(.01f), people[i].name);
+
+                At(22 * 60 + 2.75);
+                Assert.That(fair.Children.OwnsBench, Is.False);
+                for (int i = 0; i < people.Length; i++)
+                {
+                    Assert.That(people[i].gameObject.activeInHierarchy, Is.True);
+                    Assert.That(Vector3.Distance(before[i], people[i].position), Is.GreaterThan(.5f), people[i].name);
+                }
+                yield return null;
+                CaptureCurrentCamera(camera, "CityFairSchedule", "leaving");
+                At(23 * 60 + 59);
+                Assert.That(people.Where(p => p.gameObject.activeSelf).Select(p => $"{p.name} at {p.position}"),
+                    Is.Empty, $"Still walking at {GameSessionState.GameTimeOfDayMinutes:F2}");
+                var entrances = CityBuildingEntrancePlan.ForLayout(city.Layout).Entrances;
+                var houses = people.Select(p => entrances.Single(e => Vector3.Distance(p.position,
+                    e.Threshold - e.Outward * (CityBuildingAssetProvider.EntranceDepth - .35f)) < .01f)).ToArray();
+                Assert.That(houses.Select(h => h.Lot).Distinct().Count(), Is.EqualTo(people.Length));
+                Assert.That(houses.All(h => !h.Lot.IsPlayerHome), Is.True);
+                Vector3[] overnight = people.Select(p => p.position).ToArray();
+                At(1440 + 5 * 60);
+                Assert.That(people.All(p => !p.gameObject.activeSelf), Is.True);
+                CollectionAssert.AreEqual(overnight, people.Select(p => p.position).ToArray());
+                At(1440 + 9 * 60 - 1);
+                Assert.That(fair.IsOpen, Is.False);
+                Assert.That(people.All(p => p.gameObject.activeSelf), Is.True);
+                At(1440 + 9 * 60);
+                Assert.That(fair.IsOpen && fair.Organ.enabled && fair.Bell.enabled, Is.True);
+                for (int i = 0; i < people.Length; i++)
+                    Assert.That(Vector3.Distance(people[i].position, stations[i]), Is.LessThan(.01f), people[i].name);
+                yield return null;
+                CaptureCurrentCamera(camera, "CityFairSchedule", "open");
+                At(1440 + 23 * 60 + 59);
+                Vector3[] nextNight = people.Select(p => p.position).ToArray();
+                CollectionAssert.AreEquivalent(overnight, nextNight);
+                Assert.That(nextNight.SequenceEqual(overnight), Is.False);
+            }
+            finally
+            {
+                calendar.enabled = true;
+                follow.enabled = followEnabled;
+                Time.captureDeltaTime = previousDelta;
+            }
+
+            void At(double absoluteMinute)
+            {
+                double current = GameSessionState.GameDayIndex * 1440d + GameSessionState.GameTimeOfDayMinutes;
+                GameSessionState.AdvanceGameTime((float)((absoluteMinute - current) / GameTimeState.GameMinutesPerRealSecond));
+                fair.RefreshSchedule();
             }
         }
 

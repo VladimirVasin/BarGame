@@ -458,8 +458,9 @@ namespace BarPromenade.Editor
         private static Dictionary<CityBusMaterialSlot, Material> BuildMaterials()
         {
             // Retain the shared project Lit hooks when rebuilding bus materials.
-            Shader shader = Shader.Find("Bar Promenade/Lit");
-            if (shader == null)
+            Shader lit = Shader.Find("Bar Promenade/Lit");
+            Shader contact = Shader.Find("Bar Promenade/Surface Damage Lit");
+            if (lit == null || contact == null)
             {
                 throw new InvalidOperationException(
                     "Lit shader is unavailable for City bus materials.");
@@ -482,6 +483,7 @@ namespace BarPromenade.Editor
             foreach (CityBusMaterialSlot slot in
                 Enum.GetValues(typeof(CityBusMaterialSlot)))
             {
+                Shader shader = slot == CityBusMaterialSlot.Floor || slot == CityBusMaterialSlot.Rail ? contact : lit;
                 string path = MaterialPath(slot);
                 Material material =
                     AssetDatabase.LoadAssetAtPath<Material>(path);
@@ -596,6 +598,34 @@ namespace BarPromenade.Editor
             }
         }
 
+        private static void ConfigureContactFinish(Material material, CityBusMaterialSlot slot, Transform part)
+        {
+            bool floor = slot == CityBusMaterialSlot.Floor;
+            string name = floor ? "BusStep" : "BusGrip";
+            var map = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Resources/WorldFinishes/" + name + ".png");
+            if (!map) throw new InvalidOperationException("Missing bus finish chart: " + name);
+            material.EnableKeyword("_WORLD_CONTACT_FINISH");
+            material.SetTexture("_ContactFinishMap", map);
+            material.SetFloat("_ContactFinishUseUV", floor ? 1f : 0f);
+            material.SetColor("_ContactSubstrate", new Color(.48f,.47f,.43f));
+            if (floor)
+            {
+                // The deck's original top UV is source X/Y in units of .62 metres.
+                material.SetVector("_ContactFinishU", new Vector4(.62f / 2.56f, 0f, 0f, .5f));
+                material.SetVector("_ContactFinishV", new Vector4(0f, .62f / 8f, 0f, .5f));
+            }
+            else
+            {
+                // The imported mesh can store centimetres. Bake its actual transform
+                // in the stationary authoring frame so the chart follows the moving bus.
+                Matrix4x4 basis = part.localToWorldMatrix;
+                material.SetVector("_ContactFinishU", basis.GetRow(2) / 8.4f + new Vector4(0, 0, 0, .5f));
+                material.SetVector("_ContactFinishV", basis.GetRow(1) / 3f);
+                material.SetFloat("_ClearCoatMask", .27f);
+            }
+            EditorUtility.SetDirty(material);
+        }
+
         private static void BuildPrefab(
             GameObject modelAsset,
             CityBusManifest manifest,
@@ -646,6 +676,8 @@ namespace BarPromenade.Editor
                             $"Imported City bus is missing '{source.name}'.");
                     }
 
+                    if (slot == CityBusMaterialSlot.Floor || slot == CityBusMaterialSlot.Rail)
+                        ConfigureContactFinish(materials[slot], slot, renderer.transform);
                     renderer.sharedMaterials = new[] { materials[slot] };
                     renderer.shadowCastingMode = slot == CityBusMaterialSlot.Glass
                         ? ShadowCastingMode.Off

@@ -69,7 +69,6 @@ namespace BarPromenade
             // screen-space snap would round each face onto its own grid
             // and seam the mirror along every cube edge.
             cameraObject.AddComponent<Rendering.ScenePresentationExclusion>();
-            cameraObject.AddComponent<ExteriorCloudCaptureCamera>();
             reflectionCamera.enabled = false;
             reflectionCamera.nearClipPlane =
                 RuntimeSceneSetup.GameplayNearClipPlane;

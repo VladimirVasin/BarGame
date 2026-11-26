@@ -46,7 +46,7 @@ Shader "Bar Promenade/Lit"
         [Normal] _DetailNormalMap("Normal Map", 2D) = "bump" {}
 
         // Reserved URP slots: Lit never shades clear coat. Preserve its CBUFFER.
-        [HideInInspector] _ClearCoatMask("Directional metal response", Float) = 0.0
+        [HideInInspector] _ClearCoatMask("Directional response (metal positive, hair negative)", Float) = 0.0
         [HideInInspector] _ClearCoatSmoothness("Matte metal contact smoothness", Float) = 0.0
 
         // Blending state

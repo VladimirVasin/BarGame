@@ -182,7 +182,9 @@ namespace BarPromenade
                     // chart covers this complete wall/object exactly once.
                     SurfaceDamageLibrary.Entry entry = SurfaceDamageLibrary.Resolve(
                         "stairwell", null, renderer.name, kind.ToString());
-                    SurfaceDamageLibrary.Apply(renderer, properties, entry, root, 1f);
+                    Material finish = renderer.sharedMaterial;
+                    string family = finish.IsKeywordEnabled("_WORLD_CONTACT_FINISH") ? kind.ToString() : null;
+                    SurfaceDamageLibrary.Apply(renderer, properties, entry, root, 1f, finish, family);
                     renderer.SetPropertyBlock(properties);
                     break;
                 }
@@ -515,7 +517,7 @@ namespace BarPromenade
                         side *
                         (flight.Width * 0.5f + 0.055f) *
                         sideIndex;
-                    CreateSurfaceBox(
+                    var upright = CreateSurfaceBox(
                         $"{label} Rail Curb {index + 1:00} " +
                         (sideIndex < 0 ? "A" : "B"),
                         root,
@@ -530,6 +532,7 @@ namespace BarPromenade
                         Metal,
                         StairwellSurfaceKind.CorrodedMetal,
                         StairwellSurfaceProjection.BoxZY);
+                    StairwellRailFinish.Apply(upright.GetComponent<Renderer>(), false, true);
                 }
             }
 
@@ -575,8 +578,10 @@ namespace BarPromenade
             // It is a sibling so the wood's nonuniform scale cannot stretch it.
             GameObject supports = StairwellAuthoredVisualFactory.CreateAnchoredPart(
                 handrailName + " Supports", root, handrail.localPosition, handrail.localRotation, Metal);
-            StairwellSurfaceAppearance.Apply(supports.GetComponent<Renderer>(),
+            var steel = supports.GetComponent<Renderer>();
+            StairwellSurfaceAppearance.Apply(steel,
                 StairwellSurfaceKind.CorrodedMetal, StairwellSurfaceProjection.BoxZY, Metal);
+            StairwellRailFinish.Apply(steel, false, true);
         }
 
         private static void BuildRailSegment(
@@ -586,7 +591,7 @@ namespace BarPromenade
             Vector3 size,
             StairwellSurfaceProjection projection)
         {
-            CreateSurfaceBox(
+            var railing = CreateSurfaceBox(
                 name,
                 root,
                 center,
@@ -594,15 +599,18 @@ namespace BarPromenade
                 Metal,
                 StairwellSurfaceKind.CorrodedMetal,
                 projection);
-            CreateSurfaceBox(
+            bool alongZ = size.z > size.x;
+            StairwellRailFinish.Apply(railing.GetComponent<Renderer>(), false, alongZ);
+            var cap = CreateSurfaceBox(
                 name + " Top",
                 root,
                 center + Vector3.up * (size.y * 0.5f),
                 new Vector3(size.x + 0.08f, 0.10f, size.z + 0.08f),
                 Rust,
-                StairwellSurfaceKind.CorrodedMetal,
+                StairwellSurfaceKind.DirtyWood,
                 StairwellSurfaceProjection.BoxXZ,
                 false);
+            StairwellRailFinish.Apply(cap.GetComponent<Renderer>(), true, alongZ);
         }
 
         private static void BuildUnderStairGrille(Transform root)
@@ -806,11 +814,12 @@ namespace BarPromenade
                     thickness,
                     direction.magnitude),
                 color,
-                StairwellSurfaceKind.CorrodedMetal,
+                StairwellSurfaceKind.DirtyWood,
                 StairwellSurfaceProjection.BoxZY,
                 false);
             beam.transform.localRotation =
                 Quaternion.LookRotation(direction.normalized, Vector3.up);
+            StairwellRailFinish.Apply(beam.GetComponent<Renderer>(), true, true);
             return beam.transform;
         }
     }

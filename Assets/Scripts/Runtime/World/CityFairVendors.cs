@@ -11,6 +11,7 @@ namespace BarPromenade
         private CityFairPlan plan;
         private Transform[] spines;
         private bool initialized;
+        internal bool AtFair { get; set; } = true;
 
         public VillageResidentPresentation[] Actors { get; private set; } =
             Array.Empty<VillageResidentPresentation>();
@@ -61,7 +62,7 @@ namespace BarPromenade
         /// <summary>Seekable pose; scaled time freezes both sampling and hand work on pause.</summary>
         public void ApplyAt(float seconds)
         {
-            if (!initialized) return;
+            if (!initialized || !AtFair) return;
             ElapsedSeconds = Mathf.Max(0f, seconds);
             HandsMatch = true;
             for (int i = 0; i < Actors.Length; i++)

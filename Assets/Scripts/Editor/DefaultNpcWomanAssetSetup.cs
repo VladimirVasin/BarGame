@@ -49,17 +49,14 @@ namespace BarPromenade.Editor
                 var renderers = model.GetComponentsInChildren<SkinnedMeshRenderer>(true);
                 var byName = renderers.ToDictionary(renderer => renderer.name, StringComparer.Ordinal);
                 var parts = data.parts.ToDictionary(part => part.name, StringComparer.Ordinal);
-                Material material = DefaultNpcSurfaceAssets.Build(data.surfaces,
+                Material material = DefaultNpcSurfaceAssets.Apply(data.surfaces,
                     renderers.ToDictionary(skin => skin.name, skin => (Renderer)skin, StringComparer.Ordinal));
                 foreach (SkinnedMeshRenderer skin in renderers)
-                {
-                    skin.sharedMaterial = skin.name == DefaultNpcSurfaceAssets.FaceRenderer
-                        ? DefaultNpcSurfaceAssets.FaceMaterial : material;
                     skin.updateWhenOffscreen = true;
-                }
                 Color Tint(string name) => ReadColor(parts[name].color);
                 var garments = data.items.Select(item => new NpcWardrobe.ItemBinding(item.id, item.slot,
-                    item.renderers.Select(name => new NpcWardrobe.GarmentBinding(item.slot, byName[name], Tint(name))).ToArray(),
+                    item.renderers.Select(name => new NpcWardrobe.GarmentBinding(item.slot, byName[name], Tint(name),
+                            finish: byName[name].sharedMaterial == material ? null : byName[name].sharedMaterial)).ToArray(),
                     item.covered_renderers.Select(name => (Renderer)byName[name]).ToArray())).ToArray();
                 var occupied = data.items.SelectMany(item => item.renderers).ToHashSet(StringComparer.Ordinal);
                 Renderer[] anatomy = renderers.Where(renderer => !occupied.Contains(renderer.name)).ToArray();

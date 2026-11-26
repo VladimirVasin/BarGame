@@ -1091,8 +1091,9 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(productionMaterial, Is.Not.Null);
             Assert.That(skinMaterial, Is.Not.Null);
             Assert.That(hairMaterial, Is.Not.Null);
-            Assert.That(new HashSet<Material> { clothingMaterial, skinMaterial, hairMaterial, productionMaterial }.Count,
-                Is.EqualTo(4), "Cloth, skin, hair and expression face retain separate shared materials.");
+            var faceMaterial = AssetDatabase.LoadAssetAtPath<Material>("Assets/Player3D/V2/Materials/CharacterFace.mat");
+            var shirtMaterial = AssetDatabase.LoadAssetAtPath<Material>("Assets/Player3D/V2/Materials/Player3DV2Shirt.mat");
+            Assert.That(faceMaterial.GetFloat("_Smoothness"), Is.GreaterThan(shirtMaterial.GetFloat("_Smoothness")));
             Assert.That(skinMaterial.shader, Is.SameAs(productionMaterial.shader));
             Assert.That(hairMaterial.shader, Is.SameAs(productionMaterial.shader));
             Assert.That(clothingMaterial, Is.Not.SameAs(productionMaterial));
@@ -1135,7 +1136,9 @@ namespace BarPromenade.Tests.EditMode
                     ? clothingMaterial
                     : part.material == "MAT_Skin" || part.material == "MAT_SkinShadow" || part.material == "MAT_SkinDark"
                         ? skinMaterial
-                        : part.role == "hair" ? hairMaterial : productionMaterial;
+                        : part.role == "hair" ? hairMaterial
+                        : part.name == "GEO_FaceSurface" ? faceMaterial
+                        : part.name == "CLO_ShirtBody" ? shirtMaterial : productionMaterial;
                 Material[] materials = meshBinding.Renderer.sharedMaterials;
                 Assert.That(materials, Is.Not.Empty);
                 for (int materialIndex = 0;

@@ -266,7 +266,8 @@ namespace BarPromenade
             CityGrassSurface grass = null;
             if (grassLayout != null)
             {
-                grass = new CityGrassSurface(grassLayout, grassHome, grassCoast, grassDecorations?.Descriptors);
+                grass = new CityGrassSurface(grassLayout, grassHome, grassCoast, grassDecorations?.Descriptors,
+                    playgroundLandscape);
                 grassSupport=grass;
                 int plantedFaces = 0;
                 foreach (Triangle triangle in surface)

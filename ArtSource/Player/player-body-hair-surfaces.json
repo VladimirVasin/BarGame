@@ -1,8 +1,8 @@
 {
   "generator": "tools/build-player-body-hair-surfaces.py",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "source_model": "Assets/Player3D/V2/Models/PlayerCharacter3DV2.json",
-  "surface_bindings_sha256": "167f81caf20784bd56fcd7197caf374743bcaee4a827a36aaee6b5feafe0a869",
+  "surface_bindings_sha256": "0adcad7b80211ea7b089c691cc31eb242439c15b62e0904f140c2465a73872c4",
   "source_albedos_sha256": {
     "Assets/Player3D/V2/Textures/PlayerFaceAtlas.png": "ff256ad900d61e5e275b4280b0d3121bf1159f3375bd450580957f209647a972",
     "Assets/Player3D/V2/Textures/PlayerClothingAtlas.png": "25791052c222caa2a1c3962c31fd08a74365f89deaa7068ca4a983953cbc5ccf",
@@ -31,8 +31,8 @@
             128,
             128
           ],
-          "smoothness_u8_min": 28,
-          "smoothness_u8_max": 38,
+          "smoothness_u8_min": 85,
+          "smoothness_u8_max": 98,
           "normal_xy_u8_max_deviation": 6
         },
         {
@@ -43,8 +43,8 @@
             64,
             64
           ],
-          "smoothness_u8_min": 28,
-          "smoothness_u8_max": 38,
+          "smoothness_u8_min": 85,
+          "smoothness_u8_max": 98,
           "normal_xy_u8_max_deviation": 6
         },
         {
@@ -55,8 +55,8 @@
             64,
             64
           ],
-          "smoothness_u8_min": 28,
-          "smoothness_u8_max": 38,
+          "smoothness_u8_min": 85,
+          "smoothness_u8_max": 98,
           "normal_xy_u8_max_deviation": 6
         },
         {
@@ -67,8 +67,8 @@
             64,
             64
           ],
-          "smoothness_u8_min": 28,
-          "smoothness_u8_max": 38,
+          "smoothness_u8_min": 85,
+          "smoothness_u8_max": 98,
           "normal_xy_u8_max_deviation": 6
         },
         {
@@ -79,8 +79,8 @@
             64,
             64
           ],
-          "smoothness_u8_min": 28,
-          "smoothness_u8_max": 38,
+          "smoothness_u8_min": 85,
+          "smoothness_u8_max": 98,
           "normal_xy_u8_max_deviation": 6
         },
         {
@@ -91,8 +91,8 @@
             64,
             64
           ],
-          "smoothness_u8_min": 28,
-          "smoothness_u8_max": 38,
+          "smoothness_u8_min": 85,
+          "smoothness_u8_max": 98,
           "normal_xy_u8_max_deviation": 6
         },
         {
@@ -103,8 +103,8 @@
             64,
             64
           ],
-          "smoothness_u8_min": 28,
-          "smoothness_u8_max": 38,
+          "smoothness_u8_min": 85,
+          "smoothness_u8_max": 98,
           "normal_xy_u8_max_deviation": 6
         },
         {
@@ -115,8 +115,8 @@
             64,
             64
           ],
-          "smoothness_u8_min": 28,
-          "smoothness_u8_max": 38,
+          "smoothness_u8_min": 85,
+          "smoothness_u8_max": 98,
           "normal_xy_u8_max_deviation": 6
         },
         {
@@ -127,8 +127,8 @@
             64,
             64
           ],
-          "smoothness_u8_min": 28,
-          "smoothness_u8_max": 38,
+          "smoothness_u8_min": 85,
+          "smoothness_u8_max": 98,
           "normal_xy_u8_max_deviation": 6
         },
         {
@@ -139,8 +139,8 @@
             64,
             64
           ],
-          "smoothness_u8_min": 28,
-          "smoothness_u8_max": 38,
+          "smoothness_u8_min": 101,
+          "smoothness_u8_max": 113,
           "normal_xy_u8_max_deviation": 6
         },
         {
@@ -151,8 +151,8 @@
             64,
             64
           ],
-          "smoothness_u8_min": 28,
-          "smoothness_u8_max": 38,
+          "smoothness_u8_min": 85,
+          "smoothness_u8_max": 98,
           "normal_xy_u8_max_deviation": 6
         },
         {
@@ -163,8 +163,8 @@
             64,
             64
           ],
-          "smoothness_u8_min": 28,
-          "smoothness_u8_max": 38,
+          "smoothness_u8_min": 101,
+          "smoothness_u8_max": 113,
           "normal_xy_u8_max_deviation": 6
         },
         {
@@ -175,8 +175,8 @@
             64,
             64
           ],
-          "smoothness_u8_min": 28,
-          "smoothness_u8_max": 38,
+          "smoothness_u8_min": 85,
+          "smoothness_u8_max": 98,
           "normal_xy_u8_max_deviation": 6
         }
       ]
@@ -193,9 +193,9 @@
             128,
             128
           ],
-          "smoothness_u8_min": 37,
-          "smoothness_u8_max": 60,
-          "normal_xy_u8_max_deviation": 28
+          "smoothness_u8_min": 111,
+          "smoothness_u8_max": 139,
+          "normal_xy_u8_max_deviation": 24
         },
         {
           "name": "HairLength",
@@ -205,9 +205,9 @@
             128,
             128
           ],
-          "smoothness_u8_min": 37,
-          "smoothness_u8_max": 60,
-          "normal_xy_u8_max_deviation": 28
+          "smoothness_u8_min": 111,
+          "smoothness_u8_max": 139,
+          "normal_xy_u8_max_deviation": 24
         },
         {
           "name": "HairCrown",
@@ -217,9 +217,9 @@
             128,
             128
           ],
-          "smoothness_u8_min": 37,
-          "smoothness_u8_max": 60,
-          "normal_xy_u8_max_deviation": 28
+          "smoothness_u8_min": 111,
+          "smoothness_u8_max": 139,
+          "normal_xy_u8_max_deviation": 24
         },
         {
           "name": "HairCurtain",
@@ -229,17 +229,17 @@
             128,
             128
           ],
-          "smoothness_u8_min": 37,
-          "smoothness_u8_max": 60,
-          "normal_xy_u8_max_deviation": 28
+          "smoothness_u8_min": 111,
+          "smoothness_u8_max": 139,
+          "normal_xy_u8_max_deviation": 24
         }
       ]
     }
   ],
   "outputs": {
     "Assets/Player3D/V2/Textures/PlayerSkinNormal.png": "bacf0ed93d76e45bb53c522ec99c6770e671b72c7fbaf36044fe4b211a782df5",
-    "Assets/Player3D/V2/Textures/PlayerSkinResponse.png": "a0c4e1ffea022b6a1548e3483a22f808495921b509bbf14674fa80b91292aeb1",
-    "Assets/Player3D/V2/Textures/PlayerHairNormal.png": "fe911300cd2977299c6c6c871a9b47f19adc5fa5ea26516b8e300c9e9d3c38e4",
-    "Assets/Player3D/V2/Textures/PlayerHairResponse.png": "e260d44248bb6b18c54bfb76ee39c558de14d7a64107c3b429d7a287ef6634b9"
+    "Assets/Player3D/V2/Textures/PlayerSkinResponse.png": "1de2b66fb566b8af73479050fbe10014acfad6665f1f2cc148ca8ef35548659c",
+    "Assets/Player3D/V2/Textures/PlayerHairNormal.png": "cb7f7f0cc69a74b9878ac8238bcd3606b21e91c121133ada779585672bee248c",
+    "Assets/Player3D/V2/Textures/PlayerHairResponse.png": "99eac8ea954250423210bcb1e8b3520f2c46e4e68e82205101d9da839a3055e6"
   }
 }

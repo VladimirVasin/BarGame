@@ -235,6 +235,7 @@ namespace BarPromenade
         }
 
         public bool IsEnabled { get; }
+        internal CityLayout Layout => layout;
         public Rect Bounds { get; }
         public float SouthY { get; }
         public float NorthY { get; }

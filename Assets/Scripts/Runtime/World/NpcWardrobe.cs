@@ -15,12 +15,14 @@ namespace BarPromenade
             [SerializeField] private Renderer renderer;
             [SerializeField] private Color color;
             [SerializeField] private Texture2D atlasOverride;
+            [SerializeField] private Material materialOverride;
             public string Slot => slot;
             public Renderer Renderer => renderer;
             public Color Color => color;
             public Texture2D AtlasOverride => atlasOverride;
-            public GarmentBinding(string part, Renderer target, Color tint, Texture2D textureOverride = null)
-            { slot = part; renderer = target; color = tint; atlasOverride = textureOverride; }
+            public Material MaterialOverride => materialOverride;
+            public GarmentBinding(string part, Renderer target, Color tint, Texture2D textureOverride = null, Material finish = null)
+            { slot = part; renderer = target; color = tint; atlasOverride = textureOverride; materialOverride = finish; }
         }
 
         [SerializeField] private string outfitId;
@@ -332,7 +334,7 @@ namespace BarPromenade
                 Renderer renderer = garment.Renderer;
                 if (renderer == null) continue;
                 renderer.enabled = !IsModular || visible.Contains(renderer) && !covered.Contains(renderer);
-                renderer.sharedMaterial = material;
+                renderer.sharedMaterial = garment.MaterialOverride != null ? garment.MaterialOverride : material;
                 renderer.GetPropertyBlock(properties);
                 Color color = garment.Slot == HairStyleSlot ? hairColor ?? garment.Color : garment.Color;
                 if (garmentDyes != null && garmentDyes.TryGetValue(renderer.name, out Color dye)) color = dye;

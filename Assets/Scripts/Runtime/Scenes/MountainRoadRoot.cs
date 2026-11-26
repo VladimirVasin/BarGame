@@ -35,7 +35,6 @@ namespace BarPromenade
         public MountainRoadWindDriver Wind { get; private set; }
         public MountainRoadWeatherShaper WeatherShaper { get; private set; }
         public CityWeatherController Weather { get; private set; }
-        public ExteriorCloudField Clouds { get; private set; }
         public InteractionPromptView InteractionPrompt { get; private set; }
         public IntoxicationHudView IntoxicationHud { get; private set; }
         public IntoxicationStatusController IntoxicationStatus
@@ -602,11 +601,6 @@ namespace BarPromenade
                 IsSheltered,
                 WeatherShaper,
                 Fog);
-            Clouds = ExteriorCloudField.Create(
-                transform,
-                camera,
-                ExteriorCloudProfiles.MountainRoad,
-                Plan.Seed);
 
             GameObject windObject = new GameObject("Mountain Wind Driver");
             windObject.transform.SetParent(transform, false);

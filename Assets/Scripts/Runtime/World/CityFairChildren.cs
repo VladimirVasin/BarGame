@@ -34,6 +34,7 @@ namespace BarPromenade
         private Quaternion[] wheelRest;
         private Vector3 carGrip;
         private bool initialized;
+        internal bool AtFair { get; set; } = true;
         public CityFairChildPresentation[] Actors { get; private set; } = Array.Empty<CityFairChildPresentation>();
         public int ActorCount => Actors.Length;
         public float ElapsedSeconds { get; private set; }
@@ -100,7 +101,7 @@ namespace BarPromenade
             return result;
         }
 
-        private void Restart()
+        internal void Restart()
         {
             ElapsedSeconds = 0f;
             for (int i = 0; i < Actors.Length; i++)
@@ -113,7 +114,7 @@ namespace BarPromenade
                 visitor.Completed = 0;
                 visitor.StopSeconds = 0f;
                 visitor.Settling = false;
-                visitor.Claimed = false;
+                ReleaseBench(visitor);
                 visitor.Body.enabled = true;
                 Actors[i].gameObject.SetActive(true);
                 Actors[i].transform.SetPositionAndRotation(visitor.Route[0], Quaternion.LookRotation(visitor.Facing));
@@ -126,7 +127,7 @@ namespace BarPromenade
 
         private void LateUpdate()
         {
-            if (!initialized || GameTimeScaleRuntime.IsPaused || Time.deltaTime <= 0f) return;
+            if (!initialized || !AtFair || GameTimeScaleRuntime.IsPaused || Time.deltaTime <= 0f) return;
             float delta = Mathf.Min(Time.deltaTime, .10f);
             ElapsedSeconds += delta;
             for (int i = 0; i < Actors.Length; i++)
@@ -134,6 +135,44 @@ namespace BarPromenade
                 Advance(i, delta);
                 Present(i);
             }
+        }
+
+        // Finish occupied hand/seat actions before the walking rig takes over.
+        internal float BeginDeparture(int index)
+        {
+            Visitor visitor = visitors[index];
+            if (visitor.Phase == CityFairChildPhase.Looping) SetPhase(visitor, CityFairChildPhase.Exiting);
+            if (visitor.Phase == CityFairChildPhase.Entering)
+                return Mathf.Max(0f, CityFairChildPresentation.Duration(Action(index, visitor.Phase)) - visitor.Seconds)
+                    + CityFairChildPresentation.Duration(Action(index, CityFairChildPhase.Exiting));
+            return visitor.Phase == CityFairChildPhase.Exiting
+                ? Mathf.Max(0f, CityFairChildPresentation.Duration(Action(index, visitor.Phase)) - visitor.Seconds) : 0f;
+        }
+
+        internal void SampleDeparture(int index, float remaining)
+        {
+            Visitor visitor = visitors[index];
+            float exit = CityFairChildPresentation.Duration(Action(index, CityFairChildPhase.Exiting));
+            if (remaining > exit)
+            {
+                visitor.Phase = CityFairChildPhase.Entering;
+                visitor.Seconds = CityFairChildPresentation.Duration(Action(index, visitor.Phase)) - (remaining - exit);
+            }
+            else
+            {
+                visitor.Phase = CityFairChildPhase.Exiting;
+                visitor.Seconds = exit - remaining;
+            }
+            Present(index);
+        }
+
+        internal void LeaveActivity(int index)
+        {
+            Visitor visitor = visitors[index];
+            ReleaseBench(visitor);
+            visitor.Body.enabled = true;
+            visitor.RightTarget = visitor.LeftTarget = null;
+            if (index == 1) PlaceCar(0f);
         }
 
         private void Advance(int index, float delta)
@@ -360,7 +399,7 @@ namespace BarPromenade
             visitor.StopSeconds = 0f;
         }
 
-        private void OnEnable() { if (initialized) Restart(); }
+        private void OnEnable() { if (initialized && AtFair) Restart(); }
         private void OnDisable()
         {
             if (!initialized) return;

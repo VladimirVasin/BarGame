@@ -12,6 +12,7 @@ namespace BarPromenade
         public const float BodyRadius = .24f;
         private readonly List<Player3DProceduralLocomotionLayer> legs = new List<Player3DProceduralLocomotionLayer>();
         private bool initialized;
+        internal bool AtFair { get; set; } = true;
         public VillageResidentPresentation[] Actors { get; private set; } = Array.Empty<VillageResidentPresentation>();
         public int ActorCount => Actors.Length;
         public float ElapsedSeconds { get; private set; }
@@ -63,6 +64,11 @@ namespace BarPromenade
             return layer;
         }
 
+        internal void ReleaseStances()
+        {
+            foreach (var layer in legs) layer.Restore();
+        }
+
         private void LateUpdate()
         {
             if (initialized && !GameTimeScaleRuntime.IsPaused && Time.deltaTime > 0f)
@@ -71,7 +77,7 @@ namespace BarPromenade
 
         public void ApplyAt(float seconds)
         {
-            if (!initialized) return;
+            if (!initialized || !AtFair) return;
             float next = Mathf.Max(0f, seconds);
             float delta = Mathf.Max(0f, next - ElapsedSeconds);
             ElapsedSeconds = next;
@@ -86,7 +92,7 @@ namespace BarPromenade
 
         private void OnEnable()
         {
-            if (!initialized) return;
+            if (!initialized || !AtFair) return;
             foreach (var actor in Actors)
             {
                 actor.gameObject.SetActive(true);

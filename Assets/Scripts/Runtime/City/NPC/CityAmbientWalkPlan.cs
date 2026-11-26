@@ -14,6 +14,7 @@ namespace BarPromenade
         private readonly float[] lengths;
         private readonly bool[] busy;
         private readonly bool[] childLinks;
+        private readonly bool[] playgroundLinks;
         private readonly Dictionary<Vector2Int, List<Entry>> cells = new Dictionary<Vector2Int, List<Entry>>();
 
         internal readonly struct Entry
@@ -31,12 +32,15 @@ namespace BarPromenade
         }
 
         public CityAmbientWalkPlan(CityPedestrianPlan streets, CityLayout layout = null,
-            IReadOnlyList<CityBusPlan> busPlans = null, IReadOnlyList<Rect> childExclusions = null)
+            IReadOnlyList<CityBusPlan> busPlans = null, IReadOnlyList<Rect> childExclusions = null,
+            string playgroundRoutePrefix = null, string slideRoutePrefix = null, string bridgeRoutePrefix = null,
+            string seesawRoutePrefix = null)
         {
             this.streets = streets;
             lengths = new float[streets.Links.Count];
             busy = new bool[lengths.Length];
             childLinks = new bool[lengths.Length];
+            playgroundLinks = new bool[lengths.Length];
             var platforms = new List<Vector3>();
             var publicEntrances = new List<Vector3>();
             if (layout != null)
@@ -52,17 +56,23 @@ namespace BarPromenade
             {
                 CityPedestrianLink link = streets.Links[index];
                 bool stair = link.Kind == CityPedestrianLinkKind.Stair;
-                if (!stair && link.Kind != CityPedestrianLinkKind.Sidewalk && link.Kind != CityPedestrianLinkKind.Turn)
+                bool playground = link.Kind == CityPedestrianLinkKind.Courtyard &&
+                    (playgroundRoutePrefix != null && link.Id.StartsWith(playgroundRoutePrefix, StringComparison.Ordinal) ||
+                     slideRoutePrefix != null && link.Id.StartsWith(slideRoutePrefix, StringComparison.Ordinal) ||
+                     bridgeRoutePrefix != null && link.Id.StartsWith(bridgeRoutePrefix, StringComparison.Ordinal) ||
+                     seesawRoutePrefix != null && link.Id.StartsWith(seesawRoutePrefix, StringComparison.Ordinal));
+                if (!stair && !playground && link.Kind != CityPedestrianLinkKind.Sidewalk && link.Kind != CityPedestrianLinkKind.Turn)
                     continue;
 
                 Vector3 first = streets.Nodes[link.FirstNodeIndex].Position;
                 Vector3 last = streets.Nodes[link.SecondNodeIndex].Position;
                 float length = link.Path?.Length ?? Vector2.Distance(Xz(first), Xz(last));
                 if (length < .015f || !stair && (Mathf.Abs(first.y - last.y) / length > .22f ||
-                    NearPlatform(link, first, last, platforms)))
+                    !playground && NearPlatform(link, first, last, platforms)))
                     continue;
 
                 lengths[index] = length;
+                playgroundLinks[index] = playground;
                 childLinks[index] = !TouchesChildExclusion(link.Path, first, last, childExclusions);
                 // Arrivals use open pavements. Stair flights and their landings
                 // are connected travel, including the final join to the sidewalk.
@@ -74,7 +84,8 @@ namespace BarPromenade
                      layout.TryGetArea(Vector2Int.FloorToInt(layout.GetWorldGridCoordinate(middle)), out CityAreaDefinition area) &&
                      (area.Feature == CityAreaFeatureKind.CentralPark || area.Feature == CityAreaFeatureKind.NorthWaterfront)) ||
                     NearEntrance(middle, publicEntrances);
-                if (link.Kind != CityPedestrianLinkKind.Sidewalk || length < 5f) continue;
+                if (link.Kind != CityPedestrianLinkKind.Sidewalk && !playground ||
+                    length < (playground ? 1.6f : 5f)) continue;
                 int count = Mathf.Max(1, Mathf.FloorToInt(length / EntrySpacing));
                 for (int i = 0; i < count; i++)
                 {
@@ -92,6 +103,7 @@ namespace BarPromenade
         public string LinkId(int link) => streets.Links[link].Id;
         public bool IsStair(int link) => streets.Links[link].Kind == CityPedestrianLinkKind.Stair;
         public bool AllowsChild(int link) => childLinks[link];
+        internal bool IsPlaygroundLink(int link) => playgroundLinks[link];
         public bool IsBusy(int link) => busy[link];
         public int LaneLimit(int link) => busy[link] && lengths[link] >= 14f ? 2 : 1;
 

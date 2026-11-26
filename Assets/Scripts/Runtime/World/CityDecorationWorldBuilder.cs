@@ -148,6 +148,11 @@ namespace BarPromenade
             {
                 parts.Clear();
                 CityDecorationDescriptor descriptor = descriptors[index];
+                if (homeContext == null && descriptor.Kind == CityDecorationKind.ParkPlayground)
+                {
+                    CityPlaygroundSwingBuilder.BuildParkSite(root, layout, descriptor, MasonryBatchColor, StreetBatchColor);
+                    continue;
+                }
                 if (CityStreetUtilityModel.IsUtility(descriptor.Kind))
                 {
                     Vector3 origin = descriptor.Position, forward = descriptor.Forward;

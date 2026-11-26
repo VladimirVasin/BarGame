@@ -96,13 +96,11 @@ namespace BarPromenade.Editor
                     Renderer[] renderers = model.GetComponentsInChildren<Renderer>(true);
                     var byName = renderers.ToDictionary(renderer => renderer.name, StringComparer.Ordinal);
                     var parts = manifest.parts.ToDictionary(part => part.name, StringComparer.Ordinal);
-                    Material material = DefaultNpcSurfaceAssets.Build(manifest.surfaces, byName);
+                    Material material = DefaultNpcSurfaceAssets.Apply(manifest.surfaces, byName);
                     Texture2D atlas = AssetDatabase.LoadAssetAtPath<Texture2D>(TexturePath);
                     if (atlas == null) throw new InvalidOperationException("Missing default NPC atlas.");
                     foreach (Renderer renderer in renderers)
                     {
-                        renderer.sharedMaterial = renderer.name == DefaultNpcSurfaceAssets.FaceRenderer
-                            ? DefaultNpcSurfaceAssets.FaceMaterial : material;
                         if (renderer is SkinnedMeshRenderer skin) skin.updateWhenOffscreen = true;
                     }
                     Color Tint(string name)
@@ -112,7 +110,8 @@ namespace BarPromenade.Editor
                     }
                     NpcWardrobe.ItemBinding[] items = manifest.wardrobe.items.Select(item =>
                         new NpcWardrobe.ItemBinding(item.id, item.slot,
-                            item.renderers.Select(name => new NpcWardrobe.GarmentBinding(item.slot, byName[name], Tint(name))).ToArray(),
+                            item.renderers.Select(name => new NpcWardrobe.GarmentBinding(item.slot, byName[name], Tint(name),
+                            finish: byName[name].sharedMaterial == material ? null : byName[name].sharedMaterial)).ToArray(),
                             item.covered_renderers.Select(name => byName[name]).ToArray())).ToArray();
                     var garmentNames = new HashSet<string>(manifest.wardrobe.items.SelectMany(item => item.renderers), StringComparer.Ordinal);
                     Renderer[] permanent = renderers.Where(renderer => !garmentNames.Contains(renderer.name)).ToArray();
@@ -397,17 +396,26 @@ namespace BarPromenade.Editor
         private const string Prefix = DefaultNpcAssetSetup.Folder + "DefaultNpcDetail";
         private const int AtlasSize = 512;
         public const string FaceRenderer = "GEO_FaceSurface";
-        public static Material FaceMaterial =>
-            AssetDatabase.LoadAssetAtPath<Material>("Assets/Player3D/Materials/Player3DLit.mat");
+        private static bool IsHair(CharacterSurfaceRegion region) =>
+            region.name == "shortHair" || region.name == "looseHair" || region.name == "boundHair";
 
-        public static Material Build(DefaultNpcSurfaceManifest manifest, IReadOnlyDictionary<string, Renderer> renderers)
+        public static Material Apply(DefaultNpcSurfaceManifest manifest, IReadOnlyDictionary<string, Renderer> renderers)
         {
             CharacterSurfaceBinding binding = RequireBinding(manifest);
             ConfigureTexture(binding.normal_asset, true);
             ConfigureTexture(binding.response_asset, false);
             ValidateRegions(binding, renderers);
-            return CharacterSurfaceMaterialSetup.EnsureSharedMaterial(Prefix + ".mat", FaceMaterial,
-                CharacterSurfaceRecipe.Clothing, Load(binding.normal_asset, true), Load(binding.response_asset, false));
+            var normal = Load(binding.normal_asset, true);
+            var response = Load(binding.response_asset, false);
+            Material face = CharacterSurfaceMaterialSetup.Face;
+            Material detail = CharacterSurfaceMaterialSetup.EnsureSharedMaterial(Prefix + ".mat", face,
+                CharacterSurfaceRecipe.Clothing, normal, response);
+            Material hair = CharacterSurfaceMaterialSetup.EnsureSharedMaterial(Prefix + "Hair.mat", face,
+                CharacterSurfaceRecipe.Hair, normal, response);
+            renderers[FaceRenderer].sharedMaterial = face;
+            foreach (CharacterSurfaceRegion region in binding.regions)
+                renderers[region.renderer].sharedMaterial = IsHair(region) ? hair : detail;
+            return detail;
         }
 
         public static void Validate(DefaultNpcSurfaceManifest manifest, IReadOnlyDictionary<string, Renderer> renderers)
@@ -415,9 +423,13 @@ namespace BarPromenade.Editor
             CharacterSurfaceBinding binding = RequireBinding(manifest);
             ValidateRegions(binding, renderers);
             Material detail = AssetDatabase.LoadAssetAtPath<Material>(Prefix + ".mat");
+            Material hair = AssetDatabase.LoadAssetAtPath<Material>(Prefix + "Hair.mat");
+            var normal = Load(binding.normal_asset, true);
+            var response = Load(binding.response_asset, false);
             if (!CharacterSurfaceMaterialSetup.IsCanonical(detail, CharacterSurfaceRecipe.Clothing,
-                    Load(binding.normal_asset, true), Load(binding.response_asset, false)) ||
-                renderers.Any(part => part.Value.sharedMaterial != (part.Key == FaceRenderer ? FaceMaterial : detail)))
+                    normal, response) || !CharacterSurfaceMaterialSetup.IsCanonical(hair, CharacterSurfaceRecipe.Hair, normal, response) ||
+                renderers[FaceRenderer].sharedMaterial != CharacterSurfaceMaterialSetup.Face ||
+                binding.regions.Any(region => renderers[region.renderer].sharedMaterial != (IsHair(region) ? hair : detail)))
                 throw new InvalidOperationException("Default NPC prefab lost its shared cloth, skin or hair finish.");
         }
 

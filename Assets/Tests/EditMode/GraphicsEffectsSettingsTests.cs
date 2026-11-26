@@ -16,6 +16,7 @@ namespace BarPromenade.Tests.EditMode
             "graphics.clean_halation",
             "graphics.clean_directional_highlights",
             "graphics.clean_bounce",
+            "graphics.directional_ambient",
         };
         private bool[] savedExists;
         private int[] savedValues;
@@ -58,6 +59,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(GraphicsEffectsSettings.CleanHalationEnabled, Is.True);
             Assert.That(GraphicsEffectsSettings.CleanDirectionalHighlightsEnabled, Is.True);
             Assert.That(GraphicsEffectsSettings.CleanBounceEnabled, Is.True);
+            Assert.That(GraphicsEffectsSettings.DirectionalAmbientEnabled, Is.True);
             foreach (string key in Keys) Assert.That(PlayerPrefs.HasKey(key), Is.False, key);
             Assert.That(GraphicsEffectsSettings.Version, Is.Zero);
         }
@@ -72,11 +74,11 @@ namespace BarPromenade.Tests.EditMode
             GraphicsEffectsSettings.DepthOfFieldEnabled = false;
             Assert.That(GraphicsEffectsSettings.Version, Is.EqualTo(1));
             SetAll(false);
-            Assert.That(GraphicsEffectsSettings.Version, Is.EqualTo(8));
-            SetAll(false);
-            Assert.That(GraphicsEffectsSettings.Version, Is.EqualTo(8));
-            GraphicsEffectsSettings.AspectRatio43Enabled = true;
             Assert.That(GraphicsEffectsSettings.Version, Is.EqualTo(9));
+            SetAll(false);
+            Assert.That(GraphicsEffectsSettings.Version, Is.EqualTo(9));
+            GraphicsEffectsSettings.AspectRatio43Enabled = true;
+            Assert.That(GraphicsEffectsSettings.Version, Is.EqualTo(10));
         }
 
         [Test]
@@ -102,6 +104,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(GraphicsEffectsSettings.CleanDirectionalHighlightsEnabled, Is.False);
             Assert.That(PlayerPrefs.GetInt("graphics.clean_directional_highlights", -1), Is.EqualTo(0));
             Assert.That(GraphicsEffectsSettings.CleanBounceEnabled, Is.False);
+            Assert.That(GraphicsEffectsSettings.DirectionalAmbientEnabled, Is.False);
             Assert.That(PlayerPrefs.GetInt("graphics.clean_bounce", -1), Is.EqualTo(0));
         }
 
@@ -116,6 +119,7 @@ namespace BarPromenade.Tests.EditMode
             GraphicsEffectsSettings.CleanHalationEnabled = enabled;
             GraphicsEffectsSettings.CleanDirectionalHighlightsEnabled = enabled;
             GraphicsEffectsSettings.CleanBounceEnabled = enabled;
+            GraphicsEffectsSettings.DirectionalAmbientEnabled = enabled;
         }
     }
 }

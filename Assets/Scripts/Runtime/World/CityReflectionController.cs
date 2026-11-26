@@ -429,7 +429,7 @@ namespace BarPromenade
             Light sun = RenderSettings.sun;
             Color sunlight = sun != null && sun.isActiveAndEnabled ? sun.color * sun.intensity : Color.black;
             Vector3 direction = sun != null ? sun.transform.forward : Vector3.down;
-            Color ambient = RenderSettings.ambientLight * RenderSettings.ambientIntensity;
+            Color ambient = SceneAmbientLight.ReferenceColor * RenderSettings.ambientIntensity;
             float night = atmosphere != null ? atmosphere.NightFactor : 1f;
             uint windowGeneration = (Presentation as CityLightingPresentation)?.WindowLights?.StateGeneration ?? 0u;
             bool changed = lightingGeneration == 0 || ColorDelta(sunlight, sunReference) > .12f ||

@@ -82,7 +82,6 @@ namespace BarPromenade
 
         /// <summary>Carries the shaped wind to the conifer crowns.</summary>
         public MountainRoadWindDriver Wind { get; private set; }
-        public ExteriorCloudField Clouds { get; private set; }
         public InteractionPromptView InteractionPrompt { get; private set; }
         public IntoxicationHudView IntoxicationHud { get; private set; }
         public IntoxicationStatusController IntoxicationStatus
@@ -608,10 +607,6 @@ namespace BarPromenade
             AlpineVillageRidgeAppearance.SetHaze(
                 RenderSettings.fogColor,
                 RenderSettings.fogDensity);
-            Clouds?.SetVisibility(
-                RenderSettings.fogColor,
-                StormWave,
-                WarmthGrade);
             PeripheralBlizzard?.SetVisibility(
                 RenderSettings.fogColor,
                 StormWave);
@@ -1065,11 +1060,6 @@ namespace BarPromenade
                 IsSheltered,
                 WeatherShaper,
                 Fog);
-            Clouds = ExteriorCloudField.Create(
-                transform,
-                areaCamera,
-                ExteriorCloudProfiles.AlpineVillage,
-                Plan.Seed);
 
             // The garland meshes were built before the player and weather.
             // Bind them now to the one shaped wind sample already driving

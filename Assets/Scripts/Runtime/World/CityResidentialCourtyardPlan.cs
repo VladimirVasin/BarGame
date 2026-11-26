@@ -9,6 +9,44 @@ namespace BarPromenade
     public enum CityResidentialCourtyardVariant { PassThrough, Quiet, Service }
     public enum CityResidentialCourtyardSurfaceKind { Asphalt, Concrete, Soil }
 
+    internal sealed class CityCourtyardPlaygroundSite
+    {
+        internal static readonly Vector3 BarsOrigin = new Vector3(-.65f, 0f, -1.46f);
+        internal static readonly Vector3 BeamOrigin = new Vector3(.65f, 0f, 1.46f);
+        internal static readonly Vector3 SlideOrigin = new Vector3(0f, 0f, -2.18f);
+        internal static readonly Vector3 SlideSideEntry = new Vector3(1.06f, 0f, -2.18f);
+        internal static readonly Vector3 BridgeLane = Vector3.right * 1.72f;
+        internal static readonly Vector3 SeesawApproach = Vector3.right * .94f;
+        internal const float SeesawDockDistance = 1.61f;
+        internal CityCourtyardPlaygroundSite(Vector2Int cell, Vector3 position,
+            Quaternion rotation, Vector3 routeJoin, Rect footprint, bool hasSlide, bool hasBridge, bool hasSeesaw,
+            bool steppingTrail, CityPlaygroundBalancePlan balance)
+        {
+            Cell = cell;
+            Position = position;
+            Rotation = rotation;
+            RouteJoin = routeJoin;
+            Footprint = footprint;
+            HasSlide = hasSlide;
+            HasBridge = hasBridge;
+            HasSeesaw = hasSeesaw;
+            SteppingTrail = steppingTrail;
+            Balance = balance;
+        }
+        internal Vector2Int Cell { get; }
+        internal Vector3 Position { get; }
+        internal Quaternion Rotation { get; }
+        internal Vector3 RouteJoin { get; }
+        internal Rect Footprint { get; }
+        internal bool HasSlide { get; }
+        internal bool HasBridge { get; }
+        internal bool HasSeesaw { get; }
+        internal bool SteppingTrail { get; }
+        internal CityPlaygroundBalancePlan Balance { get; }
+        internal Vector3 SideEntry => SlideSideEntry + (HasBridge ? BridgeLane : Vector3.zero);
+        internal string RoutePrefix => $"courtyard:{Cell.x}:{Cell.y}:walk:";
+    }
+
     /// <summary>A small causal patch in the existing ground, never an extra slab.</summary>
     public sealed class CityResidentialCourtyardSurfaceDescriptor
     {
@@ -144,9 +182,15 @@ namespace BarPromenade
         private static readonly ConditionalWeakTable<CityLayout, CityResidentialCourtyardPlan> Plans =
             new ConditionalWeakTable<CityLayout, CityResidentialCourtyardPlan>();
 
-        private CityResidentialCourtyardPlan(IList<CityResidentialCourtyardDescriptor> courts)
+        private CityResidentialCourtyardPlan(IList<CityResidentialCourtyardDescriptor> courts,
+            CityCourtyardPlaygroundSite playground, CityCourtyardPlaygroundSite slidePlayground,
+            CityCourtyardPlaygroundSite bridgePlayground, CityCourtyardPlaygroundSite seesawPlayground)
         {
             Courts = new ReadOnlyCollection<CityResidentialCourtyardDescriptor>(courts);
+            Playground = playground;
+            SlidePlayground = slidePlayground;
+            BridgePlayground = bridgePlayground;
+            SeesawPlayground = seesawPlayground;
             var props = new List<CityResidentialCourtyardPropDescriptor>();
             var surfaces = new List<CityResidentialCourtyardSurfaceDescriptor>();
             var collision = new List<Bounds>();
@@ -159,6 +203,10 @@ namespace BarPromenade
             Props = props.AsReadOnly(); Surfaces = surfaces.AsReadOnly(); CollisionBounds = collision.AsReadOnly();
         }
         public IReadOnlyList<CityResidentialCourtyardDescriptor> Courts { get; }
+        internal CityCourtyardPlaygroundSite Playground { get; }
+        internal CityCourtyardPlaygroundSite SlidePlayground { get; }
+        internal CityCourtyardPlaygroundSite BridgePlayground { get; }
+        internal CityCourtyardPlaygroundSite SeesawPlayground { get; }
         public IReadOnlyList<CityResidentialCourtyardPropDescriptor> Props { get; }
         public IReadOnlyList<CityResidentialCourtyardSurfaceDescriptor> Surfaces { get; }
         public IReadOnlyList<Bounds> CollisionBounds { get; }
@@ -214,7 +262,211 @@ namespace BarPromenade
             }
             TraceStage("complete");
             TraceFit(context, courts);
-            return new CityResidentialCourtyardPlan(courts);
+            CityCourtyardPlaygroundSite small = FindPlayground(context, courts);
+            CityCourtyardPlaygroundSite slide = FindSlidePlayground(context, courts, blocks, small);
+            CityCourtyardPlaygroundSite bridge = FindSlidePlayground(context, courts, blocks, small, true, slide);
+            if (bridge == null && slide != null &&
+                FindSlidePlayground(context, courts, blocks, small, true) is { } recovered &&
+                FindSlidePlayground(context, courts, blocks, small, occupied: recovered) is { } relocated)
+            {
+                bridge = recovered;
+                slide = relocated;
+            }
+            CityCourtyardPlaygroundSite seesaw = FindEquipmentSite(context, courts, blocks, small, slide, bridge, seesaw: true);
+            return new CityResidentialCourtyardPlan(courts, small, slide, bridge, seesaw);
+        }
+
+        private static CityCourtyardPlaygroundSite FindPlayground(GroupContext context,
+            IReadOnlyList<CityResidentialCourtyardDescriptor> courts)
+        {
+            foreach (CityResidentialCourtyardDescriptor court in courts)
+            {
+                if (court.Variant == CityResidentialCourtyardVariant.Service) continue;
+                CityCourtyardPlaygroundSite site = FitPlayground(context, court.Block, court, false);
+                if (site != null) return site;
+            }
+            return null;
+        }
+
+        private static CityCourtyardPlaygroundSite FindSlidePlayground(GroupContext context,
+            IReadOnlyList<CityResidentialCourtyardDescriptor> courts, IReadOnlyList<CityCourtyardBlock> blocks,
+            CityCourtyardPlaygroundSite small, bool bridge = false, CityCourtyardPlaygroundSite occupied = null)
+            => FindEquipmentSite(context, courts, blocks, small, occupied, bridge: bridge);
+
+        private static CityCourtyardPlaygroundSite FindEquipmentSite(GroupContext context,
+            IReadOnlyList<CityResidentialCourtyardDescriptor> courts, IReadOnlyList<CityCourtyardBlock> blocks,
+            CityCourtyardPlaygroundSite small, CityCourtyardPlaygroundSite occupied,
+            CityCourtyardPlaygroundSite other = null, bool bridge = false, bool seesaw = false)
+        {
+            foreach (CityCourtyardBlock block in blocks)
+            {
+                if (small?.Cell == block.Cell || occupied?.Cell == block.Cell || other?.Cell == block.Cell) continue;
+                CityResidentialCourtyardDescriptor group = null;
+                foreach (CityResidentialCourtyardDescriptor court in courts)
+                    if (court.Cell == block.Cell) { group = court; break; }
+                CityCourtyardPlaygroundSite site = FitPlayground(context, block, group, !seesaw, bridge, seesaw);
+                if (site != null) return site;
+            }
+            return null;
+        }
+
+        private static CityCourtyardPlaygroundSite FitPlayground(GroupContext context, CityCourtyardBlock block,
+            CityResidentialCourtyardDescriptor court, bool slide, bool bridge = false, bool seesaw = false)
+        {
+            Vector3 entryOffset = slide ? CityCourtyardPlaygroundSite.SlideOrigin : CityCourtyardPlaygroundSite.BarsOrigin;
+            Vector3 lane = bridge ? CityCourtyardPlaygroundSite.BridgeLane : Vector3.zero;
+            var props = court?.Props ?? Array.Empty<CityResidentialCourtyardPropDescriptor>();
+            Rect openCenter = court?.OpenCenterBounds ?? new Rect(block.CourtCenter.x - 2f,
+                block.CourtCenter.z - 2f, 4f, 4f);
+            Rect ground = court?.CommonBounds ?? CityRoadPolygon.Bounds(block.GroundPolygons[0]);
+            if (court == null)
+                foreach (Vector2[] polygon in block.GroundPolygons)
+                {
+                    Rect bounds = CityRoadPolygon.Bounds(polygon);
+                    ground = Rect.MinMaxRect(Mathf.Min(ground.xMin, bounds.xMin), Mathf.Min(ground.yMin, bounds.yMin),
+                        Mathf.Max(ground.xMax, bounds.xMax), Mathf.Max(ground.yMax, bounds.yMax));
+                }
+            float inset = bridge || seesaw ? .95f : 1.5f;
+            float spacing = bridge || seesaw ? .40f : .55f;
+            for (float z = ground.yMin + inset; z <= ground.yMax - inset; z += spacing)
+            for (float x = ground.xMin + inset; x <= ground.xMax - inset; x += spacing)
+            for (int heading = 0; heading < 4; heading++)
+            {
+                Vector3 center = new Vector3(x, 0f, z);
+                Quaternion rotation = Quaternion.Euler(0f, heading * 90f, 0f);
+                Vector2[] area = seesaw ? PolygonAt(center, rotation, -.50f, -1.95f, 1.25f, 1.95f) : slide
+                    ? bridge ? PolygonAt(center, rotation, -.56f, -2.41f, lane.x + .56f, -.20f)
+                        : PolygonAt(center, rotation, -.60f, -2.64f, 1.42f, 2.64f)
+                    : PolygonAt(center, rotation, -1.24f, -1.91f, 1.24f, 1.91f);
+                if (!ClearEquipment(area, out center.y))
+                    continue;
+
+                Vector3 entry = center + rotation * entryOffset;
+                Vector3 side = CityCourtyardPlaygroundSite.SlideSideEntry + lane;
+                Vector3 approach = seesaw ? center + rotation * CityCourtyardPlaygroundSite.SeesawApproach
+                    : slide ? center + rotation * side : entry;
+                Rect footprint = CityRoadPolygon.Bounds(area);
+                if (bridge)
+                {
+                    Vector2[] chuteArea = PolygonAt(center, rotation, lane.x - .55f, -.20f, lane.x + .55f, 2.43f);
+                    Vector3 sideExit = approach - 2f * side.z * (rotation * Vector3.forward);
+                    Vector3 runout = center + rotation * (lane - entryOffset);
+                    if (!ClearEquipment(chuteArea, out _) ||
+                        !ClearWalk(context, block, entry, approach, props) ||
+                        !ClearWalk(context, block, approach, sideExit, props) ||
+                        !ClearWalk(context, block, sideExit, runout, props))
+                        continue;
+                    footprint = RectAt(center, rotation, -.60f, -2.57f, lane.x + 1.40f, 2.57f);
+                }
+
+                if (slide)
+                {
+                    // Take the floor from the actual stair and runout, where
+                    // a level prop cannot bury its lowest tread in the grade.
+                    Vector3 front = center + rotation * (lane + new Vector3(0f, 0f, 1.58f));
+                    Vector3 exit = center + rotation * (lane - entryOffset);
+                    if (!TryTop(context.Layout, XZ(entry), out float start) ||
+                        !TryTop(context.Layout, XZ(entry + rotation * lane), out float alternateStart) ||
+                        !TryTop(context.Layout, XZ(front), out float runout) ||
+                        !TryTop(context.Layout, XZ(exit), out float end) ||
+                        Mathf.Max(Mathf.Max(start, alternateStart), Mathf.Max(runout, end)) -
+                        Mathf.Min(Mathf.Min(start, alternateStart), Mathf.Min(runout, end)) > (bridge ? .12f : .09f))
+                        continue;
+                    center.y = entry.y = Mathf.Max(Mathf.Max(start, alternateStart), runout);
+                }
+                approach.y = center.y;
+                if (!TryConnection(context, block, approach, props, out List<Vector3> connection, 5f) ||
+                    slide && CrossesEquipment(center, rotation, approach, connection[1], -.66f, lane.x + .66f, -2.04f, 1.89f) ||
+                    seesaw && (CrossesEquipment(center, rotation, approach, connection[1], -.54f, .54f, -1.52f, 1.52f) ||
+                        !ClearSeesawEnds(center, rotation, approach)))
+                    continue;
+                uint mix = CityGrassPlan.Hash(context.Layout.Seed, block.Cell.x, block.Cell.y, 1941);
+                CityPlaygroundBalancePlan balance = null;
+                if ((slide || seesaw) && !TryFitBalance(connection[1], approach, footprint, mix, out balance))
+                    continue;
+                if (seesaw) footprint = RectAt(center, rotation, -1.20f, -2.24f, 1.42f, 2.24f);
+                return new CityCourtyardPlaygroundSite(block.Cell, center, rotation, connection[1], footprint,
+                    slide, bridge, seesaw, (mix & 4u) != 0, balance);
+            }
+            return null;
+
+            bool ClearEquipment(Vector2[] area, out float groundY)
+            {
+                groundY = 0f;
+                Rect equipment = CityRoadPolygon.Bounds(area);
+                if (equipment.Overlaps(openCenter) || !ClearPolygon(context, block, area, true) ||
+                    (court != null && (IntersectsWalk(court.CirculationSpine, equipment) ||
+                     IntersectsWalk(court.ConnectionPath, equipment) || IntersectsWalk(court.CarryRoute, equipment))) ||
+                    !Foundation(context.Layout, equipment, out groundY, slide ? .14f : MaximumGroundSpread))
+                    return false;
+                if (court != null)
+                    foreach (CityResidentialCourtyardSurfaceDescriptor surface in court.Surfaces)
+                        if (!surface.IsCommonGround && equipment.Overlaps(surface.Footprint)) return false;
+                return true;
+            }
+
+            bool TryFitBalance(Vector3 join, Vector3 approach, Rect equipment, uint mix,
+                out CityPlaygroundBalancePlan result)
+            {
+                Vector3 along = Vector3.ProjectOnPlane(approach - join, Vector3.up).normalized;
+                Vector3 shoulder = Vector3.Cross(Vector3.up, along);
+                for (int index = 1; index <= 5; index++)
+                for (int edge = 0; edge < 2; edge++)
+                {
+                    Vector3 branch = Vector3.Lerp(join, approach, index / 6f);
+                    Vector3 direction = shoulder * (((mix + (uint)edge) & 1u) == 0 ? 1f : -1f);
+                    Vector3 dock = branch + direction * .97f;
+                    Quaternion facing = Quaternion.LookRotation(direction);
+                    Vector2[] area = PolygonAt(dock, facing, -.43f, -.27f, .43f, .84f);
+                    Rect pad = CityRoadPolygon.Bounds(area);
+                    if (pad.Overlaps(equipment) || !ClearEquipment(area, out float top) ||
+                        !ClearWalk(context, block, branch, dock, props) ||
+                        !TryTop(context.Layout, XZ(dock), out float floor)) continue;
+                    dock.y = Mathf.Max(top, floor);
+                    result = new CityPlaygroundBalancePlan(dock, facing, join, branch, pad, (mix & 2u) != 0);
+                    return true;
+                }
+                result = null;
+                return false;
+            }
+
+            bool ClearSeesawEnds(Vector3 center, Quaternion rotation, Vector3 approach)
+            {
+                for (int end = -1; end <= 1; end += 2)
+                {
+                    Vector3 axis = rotation * (Vector3.forward * (end * CityCourtyardPlaygroundSite.SeesawDockDistance));
+                    if (!ClearWalk(context, block, approach, approach + axis, props) ||
+                        !ClearWalk(context, block, approach + axis, center + axis, props)) return false;
+                }
+                return true;
+            }
+
+            static bool CrossesEquipment(Vector3 center, Quaternion rotation, Vector3 approach, Vector3 join,
+                float minX, float maxX, float minZ, float maxZ)
+            {
+                Quaternion local = Quaternion.Inverse(rotation);
+                Vector3 first = local * (approach - center), last = local * (join - center);
+                int steps = Mathf.Max(1, Mathf.CeilToInt(Vector3.Distance(first, last) / .15f));
+                for (int i = 0; i <= steps; i++)
+                {
+                    Vector3 p = Vector3.Lerp(first, last, i / (float)steps);
+                    if (p.x > minX && p.x < maxX && p.z > minZ && p.z < maxZ) return true;
+                }
+                return false;
+            }
+
+            static bool IntersectsWalk(IReadOnlyList<Vector3> walk, Rect footprint)
+            {
+                Rect margin = Expanded(footprint, .45f);
+                for (int index = 1; index < walk.Count; index++)
+                {
+                    Vector2 start = XZ(walk[index - 1]), end = XZ(walk[index]);
+                    int steps = Mathf.Max(1, Mathf.CeilToInt(Vector2.Distance(start, end) / .3f));
+                    for (int step = 0; step <= steps; step++)
+                        if (margin.Contains(Vector2.Lerp(start, end, step / (float)steps))) return true;
+                }
+                return false;
+            }
         }
 
         [System.Diagnostics.Conditional("UNITY_EDITOR")]
@@ -964,7 +1216,7 @@ namespace BarPromenade
             return supportError <= MaximumShelterSupportError;
         }
 
-        private static bool Foundation(CityLayout layout, Rect footprint, out float top)
+        private static bool Foundation(CityLayout layout, Rect footprint, out float top, float spread = MaximumGroundSpread)
         {
             float low = float.PositiveInfinity, high = float.NegativeInfinity;
             for (int z = 0; z < 3; z++) for (int x = 0; x < 3; x++)
@@ -974,7 +1226,7 @@ namespace BarPromenade
                 if (!TryTop(layout, p, out float y)) { top = 0f; return false; }
                 low = Mathf.Min(low, y); high = Mathf.Max(high, y);
             }
-            top = low; return high - low <= MaximumGroundSpread;
+            top = low; return high - low <= spread;
         }
         private static bool TryTop(CityLayout layout, Vector2 point, out float top)
         {

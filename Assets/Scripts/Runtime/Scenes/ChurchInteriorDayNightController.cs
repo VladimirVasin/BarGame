@@ -248,10 +248,10 @@ namespace BarPromenade
                     warmBaseIntensities[index] * warmScale;
             }
 
-            RenderSettings.ambientLight = Color.Lerp(
+            SceneAmbientLight.Apply(Color.Lerp(
                 NightAmbientColor,
                 DayAmbientColor,
-                DayFactor);
+                DayFactor));
             Light sun = RenderSettings.sun;
             if (sun != null && sun.type == LightType.Directional)
             {

@@ -56,6 +56,7 @@ namespace BarPromenade
                 (PauseMenuOptionsRow.CleanHalation, "options.clean_halation"),
                 (PauseMenuOptionsRow.CleanDirectionalHighlights, "options.clean_directional_highlights"),
                 (PauseMenuOptionsRow.CleanBounce, "options.clean_bounce"),
+                (PauseMenuOptionsRow.DirectionalAmbient, "options.directional_ambient"),
                 (PauseMenuOptionsRow.Back, "options.back")
             };
 
@@ -922,6 +923,9 @@ namespace BarPromenade
                     GraphicsEffectsSettings.CleanDirectionalHighlightsEnabled =
                         !GraphicsEffectsSettings.CleanDirectionalHighlightsEnabled;
                     return;
+                case PauseMenuOptionsRow.DirectionalAmbient:
+                    GraphicsEffectsSettings.DirectionalAmbientEnabled = !GraphicsEffectsSettings.DirectionalAmbientEnabled;
+                    return;
                 case PauseMenuOptionsRow.CleanBounce:
                     GraphicsEffectsSettings.CleanBounceEnabled =
                         !GraphicsEffectsSettings.CleanBounceEnabled;
@@ -964,6 +968,8 @@ namespace BarPromenade
                     return GraphicsEffectsSettings.CleanHalationEnabled;
                 case PauseMenuOptionsRow.CleanDirectionalHighlights:
                     return GraphicsEffectsSettings.CleanDirectionalHighlightsEnabled;
+                case PauseMenuOptionsRow.DirectionalAmbient:
+                    return GraphicsEffectsSettings.DirectionalAmbientEnabled;
                 case PauseMenuOptionsRow.CleanBounce:
                     return GraphicsEffectsSettings.CleanBounceEnabled;
                 case PauseMenuOptionsRow.DepthOfField:
