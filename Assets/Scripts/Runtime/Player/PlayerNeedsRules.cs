@@ -25,23 +25,15 @@ namespace BarPromenade
     {
         public const int MinimumLevel = 0;
         public const int MaximumLevel = 100;
-        public const int PoorFoodMinimumHunger = 20;
 
         public static PlayerNeedReliefResult ApplyFoodRelief(
             int hunger,
-            int relief,
-            int minimumHungerAfterUse)
+            int relief)
         {
             ValidateLevel(hunger, nameof(hunger));
             ValidateRelief(relief, nameof(relief));
-            ValidateLevel(
-                minimumHungerAfterUse,
-                nameof(minimumHungerAfterUse));
 
-            int floorLimitedLevel = Math.Max(
-                minimumHungerAfterUse,
-                hunger - relief);
-            int levelAfter = Math.Min(hunger, floorLimitedLevel);
+            int levelAfter = Math.Max(MinimumLevel, hunger - relief);
             return new PlayerNeedReliefResult(
                 hunger,
                 levelAfter,

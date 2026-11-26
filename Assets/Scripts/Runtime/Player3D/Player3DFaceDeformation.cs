@@ -72,6 +72,8 @@ namespace BarPromenade
             target.Set(Read(jaw), Read(lids), Read(wideEyes), Read(brows), Read(purse));
         }
 
+        internal void SetJaw(float opening) => SetWeight(jaw, opening);
+
         private float Read(int index) => index >= 0 ? renderer.GetBlendShapeWeight(index) : 0f;
 
         private void Set(float jawWeight = 0f, float lidWeight = 0f, float eyeWeight = 0f,

@@ -196,13 +196,10 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(GameSessionState.GetInventoryItemCount(item), Is.EqualTo(1));
             }
             Assert.That(GameSessionState.CashBalance, Is.EqualTo(cash - 6 - 28 - 5));
-            Assert.That(GameSessionState.TryConsumeInventoryItem(pie).Succeeded, Is.False);
-            Assert.That(GameSessionState.GetInventoryItemCount(pie), Is.EqualTo(1),
-                "A full hero keeps the pastry until hungry.");
-            GameSessionState.UpdateNeeds(56, 40);
+            GameSessionState.UpdateNeeds(17, 40);
             Assert.That(GameSessionState.TryConsumeInventoryItem(pie).Succeeded, Is.True);
             Assert.That(GameSessionState.GetInventoryItemCount(pie), Is.Zero);
-            Assert.That(GameSessionState.HungerLevel, Is.EqualTo(32));
+            Assert.That(GameSessionState.HungerLevel, Is.Zero);
             Assert.That(GameSessionState.StressLevel, Is.EqualTo(40));
         }
 

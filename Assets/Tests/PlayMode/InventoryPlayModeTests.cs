@@ -230,8 +230,8 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(InventoryItemId.ChickenEgg));
             GameSessionState.UpdateNeeds(0, 0);
             Assert.That(inventory.HasSelectedUseAction, Is.True,
-                "A real food action stays visible even when hunger is already satisfied.");
-            Assert.That(inventory.CanUseSelected, Is.False);
+                "Food can still be eaten when hunger is already zero.");
+            Assert.That(inventory.CanUseSelected, Is.True);
             Assert.That(inventory.SelectedUseActionLabel, Is.Not.Empty);
             Assert.That(inventory.ExamineSelected(), Is.True);
             Assert.That(inventory.IsExamining, Is.True);
@@ -241,6 +241,9 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(inventory.Cancel(), Is.True);
             Assert.That(inventory.IsExamining, Is.False);
             Assert.That(inventory.IsOpen, Is.True);
+            Assert.That(inventory.UseSelected(), Is.True);
+            Assert.That(GameSessionState.GetInventoryItemCount(InventoryItemId.ChickenEgg), Is.Zero);
+            Assert.That(GameSessionState.HungerLevel, Is.Zero);
 
             Assert.That(GameSessionState.TryAddInventoryItem(
                 InventoryItemId.OpenStewCan), Is.True);

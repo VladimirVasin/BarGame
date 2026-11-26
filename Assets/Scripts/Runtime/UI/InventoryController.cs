@@ -19,6 +19,7 @@ namespace BarPromenade
 
         private PlayerRuntime player;
         private PlayerVodkaBottleController drinkController;
+        private PlayerPieEatingController pieEating;
         private CombatActor healthActor;
         private PlayerCameraFollow cameraFollow;
         private IntoxicationHudView intoxicationHud;
@@ -89,7 +90,8 @@ namespace BarPromenade
             HasSelectedUseAction &&
             (SelectedStack.ItemId == InventoryItemId.HawthornTincture
                 ? drinkController != null && drinkController.CanQueueMedicineUse
-                : SelectedIsEquippable || SelectedUseEvaluation.Succeeded);
+                : (SelectedStack.ItemId != InventoryItemId.PotatoPirozhok || pieEating != null && pieEating.CanPrepare) &&
+                    (SelectedIsEquippable || SelectedUseEvaluation.Succeeded));
 
         public string SelectedUseActionLabel
         {
@@ -171,6 +173,7 @@ namespace BarPromenade
 
             player = playerRuntime;
             drinkController = playerRuntime.GameObject.GetComponent<PlayerVodkaBottleController>();
+            pieEating = playerRuntime.GameObject.GetComponent<PlayerPieEatingController>();
             healthActor = playerRuntime.GameObject.GetComponent<CombatActor>();
             seatedInteraction = playerRuntime.GameObject.GetComponent<PlayerAnimatedInteractionController>();
             cameraFollow = follow;
@@ -276,6 +279,19 @@ namespace BarPromenade
             }
 
             InventoryItemId itemId = SelectedStack.ItemId;
+            if (itemId == InventoryItemId.PotatoPirozhok)
+            {
+                if (pieEating == null || !pieEating.TryPrepare(cameraFollow))
+                {
+                    RetroAudio.Play(RetroSfxId.UiCancel);
+                    return false;
+                }
+
+                Close("user", false);
+                bool began = pieEating.BeginPrepared();
+                RetroAudio.Play(began ? RetroSfxId.UiConfirm : RetroSfxId.UiCancel);
+                return began;
+            }
             if (itemId == InventoryItemId.HawthornTincture)
             {
                 bool queued = drinkController != null && drinkController.TryQueueMedicineUse(this);

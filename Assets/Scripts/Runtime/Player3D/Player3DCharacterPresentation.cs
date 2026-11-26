@@ -682,6 +682,8 @@ namespace BarPromenade
 
         public bool HasContextualFacialExpression => contextualFaceOwner != null;
 
+        internal void SetActionJaw(float opening) => faceDeformation?.SetJaw(opening);
+
         /// <summary>
         /// Acquires or updates a facial override belonging to one interaction.
         /// Other owners cannot replace it. Suppressing soil changes only the

@@ -5,15 +5,16 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-26
 
-`WorldResidentialAddresses`: City/Home insets, night panes, alpine repairs, rail boxes and upright petunias.
+Pie: palm supports wrapper, slower. `SelectionAndExamine_UsePureMenuState` ate at zero. `InventoryPieClosesAndPlaysThreeBitesWipeAndBurp` exposed wrist bend before the last bite.
 
-`CityTrafficPassage`: axle contacts on the Works bridge, queues and walkers.
+`WorldResidentialAddresses`: insets, night panes, repairs, rail boxes, petunias.
+`CityTrafficPassage`: bridge axle contacts, queues/walkers.
+`WorldTonalReadability`: stairs, faces, night street. `CityNightSaturation`: balcony.
+`WorldContactFinishes`: rails, bus steps/grips, bar. `CharacterLightOnStreetAndInBar`: skin, cloth and hair.
 
-`WorldTonalReadability`: stairs, faces, night street. `CityNightSaturation`: balcony return. `WorldContactFinishes`: rails, bus grips/treads, pub fittings. `CharacterLightOnStreetAndInBar`: skin/cloth/hair in colour/grayscale turns.
+No clouds. `DirectionalAmbientWorld`, `CityStreetFogWalk`, `CityFogCheckpoint` (96 m), `CityRimFogVisibility`, `AlpineCliffFogSightline`, `SummitHome_BalconyAndApartmentDoorLookDownIntoTheCity`. `CitySouthEastRimFogAtReportedEdge`: rock in rain.
 
-Clouds removed. `DirectionalAmbientWorld`: clock/rooms. `CityStreetFogWalk`: wind. `CityFogCheckpoint`: 96 m. `CityRimFogVisibility`: near cliffs. `AlpineCliffFogSightline`: landmark. `SummitHome_BalconyAndApartmentDoorLookDownIntoTheCity`: room return.
-
-Fair sellers and visitors walk through both aisles to distinct homes. `CityFairDailyHours` checked closing, the seated child, night occupancy, reopening and the next evening’s assignments.
+Fair sellers and visitors walk home through both aisles. `CityFairDailyHours` checked closing, seating, occupancy, reopening, assignments.
 
 Children visit swings, bars, slides and balance modules. `CityParkPlaygroundChildVisit`, `CityCourtyardPlaygroundChildVisit`, `CitySlidePlaygroundChildVisit` and `CityBridgePlaygroundChildVisit` checked contacts, climbs and return. `CitySeesawDaylight` checked five layouts, paved paths, paired play, solo timeout, return and sunset.
 

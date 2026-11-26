@@ -22,6 +22,7 @@ namespace BarPromenade
             "Shaders/CityMountainPhysical";
         public const float MetersPerTile = 6.0f;
         public const float PhysicalVisibilityFloor = 0.10f;
+        private const float RidgeFogDensity = RuntimeSceneSetup.CityFogDensity * .62f;
         public const float NativeFogNearDistance = 9f;
         public const float NativeFogFarDistance = 12f;
         // The real rock dissolves completely before the street visibility limit.
@@ -57,6 +58,9 @@ namespace BarPromenade
         private static readonly int HandoffFarId =
             Shader.PropertyToID("_HandoffFar");
 
+        private static readonly int StableHazeHandoffId =
+            Shader.PropertyToID("_StableHazeHandoff");
+
         private static Texture2D cachedRockTexture;
         private static Material physicalRidgeMaterial;
 
@@ -86,7 +90,7 @@ namespace BarPromenade
                         RuntimeSceneSetup.CityFogColor);
                     physicalRidgeMaterial.SetFloat(
                         FogDensityId,
-                        RuntimeSceneSetup.CityFogDensity);
+                        RidgeFogDensity);
                     physicalRidgeMaterial.SetFloat(
                         VisibilityFloorId,
                         PhysicalVisibilityFloor);
@@ -102,6 +106,9 @@ namespace BarPromenade
                     physicalRidgeMaterial.SetFloat(
                         HandoffFarId,
                         PhysicalHandoffFarDistance);
+                    // Keep the rock's depth solid while its colour fades into
+                    // the sky. The street radius pass removes the far surface.
+                    physicalRidgeMaterial.SetFloat(StableHazeHandoffId, 1f);
                 }
 
                 return physicalRidgeMaterial;
@@ -199,10 +206,8 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// Applies the fog-safe physical-ridge material. Its opaque dither
-        /// hands the camera-relative silhouette to real geometry without a
-        /// depth-buffer gap, while tunnel pieces retain the ordinary shared
-        /// primitive material used by other close-range city props.
+        /// Applies the physical ridge's distance fog to the real rock and its
+        /// depth. Tunnel pieces use the shared primitive material.
         /// </summary>
         public static void ApplyPhysicalRidge(
             Renderer renderer,

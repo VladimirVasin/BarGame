@@ -646,12 +646,13 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(GameSessionState.FatigueLevel, Is.EqualTo(1));
         }
 
-        [Test]
-        public void FoodUse_ClearsFractionalHungerProgress()
+        [TestCase(60, 25)]
+        [TestCase(0, 0)]
+        public void FoodUse_ClearsFractionalHungerProgress(int startingHunger, int hungerAfterMeal)
         {
             // Ordinary shop food keeps this arithmetic independent of
             // the unique refrigerator tin reserved for the cat.
-            GameSessionState.UpdateNeeds(60, 0);
+            GameSessionState.UpdateNeeds(startingHunger, 0);
             Assert.That(
                 GameSessionState.TryAddInventoryItem(
                     InventoryItemId.ClosedStewCan),
@@ -660,20 +661,20 @@ namespace BarPromenade.Tests.EditMode
                 GameSessionState.TryStartGameTimeFromWake(),
                 Is.True);
             GameSessionState.AdvanceGameTime((float)(7.3f / GameTimeState.GameMinutesPerRealSecond));
-            Assert.That(GameSessionState.HungerLevel, Is.EqualTo(60));
+            Assert.That(GameSessionState.HungerLevel, Is.EqualTo(startingHunger));
 
             InventoryItemUseResult result =
                 GameSessionState.TryConsumeInventoryItem(
                     InventoryItemId.ClosedStewCan);
 
             Assert.That(result.Succeeded, Is.True);
-            Assert.That(GameSessionState.HungerLevel, Is.EqualTo(25));
+            Assert.That(GameSessionState.HungerLevel, Is.EqualTo(hungerAfterMeal));
 
             GameSessionState.AdvanceGameTime((float)(7.3f / GameTimeState.GameMinutesPerRealSecond));
-            Assert.That(GameSessionState.HungerLevel, Is.EqualTo(25));
+            Assert.That(GameSessionState.HungerLevel, Is.EqualTo(hungerAfterMeal));
 
             GameSessionState.AdvanceGameTime((float)(7.2f / GameTimeState.GameMinutesPerRealSecond));
-            Assert.That(GameSessionState.HungerLevel, Is.EqualTo(26));
+            Assert.That(GameSessionState.HungerLevel, Is.EqualTo(hungerAfterMeal + 1));
         }
 
         /// <summary>
@@ -698,8 +699,6 @@ namespace BarPromenade.Tests.EditMode
             GameSessionState.AdvanceGameTime(900f);
             Assert.That(GameSessionState.GameDayIndex, Is.Zero);
             GameSessionState.UpdateNeeds(60, GameSessionState.StressLevel);
-            Assert.That(GameSessionState.HungerLevel, Is.GreaterThan(20),
-                "The ordinary food rule would allow eating this tin.");
             Assert.That(GameSessionState.TryConsumeInventoryItem(
                 InventoryItemId.OpenStewCan).Status,
                 Is.EqualTo(InventoryItemUseStatus.ReservedForQuest));
@@ -767,7 +766,7 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void CheapFoodUse_StopsAtFloorAndKeepsUnusedItem()
+        public void FoodUse_ClampsPartialReliefAndConsumesAtZero()
         {
             GameSessionState.UpdateNeeds(60, 40);
             Assert.That(
@@ -782,24 +781,24 @@ namespace BarPromenade.Tests.EditMode
             InventoryItemUseResult second =
                 GameSessionState.TryConsumeInventoryItem(
                     InventoryItemId.ClosedStewCan);
-            InventoryItemUseResult blocked =
+            InventoryItemUseResult third =
                 GameSessionState.TryConsumeInventoryItem(
                     InventoryItemId.ClosedStewCan);
 
             Assert.That(first.Succeeded, Is.True);
             Assert.That(first.ActualHungerRelief, Is.EqualTo(35));
             Assert.That(second.Succeeded, Is.True);
-            Assert.That(second.ActualHungerRelief, Is.EqualTo(5));
-            Assert.That(blocked.Succeeded, Is.False);
-            Assert.That(
-                blocked.Status,
-                Is.EqualTo(InventoryItemUseStatus.NoEffect));
-            Assert.That(GameSessionState.HungerLevel, Is.EqualTo(20));
+            Assert.That(second.ActualHungerRelief, Is.EqualTo(25));
+            Assert.That(third.Succeeded, Is.True);
+            Assert.That(third.ActualHungerRelief, Is.Zero);
+            Assert.That(GameSessionState.HungerLevel, Is.Zero);
             Assert.That(GameSessionState.StressLevel, Is.EqualTo(40));
             Assert.That(
                 GameSessionState.GetInventoryItemCount(
                     InventoryItemId.ClosedStewCan),
-                Is.EqualTo(1));
+                Is.Zero);
+            Assert.That(GameSessionState.TryConsumeInventoryItem(InventoryItemId.ClosedStewCan).Status,
+                Is.EqualTo(InventoryItemUseStatus.MissingItem));
         }
 
         [Test]

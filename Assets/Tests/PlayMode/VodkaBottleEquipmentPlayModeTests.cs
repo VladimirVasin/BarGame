@@ -160,6 +160,145 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator InventoryPieClosesAndPlaysThreeBitesWipeAndBurp()
+        {
+            var actor = player.GameObject.transform;
+            var eating = actor.GetComponent<PlayerPieEatingController>();
+            var context = actor.GetComponent<PlayerAnimatedInteractionController>();
+            yield return Await(() => player.Motor.IsGrounded && eating.CanPrepare, "Hero did not settle into a free standing pose.");
+            Vector3 support = actor.position;
+            Time.captureDeltaTime = 1f / 30f;
+            camera.orthographic = false;
+            camera.transform.position = actor.position + new Vector3(.65f, 1.7f, -1.9f);
+            camera.transform.LookAt(actor.position + Vector3.up * 1.45f);
+            float initialLens = camera.fieldOfView;
+            GameSessionState.UpdateNeeds(17, GameSessionState.StressLevel);
+            Assert.That(GameSessionState.TryAddInventoryItem(InventoryItemId.PotatoPirozhok, 3), Is.True);
+            yield return StartEating();
+            context.CancelActiveInteraction();
+            Assert.That(GameSessionState.HungerLevel, Is.EqualTo(17));
+            Assert.That(GameSessionState.GetInventoryItemCount(InventoryItemId.PotatoPirozhok), Is.EqualTo(3));
+            Assert.That(player.Motor.InputEnabled, Is.True);
+
+            yield return StartEating();
+            Transform prop = actor.Find("Eating Potato Pirozhok");
+            Transform imported = prop.GetChild(0);
+            Transform pie = imported.Find("PotatoPie_MetricRoot") ?? imported;
+            Transform wrapperGrip = pie.Find("PieGrip");
+            foreach (Transform child in fixture.GetComponentsInChildren<Transform>(true))
+                child.gameObject.layer = CaptureLayer;
+            double actionStartedAt = Time.timeAsDouble;
+            Assert.That(pie.Find("PiePiece1").GetComponentInChildren<MeshRenderer>(true), Is.Not.Null);
+            yield return Await(() => prop.gameObject.activeSelf, "The wrapper did not reach the hand.");
+            yield return Frames(4);
+            eating.ReapplyPresentation();
+            CapturePie("pie-carry", wrapperGrip.position);
+            AssertPieGrip(wrapperGrip);
+            for (int piece = 1; piece <= 3; piece++)
+            {
+                int current = piece;
+                yield return Await(() => eating.BitesPresented == current, "Bite was skipped.");
+                eating.ReapplyPresentation();
+                if (piece == 1)
+                {
+                    CapturePie("pie-lip-contact", wrapperGrip.position);
+                    Assert.That(Time.timeAsDouble - actionStartedAt, Is.GreaterThan(.9d));
+                }
+                if (piece == 3) CapturePie("pie-last-contact", wrapperGrip.position);
+                AssertPieGrip(wrapperGrip);
+                Assert.That(eating.ContactError, Is.LessThan(.012f));
+                Assert.That(pie.Find($"PiePiece{piece}").gameObject.activeSelf, Is.False);
+                Assert.That(GameSessionState.GetInventoryItemCount(InventoryItemId.PotatoPirozhok), Is.EqualTo(2));
+                Assert.That(GameSessionState.HungerLevel, Is.Zero);
+                Assert.That(eating.BurpPresented, Is.False);
+                if (piece < 3)
+                {
+                    Assert.That(pie.Find($"PiePiece{piece+1}").gameObject.activeSelf, Is.True);
+                    yield return Frames(8);
+                    eating.ReapplyPresentation();
+                    CapturePie($"pie-after-bite-{piece}");
+                }
+            }
+
+            yield return Frames(28);
+            eating.ReapplyPresentation();
+            CapturePie("pie-mouth-wipe");
+            yield return Await(() => eating.BurpPresented, "Burp did not play after the wipe.");
+            var audio = RetroAudioService.Instance;
+            Assert.That(audio, Is.Not.Null);
+            var clip = audio.GetClip(RetroSfxId.PieBurp, 0);
+            Assert.That(Array.FindAll(audio.GetComponentsInChildren<AudioSource>(),
+                source => source.clip == clip && !source.loop).Length, Is.EqualTo(1));
+            yield return Await(() => player.Motor.InputEnabled, "Eating did not release the controls.");
+            yield return null;
+            Assert.That(camera.fieldOfView, Is.EqualTo(initialLens));
+            Assert.That(Vector3.Distance(actor.position, support), Is.LessThan(.025f));
+            Assert.That(actor.Find("Eating Potato Pirozhok"), Is.Null);
+
+            yield return StartEating();
+            yield return Await(() => eating.BitesPresented == 1, "First bite did not commit.");
+            context.CancelActiveInteraction();
+            Assert.That(GameSessionState.GetInventoryItemCount(InventoryItemId.PotatoPirozhok), Is.EqualTo(1));
+            Assert.That(GameSessionState.HungerLevel, Is.Zero);
+            Assert.That(eating.BurpPresented, Is.False);
+            Assert.That(player.Motor.InputEnabled && player.Interactor.InputEnabled, Is.True);
+        }
+
+        private IEnumerator StartEating()
+        {
+            Assert.That(inventory.Open(), Is.True);
+            for (int i = 0; i < GameSessionState.InventoryItems.Count; i++)
+                if (GameSessionState.InventoryItems[i].ItemId == InventoryItemId.PotatoPirozhok &&
+                    inventory.SelectedItemIndex != i) Assert.That(inventory.SelectItem(i), Is.True);
+            yield return Frames(2);
+            Assert.That(inventory.CanUseSelected, Is.True);
+            Assert.That(inventory.UseSelected(), Is.True, "Eat must prepare the authored pie and hand off inventory.");
+            Assert.That(inventory.IsOpen, Is.False);
+            Assert.That(GameTimeScaleRuntime.IsPaused, Is.False);
+            Assert.That(player.Motor.InputEnabled || player.Interactor.InputEnabled, Is.False);
+        }
+
+        private void AssertPieGrip(Transform wrapperGrip)
+        {
+            var registry = presentation.Registry;
+            Assert.That(registry.TryGetPart(Player3DAnatomicalPart.RightHand, out var wrist), Is.True);
+            Assert.That(registry.TryGetPart(Player3DAnatomicalPart.RightForearm, out var elbow), Is.True);
+            var hands = registry.GetComponent<NpcHandPose>();
+            Vector3 forearm = wrist.Bone.position - elbow.Bone.position;
+            Assert.That(Vector3.Angle(forearm, hands.AnatomicalFingerDirection(false)), Is.LessThan(52f),
+                "The fingers should extend from the forearm without a sharp wrist bend.");
+            Assert.That(Vector3.Distance(wrapperGrip.position, hands.AnatomicalCylinderCentre(false)),
+                Is.LessThan(.003f), "The wrapper should move with the palm.");
+        }
+
+        private void CapturePie(string name, Vector3? closeOn = null)
+        {
+            var original = new Pose(camera.transform.position, camera.transform.rotation);
+            if (closeOn.HasValue)
+            {
+                Vector3 direction = player.GameObject.transform.TransformDirection(new Vector3(1.15f, .42f, .95f)).normalized;
+                camera.transform.position = closeOn.Value + direction * .70f;
+                camera.transform.LookAt(closeOn.Value);
+            }
+            RenderTexture prior = RenderTexture.active;
+            try
+            {
+                camera.Render();
+                RenderTexture.active = target;
+                tile.ReadPixels(new Rect(0, 0, TileSize, TileSize), 0, 0);
+                tile.Apply();
+                string directory = Path.Combine(Directory.GetCurrentDirectory(), "Captures", "PieEating");
+                Directory.CreateDirectory(directory);
+                File.WriteAllBytes(Path.Combine(directory, name + ".png"), tile.EncodeToPNG());
+            }
+            finally
+            {
+                camera.transform.SetPositionAndRotation(original.position, original.rotation);
+                RenderTexture.active = prior;
+            }
+        }
+
+        [UnityTest]
         public IEnumerator BeerCanFinishFollowsTheHeldParts()
         {
             Assert.That(GameSessionState.TryPurchaseWorldItem("test.finish.beer", InventoryItemId.BeerCan).Succeeded, Is.True);

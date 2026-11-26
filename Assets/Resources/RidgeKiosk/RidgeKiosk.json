@@ -216,11 +216,48 @@
       ],
       "bounds_max": [
         0.07497,
-        0.06072,
+        0.06061,
         0.0475
       ],
-      "triangles": 1658,
-      "geometry_sha256": "61adcb694ef114c3ff3b6c37da05a24eea6df366db8b03433f756d725ebfac54"
+      "triangles": 1934,
+      "geometry_sha256": "564d648667ff4511ea5f4d4e25fe49c9ebb4309ec2239267e8a0154395379474",
+      "anchors": {
+        "PiePiece1": [
+          0,
+          0,
+          0
+        ],
+        "PiePiece2": [
+          0,
+          0,
+          0
+        ],
+        "PiePiece3": [
+          0,
+          0,
+          0
+        ],
+        "PieGrip": [
+          -0.043,
+          0.025,
+          0
+        ],
+        "Bite1": [
+          0.066,
+          0.032,
+          0
+        ],
+        "Bite2": [
+          0.031,
+          0.032,
+          0
+        ],
+        "Bite3": [
+          -0.012,
+          0.028,
+          0
+        ]
+      }
     },
     "RidgeKioskCourt": {
       "bounds_min": [

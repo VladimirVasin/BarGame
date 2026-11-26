@@ -269,6 +269,7 @@ namespace BarPromenade
         private bool handEquipmentResolved;
         private BarMinigameModalLock stationaryInput;
         private Action stationaryCleanup;
+        private bool stationaryUsesSeat;
 
         public event Action<PlayerAnimatedInteractionPhase> PhaseChanged;
         public event Action<PlayerAnimatedInteractionPhase>
@@ -343,6 +344,34 @@ namespace BarPromenade
         /// <summary>Owns neutral support and cleanup for an in-place procedural action.</summary>
         internal bool TryBeginStationary(PlayerCameraFollow camera, Action cleanup) =>
             TryBeginGroundedSequence(camera, cleanup, holdNeutral: true);
+
+        internal bool CanUseStationarySeat => stationaryCleanup == null &&
+            AllowsHandEquipment && Phase == PlayerAnimatedInteractionPhase.Looping &&
+            !IsNestedLoopActionActive;
+
+        internal bool TryBeginStationarySeat(PlayerCameraFollow camera, Action cleanup)
+        {
+            if (!isActiveAndEnabled || !CanUseStationarySeat || cleanup == null ||
+                !player.Interactor.InputEnabled) return false;
+
+            stationaryInput ??= new BarMinigameModalLock();
+            if (!stationaryInput.TryCaptureAndDisable(player.Interactor, camera, null,
+                    BarMinigameModalLockOptions.StationaryAction)) return false;
+            stationaryUsesSeat = true;
+            stationaryCleanup = cleanup;
+            return true;
+        }
+
+        internal void EndStationaryAction(Action ownerCleanup)
+        {
+            if (ownerCleanup == null || stationaryCleanup != ownerCleanup) return;
+            Action cleanup = stationaryCleanup;
+            stationaryCleanup = null;
+            cleanup();
+            if (!stationaryUsesSeat) player.Visual?.SetInteractionHandoffLocked(false);
+            stationaryUsesSeat = false;
+            stationaryInput.Restore();
+        }
 
         // Positioned procedural interactions can walk through an opened door with the same
         // motor and modal ownership, then take neutral support at each authored contact.
@@ -803,7 +832,7 @@ namespace BarPromenade
                    timeline != null &&
                    timeline.Phase ==
                        PlayerAnimatedInteractionPhase.Looping &&
-                   !IsNestedLoopActionActive &&
+                   !IsNestedLoopActionActive && stationaryCleanup == null &&
                    HasRequiredClips(definition);
         }
 
@@ -1427,14 +1456,7 @@ namespace BarPromenade
         private void CompleteInteraction(
             bool completedNormally = false)
         {
-            if (stationaryCleanup != null)
-            {
-                Action cleanup = stationaryCleanup;
-                stationaryCleanup = null;
-                cleanup();
-                player.Visual?.SetInteractionHandoffLocked(false);
-                stationaryInput.Restore();
-            }
+            EndStationaryAction(stationaryCleanup);
 
             bool hadNestedLoopAction = IsNestedLoopActionActive;
             bool shouldNotify =

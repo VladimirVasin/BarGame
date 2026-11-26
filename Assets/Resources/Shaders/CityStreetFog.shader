@@ -6,6 +6,7 @@ Shader "Bar Promenade/City Street Fog"
         [HideInInspector] _StreetFlow("Wind travel and roll", Vector) = (0, 0, 0, 1)
         [HideInInspector] _StreetObserver("Hero centre", Vector) = (0, 0, 0, 0)
         [HideInInspector] _DensityNoise("Air density", 3D) = "" {}
+        [HideInInspector] _NearSurfaceOpacity("Near surface opacity per volume", Float) = .006
     }
     SubShader
     {
@@ -31,6 +32,7 @@ Shader "Bar Promenade/City Street Fog"
                 float4 _FogMotion;
                 float4 _StreetFlow;
                 float4 _StreetObserver;
+                float _NearSurfaceOpacity;
             CBUFFER_END
             TEXTURE3D(_DensityNoise);
             SAMPLER(sampler_DensityNoise);
@@ -124,8 +126,16 @@ Shader "Bar Promenade/City Street Fog"
                 float opticalDepth = thickness * meanDensity * distanceFade * surfaceFade * (.06 + 2.6 * billow) * input.opacity;
                 half height = (p.y - input.centerAndRadius.y) * metric.y;
                 half skyScatter = lerp(.84h, 2.35h, saturate(.36h + .39h * height + .55h * fold));
+                half opacity = 1 - exp2(-2.85 * opticalDepth);
+                // Even 36 overlapping volumes must transmit at least 80%
+                // of close opaque surfaces. Relax the limit on longer views
+                // so the sky and the end of the draw radius still take full haze.
+                half surfaceLimit = lerp(_NearSurfaceOpacity, .02h,
+                    smoothstep(34.0, 56.0, sceneDistance));
+                float farHaze = smoothstep(60.0, 90.0, sceneDistance);
+                opacity = min(opacity, lerp(surfaceLimit, 1.0h, farHaze));
                 // Practical lights already scatter through City's local-light volume pass.
-                return half4(unity_FogColor.rgb * skyScatter, 1 - exp2(-2.85 * opticalDepth));
+                return half4(unity_FogColor.rgb * skyScatter, opacity);
             }
             ENDHLSL
         }

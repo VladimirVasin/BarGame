@@ -476,8 +476,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   unavailable-travel thought and walks the ordinary rig back to `6.5 m`.
   No tunnel transition handler or cave interaction. North remains sea;
   east has the closed mainland road below. Only real western and southern rock
-  appears inside the 96 m street radius. Colour, depth and normals share the
-  78–95 m dissolve. Rock uses City SSAO and a 0.10 contrast floor.
+  appears inside the 96 m street radius. Rock retains its shape in the depth and normals passes as its colour fades into haze at 78–95 m. It uses SSAO and a 0.10 contrast floor.
   The omitted `(-1,-1)` cell holds one textured natural-soil
   slope around `16.2°`, outside navigation behind the exact L-shaped road
   fence, with no steps/terraces/platforms. Outer wings follow sampled terrain
@@ -736,7 +735,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   Home copies bounded street/terrain/perimeters without collision. Furnished panes fit behind the outer sash in City and Home. Ordinary panes
   keep a street-front primary and timed Residential extra;dark gaps/districts/
   special Bar/Home/Shop materials stay;
-- `CityFogField` carries up to 36 wind-driven particles. On streets and the Home balcony, two scales of moving 3D density break up soft ellipsoids. Opaque surfaces clip each volume. Their local haze is clear within 10 m of the camera or hero and fades back in by 18 m. The first 6.5 m around the hero and camera stay clear of these volumes. They build up by 11 m and dissolve by 22 m. Sheltered areas clear and refill the field;
+- `CityFogField` carries up to 36 wind-driven particles. On streets and the Home balcony, two scales of moving 3D density break up soft ellipsoids. Opaque surfaces clip each volume. Local haze is clear on surfaces within 10 m of the camera or hero and fades in by 18 m. Close geometry keeps 80% transmission through the local layers. Full haze resumes at 90 m. The first 6.5 m around the hero and camera stay clear of these volumes. They build up by 11 m and dissolve by 22 m. Sheltered areas clear and refill the field;
   road/village retain their field profile and weather shelter owner. Exp2 is
   per-area;only village haze breathes with gusts. Depth-tested soft halos stay;
 
@@ -2231,9 +2230,8 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   reset clear the resting posture. Shower
   clothing ownership temporarily removes its visible form. Head/body hiding
   applies to the accessory, and the bathroom mirror copies its live appearance
-  and corrected surfaces without another contact update. Inventory food remains
-  non-animated;hunger floor20,no-effect stacks retained. Alcohol has separate
-  stress relief. Vodka:LMB click1;hold raises once,keeps at mouth for successive
+  and corrected surfaces without another contact update. Food spends one item
+  even at zero hunger. Relief stops at zero. Alcohol has separate stress relief. Vodka:LMB click1;hold raises once,keeps at mouth for successive
   swallows,lowers on release/empty/refusal. Full500ml=15×33/34ml,four servings;
   Vodka+24/serving,nominal96/full bottle before recovery/cap;Home100ml.
   IDs/fills persist,max100refuses without spending;dose also feeds decay.

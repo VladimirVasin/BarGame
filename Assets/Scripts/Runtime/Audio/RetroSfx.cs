@@ -101,6 +101,8 @@ namespace BarPromenade
         HandsetLift,
         HandsetSeat,
         PayphoneKey,
+        PieBite,
+        PieBurp,
         Count
     }
 
@@ -953,7 +955,11 @@ namespace BarPromenade
             new RetroSfxDefinition(RetroSfxId.HandsetSeat, RetroSfxCategory.World,
                 .19f,.34f,.92f,1,.10f,1,4096,3600f,.02f,85),
             new RetroSfxDefinition(RetroSfxId.PayphoneKey, RetroSfxCategory.World,
-                .078f,.30f,.95f,2,.065f,1,4096,4900f,.035f,80,2)
+                .078f,.30f,.95f,2,.065f,1,4096,4900f,.035f,80,2),
+            new RetroSfxDefinition(RetroSfxId.PieBite, RetroSfxCategory.World,
+                .12f,.18f,.8f,1,.12f,1,4096,1900f,.045f,72,3),
+            new RetroSfxDefinition(RetroSfxId.PieBurp, RetroSfxCategory.World,
+                .30f,.26f,.8f,1,.30f,1,4096,1700f,.025f,78)
         };
 
         public static int Count => definitions.Length - 1;
@@ -1483,6 +1489,17 @@ namespace BarPromenade
                         duration,
                         ref noiseState,
                         detune);
+                case RetroSfxId.PieBite:
+                    return (NextNoise(ref noiseState) * .6f +
+                        GlideSine(time, duration, 430f * detune, 190f) * .4f) *
+                        Envelope(time, duration, .006f, 3f);
+                case RetroSfxId.PieBurp:
+                    float flutter = .75f + .23f * Mathf.Sin(2f * Mathf.PI * 38f * time);
+                    float throat = GlideSine(time, duration, 117f, 68f) * .64f +
+                        GlideSine(time, duration, 236f, 132f) * .26f +
+                        GlideSine(time, duration, 488f, 287f) * .12f;
+                    return (throat * flutter + NextNoise(ref noiseState) * .18f) *
+                        Envelope(time, duration, .027f, 1.7f);
                 case RetroSfxId.ShotSwap:
                     return GenerateShotSwap(
                         time,

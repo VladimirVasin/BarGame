@@ -8,14 +8,13 @@ namespace BarPromenade.Tests.EditMode
     {
         private static readonly object[] expectedDefinitions =
         {
-            new object[] { InventoryItemId.HawthornTincture, InventoryConsumableKind.Alcohol, 0, 0, DrinkId.HawthornTincture, 1d, 0 },
-            new object[] { InventoryItemId.BeerCan, InventoryConsumableKind.Alcohol, 0, 0, DrinkId.LightBeer, 1d, 6 },
-            new object[] { InventoryItemId.WineBottle, InventoryConsumableKind.Alcohol, 0, 0, DrinkId.RedWine, 3d, 36 },
+            new object[] { InventoryItemId.HawthornTincture, InventoryConsumableKind.Alcohol, 0, DrinkId.HawthornTincture, 1d, 0 },
+            new object[] { InventoryItemId.BeerCan, InventoryConsumableKind.Alcohol, 0, DrinkId.LightBeer, 1d, 6 },
+            new object[] { InventoryItemId.WineBottle, InventoryConsumableKind.Alcohol, 0, DrinkId.RedWine, 3d, 36 },
             new object[]
             {
                 InventoryItemId.VodkaBottle,
                 InventoryConsumableKind.Alcohol,
-                0,
                 0,
                 DrinkId.Vodka,
                 4d,
@@ -26,7 +25,6 @@ namespace BarPromenade.Tests.EditMode
                 InventoryItemId.ChickenEgg,
                 InventoryConsumableKind.Food,
                 10,
-                20,
                 DrinkId.None,
                 0d,
                 0
@@ -36,7 +34,6 @@ namespace BarPromenade.Tests.EditMode
                 InventoryItemId.OpenStewCan,
                 InventoryConsumableKind.Food,
                 35,
-                20,
                 DrinkId.None,
                 0d,
                 0
@@ -46,7 +43,6 @@ namespace BarPromenade.Tests.EditMode
                 InventoryItemId.ClosedStewCan,
                 InventoryConsumableKind.Food,
                 35,
-                20,
                 DrinkId.None,
                 0d,
                 0
@@ -56,7 +52,6 @@ namespace BarPromenade.Tests.EditMode
                 InventoryItemId.InstantNoodles,
                 InventoryConsumableKind.Food,
                 22,
-                20,
                 DrinkId.None,
                 0d,
                 0
@@ -66,12 +61,11 @@ namespace BarPromenade.Tests.EditMode
                 InventoryItemId.DayOldLoaf,
                 InventoryConsumableKind.Food,
                 18,
-                20,
                 DrinkId.None,
                 0d,
                 0
             },
-            new object[] { InventoryItemId.PotatoPirozhok, InventoryConsumableKind.Food, 24, 20, DrinkId.None, 0d, 0 }
+            new object[] { InventoryItemId.PotatoPirozhok, InventoryConsumableKind.Food, 24, DrinkId.None, 0d, 0 }
         };
 
         [Test]
@@ -103,7 +97,6 @@ namespace BarPromenade.Tests.EditMode
             InventoryItemId itemId,
             InventoryConsumableKind kind,
             int hungerRelief,
-            int minimumHungerAfterUse,
             DrinkId drinkId,
             double servings,
             int stressRelief)
@@ -120,7 +113,6 @@ namespace BarPromenade.Tests.EditMode
                     itemId,
                     kind,
                     hungerRelief,
-                    minimumHungerAfterUse,
                     drinkId,
                     servings,
                     stressRelief
@@ -160,13 +152,10 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo((InventoryConsumableKind)expected[1]));
             Assert.That(definition.HungerRelief, Is.EqualTo((int)expected[2]));
             Assert.That(
-                definition.MinimumHungerAfterUse,
-                Is.EqualTo((int)expected[3]));
-            Assert.That(
                 definition.DrinkId,
-                Is.EqualTo((DrinkId)expected[4]));
-            Assert.That(definition.Servings, Is.EqualTo((double)expected[5]));
-            Assert.That(definition.StressRelief, Is.EqualTo((int)expected[6]));
+                Is.EqualTo((DrinkId)expected[3]));
+            Assert.That(definition.Servings, Is.EqualTo((double)expected[4]));
+            Assert.That(definition.StressRelief, Is.EqualTo((int)expected[5]));
         }
     }
 }

@@ -668,9 +668,15 @@ namespace BarPromenade
             Vector3 before = transform.position;
             Vector3 planarDelta = constrained - current;
             planarDelta.y = 0f;
-            controller.Move(planarDelta + (Vector3.up * verticalSpeed * Time.deltaTime));
-            CollisionFlags flags = controller.collisionFlags;
-            groundedAfterMainMove = controller.isGrounded;
+            CollisionFlags flags = CollisionFlags.None;
+            // Move(Vector3.zero) during inventory or pause clears ground
+            // contact. Keep the last simulated support for modal handoffs.
+            if (Time.deltaTime > 0f)
+            {
+                controller.Move(planarDelta + (Vector3.up * verticalSpeed * Time.deltaTime));
+                flags = controller.collisionFlags;
+                groundedAfterMainMove = controller.isGrounded;
+            }
 
             float inverseDelta = Time.deltaTime > 0.0001f ? 1f / Time.deltaTime : 0f;
             Vector3 momentumDisplacement = transform.position - before;

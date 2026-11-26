@@ -502,7 +502,7 @@ def crown(x):
     return .019 + .009*profile + .026*profile
 
 
-def pastry(scale=1.0):
+def pastry(scale=1.0, bite_rows=()):
     # The pan flattens the lower face. Hand-stretched dough bulges on either
     # side of the top fold; the two ends narrow before they turn under.
     rings, sides = 29, 18
@@ -519,7 +519,8 @@ def pastry(scale=1.0):
             z = .045*profile*math.cos(angle)*(1+ripple) + .003*profile*math.sin(2.4*u)
             y = center + h*.026*profile*(1 + .052*math.sin(3*angle+4*u))
             y = max(.0034+.0018*(1-profile), y)
-            points.append((x*scale, y*scale, z*scale))
+            cut = .004*math.sin(3*angle+.5*row) + .002*math.cos(5*angle) if row in bite_rows else 0
+            points.append(((x+cut)*scale, y*scale, z*scale))
     faces.append(tuple(reversed(range(sides))))
     for row in range(rings-1):
         for i in range(sides):
@@ -530,13 +531,19 @@ def pastry(scale=1.0):
     return points, faces
 
 
-def seam():
+def seam(cuts=()):
     # Continuous crimp: an indented, slightly asymmetrical crest melds into the dough.
     points, faces = [], []
     steps = 53
     for i in range(steps):
         t=i/(steps-1)
         x=-.065+.130*t
+        if cuts:
+            nodes = (0, 18, 34, steps-1)
+            positions = (-.065, *cuts, .065)
+            segment = 0 if i < 18 else 1 if i < 34 else 2
+            weight = (i-nodes[segment])/(nodes[segment+1]-nodes[segment])
+            x = (1-weight)*positions[segment] + weight*positions[segment+1]
         taper=.30+.70*math.sin(math.pi*t)**.48
         phase=t*math.pi*18
         z=.0025*math.sin(3.3*t)-.0014+.0014*math.sin(phase)
@@ -568,8 +575,16 @@ def paper_fold(m, polygon, thickness=.0014):
 
 def pie():
     m = Model()
-    m.add("pastry", pastry())
-    m.add("seam", seam())
+    dough, _ = pastry(bite_rows=(10, 18))
+    cuts = tuple(dough[row*18+4][0] for row in (10, 18))
+    crimp, _ = seam(cuts)
+    # The same jagged rings join both neighbours. Each closure cups inward,
+    # with a narrow rim of dough around the exposed potato.
+    for piece in range(3):
+        m.group = f"PiePiece{3-piece}"
+        pie_section(m, dough, 18, (0, 10, 18, 28), piece, "pastry")
+        pie_section(m, crimp, 5, (0, 18, 34, 52), piece, "seam")
+    m.group = None
     m.box("paper", (-.015,.002,0), (.131,.004,.095), .001)
     for side in (-1,1):
         edge = .047*side
@@ -579,6 +594,23 @@ def pie():
     paper_fold(m, [(-.080,.004,-.045),(-.080,.004,.045),(-.072,.034,.028),
                    (-.068,.037,0),(-.072,.033,-.028)])
     return m
+
+
+def pie_section(model, points, sides, rows, piece, surface):
+    first, last = rows[piece:piece+2]
+    vertices = points[first*sides:(last+1)*sides]
+    end = len(vertices) - sides
+    skin = [(i, i-i%sides+(i+1)%sides, i-i%sides+(i+1)%sides+sides, i+sides)
+            for i in range(end)]
+    # Close each shell for the signed volume check. The export replaces
+    # the internal ends with a rim of dough and a cap of filling.
+    model.add(surface, (vertices, [tuple(reversed(range(sides))), *skin,
+                                  tuple(range(end, end+sides))]))
+
+
+PIE_MARKS = {**{f"PiePiece{i}": (0, 0, 0) for i in range(1, 4)},
+             "PieGrip": (-.043, .025, 0), "Bite1": (.066, .032, 0),
+             "Bite2": (.031, .032, 0), "Bite3": (-.012, .028, 0)}
 
 
 def signature(model):
@@ -596,12 +628,13 @@ def measure(model):
                 triangles=kit.triangle_count(combined), geometry_sha256=signature(model))
 
 
-def swatch_uv(points, faces, surface):
+def swatch_uv(points, faces, surface, bounds_points=None):
     # Project each closed solid, leaving padding in the tile for mip filtering.
     tile = list(SURFACES).index(surface) if surface in SURFACES else 0
     row, col = divmod(tile,4)
-    low = np.min(points,axis=0)
-    size = np.maximum(np.max(points,axis=0) - low, .0001)
+    reference = points if bounds_points is None else bounds_points
+    low = np.min(reference,axis=0)
+    size = np.maximum(np.max(reference,axis=0) - low, .0001)
     result = []
     for f in faces:
         p0,p1,p2 = (np.array(points[i]) for i in f[:3])
@@ -613,6 +646,42 @@ def swatch_uv(points, faces, surface):
             u,v = ((points[i][axis]-low[axis])/size[axis] for axis in axes)
             result.append(((col+.026+.948*u)/4,(3-row+.026+.948*v)/4))
     return result
+
+
+def pie_export_faces(surface, solid, piece):
+    points, faces = solid
+    for index, face in enumerate(faces):
+        cut = index == 0 and piece != 3 or index == len(faces)-1 and piece != 1
+        if not cut:
+            yield points, face, surface
+            continue
+        ring = [Vector(points[i]) for i in face]
+        centre = sum(ring, Vector()) / len(ring)
+        inward = .0018 if index == 0 else -.0018
+        inner = [point.lerp(centre, .19) + Vector((inward, 0, 0)) for point in ring]
+        rim = [tuple(p) for p in ring + inner]
+        n = len(ring)
+        for i in range(n):
+            following = (i+1)%n
+            yield rim, (i, following, n+following, n+i), surface
+        # The existing muted cream swatch suits the soft potato. Break the
+        # centre very slightly so the two exposed faces read as bitten dough.
+        filling = [tuple(p) for p in inner] + [tuple(centre + Vector((inward*1.6, .0012, -.002)))]
+        for i in range(n):
+            yield filling, (i, (i+1)%n, n), "stitch" if surface == "pastry" else surface
+
+
+def measure_pie(model):
+    exported = []
+    for (surface, solid), group in zip(model.solids, model.groups):
+        if group:
+            exported.extend((group, finish, [points[i] for i in face])
+                            for points, face, finish in pie_export_faces(surface, solid, int(group[-1])))
+        else:
+            exported.extend((None, surface, [solid[0][i] for i in face]) for face in solid[1])
+    return {**measure(model), "anchors": PIE_MARKS,
+            "triangles": sum(len(face)-2 for _, _, face in exported),
+            "geometry_sha256": hashlib.sha256(json.dumps(exported).encode()).hexdigest()}
 
 
 def emit(name, model, marks, model_dir, source_dir, image):
@@ -661,6 +730,26 @@ def emit(name, model, marks, model_dir, source_dir, image):
             continue
         vertices, faces, uvs, smooth = [], [], [], []
         for surface, solid in solids:
+            if name == "PotatoPie" and group:
+                # Share source positions along the skin and use the intact
+                # swatch projection on every piece. Keep the cut faces flat.
+                reference = pastry(bite_rows=(10, 18))[0] if surface == "pastry" else seam()[0]
+                lookup = {}
+                for points, face, face_surface in pie_export_faces(surface, solid, int(group[-1])):
+                    skin = points is solid[0]
+                    source_face = tuple(reversed(face))
+                    indices = []
+                    for i in source_face:
+                        key = (points[i], skin)
+                        if key not in lookup:
+                            lookup[key] = len(vertices)
+                            x, y, z = key[0]
+                            vertices.append((x, z, y))
+                        indices.append(lookup[key])
+                    faces.append(tuple(indices))
+                    smooth.append(skin)
+                    uvs.extend(swatch_uv(points, [source_face], face_surface, reference if skin else None))
+                continue
             points, oriented = solid
             source_points, source_faces = parts.to_source(solid)
             if group:
@@ -707,8 +796,10 @@ def main():
                         help="Publish the kiosk and court; preserve unchanged stock assets.")
     parser.add_argument("--court-only", action="store_true",
                         help="Publish the rear court; preserve kiosk, stock and shared palette.")
+    parser.add_argument("--pie-only", action="store_true",
+                        help="Publish the pie; preserve kiosk, court and shared palette.")
     args = parser.parse_args(sys.argv[sys.argv.index("--")+1:] if "--" in sys.argv else [])
-    builds = (("RidgeKiosk", kiosk, ANCHORS),("PotatoPie", pie, {}),("RidgeKioskCourt", court, COURT_ANCHORS))
+    builds = (("RidgeKiosk", kiosk, ANCHORS),("PotatoPie", pie, PIE_MARKS),("RidgeKioskCourt", court, COURT_ANCHORS))
     texture = atlas_bytes()
     payload = {"front":"+Z","unit":"metre","palette_sha256":hashlib.sha256(texture).hexdigest(),
                "sign_text":SIGN_TEXT,"hours_text":HOURS_TEXT,"neon_sectors":list(NEON_SLOTS),
@@ -722,8 +813,9 @@ def main():
                 assert len(sectors) == 1
                 assert all(-1.346 <= x <= -.912 and 2.338 <= y <= 2.526 and
                            1.771 <= z <= 1.781 for x,y,z in sectors[0][0])
-        record = measure(model)
-        if record != measure(make()):
+        measure_asset = measure_pie if name == "PotatoPie" else measure
+        record = measure_asset(model)
+        if record != measure_asset(make()):
             raise ValueError(name+" geometry is not deterministic")
         payload["models"][name] = record
     bounds = payload["models"]["RidgeKiosk"]
@@ -746,17 +838,23 @@ def main():
     else:
         args.model_dir.mkdir(parents=True,exist_ok=True)
         args.source_dir.mkdir(parents=True,exist_ok=True)
-        path = (OUT if args.kiosk_only or args.court_only else args.model_dir)/"RidgeKioskPalette.png"
-        if args.kiosk_only or args.court_only:
+        partial = args.kiosk_only or args.court_only or args.pie_only
+        path = (OUT if partial else args.model_dir)/"RidgeKioskPalette.png"
+        if partial:
             existing = json.loads((OUT/"RidgeKiosk.json").read_text())
-            assert existing["models"]["PotatoPie"] == payload["models"]["PotatoPie"]
-            if args.court_only:
+            if not args.pie_only:
+                assert existing["models"]["PotatoPie"] == json.loads(manifest)["models"]["PotatoPie"]
+            if args.court_only or args.pie_only:
                 assert existing["models"]["RidgeKiosk"] == payload["models"]["RidgeKiosk"]
+            if args.pie_only:
+                assert existing["models"]["RidgeKioskCourt"] == payload["models"]["RidgeKioskCourt"]
             assert path.read_bytes() == texture
         else:
             path.write_bytes(texture)
         (args.model_dir/"RidgeKiosk.json").write_text(manifest)
         for name,make,marks in builds:
+            if args.pie_only and name != "PotatoPie":
+                continue
             if args.court_only and name != "RidgeKioskCourt":
                 continue
             if args.kiosk_only and name == "PotatoPie":

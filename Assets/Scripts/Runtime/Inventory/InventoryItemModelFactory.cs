@@ -13,6 +13,8 @@ namespace BarPromenade
     /// </summary>
     public static class InventoryItemModelFactory
     {
+        internal const string PotatoPieResourcePath = "RidgeKiosk/PotatoPie";
+
         private static readonly Color Metal =
             new Color(0.30f, 0.31f, 0.27f);
         private static readonly Color DeepRust =
@@ -86,9 +88,8 @@ namespace BarPromenade
             switch (itemId)
             {
                 case InventoryItemId.PotatoPirozhok:
-                    const string pieResource = "RidgeKiosk/PotatoPie";
-                    var pastry = Resources.Load<GameObject>(pieResource);
-                    if (pastry == null) throw new InvalidOperationException("Missing authored " + pieResource);
+                    var pastry = Resources.Load<GameObject>(PotatoPieResourcePath);
+                    if (pastry == null) throw new InvalidOperationException("Missing authored " + PotatoPieResourcePath);
                     // Keep the FBX conversion on the child. Only its metre-space wrapper fits the shelf.
                     Transform pie = CreateRoot(rootPrefix + " Potato Pirozhok", parent);
                     UnityEngine.Object.Instantiate(pastry, pie, false);

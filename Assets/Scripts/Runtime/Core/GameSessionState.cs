@@ -1212,16 +1212,13 @@ namespace BarPromenade
                 PlayerNeedReliefResult relief =
                     PlayerNeedsRules.ApplyFoodRelief(
                         HungerLevel,
-                        definition.HungerRelief,
-                        definition.MinimumHungerAfterUse);
+                        definition.HungerRelief);
                 return new InventoryItemUseResult(
-                    relief.Changed
-                        ? InventoryItemUseStatus.Success
-                        : InventoryItemUseStatus.NoEffect,
+                    InventoryItemUseStatus.Success,
                     itemId,
                     definition.Kind,
                     itemCount,
-                    relief.Changed ? itemCount - 1 : itemCount,
+                    itemCount - 1,
                     HungerLevel,
                     relief.LevelAfter,
                     StressLevel,
@@ -1299,7 +1296,10 @@ namespace BarPromenade
                 InventoryConsumableCatalog.Get(itemId);
             if (definition.Kind == InventoryConsumableKind.Food)
             {
-                UpdateNeeds(result.HungerAfter, result.StressAfter);
+                if (result.ActualHungerRelief == 0)
+                    needsProgression.SetHunger(result.HungerAfter);
+                else
+                    UpdateNeeds(result.HungerAfter, result.StressAfter);
             }
             else
             {

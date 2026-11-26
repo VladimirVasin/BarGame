@@ -188,6 +188,7 @@ namespace BarPromenade
             PlayerCrowbarCombatController.Install(runtime, camera);
             PlayerVodkaBottleController.Install(runtime, camera);
             PlayerWatchController.Install(runtime, camera, animatedInteraction);
+            PlayerPieEatingController.Install(runtime, camera, animatedInteraction);
             registry.GetComponent<PlayerJacketCloth>()?.BindRuntime(runtime);
             registry.GetComponent<PlayerHair>()?.BindRuntime(runtime);
             if (camera != null) player.AddComponent<DebugFreeCamera>().Initialize(runtime, camera);

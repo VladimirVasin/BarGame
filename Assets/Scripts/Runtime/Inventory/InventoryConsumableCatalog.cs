@@ -15,14 +15,12 @@ namespace BarPromenade
             InventoryItemId itemId,
             InventoryConsumableKind kind,
             int hungerRelief,
-            int minimumHungerAfterUse,
             DrinkId drinkId,
             double servings)
         {
             ItemId = itemId;
             Kind = kind;
             HungerRelief = hungerRelief;
-            MinimumHungerAfterUse = minimumHungerAfterUse;
             DrinkId = drinkId;
             Servings = servings;
         }
@@ -30,7 +28,6 @@ namespace BarPromenade
         public InventoryItemId ItemId { get; }
         public InventoryConsumableKind Kind { get; }
         public int HungerRelief { get; }
-        public int MinimumHungerAfterUse { get; }
         public DrinkId DrinkId { get; }
         public double Servings { get; }
         public int StressRelief =>
@@ -108,7 +105,6 @@ namespace BarPromenade
                 itemId,
                 InventoryConsumableKind.Food,
                 hungerRelief,
-                PlayerNeedsRules.PoorFoodMinimumHunger,
                 DrinkId.None,
                 0d);
         }
@@ -122,7 +118,6 @@ namespace BarPromenade
                 itemId,
                 InventoryConsumableKind.Alcohol,
                 0,
-                PlayerNeedsRules.MinimumLevel,
                 drinkId,
                 servings);
         }

@@ -2,6 +2,11 @@
 
 ## Current facts
 
+- **2026-11-26, potato pie.** Inventory hands off to stationary context at once.
+  The seated variant borrows the parent loop's support and returns to it. Authored
+  bite anchors join hand IK and the three Blender sections. First contact spends
+  one item and applies food relief. Wipe and spatial burp finish the same timeline.
+
 - **2026-11-26, children.** Stable looks, skinned trousers, face rows, shared
   material maps and metre gait. Five fair spots keep the day floor. Two street
   slots spawn from sunrise to sunset and retire off camera. Park swings and fitted court modules share
@@ -195,7 +200,7 @@
   City streets and the Home balcony share Exp2 .030, a 96 m radius and a 16–56 m Gaussian band. Night dims sky/fill/haze/reflections;fixed practicals stay.
   Accepted 2026-11-26, user: City street fog leaves 6.5 m clear around hero and camera,
   rising to full local strength at 11 m. Depth-clipped ellipsoids drift on two R8 scales
-  out to 22 m at 35% opacity. The surface depth keeps nearby rock and walls clear through 10 m and restores full fog influence by 18 m. Returning indoors restores the room camera.
+  out to 22 m at 35% opacity. Surface depth keeps rock and walls clear through 10 m. Per-volume opacity caps at .006 to 34 m, .02 at 56–60 m. Full haze by 90 m. Returning indoors restores the room camera.
   The fishing pier alone reveals the island, beams and sea glint. Mainland skyline/windows/glow
   fade 6–10 m from the checkpoint and 6–12 m from the village cliff. Outside, all vanish.
   City roads, traffic and mountains retain physical depth. Mountain Road keeps its own valley silhouette and lights. Cached refs/MPBs avoid
@@ -3511,9 +3516,7 @@
   `(-1,-1)` closes diagonally, west tapers to beach, north is sea.
   Pinned borders weld four Blender faces in render/collision chunks.
   Rear mass casts no distant shadow. Opaque `CityMountainPhysical`
-  uses MPBs, `CityMountainRockAlbedo` and City SSAO. Forward/depth/normals
-  share the horizontal dither band (78–95 m on City streets).
-  The native fog blends in with distance and keeps a 0.10 rock contrast floor. Portal/lining retain
+  uses MPBs, `CityMountainRockAlbedo` and City SSAO. Rock uses 62% of City fog density and keeps its depth while its colour fades into haze at 78–95 m. Portal/lining retain
   `RuntimePrimitiveLit`. The floor reaches `0.25 m` beneath the terrain edge,
   raised `0.03 m`; walls sit `0.04 m` outside portal faces and overlap floor/
   ceiling, whose overhang is another `0.04 m`. Conforming terrain, narrow ruts,

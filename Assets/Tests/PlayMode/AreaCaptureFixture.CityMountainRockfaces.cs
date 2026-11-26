@@ -31,6 +31,114 @@ namespace BarPromenade.Tests.PlayMode
         [Explicit("Render the reported City rim with a live local fog field.")]
         public IEnumerator CityRimFogVisibility() => CaptureCityLocalAcceptance(ReviewRimFogVisibility);
 
+        [UnityTest]
+        [Explicit("Check the live fog at the reported southeastern summit edge.")]
+        public IEnumerator CitySouthEastRimFogAtReportedEdge() => CaptureCityLocalAcceptance(ReviewSouthEastRimFog);
+
+        private static IEnumerator ReviewSouthEastRimFog(CityGameRoot city)
+        {
+            var reported = new Vector3(132.5f, 38.1f, -373.7f);
+            city.Player.Motor.Teleport(reported);
+            var rims = city.World.MountainBoundaryRoot.transform.Find("Physical Ridges");
+            var rock = rims.Find("mountain-south-east-outer-rim");
+            Assert.That(rock, Is.Not.Null);
+            var faces = rock.GetComponentsInChildren<MeshRenderer>();
+            var colliders = rock.GetComponentsInChildren<MeshCollider>();
+            var mist = city.Night.FogField;
+            mist.SetSheltered(true);
+            mist.SetSheltered(false);
+            Assert.That(mist.Particles.particleCount, Is.Positive);
+            yield return null;
+
+            var camera = city.Camera;
+            var eye = reported + new Vector3(-1.8f, 1.65f, .55f);
+            var material = mist.FogRenderer.sharedMaterial;
+            int opacityId = Shader.PropertyToID("_NearSurfaceOpacity");
+            float limit = material.GetFloat(opacityId);
+            using (GameTimeScaleRuntime.AcquirePause())
+            {
+                foreach (var (name, direction) in new[]
+                {
+                    ("southeast-rim-grazing", new Vector3(1f, .025f, -.20f)),
+                    ("southeast-rim-facing", new Vector3(0f, .18f, -1f))
+                })
+                {
+                    PoseLocalAcceptanceCamera(city, eye, eye + direction, 57f);
+                    yield return null;
+                    var ray = new Ray(eye, camera.transform.forward);
+                    Assert.That(colliders.Any(body => body.Raycast(ray, out _, 34f)), Is.True,
+                        name + ": the sightline should hit the physical rock.");
+                    try
+                    {
+                        yield return CaptureRimFrame(camera, name);
+                        material.SetFloat(opacityId, .02f);
+                        yield return CaptureRimFrame(camera, name + "-previous");
+                        material.SetFloat(opacityId, limit);
+                        mist.FogRenderer.forceRenderingOff = true;
+                        yield return CaptureRimFrame(camera, name + "-air-clear");
+                        mist.FogRenderer.forceRenderingOff = false;
+                        foreach (var face in faces) face.forceRenderingOff = true;
+                        yield return CaptureRimFrame(camera, name + "-rock-hidden");
+                    }
+                    finally
+                    {
+                        material.SetFloat(opacityId, limit);
+                        mist.FogRenderer.forceRenderingOff = false;
+                        foreach (var face in faces) face.forceRenderingOff = false;
+                    }
+                    float contrast = RimDifference(name, name + "-rock-hidden");
+                    Assert.That(contrast, Is.GreaterThan(18f), name + ": the physical rock disappeared into the local fog.");
+                    Assert.That(RimDifference(name, name + "-air-clear"), Is.LessThan(contrast * .25f),
+                        name + ": dense volumes washed out the rock.");
+                }
+            }
+
+            var chase = camera.GetComponent<PlayerCameraFollow>();
+            bool orbitInput = chase.OrbitInputEnabled;
+            try
+            {
+                GameSessionState.UpdateDrinkingProgress(58, DrinkId.Vodka, 4);
+                city.Rain.SetIntensity(.45f);
+                city.Player.GameObject.transform.rotation = Quaternion.LookRotation(Vector3.right);
+                chase.Initialize(camera, city.Player.GameObject.transform, false);
+                chase.SetOrbitInputEnabled(false);
+                chase.RotatePitch(-8f);
+                chase.enabled = true;
+                for (int frame = 0; frame < 10; frame++) yield return null;
+                Assert.That(GameSessionState.IntoxicationLevel, Is.EqualTo(58));
+
+                using (GameTimeScaleRuntime.AcquirePause())
+                {
+                    foreach (int angle in new[] { -20, 0, 20 })
+                    {
+                        chase.RotateYaw(angle);
+                        chase.Snap();
+                        yield return null;
+                        string name = $"southeast-rim-chase-{angle}";
+                        try
+                        {
+                            yield return CaptureRimFrame(camera, name);
+                            foreach (var face in faces) face.forceRenderingOff = true;
+                            yield return CaptureRimFrame(camera, name + "-rock-hidden");
+                        }
+                        finally
+                        {
+                            foreach (var face in faces) face.forceRenderingOff = false;
+                        }
+                        chase.RotateYaw(-angle);
+                        Assert.That(RimDifference(name, name + "-rock-hidden", .81f), Is.GreaterThan(12f),
+                            name + ": shoulder camera lost the rock on the right side of the view.");
+                    }
+                }
+            }
+            finally
+            {
+                chase.enabled = false;
+                chase.SetOrbitInputEnabled(orbitInput);
+                city.Rain.SetIntensity(0f);
+            }
+        }
+
         private static IEnumerator ReviewRimFogVisibility(CityGameRoot city)
         {
             var foot = new Vector3(-171f, 36.4f, -362f);
@@ -45,49 +153,107 @@ namespace BarPromenade.Tests.PlayMode
             var faces = rock.GetComponentsInChildren<MeshRenderer>();
             foreach (Vector3 outward in new[] { Vector3.left, Vector3.back })
             {
-                string name = outward == Vector3.left ? "west" : "south";
+                string side = outward == Vector3.left ? "west" : "south";
                 Vector3 eye = foot - outward * 3f + Vector3.up * 1.9f;
                 PoseLocalAcceptanceCamera(city, eye, foot + outward * 22f + Vector3.up * 6f, 70f);
                 yield return null;
-                const float MaximumRockDistance = 12f;
                 var sightline = new Ray(eye, city.Camera.transform.forward);
                 Assert.That(rock.GetComponentsInChildren<MeshCollider>()
-                    .Any(body => body.Raycast(sightline, out _, MaximumRockDistance)), Is.True,
+                    .Any(body => body.Raycast(sightline, out _, 12f)), Is.True,
                     "The camera must aim at a nearby physical wall.");
 
-                string frame = "rim-fog-" + name;
-                CaptureCurrentCamera(city.Camera, SceneIds.City, frame, 640, 360);
-                try
+                string frame = "rim-fog-" + side;
+                using (GameTimeScaleRuntime.AcquirePause())
                 {
-                    mist.FogRenderer.forceRenderingOff = true;
-                    CaptureCurrentCamera(city.Camera, SceneIds.City, frame + "-clear", 640, 360);
-                    mist.FogRenderer.forceRenderingOff = false;
-                    foreach (var face in faces) face.forceRenderingOff = true;
-                    CaptureCurrentCamera(city.Camera, SceneIds.City, frame + "-hidden", 640, 360);
-                }
-                finally
-                {
-                    mist.FogRenderer.forceRenderingOff = false;
-                    foreach (var face in faces) face.forceRenderingOff = false;
+                    yield return CaptureRimFrame(city.Camera, frame);
+                    try
+                    {
+                        mist.FogRenderer.forceRenderingOff = true;
+                        yield return CaptureRimFrame(city.Camera, frame + "-clear");
+                        mist.FogRenderer.forceRenderingOff = false;
+                        foreach (var face in faces) face.forceRenderingOff = true;
+                        yield return CaptureRimFrame(city.Camera, frame + "-hidden");
+                    }
+                    finally
+                    {
+                        mist.FogRenderer.forceRenderingOff = false;
+                        foreach (var face in faces) face.forceRenderingOff = false;
+                    }
                 }
                 float contrast = RimDifference(frame, frame + "-hidden");
                 Assert.That(contrast, Is.GreaterThan(18f), "Local fog erased the visible rock face.");
                 Assert.That(RimDifference(frame, frame + "-clear"), Is.LessThan(contrast * .20f),
                     "Dense fog washed out the near rock.");
             }
+
+            // A view from the ascent has a longer fog path than the shot at the toe.
+            Vector3 approachEye = foot + Vector3.right * 40f + Vector3.up * 6f;
+            city.Player.Motor.Teleport(approachEye - Vector3.up * 1.9f);
+            PoseLocalAcceptanceCamera(city, approachEye, foot + Vector3.left * 7f + Vector3.up * 11f, 62f);
+            mist.SetSheltered(true);
+            mist.SetSheltered(false);
+            yield return null;
+            Material material = faces[0].sharedMaterial;
+            float density = material.GetFloat("_FogDensity");
+            float stableHandoff = material.GetFloat("_StableHazeHandoff");
+            using (GameTimeScaleRuntime.AcquirePause())
+            {
+                yield return CaptureRimFrame(city.Camera, "rim-fog-approach");
+                try
+                {
+                    material.SetFloat("_FogDensity", RuntimeSceneSetup.CityFogDensity);
+                    material.SetFloat("_StableHazeHandoff", 0f);
+                    yield return CaptureRimFrame(city.Camera, "rim-fog-approach-old");
+                    foreach (var face in faces) face.forceRenderingOff = true;
+                    yield return CaptureRimFrame(city.Camera, "rim-fog-approach-hidden");
+                }
+                finally
+                {
+                    material.SetFloat("_FogDensity", density);
+                    material.SetFloat("_StableHazeHandoff", stableHandoff);
+                    foreach (var face in faces) face.forceRenderingOff = false;
+                }
+            }
+            float currentContrast = RimDifference("rim-fog-approach", "rim-fog-approach-hidden");
+            float previousContrast = RimDifference("rim-fog-approach-old", "rim-fog-approach-hidden");
+            Assert.That(currentContrast, Is.GreaterThan(previousContrast + 5f),
+                "The rock should be easier to distinguish from haze on approach.");
         }
 
-        private static float RimDifference(string first, string second)
+        private static IEnumerator CaptureRimFrame(Camera camera, string frame)
+        {
+            if (Application.isBatchMode)
+            {
+                CaptureCurrentCamera(camera, SceneIds.City, frame, 640, 360);
+                yield break;
+            }
+            yield return null;
+            yield return new WaitForEndOfFrame();
+            Assert.That(camera.targetTexture, Is.Null, "Read back the normal Game View target.");
+            Texture2D screenshot = ScreenCapture.CaptureScreenshotAsTexture();
+            try
+            {
+                string folder = Path.Combine(Directory.GetCurrentDirectory(), "Captures", SceneIds.City);
+                Directory.CreateDirectory(folder);
+                File.WriteAllBytes(Path.Combine(folder, frame + ".png"), screenshot.EncodeToPNG());
+            }
+            finally { UnityEngine.Object.DestroyImmediate(screenshot); }
+        }
+
+        private static float RimDifference(string first, string second, float horizontal = .5f)
         {
             var image = new Texture2D(2, 2, TextureFormat.RGB24, false);
             try
             {
                 Color32[] a = Read(first), b = Read(second);
                 float difference = 0f;
-                const int sampleWidth = 48, sampleHeight = 32;
-                for (int y = 180 - sampleHeight / 2; y < 180 + sampleHeight / 2; y++)
-                for (int x = 320 - sampleWidth / 2; x < 320 + sampleWidth / 2; x++)
-                    difference += Mathf.Abs(a[y * 640 + x].g - b[y * 640 + x].g);
+                int width = image.width, height = image.height;
+                int sampleWidth = Mathf.Max(1, width * 3 / 40), sampleHeight = Mathf.Max(1, height * 4 / 45);
+                int left = Mathf.RoundToInt(width * horizontal - sampleWidth * .5f);
+                int bottom = (height - sampleHeight) / 2;
+                for (int y = bottom; y < bottom + sampleHeight; y++)
+                for (int x = left; x < left + sampleWidth; x++)
+                    difference += Mathf.Abs(a[y * width + x].g - b[y * width + x].g);
                 return difference / (sampleWidth * sampleHeight);
             }
             finally { UnityEngine.Object.DestroyImmediate(image); }

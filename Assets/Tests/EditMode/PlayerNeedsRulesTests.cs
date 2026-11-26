@@ -5,24 +5,19 @@ namespace BarPromenade.Tests.EditMode
 {
     public sealed class PlayerNeedsRulesTests
     {
-        [TestCase(100, 35, 20, 65, 35)]
-        [TestCase(30, 35, 20, 20, 10)]
-        [TestCase(20, 35, 20, 20, 0)]
-        [TestCase(10, 35, 20, 10, 0)]
-        [TestCase(30, 35, 0, 0, 30)]
-        [TestCase(0, 10, 20, 0, 0)]
-        public void FoodRelief_RespectsDefinitionFloorWithoutIncreasingHunger(
+        [TestCase(100, 35, 65, 35)]
+        [TestCase(30, 35, 0, 30)]
+        [TestCase(20, 20, 0, 20)]
+        [TestCase(10, 35, 0, 10)]
+        [TestCase(0, 10, 0, 0)]
+        public void FoodRelief_ClampsAtZero(
             int hunger,
             int relief,
-            int minimumHungerAfterUse,
             int expectedLevel,
             int expectedActualRelief)
         {
             PlayerNeedReliefResult result =
-                PlayerNeedsRules.ApplyFoodRelief(
-                    hunger,
-                    relief,
-                    minimumHungerAfterUse);
+                PlayerNeedsRules.ApplyFoodRelief(hunger, relief);
 
             Assert.That(result.LevelBefore, Is.EqualTo(hunger));
             Assert.That(result.LevelAfter, Is.EqualTo(expectedLevel));
@@ -78,15 +73,11 @@ namespace BarPromenade.Tests.EditMode
         public void InvalidLevelsAndRelief_AreRejected()
         {
             Assert.Throws<ArgumentOutOfRangeException>(
-                () => PlayerNeedsRules.ApplyFoodRelief(-1, 1, 20));
+                () => PlayerNeedsRules.ApplyFoodRelief(-1, 1));
             Assert.Throws<ArgumentOutOfRangeException>(
-                () => PlayerNeedsRules.ApplyFoodRelief(101, 1, 20));
+                () => PlayerNeedsRules.ApplyFoodRelief(101, 1));
             Assert.Throws<ArgumentOutOfRangeException>(
-                () => PlayerNeedsRules.ApplyFoodRelief(50, -1, 20));
-            Assert.Throws<ArgumentOutOfRangeException>(
-                () => PlayerNeedsRules.ApplyFoodRelief(50, 1, -1));
-            Assert.Throws<ArgumentOutOfRangeException>(
-                () => PlayerNeedsRules.ApplyFoodRelief(50, 1, 101));
+                () => PlayerNeedsRules.ApplyFoodRelief(50, -1));
             Assert.Throws<ArgumentOutOfRangeException>(
                 () => PlayerNeedsRules.ApplyStressRelief(-1, 1));
             Assert.Throws<ArgumentOutOfRangeException>(
