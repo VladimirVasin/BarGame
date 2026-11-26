@@ -31,7 +31,7 @@ FBXs/JSON→`Assets/Resources/City/Hillside`;house `--model GlazedStairBay`.
 `build-city-residential-courtyard-3d-model.py`:6;`--validate-only`.
 
 `build-city-fair-3d-model.py`:10 props;`--verify-fbx`.
-`build-city-fair-child-3d-model.py`: child base/3 outfits/toys.
+`build-city-fair-child-3d-model.py`: 3 outfits/toys; `--body-only` updates child art.
 FBXs/JSON: `Assets/Resources/City/{Fair,FairChild}`;
 source: `ArtSource/City/{Fair,FairChild}`.
 `build-city-fair-{player,child}-actions-3d-model.py`:6 hero/15 child clips;

@@ -44,6 +44,7 @@ namespace BarPromenade
             new Color(1f, 0.72f, 0.42f);
         private static readonly Color BarLightColor =
             new Color(1f, 0.76f, 0.48f);
+        private static readonly Color FairGarlandLightColor = new Color(1f, .82f, .60f);
         private static readonly Color StreetHaloInner =
             new Color(4.0f, 2.0f, 0.55f, 0.18f);
         private static readonly Color StreetHaloOuter =
@@ -448,6 +449,8 @@ namespace BarPromenade
                 bool practical = index >= practicalLightStart && index < plateLightStart;
                 pooledLightBaseIntensities[index] = StreetLightIntensity;
                 string name = FixedLightPrefix + (index + 1);
+                if (index < lampAnchors.Length && lampAnchors[index].name.StartsWith(CityFairWorld.GarlandLampPrefix, StringComparison.Ordinal))
+                    name += " " + lampAnchors[index].name;
                 if (index >= industrialAnchorStartIndex && index < lampAnchors.Length &&
                     (RidgeKioskCourtWorld.IsLampAnchor(lampAnchors[index].name) ||
                     DistrictKioskCourtWorld.IsLampAnchor(lampAnchors[index].name)))
@@ -760,6 +763,9 @@ namespace BarPromenade
                         residentialEntranceLights.Add(streetLightPool[index]);
                     }
                 }
+                else if (lampAnchors[index].name.StartsWith(CityFairWorld.GarlandLampPrefix, StringComparison.Ordinal))
+                    ApplyPooledLightProfile(index, FairGarlandLightColor, 32f, 8f, 126f, 88f,
+                        .10f, .30f, Color.clear, Color.clear);
                 else if (quay) ApplyQuayLampProfile(index);
                 else ApplyStreetProfile(index, lampAnchors[index].forward.y < -.05f,
                     lampAnchors[index].name.StartsWith(RidgeParkingPlan.LampAnchorPrefix, StringComparison.Ordinal));

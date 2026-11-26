@@ -5,6 +5,10 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-26
 
+Fair children have distinct painted faces and hair, fitted coats and boots, and skinned trousers joined from each ankle through the waist. The garments reuse the default NPC normal and response maps. `City Fair Child Model Contract` checked deterministic export and FBX rig and mesh round-trip. Reviewed standing, walking and seated Blender views.
+
+The fair's five garland spots aim at counters, the aisle, the toy table and the bench. `CityFairChildWardrobe` verified the lit areas, three child activities, contacts and pause/re-entry. Matched night views showed the direct light on the ground, counters, faces and clothes.
+
 City and the Home balcony spread local cubemap renders across frames. Platform shadows fade sooner while fixture output stays fixed. `CityEastSlopeFrameTime` checked native capture, shadow fade and fixed lamp output. Reviewed the dawn street view and the lit shelter.
 
 The east gable outlet clears the approach. Roof jets use mouth direction, gravity and a delayed weather response. Kerb grates gather shallow water with soft edges and inward ripples. Blender checked the fittings and deterministic export. `LiveCity_RainRunoffClearsTheGableWalkAndEntersTheKerbGrate` checked ground contact, both walks, pause and district release. Reviewed the grate and the pipe in drizzle and downpour.

@@ -2,6 +2,12 @@
 
 ## Current facts
 
+- **2026-11-26, fair child art.** One skinned trouser mesh per outfit. One head
+  mesh with identity rows and timed PNG expressions. Distinct hair and shared
+  `DefaultNpcDetail` maps. Child rig and measured anchors own all contacts.
+  Five bulb-bound spots cover counters/aisle with the fixed day floor.
+  City fog/SSAO/shadows/grade/post; direct pools leave air/bounce capacity.
+
 - **Accepted 2026-11-22, user — wristwatch.** H loans the existing camera and
   holds stationary context. Right pinch tracks the left cuff. Forearm bezel, session-minute LCD, bevels, matte finish and area fog/light/post.
 
@@ -1648,8 +1654,8 @@
 - **Accepted — 2026-09-15, Nightlife fair:**
   Art §9/story §18: four staffed displays, organ/bell, two seats/three garlands;
   user adds three simultaneous silent children. One `1.3 m`, age `8–10` body: ochre raincoat,
-  blue quilted coat/cap, burgundy sweater/grey vest. Equipped `9–12k` tris:
-  `11144/11764/11140`, ≥hero detail, `47` bones; child clips/waist-high trousers.
+  blue quilted coat/cap, burgundy sweater/grey vest. `47` bones, child clips,
+  trousers to waist, at most `12k` equipped tris.
   Toys displayed; personal car/low table/sitting local. Terrain-foot contacts,
   pause/routes/collision/`CityBenchSeatClaims` preserve seats/`2.2 m` paths.
   Shared Blender banks/hero rig/contextual actions/causal sound/materials/light

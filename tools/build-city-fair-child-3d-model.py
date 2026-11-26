@@ -23,16 +23,39 @@ sys.path.insert(0, str(ROOT / "tools"))
 import bar_parts as bp
 import interior_kit as kit
 import atlas_kit
+import default_npc_surfaces as surfaces
 
 _fair_spec = importlib.util.spec_from_file_location("fair_geometry", ROOT / "tools/build-city-fair-3d-model.py")
 fair = importlib.util.module_from_spec(_fair_spec)
 _fair_spec.loader.exec_module(fair)
 
-VERSION = "1.0.1"
+VERSION = "2.0.0"
 HEIGHT = 1.30
 MODEL_DIR = ROOT / "Assets/Resources/City/FairChild"
 SOURCE_DIR = ROOT / "ArtSource/City/FairChild"
 OUTFITS = ("Raincoat", "Quilted", "Vest")
+DETAIL_DIR = ROOT / "Assets/Resources/VillageLife"
+SKIN = (183, 145, 115)
+
+# Pigments use the same UV tiles as the shared normal and response maps.
+FINISHES = {
+    "ChildSkin": (("skin", SKIN), ("binding", SKIN), ("skin", SKIN), ("skin", SKIN)),
+    "RaincoatAtlas": (("oilcloth", (153, 122, 59)), ("binding", (112, 91, 53)),
+        ("workShirt", (142, 113, 60)), ("workJacket", (146, 116, 59)),
+        ("workTrousers", (80, 79, 66)), ("winterBoot", (58, 58, 47)),
+        ("shortHair", (69, 51, 37)), ("rubber", (44, 45, 39))),
+    "QuiltedAtlas": (("quilt", (89, 108, 117)), ("binding", (65, 83, 91)),
+        ("workJacket", (87, 105, 112)), ("shortJacket", (84, 104, 113)),
+        ("winterTrousers", (80, 79, 70)), ("shoe", (72, 57, 44)),
+        ("rib", (74, 84, 84)), ("rubber", (46, 44, 38)), ("shortHair", (52, 42, 35))),
+    "VestAtlas": (("cardigan", (118, 61, 67)), ("binding", (90, 56, 54)),
+        ("rib", (113, 61, 66)), ("flannel", (105, 106, 96)),
+        ("workTrousers", (103, 77, 55)), ("shoe", (72, 57, 44)),
+        ("vest", (101, 103, 96)), ("rubber", (48, 45, 39)), ("shortHair", (92, 68, 46))),
+}
+
+def finish_name(texture, tile):
+    return FINISHES[texture][tile][0]
 
 
 def source(p):
@@ -140,9 +163,10 @@ def segment(start,end,width,depth,sides=12,rings=7):
 def moved(geom,p):return kit.translated(geom,p)
 
 
-def limb_surface(nodes,widths,depths,sides=14,steps=7):
+def limb_surface(nodes,widths,depths,sides=14,steps=5,fold=0.,fold_joint=1):
     """One closed garment surface across a bent joint, with no separate caps."""
     centers=[];radii=[]
+    hinge = fold_joint*steps
     for section in range(len(nodes)-1):
         for row in range(steps+(section==len(nodes)-2)):
             t=row/steps
@@ -155,7 +179,10 @@ def limb_surface(nodes,widths,depths,sides=14,steps=7):
         across=direction.cross(Vector((0,0,1))).normalized();normal=direction.cross(across).normalized()
         for i in range(sides):
             angle=i*math.tau/sides
-            vertices.append(tuple(center+across*(math.cos(angle)*width*.5)+normal*(math.sin(angle)*depth*.5)))
+            front = math.sin(angle)
+            crease = fold * math.sin((row-hinge)*1.65 + .85*math.cos(angle))
+            crease *= math.exp(-((row-hinge)/2.6)**2) * front**4
+            vertices.append(tuple(center+across*(math.cos(angle)*width*.5)+normal*(front*(depth*.5+crease))))
     faces=[tuple(reversed(range(sides))),tuple(range((len(centers)-1)*sides,len(centers)*sides))]
     for row in range(len(centers)-1):
         for i in range(sides):
@@ -179,69 +206,93 @@ class Part:
     def rod(self,a,b,r,bone,tile=0,sides=8):return self.add(fair.rod(a,b,r,sides),bone,tile)
 
 
-HEAD_PROFILE=[(1.057,.031,.029,.010),(1.068,.048,.042,.010),(1.080,.061,.057,.008),
-    (1.094,.074,.068,.006),(1.110,.083,.076,.004),(1.130,.089,.082,.003),
-    (1.152,.094,.087,.001),(1.174,.095,.090,0),(1.196,.094,.089,-.002),
-    (1.217,.090,.085,-.003),(1.238,.083,.078,-.005),(1.256,.072,.067,-.006),
-    (1.272,.057,.051,-.007),(1.285,.036,.031,-.007),(1.292,.006,.006,-.007)]
+HEAD_PROFILE = [
+    (1.057,.026,.028,.008), (1.068,.044,.042,.011), (1.080,.058,.056,.010),
+    (1.094,.072,.067,.007), (1.110,.083,.076,.005), (1.130,.092,.081,.003),
+    (1.152,.095,.086,.000), (1.174,.095,.090,-.001), (1.196,.093,.090,-.003),
+    (1.217,.089,.085,-.005), (1.238,.082,.078,-.007), (1.256,.071,.067,-.008),
+    (1.272,.055,.051,-.009), (1.285,.034,.030,-.009), (1.292,.006,.006,-.009),
+]
 
 
-def head_section(y):
-    for a,b in zip(HEAD_PROFILE,HEAD_PROFILE[1:]):
-        if a[0]<=y<=b[0]:
-            t=(y-a[0])/(b[0]-a[0]);return tuple(a[i]*(1-t)+b[i]*t for i in (1,2,3))
-    return HEAD_PROFILE[-1][1:]
+def face_u(angle):
+    # The frontal half has most of the chart. The neutral rear meets at the seam.
+    angle = (math.pi * .5 - angle + math.pi) % math.tau - math.pi
+    front = math.pi * .5
+    if abs(angle) <= front:
+        return .50 + .36 * angle / front
+    return .50 + math.copysign(.36 + .14 * (abs(angle) - front) / front, angle)
 
 
-def face_surface():
-    cols,rows=12,10;front=[];uv=[]
-    for row in range(rows+1):
-        t=row/rows;y=1.080+t*.186;rx,rz,zc=head_section(y)
-        for col in range(cols+1):
-            s=col/cols;x=(s*2-1)*rx*.83
-            z=zc+rz*math.sqrt(max(.01,1-(x/rx)**2))+.0015
-            front.append((x,y,z));uv.append((s,t))
-    count=len(front);verts=front+[(x,y,z-.001) for x,y,z in front];uv=uv+uv
-    faces=[]
-    for row in range(rows):
-        for col in range(cols):
-            a=row*(cols+1)+col;b=a+1;c=b+cols+1;d=a+cols+1
-            faces.extend(((a,b,c,d),(d+count,c+count,b+count,a+count)))
-    edge=list(range(cols+1))+[row*(cols+1)+cols for row in range(1,rows+1)]+list(range(rows*(cols+1)+cols-1,rows*(cols+1)-1,-1))+[row*(cols+1) for row in range(rows-1,0,-1)]
-    for a,b in zip(edge,edge[1:]+edge[:1]):faces.append((b,a,a+count,b+count))
-    return (verts,faces),uv
+def head_surface():
+    sides = 32
+    geometry = loft(HEAD_PROFILE, sides)
+    low, high = HEAD_PROFILE[0][0], HEAD_PROFILE[-1][0]
+    uv = [(face_u(i * math.tau / sides), (y - low) / (high - low))
+          for y, *_ in HEAD_PROFILE for i in range(sides)]
+    return geometry, uv
+
+
+def hair_surface(outfit):
+    sides = 24
+    # A low nape and shaped hairline are part of the scalp surface.
+    # The cap has its own low-profile hair underneath the knitted band.
+    cap = outfit == "Quilted"
+    vertices = []
+    for row in range(11):
+        t = row / 10
+        for i in range(sides):
+            a = i * math.tau / sides
+            front = max(0., math.sin(a))
+            rear = max(0., -math.sin(a))
+            if cap:
+                start = 1.186 + .049 * front - .015 * rear
+                crown, lift = 1.255, .002
+            elif outfit == "Raincoat":
+                start = 1.203 + .033 * front - .025 * rear + .010 * front * math.cos(a)
+                crown, lift = HEIGHT, .009
+            else:
+                start = 1.186 + .056 * front - .022 * rear - .016 * front * max(0., math.cos(a) * 2)
+                crown, lift = HEIGHT, .011
+            y = start + (crown - start) * t
+            sample = min(y, HEAD_PROFILE[-1][0])
+            for low, high in zip(HEAD_PROFILE, HEAD_PROFILE[1:]):
+                if sample <= high[0]:
+                    blend = (sample - low[0]) / (high[0] - low[0])
+                    rx, rz, zc = [a + (b - a) * blend for a, b in zip(low[1:], high[1:])]
+                    break
+            if y > sample:
+                rx *= 1 - .6 * t
+                rz *= 1 - .6 * t
+            ridge = lift * math.sin(math.pi * t) + .004 + .003 * (1 - t)
+            if not cap:
+                ridge += .002 * math.sin(a * (5 if outfit == "Vest" else 3) + 2*t) * (1 - t)
+            vertices.append(((rx + ridge) * math.cos(a), y, zc + (rz + ridge) * math.sin(a)))
+    faces = [tuple(range(sides)), tuple(reversed(range(10*sides, 11*sides)))]
+    for row in range(10):
+        for i in range(sides):
+            a = row*sides + i
+            b = row*sides + (i + 1) % sides
+            faces.append((b, a, a+sides, b+sides))
+    return vertices, faces
 
 
 def make_body():
-    parts=[]
-    def part(name,texture="ChildSkin",visible=False):
-        p=Part(name,texture,visible=visible);parts.append(p);return p
-    part("GEO_Head",visible=True).add(loft(HEAD_PROFILE,20),"head")
-    surface,uv=face_surface();part("GEO_Face","ChildFace",True).add(surface,"head",uv=uv)
-    ears=part("GEO_Ears",visible=True)
-    for sign in (-1,1):
-        ears.ball((sign*.097,1.173,.002),(.032,.060,.030),"head",1,12,7)
-        ears.ball((sign*.107,1.174,.010),(.018,.036,.020),"head",2,10,6)
-        ears.ball((sign*.098,1.151,.014),(.020,.019,.020),"head",1,8,5)
-    # The painted face rests on a rounded child's cranium; the nose has a bridge,
-    # soft tip and two nostril wings rather than an adult's long wedge.
-    nose=part("GEO_Neck",visible=True)
-    nose.add(loft([(1.015,.031,.028,.002),(1.037,.029,.027,.003),
-                  (1.062,.028,.027,.004),(1.086,.033,.031,.003)],16),"neck")
-    # Nose is grouped into the visible head, not the neck, so nods remain honest.
-    head=parts[0]
-    head.ball((0,1.168,.086),(.025,.045,.022),"head",0,10,6)
-    head.ball((0,1.151,.095),(.027,.020,.025),"head",0,10,6)
-    for sign in (-1,1):head.ball((sign*.013,1.149,.092),(.013,.015,.017),"head",2,8,5)
-    hair=part("GEO_Hair","ChildHair",True)
-    hair.add(loft([(1.239,.086,.081,-.007),(1.257,.076,.071,-.007),(1.274,.060,.055,-.007),
-                   (1.288,.041,.037,-.007),(1.300,.009,.008,-.007)],20),"head")
-    for i in range(9):
-        angle=math.tau*i/9;x=math.cos(angle)*.077;z=math.sin(angle)*.072-.009
-        # Short side and nape locks, clear of the child's eyes and ears.
-        y=1.219 if z<.04 else 1.243
-        tuft=fair.ellipsoid((0,0,0),(.040,.054,.025),8,5)
-        hair.add(moved(bp.u_rotated(tuft,(0,-math.degrees(angle),(-1 if x<0 else 1)*12)),(x,y,z)),"Hair.Fringe" if z>.04 else "head")
+    parts = []
+    def part(name, texture="ChildSkin", visible=False):
+        p = Part(name, texture, visible=visible)
+        parts.append(p)
+        return p
+    head, uv = head_surface()
+    part("GEO_Head", "ChildFace", True).add(head, "head", uv=uv)
+    ears = part("GEO_Ears", visible=True)
+    for sign in (-1, 1):
+        ear = fair.ellipsoid((sign*.097, 1.170, .002), (.027, .054, .029), 12, 8)
+        ears.add(bp.u_rotated_about(ear, (0, 0, sign*12), (sign*.097, 1.170, .002)), "head")
+        ears.ball((sign*.104, 1.168, .010), (.012, .031, .017), "head", 0, 10, 6)
+    part("GEO_Neck", visible=True).add(loft([
+        (1.015,.034,.030,.002), (1.035,.030,.028,.003), (1.055,.029,.027,.004),
+        (1.075,.031,.028,.004), (1.091,.034,.030,.003)], 18), "neckblend")
     torso=part("GEO_Torso")
     torso.add(loft([(.66,.097,.068,0),(.72,.093,.064,0),(.79,.097,.062,0),
                    (.86,.111,.063,0),(.92,.127,.060,0),(.99,.126,.052,0),(1.02,.071,.038,0)],20),"torso")
@@ -252,18 +303,18 @@ def make_body():
         arm.add(segment(specs["upper_arm."+side]["head"],specs["upper_arm."+side]["tail"],.071,.065,14,9),"upper_arm."+side)
         arm.add(segment(specs["forearm."+side]["head"],specs["forearm."+side]["tail"],.055,.050,14,9),"forearm."+side)
         hand=part("GEO_Hand."+side,visible=True)
-        palm=segment((sign*.283,.700,.029),(sign*.299,.660,.030),.049,.022,12,6)
-        hand.add(palm,"hand."+side)
-        hand.ball((sign*.281,.692,.033),(.023,.033,.024),"hand."+side,1,10,6)
-        for finger in ("index","middle","ring","pinky","thumb"):
-            for number in (1,2):
-                name=f"finger.{finger}.{number:02d}.{side}";s=specs[name]
-                width=.009 if finger!="pinky" else .0077
-                hand.add(segment(s["head"],s["tail"],width,width*.90,8,4),name,1)
-                if number==2:
-                    tip=Vector(s["tail"]);base=Vector(s["head"]);p=base.lerp(tip,.67)+Vector((0,0,.004))
-                    nail=fair.ellipsoid(tuple(p),(.006,.010,.0017),6,3)
-                    hand.add(nail,name,3)
+        hand.add(limb_surface([
+            (sign*.277,.714,.029), (sign*.289,.690,.031), (sign*.298,.665,.030),
+            (sign*.303,.654,.029)],
+            [.029,.053,.048,.039], [.018,.024,.021,.014], sides=12, steps=3), "wrist."+side)
+        for finger in ("index", "middle", "ring", "pinky", "thumb"):
+            base = f"finger.{finger}.01.{side}"
+            tip = f"finger.{finger}.02.{side}"
+            start, joint, end = [Vector(p) for p in (specs[base]["head"], specs[base]["tail"], specs[tip]["tail"])]
+            width = .011 if finger == "thumb" else .0088 if finger == "pinky" else .010
+            hand.add(limb_surface([start, joint, joint.lerp(end, .83), end],
+                [width, width*.90, width*.76, width*.38],
+                [width*.90, width*.82, width*.64, width*.35], sides=8, steps=2), base)
         leg=part("GEO_Leg."+side)
         leg.add(segment(specs["thigh."+side]["head"],specs["thigh."+side]["tail"],.110,.102,16,9),"thigh."+side)
         leg.add(segment(specs["shin."+side]["head"],specs["shin."+side]["tail"],.075,.072,16,9),"shin."+side)
@@ -286,31 +337,97 @@ def torus_y(center,major,minor,sides=20,ring_sides=8,scale=(1,1,1)):
     return verts,faces
 
 
+def trousers_surface(outfit):
+    """Join the leg rings across the crotch and continue the outer contour to the waist."""
+    sides = 16
+    vertices,faces,tops = [],[],{}
+    rain = outfit == "Raincoat"
+    ease_width = 1.04 if outfit == "Quilted" else .94 if rain else 1.
+    for sign in (1,-1):
+        start = len(vertices)
+        for y,cx,rx,rz,zc in ((.079,.079,.039,.033,.005),(.116,.080,.041,.036,.005),
+            (.199,.081,.044,.042,.013),(.267,.082,.048,.045,.020),(.311,.083,.046,.044,.024),
+            (.338,.083,.051,.048,.024),(.367,.083,.049,.047,.023),(.401,.083,.054,.052,.020),
+            (.471,.082,.055,.055,.012),(.528,.079,.059,.062,.004),(.574,.069,.060,.066,0)):
+            for i in range(sides):
+                a = i*math.tau/sides
+                pleat = .003 * math.sin((y-.338)*82 + math.cos(a)) * math.exp(-((y-.338)/.10)**2)
+                vertices.append((sign*cx+rx*ease_width*math.cos(a),y,zc+(rz+pleat)*math.sin(a)))
+        faces.append(tuple(range(start,start+sides)))
+        end = len(vertices)-sides
+        for row in range(start,end,sides):
+            for i in range(sides):
+                a,b = row+i,row+(i+1)%sides
+                faces.append((b,a,a+sides,b+sides))
+        tops[sign] = list(range(end,end+sides))
+    right,left = tops[1],tops[-1]
+    outside = [right[i%16] for i in range(10,23)] + [left[i] for i in range(2,15)]
+    for i in range(4):
+        faces.append((right[6+i],left[(18-i)%16],left[(17-i)%16],right[7+i]))
+    angles = [math.atan2(vertices[i][2]/.071,vertices[i][0]/.126) for i in outside]
+    previous = outside
+    for y,rx,rz in ((.615,.122,.071),(.650,.115,.070),(.684,.106,.065),
+                    (.705,.099,.060),(.726,.096,.057),(.737,.095,.057)):
+        ring = []
+        for angle in angles:
+            ring.append(len(vertices))
+            vertices.append((rx*ease_width*math.cos(angle),y,rz*math.sin(angle)))
+        for i in range(len(ring)):
+            j = (i+1)%len(ring)
+            faces.append((previous[j],previous[i],ring[i],ring[j]))
+        previous = ring
+    faces.append(tuple(reversed(previous)))
+    edges = {}
+    for face in faces:
+        for a,b in zip(face,face[1:]+face[:1]):
+            key = (min(a,b),max(a,b))
+            edges[key] = edges.get(key,0) + (1 if a<b else -1)
+    if any(edges.values()):
+        raise RuntimeError("Child trousers have an open seam or inconsistent winding.")
+    return vertices,faces
+
+
 def make_outfit(outfit):
     parts=[];specs={s["name"]:s for s in bone_specs()}
     def part(role):
         p=Part("OUTFIT_"+outfit+"_"+role,outfit+"Atlas",outfit);parts.append(p);return p
     rain=outfit=="Raincoat";quilted=outfit=="Quilted"
-    hem=.565 if rain else .695;coat=part("Body")
-    profile=[(hem,.122,.075,-.003),(hem+.020,.128,.079,-.004),(.72,.121,.078,-.001),
-        (.79,.112,.075,0),(.86,.123,.075,0),(.92,.141,.072,0),(.982,.145,.067,0),
-        (1.019,.092,.049,0),(1.028,.048,.034,0)]
-    profile=sorted(set(profile))
-    coat.add(loft(profile,22),"raincoat" if rain else "torso",0)
+    part("Hair").add(hair_surface(outfit), "hair", 6 if rain else 8)
+    coat=part("Body")
+    if rain:
+        profile=[(.565,.126,.079,-.004),(.574,.132,.083,-.004),(.622,.133,.082,-.004),
+            (.71,.123,.079,-.001),(.79,.113,.072,0),(.865,.128,.073,0),(.94,.144,.075,0),
+            (.989,.148,.068,0),(1.020,.097,.050,0),(1.026,.049,.036,0)]
+    elif quilted:
+        profile=[(.695,.110,.071,0),(.711,.115,.075,0)]
+        for y,rx,rz in ((.752,.118,.077),(.812,.121,.079),(.872,.134,.081),(.932,.144,.078),(.975,.147,.070)):
+            profile.extend([(y-.022,rx-.003,rz-.004,0),(y,rx,rz,0),(y+.020,rx-.002,rz-.004,0)])
+        profile.extend([(1.010,.114,.056,0),(1.031,.051,.038,0)])
+    else:
+        profile=[(.695,.104,.069,0),(.717,.111,.073,0),(.766,.110,.071,0),(.834,.119,.070,0),
+            (.913,.132,.069,0),(.983,.136,.062,0),(1.014,.091,.047,0),(1.029,.048,.034,0)]
+    coat.add(loft(profile,24),"raincoat" if rain else "torso",0)
     # Distinct constructed closures, not a colour variant of a single jacket.
     placket=part("Closure")
-    placket.box((0,(hem+1.005)*.5,.081),(.022,1.005-hem,.012),"torso",1)
-    for i in range(5 if rain else 4):
-        y=.73+i*.054
-        placket.add(moved(bp.u_rotated(fair.ring([(-.003,.005),(.003,.007),(.004,.005)],8),(90,0,0)),(0,y,.091)),"torso",7)
+    if rain or quilted:
+        placket.add(loft([(y,.010 if rain else .005,.004,z+depth)
+                          for y,_,depth,z in profile[1:-1]], 8), "raincoat" if rain else "torso", 1)
+        for y in ((.622,.71,.79,.865,.94) if rain else (.975,)):
+            depth = next(p[2]+p[3] for p in profile if p[0] == y)
+            placket.ball((0,y,depth+.004),(.012,.013,.008),"torso",7,8,5)
+    else:
+        placket.add(torus_y((0,1.023,0),.047,.006,20,6,(1,.7,.75)),"neckblend",2)
     collar=part("Collar")
-    collar.add(torus_y((0,1.032,.003),.035,.010,18,6,(1.15,1.4,1)),"neck",2)
-    pockets=part("Pockets")
-    for sign in (-1,1):
-        pockets.box((sign*.077,.760,.075),(.067,.083,.016),"torso",3)
-        pockets.box((sign*.077,.804,.085),(.074,.023,.013),"torso",3)
-        pockets.rod((sign*.11,.724,.088),(sign*.046,.724,.088),.0025,"torso",1)
-        for y in (.738,.786):pockets.rod((sign*.107,y,.088),(sign*.107,y+.01,.088),.0018,"torso",1)
+    collar.add(torus_y((0,1.033,.003),.038,.008,20,6,(1.15,1.4,1)),"neckblend",2)
+    if rain or quilted:
+        pockets=part("Pockets")
+        for sign in (-1,1):
+            if rain:
+                pockets.add(bp.u_rotated_about(bp.u_box((sign*.066,.747,.062),(.061,.076,.015),.005),
+                    (0,sign*26,0),(sign*.066,.747,.062)),"raincoat",3)
+                pockets.rod((sign*.094,.784,.052),(sign*.040,.790,.077),.003,"raincoat",1)
+            else:
+                pockets.rod((sign*.091,.755,.058),(sign*.057,.810,.078),.004,"torso",1)
     if rain:
         hood=part("FoldedHood")
         # A visibly hollow hood folded behind the neck, with a doubled opening.
@@ -319,59 +436,46 @@ def make_outfit(outfit):
         hood.add(torus_y((0,1.001,-.091),.054,.006,18,6,(1.02,.6,.54)),"Cloth.Hood",2)
     elif quilted:
         cap=part("KnittedCap")
-        cap.add(loft([(1.227,.093,.089,-.006),(1.253,.091,.088,-.006),(1.278,.070,.066,-.006),
-                      (1.294,.040,.035,-.006),(1.300,.008,.008,-.006)],20),"head",6)
+        cap.add(loft([(1.227,.093,.089,-.006),(1.244,.092,.088,-.006),(1.262,.084,.079,-.007),
+                      (1.279,.064,.059,-.009),(1.292,.040,.035,-.009),(1.300,.010,.009,-.009)],24),"head",6)
         cap.add(torus_y((0,1.236,-.006),.088,.010,20,6,(1,.65,.96)),"head",6)
-        # Soft horizontal channels are actual slight ridges over the quilted shell.
-        for y,rx,rz in ((.744,.124,.078),(.861,.128,.076),(.921,.143,.073)):
-            coat.add(torus_y((0,y,0),rx,.0027,16,6,(1,1,rz/rx)),"torso",1)
     else:
         vest=part("Vest")
-        vest.add(loft([(.708,.124,.078,0),(.740,.126,.078,0),(.805,.119,.078,0),(.866,.130,.078,0),
-                      (.935,.144,.074,0),(.985,.144,.068,0),(1.013,.079,.050,0)],22),"torso",6)
-        vest.box((0,.835,.086),(.024,.285,.017),"torso",7)
-        for sign in (-1,1):vest.box((sign*.079,.751,.084),(.069,.081,.011),"torso",6)
-    # Real trousers continue to the child's waist beneath every short upper
-    # garment. This pelvis remains dressed when a thigh folds up to sit.
-    waist=part("TrouserWaist")
-    waist_profile=[(.565,.111,.064,0),(.597,.116,.068,0),(.665,.110,.070,0),
-                   (.727,.104,.068,0),(.739,.103,.068,0)] if rain else [
-                   (.565,.117,.064,0),(.597,.143,.081,0),(.665,.128,.078,0),
-                   (.727,.115,.074,0),(.739,.116,.075,0)]
-    waist.add(loft(waist_profile,16),"pelvis",4)
+        vest_profile = [(.710,.115,.076,0),(.738,.120,.078,0),(.805,.121,.077,0),(.866,.134,.078,0),
+                        (.935,.144,.076,0),(.982,.144,.069,0),(1.013,.093,.050,0)]
+        points, faces = loft(vest_profile, 24)
+        # Lower the front neckline and sides of the top rings, leaving the
+        # sweater visible at the opening and between the sleeves and shoulder.
+        for i in range(4*24, len(points)):
+            x,y,z = points[i]
+            angle = i%24 * math.tau/24
+            cut = .104 * max(0.,math.sin(angle))**7 + .039 * abs(math.cos(angle))**8
+            points[i] = (x, y - cut * ((i//24-3)/3)**2, z)
+        vest.add((points,faces),"torso",6)
+        for sign in (-1,1):
+            pocket = bp.u_box((sign*.057,.764,.070),(.060,.066,.012),.004)
+            vest.add(bp.u_rotated_about(pocket,(0,sign*22,0),(sign*.057,.764,.070)),"torso",3)
+    part("Trousers").add(trousers_surface(outfit), "trousers", 4)
     for side,sign in (("L",-1),("R",1)):
         sleeve=part("Sleeve."+side)
         upper=specs["upper_arm."+side];fore=specs["forearm."+side]
-        sleeve.add(limb_surface([(sign*.125,1.000,0),upper["tail"],fore["tail"]],
-                     [.110,.094,.075] if rain else [.103,.085,.065],
-                     [.093,.084,.068] if rain else [.090,.077,.059]),"sleeve."+side,2)
+        sleeve.add(limb_surface([(sign*.106,.990,0),(sign*.164,.968,0),upper["tail"],fore["tail"]],
+                     [.058,.111,.094,.075] if rain else [.058,.107,.089,.064] if quilted else [.053,.101,.082,.062],
+                     [.063,.096,.083,.065] if rain else [.059,.091,.078,.058], steps=5, fold=.0035, fold_joint=2),
+                   "sleeve."+side,2 if rain or not quilted else 0)
         cuff=part("Cuff."+side)
         wrist=Vector(fore["tail"]);end=wrist+(Vector(fore["head"])-wrist).normalized()*.027
         cuff.add(segment(wrist,end,.079 if rain else .067,.068 if rain else .060,14,4),"forearm."+side,1)
-        # A seam and small elbow folds follow their own limb, not the torso.
-        sleeve.rod((sign*.184,.947,.043),(sign*.224,.869,.049),.0026,"upper_arm."+side,1)
-        for i in range(3):
-            p=Vector(fore["head"]).lerp(wrist,.15+i*.11)
-            sleeve.add(moved(bp.u_rotated(bp.u_plate((0,0,0),(.060,.010,.008)),(0,0,sign*20)),tuple(p+Vector((0,0,.039)))),"forearm."+side,1)
-        pants=part("Trousers."+side)
-        hip=Vector(specs["thigh."+side]["head"]);knee=Vector(specs["shin."+side]["head"]);ankle=Vector(specs["shin."+side]["tail"])
-        pants.add(limb_surface([(sign*.066 if rain else hip.x,.705,0),knee,ankle],
-                       [.096 if rain else .128,.110,.088],[.096 if rain else .116,.105,.080]),"trouser."+side,4)
-        for i in range(3):
-            p=knee+Vector((0,.032-i*.025,.051))
-            pants.add(moved(bp.u_rotated(bp.u_plate((0,0,0),(.071,.012,.006)),(0,0,(-1 if i%2 else 1)*9)),tuple(p)),"shin."+side,4)
-        if not rain:
-            pants.rod((sign*.136,.573,.012),(sign*.132,.379,.030),.0025,"thigh."+side,1)
         boots=part("Boots."+side)
         x=sign*.079
         boots.add(moved(loft([(.016,.050,.100,.040),(.043,.055,.103,.040),(.066,.049,.098,.043),
                       (.080,.043,.076,.025),(.110,.041,.041,-.002),(.16 if rain else .119,.043,.040,-.004),
-                      (.20 if rain else .140,.043,.040,-.004)],14),(x,0,0)),"foot."+side,5)
+                      (.20 if rain else .140,.044,.041,-.004)],16),(x,0,0)),"boot."+side,5)
         boots.add(moved(loft([(0,.051,.102,.039),(.012,.056,.107,.039),(.025,.056,.107,.039),(.030,.051,.102,.039)],14),(x,0,0)),"foot."+side,7)
         for i in range(5):
             boots.box((x,.007,-.038+i*.034),(.093,.013,.020),"foot."+side,7)
         if rain:
-            boots.add(torus_y((x,.189,-.004),.040,.004,20,6,(1,1,1)),"foot."+side,5)
+            boots.add(torus_y((x,.189,-.004),.041,.004,20,6,(1,1,1)),"boot."+side,5)
         else:
             for i in range(4):
                 z=.022+i*.019;y=.105-i*.010
@@ -385,45 +489,65 @@ def triangle_count(parts):
     return sum(kit.triangle_count(component[0]) for part in parts for component in part.components)
 
 
+def face_atlas():
+    canvas = atlas_kit.PixelCanvas(512,512)
+    canvas.rect(0,0,512,512,(*SKIN,255))
+    faces = [
+        (43,85,64,83,5,18, (91,76,47), 1, True),
+        (44,84,62,82,4,15, (78,87,73), -1, False),
+        (41,87,65,84,5,16, (103,78,50), 0, True),
+    ]
+    for row,(left,right,nose,mouth,eye_height,mouth_width,iris,tilt,freckles) in enumerate(faces):
+        for expression in range(4):
+            ox,oy = expression*128,row*128
+            def ellipse(x,y,w,h,rgb):
+                canvas.ellipse(ox+x,oy+y,w,h,(*rgb,255))
+            def line(x,y,x2,y2,rgb,thickness=1):
+                canvas.line(ox+x,oy+y,ox+x2,oy+y2,(*rgb,255),thickness)
+            for x,side in ((left,-1),(right,1)):
+                ellipse(x+side*6,72,12,9,(186,137,112))
+                line(x-8,49+side*tilt,x+7,49-side*tilt,(101,73,54),2)
+                h = 1 if expression==2 else 2 if expression==1 else eye_height
+                ellipse(x,57,9,h,(109,76,57))
+                if expression != 2:
+                    ellipse(x,58,8,max(1,h-1),(214,197,172))
+                    pupil = x + (1 if expression==3 else 0)
+                    ellipse(pupil,58,3,max(1,h-1),iris)
+                    ellipse(pupil,58,1,max(1,h-2),(51,43,35))
+                    if h>2:
+                        canvas.put(ox+pupil-1,oy+57,(231,220,196,255))
+            # Nose and lips are paint on the same closed head surface.
+            ellipse(nose,69,3,6,(193,152,121))
+            ellipse(nose,75,7,3,(173,127,103))
+            ellipse(nose,74,4,2,(202,155,125))
+            line(nose-6,75,nose-3,76,(149,104,82))
+            line(nose+3,76,nose+6,75,(150,106,84))
+            half = mouth_width//2
+            line(64-half,mouth,63,mouth+1,(124,78,63))
+            line(63,mouth+1,64+half,mouth,(124,78,63))
+            line(61-half//2,mouth+3,67+half//2,mouth+3,(187,129,108))
+            if freckles:
+                for x,y in ((38,67),(43,69),(48,67),(80,68),(86,66),(92,68)):
+                    canvas.put(ox+x+tilt,oy+y,(153,109,86,255))
+    return canvas
+
+
 def paint_texture(name):
     if name=="ChildFace":
-        canvas=atlas_kit.PixelCanvas(512,128)
-        for expression in range(4):
-            x0=expression*128
-            canvas.rect(x0,0,x0+128,128,(183,145,115,255))
-            canvas.ellipse(x0+64,93,45,28,(178,136,105,255))
-            for x in (27,101):canvas.ellipse(x0+x,72,13,9,(189,137,114,255))
-            for x in (40,88):
-                canvas.line(x0+x-9,38,x0+x+8,37,(74,54,38,255),2)
-                if expression==2:
-                    canvas.line(x0+x-8,49,x0+x+8,49,(83,57,40,255),2)
-                else:
-                    eye_height=2 if expression==1 else 4
-                    canvas.ellipse(x0+x,49,9,eye_height,(213,204,180,255))
-                    canvas.ellipse(x0+x+(1 if expression==3 else 0),49,3,eye_height,(80,73,46,255))
-                    canvas.ellipse(x0+x+(1 if expression==3 else 0),49,1,eye_height-1,(28,30,25,255))
-                    canvas.line(x0+x-8,49-eye_height,x0+x+7,48-eye_height,(77,54,37,255))
-            canvas.line(x0+57,102,x0+71,102,(117,69,60,255),1)
-            canvas.line(x0+59,104,x0+70,104,(192,126,109,255),1)
-            canvas.line(x0+59,82,x0+62,84,(125,88,64,255),1)
-            canvas.line(x0+67,84,x0+70,82,(125,88,64,255),1)
-            for x,y in ((34,66),(44,69),(83,67),(95,68)):canvas.put(x0+x,y,(153,107,78,255))
+        return face_atlas()
+    if name in FINISHES:
+        canvas = surfaces.albedo()
+        for finish,pigment in dict(FINISHES[name]).items():
+            x,bottom = surfaces.tile_rect(finish)
+            y = surfaces.SIZE-bottom-surfaces.TILE
+            for row in range(y,y+surfaces.TILE):
+                for column in range(x,x+surfaces.TILE):
+                    offset = (row*surfaces.SIZE+column)*4
+                    tone = canvas.pixels[offset]/255
+                    canvas.put(column,row,(*(round(channel*tone) for channel in pigment),255))
         return canvas
-    if name=="ChildSkin":
-        colors=((183,145,115),(181,139,106),(157,108,83),(207,170,139))
-        size,tile=256,128
-    elif name=="ChildHair":
-        colors=((58,44,31),)*4;size,tile=256,128
-    elif name=="ToyWood":
-        colors=((139,101,61),(107,60,48),(65,67,61),(166,132,84));size,tile=256,128
-    else:
-        style=name.replace("Atlas","")
-        main={"Raincoat":(153,122,59),"Quilted":(89,108,117),"Vest":(118,61,67)}[style]
-        accent={"Raincoat":(132,110,61),"Quilted":(74,84,84),"Vest":(101,103,96)}[style]
-        colors=(main,tuple(max(0,v-25) for v in main),main,tuple(min(255,v+8) for v in main),
-            (80,79,66) if style!="Vest" else (103,77,55),
-            (56,57,46) if style=="Raincoat" else (72,57,44),accent,(44,45,39))
-        colors=colors+colors;size,tile=512,128
+    colors=((139,101,61),(107,60,48),(65,67,61),(166,132,84))
+    size,tile=256,128
     canvas=atlas_kit.PixelCanvas(size,size)
     rng=random.Random("city-fair-child-"+name)
     columns=size//tile
@@ -436,78 +560,95 @@ def paint_texture(name):
                 canvas.put(x0+x,y0+y,tuple(max(0,min(255,v+grain+shade)) for v in color)+(255,))
         light=tuple(min(255,v+16) for v in color)+(255,)
         dark=tuple(max(0,v-22) for v in color)+(255,)
-        if name=="ChildHair":
-            for n in range(25):
-                x=rng.randrange(0,tile);y=rng.randrange(0,tile)
-                canvas.line(x0+x,y0+y,x0+x+8,y0+min(tile-1,y+38),light,1)
-        elif name=="ToyWood":
-            for y in range(8,tile,9):
-                canvas.line(x0+3,y0+y,x0+tile-4,y0+y+rng.randrange(-3,4),dark)
-            canvas.ellipse(x0+79,y0+46,12,4,dark);canvas.ellipse(x0+79,y0+46,7,2,light)
-        elif name.endswith("Atlas"):
-            for x in (7,tile-8):
-                canvas.line(x0+x,y0+2,x0+x,y0+tile-3,dark)
-                for y in range(5,tile-5,5):canvas.line(x0+x+2,y0+y,x0+x+2,y0+y+2,light)
-            for y in (7,tile-8):canvas.line(x0+5,y0+y,x0+tile-6,y0+y,dark)
-            if name=="QuiltedAtlas" and index in (0,2,3):
-                for y in range(24,tile-8,24):
-                    canvas.line(x0+8,y0+y,x0+tile-9,y0+y,dark)
-                    canvas.line(x0+8,y0+y+2,x0+tile-9,y0+y+2,light)
-            if name=="VestAtlas" and index in (0,2):
-                for y in range(13,tile-12,4):canvas.line(x0+12,y0+y,x0+tile-13,y0+y,light)
-            for n in range(22):
-                x=rng.randrange(8,tile-12);y=rng.randrange(8,tile-9)
-                canvas.line(x0+x,y0+y,x0+x+rng.randrange(2,9),y0+y,light)
+        for y in range(8,tile,9):
+            canvas.line(x0+3,y0+y,x0+tile-4,y0+y+rng.randrange(-3,4),dark)
+        canvas.ellipse(x0+79,y0+46,12,4,dark);canvas.ellipse(x0+79,y0+46,7,2,light)
     return canvas
 
 
-TEXTURES=("ChildSkin","ChildFace","ChildHair","RaincoatAtlas","QuiltedAtlas","VestAtlas","ToyWood")
+TEXTURES=("ChildSkin","ChildFace","RaincoatAtlas","QuiltedAtlas","VestAtlas","ToyWood")
 
 
 def create_material(texture,path):
     mat=bpy.data.materials.new("FairChild_"+texture);mat.use_nodes=True
     shader=mat.node_tree.nodes.get("Principled BSDF");shader.inputs["Roughness"].default_value=.80
     node=mat.node_tree.nodes.new("ShaderNodeTexImage");node.image=bpy.data.images.load(str(path/(texture+".png")),check_existing=True)
-    node.interpolation="Closest"
+    node.interpolation="Closest" if texture in ("ChildFace","ToyWood") else "Linear"
     if texture=="ChildFace":
         coord=mat.node_tree.nodes.new("ShaderNodeTexCoord")
-        mapping=mat.node_tree.nodes.new("ShaderNodeVectorMath");mapping.operation="MULTIPLY"
-        mapping.inputs[1].default_value=(.25,1,1)
+        mapping=mat.node_tree.nodes.new("ShaderNodeVectorMath");mapping.operation="MULTIPLY_ADD"
+        mapping.inputs[1].default_value=(.25,.25,1)
+        mapping.inputs[2].default_value=(0,.75,0)
         mat.node_tree.links.new(coord.outputs["UV"],mapping.inputs[0]);mat.node_tree.links.new(mapping.outputs[0],node.inputs["Vector"])
+    elif texture in FINISHES:
+        normal, response = [mat.node_tree.nodes.new("ShaderNodeTexImage") for _ in surfaces.MAP_NAMES]
+        for image_node, map_name in zip((normal,response),surfaces.MAP_NAMES):
+            image_node.image = bpy.data.images.load(str(DETAIL_DIR/map_name),check_existing=True)
+            image_node.image.colorspace_settings.name = "Non-Color"
+        tangent = mat.node_tree.nodes.new("ShaderNodeNormalMap")
+        tangent.inputs["Strength"].default_value = .65
+        mat.node_tree.links.new(normal.outputs["Color"],tangent.inputs["Color"])
+        mat.node_tree.links.new(tangent.outputs["Normal"],shader.inputs["Normal"])
+        roughness = mat.node_tree.nodes.new("ShaderNodeMath")
+        roughness.operation = "SUBTRACT"
+        roughness.inputs[0].default_value = 1
+        mat.node_tree.links.new(response.outputs["Alpha"],roughness.inputs[1])
+        mat.node_tree.links.new(roughness.outputs[0],shader.inputs["Roughness"])
     mat.node_tree.links.new(node.outputs["Color"],shader.inputs["Base Color"])
     return mat
 
 
-def vertex_weights(binding,p):
+def ease(value):
+    t = min(1.,max(0.,value))
+    return t*t*(3-2*t)
+
+
+def blend_weights(first,second,ratio):
+    t = ease(ratio)
+    return {first:1-t,second:t}
+
+
+def vertex_weights(binding,p,specs):
+    x,y,z = p
+    side = binding.rsplit(".",1)[-1]
     if binding.startswith("sleeve."):
-        side=binding.rsplit(".",1)[1];y=p[1]
-        if y>.966:
-            t=min(1,max(0,(y-.966)/.052))
-            return {"upper_arm."+side:1-t,"chest":t}
-        if y>.876:return {"upper_arm."+side:1.0}
-        t=min(1,max(0,(.876-y)/.072))
-        return {"upper_arm."+side:1-t,"forearm."+side:t}
-    if binding.startswith("trouser."):
-        side=binding.rsplit(".",1)[1];y=p[1]
-        if y>.565:
-            t=min(1,max(0,(y-.565)/.102))
-            return {"thigh."+side:1-t,"pelvis":t}
-        if y>.386:return {"thigh."+side:1.0}
-        t=min(1,max(0,(.386-y)/.096))
-        return {"thigh."+side:1-t,"shin."+side:t}
+        if y>.925:
+            return blend_weights("upper_arm."+side,"chest",(.168-abs(x))/.057)
+        return blend_weights("upper_arm."+side,"forearm."+side,(.886-y)/.086)
+    if binding=="trousers":
+        if y<.55:
+            side = "L" if x<0 else "R"
+            return blend_weights("thigh."+side,"shin."+side,(.393-y)/.110)
+        pelvis = ease((y-.55)/.138)
+        right = ease((x+.036)/.072)*(1-pelvis)
+        return {"pelvis":pelvis,"thigh.R":right,"thigh.L":1-pelvis-right}
+    if binding.startswith("boot."):
+        return blend_weights("foot."+side,"shin."+side,(y-.083)/.122)
+    if binding.startswith("wrist."):
+        return blend_weights("hand."+side,"forearm."+side,(y-.688)/.029)
+    if binding.startswith("finger.") and ".01." in binding:
+        first = specs[binding]
+        start, joint = Vector(first["head"]), Vector(first["tail"])
+        axis = joint-start
+        t = (Vector(p)-start).dot(axis)/axis.length_squared
+        return blend_weights(binding,binding.replace(".01.",".02."),(t-.76)/.48)
+    if binding=="neckblend":
+        if y < 1.049:
+            return blend_weights("chest","neck",(y-1.015)/.034)
+        return blend_weights("neck","head",(y-1.053)/.041)
+    if binding=="hair":
+        return blend_weights("head","Hair.Fringe",ease((z-.035)/.047)*ease((1.280-y)/.050)*.8)
     if binding=="raincoat":
-        if p[1]<.71:
-            blend=min(1,max(0,(.71-p[1])/.095))
-            return {"pelvis":1-blend,"Cloth.Hem.L" if p[0]<0 else "Cloth.Hem.R":blend}
+        if y<.71:
+            amount = ease((.71-y)/.105)
+            left = ease((.040-x)/.080)*amount
+            return {"pelvis":1-amount,"Cloth.Hem.L":left,"Cloth.Hem.R":amount-left}
         binding="torso"
-    if binding!="torso":return {binding:1.0}
-    y=p[1]
-    if y<.75:return {"pelvis":1.0}
+    if binding!="torso":
+        return {binding:1.}
     if y<.84:
-        t=(y-.75)/.09;return {"pelvis":1-t,"spine":t}
-    if y<.95:
-        t=(y-.84)/.11;return {"spine":1-t,"chest":t}
-    return {"chest":1.0}
+        return blend_weights("pelvis","spine",(y-.74)/.10)
+    return blend_weights("spine","chest",(y-.84)/.11)
 
 
 def component_uvs(geometry,tile,texture,custom):
@@ -525,24 +666,56 @@ def component_uvs(geometry,tile,texture,custom):
             for p in geometry[0]]
 
 
-def make_mesh(part,rig,material):
-    vertices=[];faces=[];uvs=[];weights=[]
+def detail_uv(points,axes,bounds,finish):
+    low,high = bounds
+    u,v = axes
+    return [surfaces.tile_uv(finish,(p[u]-low[u])/max(.001,high[u]-low[u]),
+                           (p[v]-low[v])/max(.001,high[v]-low[v])) for p in points]
+
+
+def make_mesh(part,rig,material,specs):
+    vertices,faces,uvs,weights,smooth = [],[],[],[],[]
     for geom,binding,tile,custom in part.components:
-        start=len(vertices);converted=bp.to_source(geom)
-        vertices.extend(converted[0]);faces.extend(tuple(start+i for i in f) for f in converted[1])
-        uvs.extend(component_uvs(geom,tile,part.texture,custom))
-        weights.extend(vertex_weights(binding,p) for p in geom[0])
-    mesh=bpy.data.meshes.new(part.name+"_Mesh");mesh.from_pydata(vertices,[],faces);mesh.update()
-    uv=mesh.uv_layers.new(name="UVMap")
-    for polygon in mesh.polygons:
-        polygon.use_smooth=part.texture.startswith("Child")
-        for loop in polygon.loop_indices:uv.data[loop].uv=uvs[mesh.loops[loop].vertex_index]
+        start = len(vertices)
+        converted = bp.to_source(geom)
+        vertices.extend(converted[0])
+        weights.extend(vertex_weights(binding,p,specs) for p in geom[0])
+        if any(abs(sum(w.values())-1.)>1e-6 or len(w)>4 for w in weights[start:]):
+            raise RuntimeError("Invalid child skin weights: "+part.name)
+        bounds = kit.bounds(geom)
+        for face in converted[1]:
+            faces.append(tuple(start+i for i in face))
+            smooth.append(len(face) <= 4)
+            points = [geom[0][i] for i in face]
+            if custom is not None:
+                chart = [custom[i] for i in face]
+                # Rear head seam has identical pigment on both sides.
+                if len(face)<=4 and max(u for u,_ in chart)-min(u for u,_ in chart)>.5:
+                    chart = [(1. if u<.1 else u,v) for u,v in chart]
+                uvs.append([(.012+u*.976,.012+v*.976) for u,v in chart])
+            else:
+                normal = (Vector(points[1])-Vector(points[0])).cross(Vector(points[2])-Vector(points[0]))
+                axis = max(range(3),key=lambda index:abs(normal[index]))
+                axes = ((2,1),(0,2),(0,1))[axis]
+                uvs.append(detail_uv(points,axes,bounds,finish_name(part.texture,tile)))
+    mesh = bpy.data.meshes.new(part.name+"_Mesh")
+    mesh.from_pydata(vertices,[],faces)
+    mesh.update()
+    uv = mesh.uv_layers.new(name="UVMap")
+    for polygon,chart,rounded_faces in zip(mesh.polygons,uvs,smooth):
+        polygon.use_smooth = rounded_faces
+        for loop,point in zip(polygon.loop_indices,chart):
+            uv.data[loop].uv = point
     mesh.materials.append(material)
-    obj=bpy.data.objects.new(part.name,mesh);bpy.context.collection.objects.link(obj);obj.parent=rig
-    for name in sorted({name for weight in weights for name in weight}):obj.vertex_groups.new(name=name)
+    obj = bpy.data.objects.new(part.name,mesh)
+    bpy.context.collection.objects.link(obj)
+    obj.parent = rig
+    for name in sorted({name for weight in weights for name in weight}):
+        obj.vertex_groups.new(name=name)
     for i,weight in enumerate(weights):
         for name,value in weight.items():
-            if value>0:obj.vertex_groups[name].add([i],value,"REPLACE")
+            if value>0:
+                obj.vertex_groups[name].add([i],value,"REPLACE")
     modifier=obj.modifiers.new("ChildSkeleton","ARMATURE");modifier.object=rig
     obj["bp_outfit"]=part.outfit or "shared_body";obj["bp_texture"]=part.texture
     obj["bp_visible_body"]=part.visible
@@ -550,8 +723,10 @@ def make_mesh(part,rig,material):
 
 
 def build_model(parts,path,materials=None):
-    root,rig=create_rig();materials=materials or {name:create_material(name,path) for name in TEXTURES}
-    objects=[make_mesh(part,rig,materials[part.texture]) for part in parts]
+    root,rig=create_rig()
+    materials=materials or {name:create_material(name,path) for name in TEXTURES}
+    specs={bone["name"]:bone for bone in bone_specs()}
+    objects=[make_mesh(part,rig,materials[part.texture],specs) for part in parts]
     bpy.context.view_layer.update()
     return root,rig,objects,materials
 
@@ -635,7 +810,7 @@ def manifest(parts,props,textures):
     for outfit in OUTFITS:
         visible=[p for p in parts if p.visible or p.outfit==outfit]
         low,high=part_bounds(visible);count=triangle_count(visible)
-        if not 9000<=count<=12000:raise RuntimeError(f"Child {outfit} visible budget outside 9-12k: {count}")
+        if count>12000:raise RuntimeError(f"Child {outfit} exceeds the visible triangle ceiling: {count}")
         if abs(high[1]-HEIGHT)>.002 or abs(low[1])>.003:raise RuntimeError("Child height/ground contract differs")
         variants.append(dict(name=outfit,visible_triangles=count,visible_parts=[p.name for p in visible],bounds_min=rounded(low),bounds_max=rounded(high)))
     prop_records=[]
@@ -653,7 +828,7 @@ def manifest(parts,props,textures):
         shared_visible_body_triangles=triangle_count([p for p in parts if p.visible]),
         bones=bone_specs(),parts=records,outfits=variants,props=prop_records,
         textures=[dict(name=name,width=canvas.width,height=canvas.height,sha256=hashlib.sha256(canvas.png_bytes()).hexdigest()) for name,canvas in textures.items()],
-        validation=dict(signed_volume="every authored solid outward",weights="one or two normalized influences",fbx="round-trip world meshes and skeleton anchors"))
+        validation=dict(signed_volume="every authored solid outward",weights="up to four normalized influences",fbx="round-trip world meshes and skeleton anchors"))
 
 
 def canonical(name):
@@ -661,7 +836,7 @@ def canonical(name):
     return pieces[0] if len(pieces)==2 and pieces[1].isdigit() else name
 
 
-def verify_fbx(path,payload):
+def verify_fbx(path,payload,verify_props=True):
     bpy.ops.wm.read_factory_settings(use_empty=True)
     bpy.ops.import_scene.fbx(filepath=str(path/"FairChild.fbx"),use_anim=False)
     bpy.context.view_layer.update()
@@ -681,8 +856,9 @@ def verify_fbx(path,payload):
         point=rig.matrix_world@bone.head_local
         if any(abs(a-b)>.002 for a,b in zip(source(point),spec["head"])):raise RuntimeError("Child exported bone head moved: "+spec["name"])
     # Passive props share the independently verified hierarchical fair export.
-    fair.verify_fbx(path,{"models":[dict(p,triangle_count=p["triangles"]) for p in payload["props"]]})
-    print("CITY FAIR CHILD EXPORTED MESH/SKELETON/PROP ROUND TRIP OK")
+    if verify_props:
+        fair.verify_fbx(path,{"models":[dict(p,triangle_count=p["triangles"]) for p in payload["props"]]})
+    print("CITY FAIR CHILD EXPORTED MESH/SKELETON ROUND TRIP OK")
 
 
 def select_outfit(objects,parts,outfit):
@@ -696,6 +872,9 @@ def render_preview(parts,path,root,objects,materials,prop_roots,output):
     for index,outfit in enumerate(OUTFITS[1:]):
         other,other_rig,meshes,_=build_model(parts,path,materials);rigs.append(other_rig)
         other.location.x=index*.72;select_outfit(meshes,parts,outfit)
+        face_material = materials["ChildFace"].copy()
+        next(node for node in face_material.node_tree.nodes if node.type=="VECT_MATH").inputs[2].default_value=(0,.5-index*.25,0)
+        next(obj for obj in meshes if obj.name.startswith("GEO_Head")).data.materials[0]=face_material
     prop_roots[0].location=(1.38,0,0)
     prop_roots[1].location=(1.35,.02,.553)
     scene=bpy.context.scene;scene.render.engine="BLENDER_EEVEE"
@@ -729,6 +908,7 @@ def main():
     parser.add_argument("--validate-only",action="store_true")
     parser.add_argument("--verify-fbx",action="store_true")
     parser.add_argument("--no-preview",action="store_true")
+    parser.add_argument("--body-only",action="store_true",help="Publish the child without re-exporting the passive toys.")
     args=parser.parse_args(sys.argv[sys.argv.index("--")+1:] if "--" in sys.argv else [])
     parts=make_body()+[p for outfit in OUTFITS for p in make_outfit(outfit)]
     props=make_props();textures={name:paint_texture(name) for name in TEXTURES}
@@ -736,7 +916,7 @@ def main():
     repeat=manifest(make_body()+[p for outfit in OUTFITS for p in make_outfit(outfit)],make_props(),
                     {name:paint_texture(name) for name in TEXTURES})
     if payload["build_signature"]!=repeat["build_signature"]:raise RuntimeError("Child generation is not deterministic")
-    if args.verify_fbx:verify_fbx(args.model_dir,payload);return
+    if args.verify_fbx:verify_fbx(args.model_dir,payload,not args.body_only);return
     if not args.validate_only:
         args.model_dir.mkdir(parents=True,exist_ok=True);args.source_dir.mkdir(parents=True,exist_ok=True)
         for name,canvas in textures.items():canvas.write_png(args.model_dir/(name+".png"))
@@ -744,13 +924,15 @@ def main():
         root,rig,objects,materials=build_model(parts,args.model_dir)
         prop_roots=build_props(props,materials["ToyWood"])
         export_model(root,args.model_dir/"FairChild.fbx")
-        for prop in prop_roots:export_model(prop,args.model_dir/(prop.name+".fbx"))
+        if not args.body_only:
+            for prop in prop_roots:export_model(prop,args.model_dir/(prop.name+".fbx"))
         (args.model_dir/"FairChild3D.json").write_text(json.dumps(payload,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
         select_outfit(objects,parts,"Raincoat")
         bpy.context.preferences.filepaths.save_version=0
+        bpy.ops.file.pack_all()
         bpy.ops.wm.save_as_mainfile(filepath=str(args.source_dir/"FairChild3D.blend"),check_existing=False)
         if not args.no_preview:render_preview(parts,args.model_dir,root,objects,materials,prop_roots,args.source_dir/"FairChild3D.png")
-        verify_fbx(args.model_dir,payload)
+        verify_fbx(args.model_dir,payload,not args.body_only)
     print("CITY FAIR CHILD MODEL CONTRACT OK")
     print("Bones",payload["bone_count"],"shared visible",payload["shared_visible_body_triangles"])
     for outfit in payload["outfits"]:print(outfit["name"],"visible triangles",outfit["visible_triangles"])

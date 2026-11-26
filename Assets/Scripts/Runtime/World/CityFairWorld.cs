@@ -7,6 +7,7 @@ namespace BarPromenade
     /// <summary>The imported fair and its physical owners, retained with the City root.</summary>
     public sealed class CityFairWorld : MonoBehaviour
     {
+        internal const string GarlandLampPrefix = "Fair Garland Lamp ";
         private static readonly string[] Goods = { "Bread", "Fruit", "Pottery", "WoodenToys" };
         private readonly List<Transform> lampAnchors = new List<Transform>();
         private readonly List<Collider> rainShelters = new List<Collider>();
@@ -109,13 +110,25 @@ namespace BarPromenade
                         new Color(3.2f, 1.6f, .55f, .12f), new Color(2f, 1f, .4f, .035f));
                     // The outer spans light their two counters from real bulbs
                     // in front of the awnings; the middle span lights the square.
-                    bool pooled = spanIndex == 1 ? part.name == "Fixture_06" :
-                        part.name == "Fixture_03" || part.name == "Fixture_09";
-                    if (!pooled) continue;
-                    var lightAnchor = new GameObject("Fair garland pooled light").transform;
+                    bool center = spanIndex == 1;
+                    bool south = part.name == "Fixture_03";
+                    if (center ? part.name != "Fixture_06" : !south && part.name != "Fixture_09") continue;
+                    Vector3 target = (Plan.CenterPathSouth + Plan.CenterPathNorth) * .5f;
+                    if (!center)
+                    {
+                        int stallIndex = (south ? 0 : 2) + (spanIndex == 0 ? 0 : 1);
+                        CityFairStall stall = Plan.Stalls[stallIndex];
+                        target = stall.Position + stall.Facing * 1.2f + Vector3.up * .80f;
+                        if (!south)
+                        {
+                            Vector3 activity = spanIndex == 0 ? Plan.ChildTablePosition : Plan.BenchPositions[1];
+                            target = Vector3.Lerp(target, activity + Vector3.up * .75f, .5f);
+                        }
+                    }
+                    var lightAnchor = new GameObject(GarlandLampPrefix + spanIndex + " " + part.name).transform;
                     lightAnchor.SetParent(transform, false);
                     lightAnchor.position = bulbPosition;
-                    lightAnchor.rotation = Quaternion.LookRotation(Vector3.down, Vector3.forward);
+                    lightAnchor.rotation = Quaternion.LookRotation(target - bulbPosition, Vector3.forward);
                     lampAnchors.Add(lightAnchor);
                 }
             }

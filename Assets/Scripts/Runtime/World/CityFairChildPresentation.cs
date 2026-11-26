@@ -15,6 +15,8 @@ namespace BarPromenade
         private Vector3 modelRestPosition;
         private Arm rightArm, leftArm, rightLeg, leftLeg;
         private Transform neck, fringe, leftHem, rightHem, hood;
+        private Renderer faceRenderer;
+        private MaterialPropertyBlock faceProperties;
         private Vector3 faceForwardInHead, faceUpInHead;
         private Quaternion neckPose, fringePose, leftHemPose, rightHemPose, hoodPose;
         private bool lookApplied, secondaryApplied;
@@ -57,6 +59,8 @@ namespace BarPromenade
             modelRestPosition = ModelRoot.localPosition;
             Transform Bone(string name) => CityFairChildAssetProvider.FindBone(gameObject, name);
             Pelvis = Bone("pelvis"); LeftFoot = Bone("foot.L"); RightFoot = Bone("foot.R"); Head = Bone("head"); neck = Bone("neck");
+            faceRenderer = CityFairChildAssetProvider.FindPart(gameObject, CityFairChildAssetProvider.FaceRendererName).GetComponent<Renderer>();
+            faceProperties = new MaterialPropertyBlock();
             // Generic FBX bone axes describe the joint, not the face. Calibrate
             // the anatomical frame from the model's forward/up in its bind pose.
             faceForwardInHead = Head.InverseTransformDirection(transform.forward);
@@ -152,7 +156,7 @@ namespace BarPromenade
             float blink = Mathf.Repeat(CurrentSeconds + 1.35f, 4.1f);
             int cell = blink >= 3.88f && blink < 3.98f ? 2 : blink >= 3.82f && blink < 4.04f ? 1 : attentive ? 3 : 0;
             if (FaceCell == cell) return;
-            CityFairChildAssetProvider.SetFace(gameObject, cell);
+            CityFairChildAssetProvider.SetFace(faceRenderer, faceProperties, cell);
             FaceCell = cell;
         }
         public void ApplyFootContacts(float leftSoleY, float rightSoleY, float weight = 1f)

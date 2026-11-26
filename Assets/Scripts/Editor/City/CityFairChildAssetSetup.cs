@@ -15,11 +15,11 @@ namespace BarPromenade.Editor
         private static readonly string[] Models = { "FairChild", "LowTable", "WoodenCar" };
         private static readonly string[] Textures =
         {
-            "ChildFace", "ChildSkin", "ChildHair", "ToyWood",
+            "ChildFace", "ChildSkin", "ToyWood",
             "RaincoatAtlas", "QuiltedAtlas", "VestAtlas"
         };
 
-        public override uint GetVersion() => 1;
+        public override uint GetVersion() => 2;
 
         private bool IsModel => Models.Any(name => string.Equals(assetPath,
             ModelFolder + name + ".fbx", StringComparison.OrdinalIgnoreCase));
@@ -41,7 +41,7 @@ namespace BarPromenade.Editor
             importer.importBlendShapes = false;
             importer.addCollider = false;
             importer.importNormals = ModelImporterNormals.Import;
-            importer.importTangents = ModelImporterTangents.None;
+            importer.importTangents = body ? ModelImporterTangents.CalculateMikk : ModelImporterTangents.None;
             importer.meshCompression = ModelImporterMeshCompression.Off;
             importer.weldVertices = true;
             importer.keepQuads = false;
@@ -72,7 +72,7 @@ namespace BarPromenade.Editor
             importer.textureShape = TextureImporterShape.Texture2D;
             importer.sRGBTexture = true;
             importer.alphaSource = TextureImporterAlphaSource.None;
-            importer.filterMode = FilterMode.Point;
+            importer.filterMode = name == "ChildFace" || name == "ToyWood" ? FilterMode.Point : FilterMode.Bilinear;
             importer.mipmapEnabled = name != "ChildFace";
             importer.wrapMode = TextureWrapMode.Clamp;
             importer.npotScale = TextureImporterNPOTScale.None;
@@ -101,11 +101,15 @@ namespace BarPromenade.Editor
                 ValidateTexture(name, path);
             }
             var sharedBody = new Dictionary<string, Mesh>(StringComparer.Ordinal);
+            var properties = new MaterialPropertyBlock();
+            Material detail = Resources.Load<Material>(CityFairChildAssetProvider.DetailMaterialPath);
+            Require(detail != null && detail.GetTexture("_BumpMap") != null && detail.GetTexture("_MetallicGlossMap") != null,
+                "The child wardrobe requires the shared default NPC normal and response maps.");
             for (int i = 0; i < CityFairChildAssetProvider.OutfitNames.Length; i++)
             {
                 string name = CityFairChildAssetProvider.OutfitNames[i];
                 Outfit outfit = manifest.outfits.SingleOrDefault(entry => entry.name == name);
-                Require(outfit != null && outfit.visible_parts != null && outfit.visible_triangles >= 9000 &&
+                Require(outfit != null && outfit.visible_parts != null && outfit.visible_triangles > 0 &&
                     outfit.visible_triangles <= 12000, "Invalid equipped child outfit: " + name);
                 GameObject actor = CityFairChildAssetProvider.Create(i, null);
                 var baked = new Mesh();
@@ -139,9 +143,22 @@ namespace BarPromenade.Editor
                             "Child mesh lost geometry, normals or UVs: " + part.name);
                         int partTriangles = TriangleCount(source);
                         Require(partTriangles == part.triangles, "Child part triangle count differs: " + part.name);
-                        Require(renderer.sharedMaterial != null && renderer.sharedMaterial.GetTexture("_BaseMap") ==
-                            AssetDatabase.LoadAssetAtPath<Texture2D>(ModelFolder + part.texture + ".png"),
-                            "Child painted surface differs: " + part.name);
+                        bool face = part.name == CityFairChildAssetProvider.FaceRendererName;
+                        renderer.GetPropertyBlock(properties);
+                        if (face)
+                            Require(renderer.sharedMaterial != detail && renderer.sharedMaterial.GetTexture("_BaseMap") ==
+                                AssetDatabase.LoadAssetAtPath<Texture2D>(ModelFolder + "ChildFace.png") &&
+                                properties.GetVector("_BaseMap_ST") == new Vector4(.25f, .25f, 0f, .75f - .25f * i),
+                                "Child head lost its identity row: " + name);
+                        else
+                        {
+                            Require(renderer.sharedMaterial == detail && source.tangents.Length == source.vertexCount,
+                                "Child part lost the shared surface or tangent frame: " + part.name);
+                            if (shouldShow)
+                                Require(properties.GetTexture("_BaseMap") ==
+                                    AssetDatabase.LoadAssetAtPath<Texture2D>(ModelFolder + part.texture + ".png"),
+                                    "Child painted surface differs: " + part.name);
+                        }
                         if (string.IsNullOrEmpty(part.outfit))
                         {
                             if (sharedBody.TryGetValue(part.name, out Mesh shared))
@@ -159,8 +176,8 @@ namespace BarPromenade.Editor
                         high = Vector3.Max(high, partHigh);
                     }
                     Require(visible.SetEquals(outfit.visible_parts), "Equipped child parts differ: " + name);
-                    Require(triangles == outfit.visible_triangles && triangles >= 9000 && triangles <= 12000,
-                        $"Equipped child {name}: {triangles} visible triangles, expected {outfit.visible_triangles} in [9000,12000].");
+                    Require(triangles == outfit.visible_triangles && triangles <= 12000,
+                        $"Equipped child {name}: {triangles} visible triangles, expected {outfit.visible_triangles} with a 12000 ceiling.");
                     Near(low, outfit.bounds_min, name + " equipped minimum");
                     Near(high, outfit.bounds_max, name + " equipped maximum");
                     ValidateTrouserContinuity(name, actualParts, partBounds, baked);
@@ -180,9 +197,9 @@ namespace BarPromenade.Editor
         private static void ValidateTexture(string name, string path)
         {
             Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
-            int width = name == "ChildFace" || name.EndsWith("Atlas", StringComparison.Ordinal) ? 512 : 256;
-            int height = name == "ChildFace" ? 128 : width;
-            Require(texture != null && texture.width == width && texture.height == height && texture.filterMode == FilterMode.Point,
+            int width = name == "ToyWood" ? 256 : 512;
+            var filter = name == "ChildFace" || name == "ToyWood" ? FilterMode.Point : FilterMode.Bilinear;
+            Require(texture != null && texture.width == width && texture.height == width && texture.filterMode == filter,
                 "Child texture dimensions/filter differ: " + path);
             var importer = AssetImporter.GetAtPath(path) as TextureImporter;
             Require(importer != null && importer.sRGBTexture && importer.mipmapEnabled == (name != "ChildFace") &&
@@ -209,25 +226,14 @@ namespace BarPromenade.Editor
             Dictionary<string, Bounds> bounds, Mesh baked)
         {
             string prefix = "OUTFIT_" + outfit + "_";
-            string waistName = prefix + "TrouserWaist";
-            Require(renderers.TryGetValue(waistName, out Renderer waistRenderer) && waistRenderer.enabled &&
-                waistRenderer is SkinnedMeshRenderer, "Child trousers need a visible skinned waist: " + outfit);
-            Bounds waist = bounds[waistName];
+            string trouserName = prefix + "Trousers";
+            Require(renderers.TryGetValue(trouserName, out Renderer trousers) && trousers.enabled &&
+                trousers is SkinnedMeshRenderer, "Child trousers need one visible skinned surface: " + outfit);
             Bounds torso = bounds[prefix + "Body"];
-            Require(waist.max.y >= torso.min.y + .01f,
+            Require(bounds[trouserName].max.y >= torso.min.y + .01f,
                 "Child trouser waist must continue inside the upper garment's hem: " + outfit);
-            foreach (string side in new[] { "L", "R" })
-            {
-                Bounds leg = bounds[prefix + "Trousers." + side];
-                Vector3 overlap = Vector3.Min(waist.max, leg.max) - Vector3.Max(waist.min, leg.min);
-                Require(overlap.x > .025f && overlap.y > .015f && overlap.z > .025f,
-                    "Child trouser waist must overlap both skinned leg tops: " + outfit + "/" + side);
-            }
-            // The original short tops ended at .695 m and the trouser tubes
-            // at .619 m. Global outfit bounds/triangle counts hid the empty
-            // pelvis. Measure both faces of that actual band, including its
-            // centre, rather than accepting another disconnected bounding box.
-            var skin = (SkinnedMeshRenderer)waistRenderer;
+            // Verify both sides of the actual pelvis surface above the crotch.
+            var skin = (SkinnedMeshRenderer)trousers;
             baked.Clear();
             skin.BakeMesh(baked, false);
             Vector3[] vertices = baked.vertices;

@@ -1107,13 +1107,13 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   Five flame/ember parts, spill/sparks, one warm Point Light and bounded
   synthesized crackle belong to the barrel. Rain dies under the
   roof; no local fog;
-- fair `[11;3]`/`[11;4]`: four staffed passive bread/fruit/pottery/toy stalls,
-  shared hero organ/bell actions, two seats, clutter, three always-lit garlands
-  with fixed lights. Three silent adults idle at the first three stalls' inner ends:
+- fair `[11;3]`/`[11;4]`: four staffed displays, shared organ/bell actions,
+  two seats, clutter and five warm garland spots for counters and aisles.
+  Three silent adults idle at the first three stalls' inner ends:
   global `fair.visitor.0..2` identities/wardrobe, no aprons, grounded collision.
-  Three silent children share one detailed body, three constructed outfits
-  with waist-high trousers and child clips: watching toys, rolling a personal
-  car at a low table, sitting via `CityBenchSeatClaims`. Routes and hand/foot
+  Three silent children share a child rig/body. Distinct painted faces, 3D hair
+  and fitted costumes use shared default NPC finishes. They look at toys, roll a
+  car at a low table and sit via `CityBenchSeatClaims`. Routes and hand/foot
   contacts preserve `2.2 m` paths and the west door approach. Child gaze follows
   sampled face orientation, fades with activity; offsets restore before sampling.
   Supports sit on bare soil. Decoration, litter and arrivals stay clear.

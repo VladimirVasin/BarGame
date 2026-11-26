@@ -280,17 +280,18 @@ namespace BarPromenade
                      name.EndsWith(RidgeKioskCourtWorld.EdgeLampPurpose, StringComparison.Ordinal) ||
                      name.EndsWith(DistrictKioskCourtWorld.ResidentialLamp, StringComparison.Ordinal) ||
                      name.EndsWith(DistrictKioskCourtWorld.IndustrialLamp, StringComparison.Ordinal));
+                bool garlandLight = fixtureBound && name.Contains(CityFairWorld.GarlandLampPrefix, StringComparison.Ordinal);
                 bool moving = name.StartsWith("Bus ", StringComparison.Ordinal) ||
                     name.StartsWith("Delivery Truck Headlamp ", StringComparison.Ordinal) ||
                     name == "Port Vessel Searchlight";
-                bool volume = !courtLight && name != "Home Yard Spotlight Light" &&
+                bool volume = !courtLight && !garlandLight && name != "Home Yard Spotlight Light" &&
                     name != "Island Mast Floodlight Light" &&
                     name != "Ferryman Car Floodlight Light" &&
                     name != "Ground Planting Light" && !name.StartsWith("Bus Cabin Light ", StringComparison.Ordinal);
                 var practical = new Practical(light, name) { Moving = moving, FixtureBound = fixtureBound, AllowVolume = volume,
                     Entrance = entrance, SurfaceOnly = fixtureBound && !entrance && Atmosphere.IsLaundryDiffuser(light),
                     // Keep the court's direct pools and the gaps between them.
-                    AllowBounce = !courtLight && name != CityArchShelterPresentation.FireLightObjectName &&
+                    AllowBounce = !courtLight && !garlandLight && name != CityArchShelterPresentation.FireLightObjectName &&
                         name != "Ground Planting Light" && !name.StartsWith("Bus Cabin Light ", StringComparison.Ordinal) };
                 if (Atmosphere.TryGetBusStopSource(light, out CityBusStopLighting stopFixture, out int stopSource))
                 {

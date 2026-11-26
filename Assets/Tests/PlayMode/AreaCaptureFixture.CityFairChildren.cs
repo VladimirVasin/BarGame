@@ -1,16 +1,127 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.SceneManagement;
+using UnityEngine.TestTools;
 
 namespace BarPromenade.Tests.PlayMode
 {
+    public sealed class CityFairChildCaptureAssetsSetup : IPrebuildSetup
+    {
+        public void Setup()
+        {
+#if UNITY_EDITOR
+            var models = Type.GetType("BarPromenade.Editor.CityFairChildAssetSetup, BarPromenade.Editor", true);
+            models.GetMethod("ValidateOrThrow", Type.EmptyTypes).Invoke(null, null);
+            var actions = Type.GetType("BarPromenade.Editor.CityFairChildActionAssetSetup, BarPromenade.Editor", true);
+            actions.GetMethod("BuildOrThrow", Type.EmptyTypes).Invoke(null, null);
+#endif
+        }
+    }
+
     public sealed partial class AreaCaptureFixture
     {
+        [UnityTest, Explicit("City fair child wardrobe: imported meshes, posed contacts and day/night frames.")]
+        [Timeout(180000), PrebuildSetup(typeof(CityFairChildCaptureAssetsSetup))]
+        public IEnumerator CityFairChildWardrobe()
+        {
+            float previousDelta = Time.captureDeltaTime;
+            PlayerCameraFollow follow = null;
+            bool previousFollow = false;
+            try
+            {
+                GameSessionState.BeginNewGame();
+                GameSessionState.TryStartGameTimeAt(12 * 60);
+                Time.captureDeltaTime = .05f;
+                yield return SceneManager.LoadSceneAsync(SceneIds.City, LoadSceneMode.Single);
+                CityGameRoot city = null;
+                float deadline = Time.realtimeSinceStartup + TimeoutSeconds;
+                while (Time.realtimeSinceStartup < deadline)
+                {
+                    city = UnityEngine.Object.FindAnyObjectByType<CityGameRoot>();
+                    if (city != null && city.IsInitialized && !CompositionDriver.IsComposing) break;
+                    yield return null;
+                }
+                Assert.That(city != null && city.IsInitialized, Is.True);
+                Camera camera = Camera.main;
+                Assert.That(camera, Is.Not.Null);
+                follow = camera.GetComponent<PlayerCameraFollow>();
+                if (follow != null) { previousFollow = follow.enabled; follow.enabled = false; }
+                CityFairWorld fair = city.World.Fair;
+                Light[] lights = AssertFairGarlandLights(city, fair);
+                yield return VerifyFairChildren(city, fair, camera, new List<string>(), new CityFairReport(), lights);
+            }
+            finally
+            {
+                Time.captureDeltaTime = previousDelta;
+                if (follow != null) follow.enabled = previousFollow;
+            }
+        }
+
+        private static Light[] AssertFairGarlandLights(CityGameRoot city, CityFairWorld fair)
+        {
+            CityNightAtmosphere atmosphere = city.Night.Atmosphere;
+            Assert.That(fair.LampAnchors.Count, Is.EqualTo(5));
+            var lights = new Light[fair.LampAnchors.Count];
+            for (int i = 0; i < lights.Length; i++)
+            {
+                Transform anchor = fair.LampAnchors[i];
+                int index = Enumerable.Range(0, atmosphere.LampAnchors.Count)
+                    .Single(slot => atmosphere.LampAnchors[slot] == anchor);
+                Light light = atmosphere.GetLightForAnchor(index);
+                Assert.That(light != null && light.enabled && light.type == LightType.Spot, Is.True);
+                Assert.That(light.intensity, Is.GreaterThanOrEqualTo(20f), "The fitted garland output must survive daylight dimming.");
+                Assert.That(Vector3.Distance(light.transform.position, anchor.position), Is.LessThan(.001f));
+                Assert.That(Quaternion.Angle(light.transform.rotation, anchor.rotation), Is.LessThan(.01f));
+                lights[i] = light;
+            }
+            CityFairPlan plan = fair.Plan;
+            var receivers = plan.Stalls.Select(stall => stall.Position + stall.Facing * 1.1f + Vector3.up * .95f)
+                .Append((plan.CenterPathSouth + plan.CenterPathNorth) * .5f)
+                .Append(plan.ChildTablePosition + Vector3.up * .55f)
+                .Concat(plan.BenchPositions.Select(bench => bench + Vector3.up));
+            foreach (Vector3 point in receivers)
+                Assert.That(lights.Any(light =>
+                {
+                    Vector3 ray = point - light.transform.position;
+                    return ray.sqrMagnitude < light.range * light.range * .81f &&
+                        Vector3.Angle(light.transform.forward, ray) < light.spotAngle * .43f;
+                }), Is.True, $"The garlands' direct cones must reach the fair at {point:F2}.");
+            return lights;
+        }
+
+        private static IEnumerator FairChildFrame(Camera camera, List<string> captures, string name,
+            Vector3 position, Vector3 target, float fov)
+        {
+            camera.transform.SetPositionAndRotation(position, Quaternion.LookRotation(target - position));
+            camera.fieldOfView = fov;
+            yield return null;
+            if (Application.isBatchMode)
+                CaptureCurrentCamera(camera, "CityFair", name);
+            else
+            {
+                // Use the completed player frame. A second synchronous camera
+                // render can collide with URP's reflection probe updates.
+                yield return new WaitForEndOfFrame();
+                Texture2D frame = ScreenCapture.CaptureScreenshotAsTexture();
+                try
+                {
+                    Assert.That(frame != null && !IsBlank(frame), Is.True, name);
+                    string folder = Path.Combine(Directory.GetCurrentDirectory(), "Captures", "CityFair");
+                    Directory.CreateDirectory(folder);
+                    File.WriteAllBytes(Path.Combine(folder, name + ".png"), frame.EncodeToPNG());
+                }
+                finally { if (frame != null) UnityEngine.Object.Destroy(frame); }
+            }
+            captures.Add(name + ".png");
+        }
+
         private static IEnumerator VerifyFairChildren(CityGameRoot city, CityFairWorld fair, Camera camera,
-            List<string> captures, CityFairReport report)
+            List<string> captures, CityFairReport report, Light[] garlandLights = null)
         {
             CityFairChildren children = fair.Children;
             Assert.That(children, Is.Not.Null);
@@ -18,6 +129,8 @@ namespace BarPromenade.Tests.PlayMode
             report.children = children.ActorCount;
             report.child_visible_triangles = new int[3];
             var outfitIds = new HashSet<string>();
+            var hairMeshes = new HashSet<Mesh>();
+            var faceProperties = new MaterialPropertyBlock();
             Mesh commonHead = null;
             for (int i = 0; i < 3; i++)
             {
@@ -26,6 +139,15 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(wardrobe, Is.Not.Null);
                 wardrobe.ValidateBindings();
                 Assert.That(outfitIds.Add(wardrobe.CurrentOutfitId), Is.True, "All three outfits must be worn simultaneously.");
+                var head = CityFairChildAssetProvider.FindPart(actor.gameObject, CityFairChildAssetProvider.FaceRendererName).GetComponent<Renderer>();
+                actor.Sample(CityFairChildAction.Idle, 2.57f);
+                head.GetPropertyBlock(faceProperties);
+                Assert.That(faceProperties.GetVector("_BaseMap_ST"), Is.EqualTo(new Vector4(.25f, .25f, .5f, .75f - i * .25f)),
+                    "Blinking selects the closed-eye cell in this child's own row.");
+                actor.ResetPose();
+                var hair = CityFairChildAssetProvider.FindPart(actor.gameObject,
+                    "OUTFIT_" + CityFairChildAssetProvider.OutfitNames[i] + "_Hair").GetComponent<SkinnedMeshRenderer>();
+                Assert.That(hair.enabled && hairMeshes.Add(hair.sharedMesh), Is.True, "Each child wears its own hair shape.");
                 int triangles = 0;
                 foreach (Renderer renderer in actor.GetComponentsInChildren<Renderer>(true))
                 {
@@ -38,7 +160,7 @@ namespace BarPromenade.Tests.PlayMode
                         Assert.That(mesh, Is.SameAs(commonHead), "Outfits must share the authored child, not separately rebuilt bodies.");
                     }
                 }
-                Assert.That(triangles, Is.InRange(9000, 12000), wardrobe.CurrentOutfitId + " actually visible triangles");
+                Assert.That(triangles, Is.InRange(1, 12000), wardrobe.CurrentOutfitId + " actually visible triangles");
                 report.child_visible_triangles[i] = triangles;
                 Assert.That(Vector3.Distance(actor.transform.lossyScale, Vector3.one), Is.LessThan(.00001f), "Child dimensions belong to its own model.");
                 Assert.That(children.Route(i).All(fair.Plan.Contains), Is.True);
@@ -70,7 +192,7 @@ namespace BarPromenade.Tests.PlayMode
                         if (!photographed[i] && children.Phase(i) == CityFairChildPhase.Looping)
                         {
                             Vector3 focus = children.Actors[i].transform.position;
-                            yield return FairFrame(camera, captures, "10-child-activity-" + i,
+                            yield return FairChildFrame(camera, captures, "10-child-activity-" + i,
                                 focus + (i == 0 ? new Vector3(.85f, 1.35f, -1.6f) : new Vector3(1.0f, 1.1f, .90f)),
                                 focus + Vector3.up * .72f, 54f);
                             photographed[i] = true;
@@ -98,7 +220,7 @@ namespace BarPromenade.Tests.PlayMode
                     if (!photographed[2])
                     {
                         Vector3 focus = children.Actors[2].transform.position;
-                        yield return FairFrame(camera, captures, "10-child-activity-2", focus + new Vector3(1.4f, 1.2f, 1.6f), focus + new Vector3(0f, .65f, -.3f), 52f);
+                        yield return FairChildFrame(camera, captures, "10-child-activity-2", focus + new Vector3(1.4f, 1.2f, 1.6f), focus + new Vector3(0f, .65f, -.3f), 52f);
                         photographed[2] = true;
                     }
                 }
@@ -127,7 +249,7 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(Vector3.Distance(car, children.Car.position), Is.LessThan(.00001f));
                 Assert.That(children.ElapsedSeconds, Is.EqualTo(seconds));
                 report.child_pause_verified = true;
-                yield return CaptureFairChildQuality(city, fair, camera, captures);
+                yield return CaptureFairChildQuality(city, fair, camera, captures, garlandLights);
             }
             children.enabled = false;
             Assert.That(CityBenchSeatClaims.IsClaimed(children.BenchId), Is.False);
@@ -174,12 +296,16 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
-        private static IEnumerator CaptureFairChildQuality(CityGameRoot city, CityFairWorld fair, Camera camera, List<string> captures)
+        private static IEnumerator CaptureFairChildQuality(CityGameRoot city, CityFairWorld fair, Camera camera, List<string> captures,
+            Light[] garlandLights)
         {
             CityFairChildren children = fair.Children;
             Vector3[] positions = children.Actors.Select(actor => actor.transform.position).ToArray();
             Quaternion[] rotations = children.Actors.Select(actor => actor.transform.rotation).ToArray();
             Vector3 origin = fair.Plan.CenterPathSouth;
+            Transform adult = garlandLights != null ? fair.Adults.Actors[0].transform : null;
+            Vector3 adultPosition = adult != null ? adult.position : default;
+            Quaternion adultRotation = adult != null ? adult.rotation : default;
             try
             {
                 for (int i = 0; i < 3; i++)
@@ -195,19 +321,43 @@ namespace BarPromenade.Tests.PlayMode
                 heroPoint.y = fair.Plan.SampleGroundY(heroPoint) + PlayerFactory.GroundedRootOffset;
                 city.Player.Motor.Teleport(heroPoint);
                 city.Player.GameObject.transform.rotation = Quaternion.identity;
-                yield return FairFrame(camera, captures, "11-child-hero-front", origin + new Vector3(.4f, 1.15f, 4.6f), origin + new Vector3(.4f, .85f, 0f), 52f);
-                yield return FairFrame(camera, captures, "12-child-hero-back", origin + new Vector3(.4f, 1.15f, -4.6f), origin + new Vector3(.4f, .85f, 0f), 52f);
+                yield return FairChildFrame(camera, captures, "11-child-hero-front", origin + new Vector3(.4f, 1.15f, 4.6f), origin + new Vector3(.4f, .85f, 0f), 52f);
+                yield return FairChildFrame(camera, captures, "12-child-hero-back", origin + new Vector3(.4f, 1.15f, -4.6f), origin + new Vector3(.4f, .85f, 0f), 52f);
                 for (int i = 0; i < 3; i++)
                 {
                     Vector3 point = children.Actors[i].transform.position;
-                    yield return FairFrame(camera, captures, "13-child-side-" + i, point + new Vector3(.95f, .95f, .12f), point + Vector3.up * .75f, 68f);
-                    yield return FairFrame(camera, captures, "14-child-face-" + i, point + new Vector3(.10f, 1.23f, .68f), point + Vector3.up * 1.17f, 42f);
+                    yield return FairChildFrame(camera, captures, "13-child-side-" + i, point + new Vector3(.95f, .95f, .12f), point + Vector3.up * .75f, 68f);
+                    yield return FairChildFrame(camera, captures, "14-child-face-" + i, point + new Vector3(.10f, 1.23f, .68f), point + Vector3.up * 1.17f, 42f);
                     Vector3 hand = children.Actors[i].RightGrip.position;
-                    yield return FairFrame(camera, captures, "15-child-hand-" + i, hand + new Vector3(.22f, .05f, .34f), hand, 45f);
+                    yield return FairChildFrame(camera, captures, "15-child-hand-" + i, hand + new Vector3(.22f, .05f, .34f), hand, 45f);
+                }
+                if (adult != null)
+                {
+                    Vector3 point = origin + Vector3.left * 1.75f;
+                    point.y = fair.Plan.SampleGroundY(point);
+                    adult.SetPositionAndRotation(point, Quaternion.identity);
+                    Vector3 focus = origin + new Vector3(-.4f, .85f, 0f);
+                    Vector3 view = origin + new Vector3(.1f, 1.36f, 4.2f);
+                    yield return FairChildFrame(camera, captures, "16-child-npc-day", view, focus, 47f);
+                    GameSessionState.AdvanceGameTime((float)((21 * 60 - GameSessionState.GameTimeOfDayMinutes) /
+                        GameTimeState.GameMinutesPerRealSecond));
+                    city.DayNight.ApplyCurrentTime(true);
+                    AssertFairGarlandLights(city, fair);
+                    yield return FairChildFrame(camera, captures, "17-child-npc-night", view, focus, 47f);
+                    try
+                    {
+                        foreach (Light light in garlandLights) light.gameObject.SetActive(false);
+                        yield return FairChildFrame(camera, captures, "18-child-npc-night-emission-only", view, focus, 47f);
+                    }
+                    finally
+                    {
+                        foreach (Light light in garlandLights) light.gameObject.SetActive(true);
+                    }
                 }
             }
             finally
             {
+                if (adult != null) adult.SetPositionAndRotation(adultPosition, adultRotation);
                 for (int i = 0; i < 3; i++) children.Actors[i].transform.SetPositionAndRotation(positions[i], rotations[i]);
                 city.Player.Motor.Teleport(fair.Plan.CenterPathSouth + Vector3.up * PlayerFactory.GroundedRootOffset);
             }

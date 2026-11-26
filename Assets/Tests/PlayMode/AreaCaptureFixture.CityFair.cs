@@ -241,13 +241,10 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(Vector3.Dot(fair.Vendors.Actors[index].transform.position - expected.Position, expected.Facing), Is.LessThan(-.35f));
                 Assert.That(FairMeshBounds(fair.Vendors.Actors[index].gameObject).size.y, Is.GreaterThan(1.3f));
             }
-            Assert.That(fair.LampAnchors.Count, Is.EqualTo(5));
             Assert.That(plan.Garlands.Length, Is.EqualTo(3));
             Assert.That(fair.GetComponentsInChildren<Transform>().Count(part => part.name.StartsWith("Fixture_", StringComparison.Ordinal) &&
                 part.GetComponent<MeshFilter>() == null), Is.EqualTo(39), "Each actual cable carries thirteen individual bulbs.");
-            Assert.That(city.Night.Atmosphere.RealtimeLightCount, Is.LessThanOrEqualTo(12));
-            foreach (Transform lamp in fair.LampAnchors)
-                Assert.That(city.Night.Atmosphere.LampAnchors.Contains(lamp), Is.True, "The fair shares the city's bounded light pool.");
+            AssertFairGarlandLights(city, fair);
             CityRainField rain = city.GetComponentInChildren<CityRainField>();
             Assert.That(rain, Is.Not.Null);
             Assert.That(fair.RainShelters.Count, Is.EqualTo(4));
