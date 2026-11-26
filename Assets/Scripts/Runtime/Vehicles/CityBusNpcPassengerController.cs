@@ -335,6 +335,8 @@ namespace BarPromenade
             {
                 case CityPedestrianMotionState.ApproachingStop:
                 case CityPedestrianMotionState.WaitingAtStop:
+                    if (walker.MotionState == CityPedestrianMotionState.WaitingAtStop && deltaTime > 0f)
+                        NoticeArrivingBus(walker.Presentation, waiter.StopIndex, waiter.Slot, deltaTime);
                     if (journeys != null) return AdvanceResidentQueue(waiter);
                     if (!busAvailable)
                     {
@@ -420,6 +422,7 @@ namespace BarPromenade
                 return true;
             }
 
+            waiter.Walker.Presentation.ClearBusArrival();
             waiter.BlockedReason = null;
             waiter.Plan = plan;
             waiter.RideRootLocalPosition = plan.RideRootLocalPosition;
@@ -840,7 +843,7 @@ namespace BarPromenade
                         point.PedestrianNodeIndex,
                         slot,
                         point.Facing,
-                        point.NodeDistances))
+                        point.NodeDistances, point.EntryFor(slot)))
                 {
                     continue;
                 }
@@ -1184,6 +1187,34 @@ namespace BarPromenade
             }
 
             waiters.Clear();
+        }
+
+        internal void NoticeArrivingBus(CityPedestrianPresentation body, int stopIndex, Vector3 slot, float delta)
+        {
+            if ((slot - player.position).sqrMagnitude > 40f * 40f)
+            {
+                body.ClearBusArrival();
+                return;
+            }
+            bool firstSlot = waitPlan.TryGetWaitPoint(stopIndex, out var point)
+                && point.WaitSlots.Count > 0 && (slot - point.WaitSlots[0]).sqrMagnitude < .10f;
+            float nearest = firstSlot ? 32f : 10f;
+            CityBusActor approaching = null;
+            if (lines == null) Consider(busDirector);
+            else for (int i = 0; i < lines.Count; i++) Consider(lines[i].busDirector);
+            body.UpdateBusArrival(approaching != null ? approaching.transform : null,
+                firstSlot && nearest > 7f ? 14f : -6f, delta);
+
+            void Consider(CityBusDirector line)
+            {
+                var bus = line.Actor;
+                if (line.Plan != busDirector.Plan || bus == null || !bus.IsSpawned) return;
+                if (bus.CurrentStopIndex >= 0 && bus.CurrentStopIndex != stopIndex) return;
+                float distance = bus.CurrentStopIndex == stopIndex ? 0f : line.DistanceToStop(stopIndex);
+                if (distance > nearest || (bus.Position - slot).sqrMagnitude > 36f * 36f) return;
+                nearest = distance;
+                approaching = bus;
+            }
         }
 
         private int DrawRideStopCount()

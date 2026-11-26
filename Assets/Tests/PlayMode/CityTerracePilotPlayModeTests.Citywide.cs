@@ -471,8 +471,12 @@ namespace BarPromenade.Tests.PlayMode
                         {
                             var blocker = (CityBusObstacleState)typeof(CityBusActor).GetField("lastBlocker",
                                 System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(actor);
+                            var affected = blocker.Id == "resident" ? city.Pedestrians.Actors.FirstOrDefault(w =>
+                                w.IsSpawned && city.Pedestrians.ResidentIndex(w) == blocker.Index) : null;
+                            string gait = affected != null ? $", {affected.MotionState}, queue target {affected.QueueApproachTarget}, " +
+                                $"vehicle yield {affected.IsYieldingToVehicle}, step {affected.LastDisplacement:F3}" : string.Empty;
                             Fail($"{stage} bus failed to serve waiting hero: {actor.MotionState}, {actor.Position}, stop {actor.CurrentStop?.Id}. " +
-                                $"Blocker {blocker.Kind} {blocker.Id}[{blocker.Index}] at {blocker.Point:F2}, clearance {blocker.ForwardClearance:F2}m");
+                                $"Blocker {blocker.Kind} {blocker.Id}[{blocker.Index}] at {blocker.Point:F2}, clearance {blocker.ForwardClearance:F2}m{gait}");
                             continue;
                         }
                         // Wait outside both door approaches if the live queue is
@@ -549,6 +553,7 @@ namespace BarPromenade.Tests.PlayMode
             finally
             {
                 if (previousCase != null) ResetService(previousCase);
+                foreach (var line in city.BusVehicles) line.AutomaticUpdatesSuspended = false;
                 if (placedWaiter != null) city.Pedestrians.ReleaseRouteBoundActor(placedWaiter);
                 motor.CancelInteractionPoseMove();
                 foreach (var ride in city.BusRides) ride.ForceReleaseForBusLifecycle();
@@ -562,9 +567,13 @@ namespace BarPromenade.Tests.PlayMode
             {
                 // The production director asks all riders (including active NPCs) to
                 // release their seats before returning the shared model to its pool.
+                line.AutomaticUpdatesSuspended = true;
                 line.enabled = true;
                 line.enabled = false;
                 line.Actor.ReleasePresentation(line.transform);
+                // A manually advanced bus still occupies the traffic director's
+                // map. Nearby walkers must be able to see it and yield to it.
+                line.enabled = true;
             }
 
             void Fail(string detail)
@@ -621,6 +630,17 @@ namespace BarPromenade.Tests.PlayMode
                         var walker = hit.collider.GetComponentInParent<CityPedestrianActor>();
                         if (walker == null) return $"{hit.collider.transform.parent?.name}/{hit.collider.name} hit {hit.distance:F2}m";
                         walker.TryGetPassingFrame(out Vector3 centre, out Vector3 heading);
+                        if (walker.QueueApproachTarget is Vector3 queueGoal)
+                        {
+                            Vector3 offset = Vector3.ProjectOnPlane(queueGoal - walker.Position, Vector3.up);
+                            var blocks = Physics.CapsuleCastAll(walker.Position + Vector3.up * .42f,
+                                walker.Position + Vector3.up * 1.34f, walker.AgentRadius * .97f, offset.normalized,
+                                offset.magnitude, CityPedestrianCollision.NonPedestrianMask, QueryTriggerInteraction.Ignore);
+                            return $"{walker.name} approaching {queueGoal:F2} from {walker.Position:F2}, " +
+                                $"nodes {walker.PreviousNodeIndex}->{walker.TargetNodeIndex}/{walker.StopWaitNodeIndex}, " +
+                                $"step {walker.LastDisplacement:F3}, blocked {walker.BlockedTime:F2}, obstacles " +
+                                string.Join(", ", blocks.Select(h => h.collider.name + " " + h.distance.ToString("F2")));
+                        }
                         return $"{walker.name} {walker.MotionState} at {walker.Position:F2}, route {centre:F2} facing {heading:F2}, " +
                             $"lateral {walker.LateralOffset:F2}, yielding {walker.IsYielding}, retreating {walker.IsPassingRetreat}";
                     }).Distinct()));

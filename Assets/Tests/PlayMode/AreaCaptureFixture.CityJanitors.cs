@@ -9,6 +9,80 @@ namespace BarPromenade.Tests.PlayMode
 {
     public sealed partial class AreaCaptureFixture
     {
+        [UnityTest]
+        public IEnumerator JanitorRecoversLeafOnSlopingPavement()
+        {
+            var stage = new GameObject("Janitor on a sloped courtyard");
+            Vector3 feet = new Vector3(0f, 1000f, 0f);
+            var floor = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            floor.transform.SetParent(stage.transform);
+            Quaternion slope = Quaternion.Euler(0f, 0f, 6f);
+            Vector3 normal = slope * Vector3.up;
+            floor.transform.SetPositionAndRotation(feet - normal * .1f, slope);
+            floor.transform.localScale = new Vector3(5f, .2f, 5f);
+            RuntimePrimitiveFactory.SetColor(floor.GetComponent<MeshRenderer>(), new Color32(101, 98, 88, 255));
+            var camera = new GameObject("Courtyard camera").AddComponent<Camera>();
+            camera.transform.SetParent(stage.transform);
+            camera.enabled = false;
+            camera.clearFlags = CameraClearFlags.SolidColor;
+            camera.backgroundColor = new Color(.19f, .21f, .19f);
+            camera.fieldOfView = 50f;
+            Vector3 eye = feet + new Vector3(1.28f, 1.5f, 2.15f);
+            camera.transform.SetPositionAndRotation(eye, Quaternion.LookRotation(feet + Vector3.up * .74f - eye));
+            var light = new GameObject("Yard light").AddComponent<Light>();
+            light.transform.SetParent(stage.transform);
+            light.type = LightType.Directional;
+            light.transform.rotation = Quaternion.Euler(54f, 154f, 0f);
+            bool fog = RenderSettings.fog;
+            try
+            {
+                RenderSettings.fog = false;
+                var model = Resources.Load<GameObject>("City/PigeonLoft/PigeonLoft");
+                var broom = CityPedestrianHandProps.FindSocket(model.transform, "Broom");
+                var worker = new CityJanitorWorker(stage.transform, DefaultNpcPopulation.CityJanitorFirst, broom);
+                worker.Arrive(feet, normal, Vector3.forward, 0f, 1f, 60f);
+                worker.Body.Animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+                var loose = worker.Leaves.LooseLeaf;
+                var bounds = loose.GetComponentInChildren<MeshRenderer>().bounds;
+                Assert.That(bounds.size.magnitude, Is.InRange(.13f, .24f), "Use the imported leaf in metres.");
+                worker.PoseAt(3f, 0f);
+                Vector3 gathered = loose.position;
+                worker.PoseAt(3.335f, 0f);
+                Assert.That(Vector3.Dot(loose.position - feet, normal), Is.GreaterThan(.035f));
+                worker.PoseAt(3.70f, 0f);
+                Vector3 landing = loose.position;
+                Assert.That(Vector3.Distance(gathered, landing), Is.GreaterThan(.22f));
+                Assert.That(Mathf.Abs(Vector3.Dot(landing - feet, normal)), Is.LessThan(.015f));
+                Assert.That(Vector3.Distance(worker.Bristles.position, landing), Is.GreaterThan(.20f));
+                Quaternion watching = worker.Body.Head.rotation;
+                yield return null;
+                CaptureCurrentCamera(camera, "CityJanitorLeaf", "watched-leaf", 960, 640);
+                worker.PoseAt(4.62f, 0f);
+                Assert.That(Vector3.Distance(worker.Bristles.position, loose.position), Is.LessThan(.025f),
+                    "The second sweep reaches the same settled leaf.");
+                var hands = worker.Body.GetComponent<NpcHandPose>();
+                Vector3 axis = (worker.Broom.position - worker.Bristles.position).normalized;
+                foreach (bool left in new[] { false, true })
+                    Assert.That(Vector3.ProjectOnPlane(hands.AnatomicalCylinderCentre(left) - worker.Broom.position, axis).magnitude,
+                        Is.LessThan(.014f), "The palm must stay on the broom during the extra reach.");
+                yield return null;
+                CaptureCurrentCamera(camera, "CityJanitorLeaf", "second-sweep", 960, 640);
+                worker.PoseAt(5.40f, 0f);
+                Assert.That(Vector3.Distance(gathered, loose.position), Is.LessThan(.025f));
+                worker.PoseAt(14f, 0f);
+                Assert.That(Quaternion.Angle(watching, worker.Body.Head.rotation), Is.GreaterThan(6f));
+                Assert.That(Vector3.Distance(worker.Feet, feet), Is.LessThan(.002f));
+                Assert.That(Vector3.Distance(worker.Bristles.position, loose.position), Is.GreaterThan(.2f));
+                worker.Leave();
+                Assert.That(loose.gameObject.activeInHierarchy, Is.False);
+            }
+            finally
+            {
+                RenderSettings.fog = fog;
+                Object.Destroy(stage);
+            }
+        }
+
         [UnityTest, Timeout(480000), Explicit("Janitor arrivals, work contacts and departures around a moving hero.")]
         public IEnumerator CityJanitorsFollowTheNeighborhood() => CaptureCityLocalAcceptance(ReviewJanitors);
 

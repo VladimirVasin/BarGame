@@ -139,6 +139,7 @@ namespace BarPromenade
             var waitPoints = new List<CityBusStopWaitPoint>(
                 busPlan.Stops.Count);
             var slots = new List<Vector3>(SlotLongitudinalOffsets.Length);
+            var entries = new List<Vector3>(SlotLongitudinalOffsets.Length);
             for (int index = 0; index < busPlan.Stops.Count; index++)
             {
                 CityBusStopDescriptor stop = busPlan.Stops[index];
@@ -158,18 +159,19 @@ namespace BarPromenade
                 along.Normalize();
                 Vector3 laneCenter = StandingPosition(busPlan, stop, layout);
                 slots.Clear();
+                entries.Clear();
                 for (int offset = 0;
                      offset < SlotLongitudinalOffsets.Length;
                      offset++)
                 {
-                    Vector3 candidate;
+                    Vector3 candidate, curb;
                     if (layout == null)
                     {
-                        candidate = StandingPosition(busPlan, stop, null, SlotLongitudinalOffsets[offset]);
+                        curb = candidate = StandingPosition(busPlan, stop, null, SlotLongitudinalOffsets[offset]);
                     }
                     else
                     {
-                        Vector3 curb = StandingPosition(busPlan, stop, layout, FirstQueueSlot + offset * QueueSpacing);
+                        curb = StandingPosition(busPlan, stop, layout, FirstQueueSlot + offset * QueueSpacing);
                         candidate = curb - toRoad * QueueDepth(busPlan, stop);
                         if (!CityBusPlatformClearance.ForLayout(layout).TryQueueGround(curb, candidate, out float ground))
                             continue;
@@ -180,6 +182,7 @@ namespace BarPromenade
                             CityPedestrianPlanner.AgentRadius))
                     {
                         slots.Add(candidate);
+                        entries.Add(curb);
                     }
                 }
 
@@ -198,7 +201,7 @@ namespace BarPromenade
                     nodeIndex,
                     toRoad,
                     slots.ToArray(),
-                    CreateNodeDistances(pedestrianPlan, nodeIndex)));
+                    CreateNodeDistances(pedestrianPlan, nodeIndex), layout != null ? entries.ToArray() : null));
             }
 
             return new CityBusStopWaitPlan(waitPoints.ToArray());

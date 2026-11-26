@@ -59,6 +59,22 @@ namespace BarPromenade
                 CityTerrainSurfacePlan.TrySampleGroundTop(city.Layout, point, out top, out _);
         }
 
+        internal Vector3 SweepFacing(Vector3 feet, Vector3 yardFacing)
+        {
+            // The brush gathers on the worker's right. At an actual kerb turn the
+            // work along it, leaving the worker and the pile inside the tested site.
+            for (int ring = 1; ring <= 2; ring++)
+            for (int sector = 0; sector < 8; sector++)
+            {
+                Vector3 outward = Quaternion.AngleAxis(sector * 45f, Vector3.up) * yardFacing;
+                Vector3 sample = feet + outward * (ring * 1.5f);
+                if (streets.TrySampleTop(new Vector2(sample.x, sample.z), FootstepGroundKind.Concrete, out float road)
+                    && Mathf.Abs(road - feet.y) < .40f)
+                    return Vector3.Cross(outward, Vector3.up);
+            }
+            return yardFacing;
+        }
+
         internal bool TryFit(Vector3 proposed, out Vector3 foot, out Vector3 normal)
         {
             foot = proposed;

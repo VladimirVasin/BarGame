@@ -111,7 +111,8 @@ namespace BarPromenade
                     workers[slot] = new CityJanitorWorker(transform, slot == 0 ? DefaultNpcPopulation.CityJanitorFirst :
                         DefaultNpcPopulation.CityJanitorSecond, broomTemplate);
                 }
-                workers[slot].Arrive(foot, normal, Quaternion.AngleAxis(Range(-32f, 32f), Vector3.up) * side,
+                Vector3 facing = sites.SweepFacing(foot, Quaternion.AngleAxis(Range(-32f, 32f), Vector3.up) * side);
+                workers[slot].Arrive(foot, normal, facing,
                     Range(0f, 18f), Range(.90f, 1.10f), Range(55f, 95f));
                 nextWorker = 1 - slot;
                 return true;

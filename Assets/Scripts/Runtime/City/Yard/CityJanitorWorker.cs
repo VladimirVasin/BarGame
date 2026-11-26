@@ -7,13 +7,14 @@ namespace BarPromenade
     {
         internal readonly VillageResidentPresentation Body;
         internal readonly Transform Broom, Bristles;
+        internal readonly CityJanitorLeaves Leaves;
         private readonly Transform lowerGrip, spine, leftShoulder, rightShoulder;
         private readonly Transform[] contactBones;
         private readonly Quaternion[] contactRotations;
         private readonly NpcHandPose hands;
         private readonly Quaternion broomBasis;
         private Vector3 floorNormal;
-        private float phase, pace, nextPose, tucked;
+        private float sweepTime, leafStrokeStart, pace, nextPose, tucked;
         internal float Age { get; private set; }
         internal float Duration { get; private set; }
         internal bool Active => Body.gameObject.activeSelf;
@@ -25,6 +26,7 @@ namespace BarPromenade
             NpcFootstepSources.Unregister(Body.transform);
             CityPortCrew.AlignWorkerModelWithPlacement(Body);
             hands = Body.GetComponent<NpcHandPose>();
+            Leaves = new CityJanitorLeaves(Body.transform);
             spine = CityPedestrianHandProps.FindSocket(Body.ModelRoot, "spine");
             Broom = UnityEngine.Object.Instantiate(template.gameObject, Body.transform, false).transform;
             Broom.name = "Janitor Broom";
@@ -51,7 +53,7 @@ namespace BarPromenade
             leftShoulder = Joint("upper_arm.L");
             rightShoulder = Joint("upper_arm.R");
             contactBones = new[] { spine, leftShoulder, rightShoulder, Joint("forearm.L"), Joint("forearm.R"),
-                Joint("hand.L"), Joint("hand.R") };
+                Joint("hand.L"), Joint("hand.R"), Body.Head };
             contactRotations = new Quaternion[contactBones.Length];
         }
 
@@ -60,22 +62,28 @@ namespace BarPromenade
             Body.transform.SetPositionAndRotation(feet, Quaternion.LookRotation(forward));
             Body.gameObject.SetActive(true);
             floorNormal = normal;
-            phase = shift; pace = speed; Duration = duration;
+            sweepTime = shift; pace = speed; Duration = duration;
+            leafStrokeStart = shift <= 2f ? 2f : 20f;
+            Leaves.Place(feet, normal, forward);
             Age = tucked = nextPose = 0f;
-            PoseAt(phase, 0f);
+            PoseAt(sweepTime, 0f);
         }
 
         internal void Advance(float delta, float distanceSquared)
         {
             Age += delta;
             tucked = Mathf.MoveTowards(tucked, distanceSquared < 1.7f * 1.7f ? 1f : 0f, delta * 2f);
+            if (tucked == 0f) sweepTime += delta * pace;
+            else if (sweepTime >= leafStrokeStart + 1f && sweepTime < leafStrokeStart + 1.67f)
+                // A loose leaf still lands if the worker draws the broom out of a passer-by's way.
+                sweepTime = Mathf.Min(sweepTime + delta * pace, leafStrokeStart + 1.67f);
             if (Age < nextPose)
             {
                 for (int i = 0; i < contactBones.Length; i++) contactBones[i].localRotation = contactRotations[i];
                 return;
             }
             nextPose = Age + (distanceSquared < 16f * 16f ? 1f / 30f : 1f / 12f);
-            PoseAt(phase + Age * pace, tucked);
+            PoseAt(sweepTime, tucked);
         }
 
         internal void PoseAt(float time, float tuck)
@@ -91,11 +99,16 @@ namespace BarPromenade
             Vector3 rest = new Vector3(-.055f, 0f, .22f);
             Vector3 path = new Vector3(stroke * (finishing ? .15f : .36f), .075f * lift,
                 .40f + .055f * stroke);
+            float leafTime = time - leafStrokeStart;
+            Leaves.Sample(leafTime);
+            bool recovering = leafTime >= 1f && leafTime < 4f;
+            if (recovering) path = CityJanitorLeaves.RecoveryStroke(leafTime);
             Vector3 local = Vector3.Lerp(rest, path, work);
             Vector3 target = Feet + Body.transform.rotation * local;
             target.y = Feet.y - (floorNormal.x * (target.x - Feet.x) + floorNormal.z * (target.z - Feet.z)) /
                 floorNormal.y + local.y;
-            Body.ApplyLocomotion(0f, false, time, Vector3.Lerp(Feet + Body.transform.forward * 4f, target, work));
+            Vector3 look = recovering ? Leaves.LooseLeaf.position : target;
+            Body.ApplyLocomotion(0f, false, time, Vector3.Lerp(Feet + Body.transform.forward * 4f, look, work));
             Quaternion upright = spine.rotation;
             spine.rotation = Quaternion.AngleAxis(7f + 20f * work, Body.transform.right) * upright;
             Vector3 shoulders = (rightShoulder.position + leftShoulder.position) * .5f;
@@ -120,6 +133,11 @@ namespace BarPromenade
             }
             hands.SetGrip(false, 1f);
             hands.SetGrip(true, 1f);
+            if (recovering)
+            {
+                float watch = Mathf.SmoothStep(0f, 1f, Mathf.Min((leafTime - 1f) / .37f, (4f - leafTime) / .42f));
+                Body.Head.rotation = Quaternion.AngleAxis(12f * work * watch, Body.transform.right) * Body.Head.rotation;
+            }
             for (int i = 0; i < contactBones.Length; i++) contactRotations[i] = contactBones[i].localRotation;
         }
 

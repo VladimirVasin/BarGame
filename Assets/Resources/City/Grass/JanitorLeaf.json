@@ -1,0 +1,10 @@
+{
+  "generator": "build-city-janitor-leaf-3d-model.py",
+  "triangles": 92,
+  "dimensions_metres": [
+    0.08398,
+    0.02,
+    0.16731
+  ],
+  "signature": "3bfaba4225af1d70d5efc19088fe0ad5d141b4d379f453ee48856d630c0a561d"
+}

@@ -767,12 +767,11 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   Ambient walks use stairs, skip crossings/platforms and pass at kerbs.
   Six child looks share two slots. Children swing, cross yard bars and beam, or climb and slide. Each detour rejoins the route. Equipment footprints keep grass clear.
   Adults lean at quays, courts or Ridge rails. House spurs use full pavement.
-  Two uniformed janitors can sweep free paving or yard earth 14–34 m from the hero. New visits 18–32 s apart;
-  after 55–95 s and 14 m separation, or beyond 52 m, they leave outside the shot.
-  Public circuits turn at the sidewalk. Home is private with continuous pavement.
-  Walk speed .82 m/s. Distant poses throttle while time, collision and input stay live. A spatial index bounds peer avoidance and glance
-  selection. Street walkers look at the hero or a nearby peer. Oncoming walkers use shoulders on hillside stairs. In single file
-  a walker uses a landing then resumes. At corners guests skirt parked yielders; bounded curved-lane probes bypass props, retaining goals. Bus/rest keeps identity.
+  Two uniformed janitors sweep paving/yard earth and retrieve a slipping leaf. Arrivals 14–34 m away, every 18–32 s. Hidden exits after 55–95 s at ≥14 m, or beyond 52 m.
+  Public circuits turn at the sidewalk. Home is private with continuous pavement. Two neighbours share the lower passage court door. The exiting resident holds it with an elbow for the returning one.
+  Walk .82 m/s. Distant poses throttle while time, collision and input stay live. Indexed avoidance and glances toward the hero or peers.
+  A visible pair waves in turn every 30–60 s if available. A gust draws a hand to cap or collar. Walkers pass on stair shoulders or landings.
+  At corners guests skirt parked yielders. Bounded curved-lane probes bypass props and retain goals. Bus/rest keeps identity.
   `CityPedestrianVehicleTraffic` shares buses, Ferryman, truck and ambient sedans.
   Walkers yield to safe refuges, wait for tails/followers and resume their route;
   Without refuge vehicles wait; collision persists, pooling resets yields.
@@ -784,8 +783,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   Two near beam pairs, shared audio/LOD. Pause/dormancy keep, unload clears.
   Ridge:4 lit bays/silent sedan. Working/Residential:4 empty bays each,
   through aisles; shared grade/grass/nav/City map.
-  Residents retain `city.pedestrian.NN`, catalog model/face/hair/clothes across
-  loads; appended IDs preserve prior looks. Six library residents stay local.
+  Persistent `city.pedestrian.NN` keeps model/face/hair/clothes as IDs grow. Six library residents stay local.
   Home retains its separate `5` daytime/`2` night slots over the original first
   `8` identities, enabled only during the Balcony shot; it uses the existing
   fog-hidden roaming cadence rather than City resident schedules.
@@ -869,9 +867,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   surround the sprung cabin. The cab leaf opens inward; three sliders travel
   along the outside. Closed wheel housings meet the deck; steps end before the arches. Each bus has a
   permanent default NPC driver: long eyes, dark uniform, cap and rust-red tie.
-  A two-person rear bench and eight individual seats include the hero’s 07. Residents fill nine seats, then three standing
-  places with floor and ring contacts. Residents walk from the pavement to the door sill and along the cabin deck;
-  both doors admit or discharge riders together if their aisle paths are clear. The bus waits for both crossings.
+  Rear bench for two, eight singles, hero’s 07. Residents fill nine seats then three floor/ring places. Waiters enter from the pavement beside their slot and look up at their bus. Wet prints fade under cover. Riders walk pavement→sill→deck through both doors when their aisles clear. The bus waits for both crossings.
   On board, dressed bodies follow the sprung cabin without a street actor; on the pavement their feet return to street grounding.
   The seated driver plants work boots on the drawn supports. Each hand
   steers from its own side of the rim through turns. For each

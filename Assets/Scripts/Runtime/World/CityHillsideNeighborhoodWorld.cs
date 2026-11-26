@@ -35,6 +35,7 @@ namespace BarPromenade
             foreach (var house in district.SharedCourtBuildings)
             {
                 if (!house.Lot.IsPlayerHome) BuildHouse(court, layout, house);
+                if (house.Lot.Cell == CityCourtDoorCourtesy.Address) CityCourtDoorCourtesy.Build(court, house);
                 CityHillsideHousePresentation.BuildApron(court, paving, house);
                 if (incremental) yield return new CompositionStep("ridge_shared_court", .47f);
             }

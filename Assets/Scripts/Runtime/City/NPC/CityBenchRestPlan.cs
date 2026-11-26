@@ -77,7 +77,7 @@ namespace BarPromenade
             Vector3 seatPosition,
             Vector3 floorPosition,
             Vector3 sitFacing,
-            IReadOnlyList<float> nodeDistances)
+            IReadOnlyList<float> nodeDistances, Vector3? approachWaypoint = null)
         {
             BenchId = benchId;
             NodeIndex = nodeIndex;
@@ -86,6 +86,7 @@ namespace BarPromenade
             FloorPosition = floorPosition;
             SitFacing = sitFacing;
             NodeDistances = nodeDistances;
+            ApproachWaypoint = approachWaypoint;
         }
 
         public string BenchId { get; }
@@ -93,6 +94,7 @@ namespace BarPromenade
 
         /// <summary>Ground point in front of the seat.</summary>
         public Vector3 StandSlot { get; }
+        internal Vector3? ApproachWaypoint { get; }
 
         /// <summary>Seat-top centre the sitter is planted on.</summary>
         public Vector3 SeatPosition { get; }
@@ -208,6 +210,24 @@ namespace BarPromenade
                 if (hasAuthoredApproach && Vector3.Distance(
                     pedestrianPlan.Nodes[nodeIndex].Position, authoredApproach) > .025f) continue;
 
+                Vector3 seat = bench.InteractionPosition;
+                Vector3 floor = bench.FloorPosition;
+                Vector3? waypoint = null;
+                if (bench.Id.EndsWith("-shelter-bench", StringComparison.Ordinal))
+                {
+                    // The front dock is outside the narrow roof. Enter beside the
+                    // nearest end of the plank, keeping the back wall and front post clear.
+                    var along = bench.EntryRotation * Vector3.right;
+                    Vector3 node = pedestrianPlan.Nodes[nodeIndex].Position;
+                    if (Vector3.Dot(along, node - floor) < 0f) along = -along;
+                    Vector3 edge = along * (bench.SeatWidth * .5f);
+                    waypoint = standSlot + edge + along * .38f;
+                    standSlot = floor + edge + along * .38f + bench.ApproachDirection * .29f
+                        + Vector3.up * PlayerFactory.GroundedRootOffset;
+                    Vector3 perch = edge - along * .23f;
+                    seat += perch;
+                    floor += perch;
+                }
                 Vector3 crossing =
                     pedestrianPlan.Nodes[nodeIndex].Position - standSlot;
                 crossing.y = 0f;
@@ -228,12 +248,12 @@ namespace BarPromenade
                     bench.Id,
                     nodeIndex,
                     standSlot,
-                    bench.InteractionPosition,
-                    bench.FloorPosition,
+                    seat,
+                    floor,
                     sitFacing.normalized,
                     CityBusStopWaitPlanner.CreateNodeDistances(
                         pedestrianPlan,
-                        nodeIndex)));
+                        nodeIndex), waypoint));
             }
 
             return new CityBenchRestPlan(points);

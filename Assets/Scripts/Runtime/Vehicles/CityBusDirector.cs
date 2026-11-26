@@ -299,6 +299,7 @@ namespace BarPromenade
         private Action passengerCleanup;
 
         public bool IsInitialized { get; private set; }
+        internal bool AutomaticUpdatesSuspended { get; set; }
         public CityBusPlan Plan => plan;
         public CityBusActor Actor => actor;
         public int Count => actor != null ? 1 : 0;
@@ -632,7 +633,7 @@ namespace BarPromenade
 
         private void LateUpdate()
         {
-            Advance(Time.deltaTime);
+            if (!AutomaticUpdatesSuspended) Advance(Time.deltaTime);
         }
 
         private void OnDisable()

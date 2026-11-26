@@ -285,7 +285,7 @@ namespace BarPromenade
                         point.NodeIndex,
                         point.StandSlot,
                         -point.SitFacing,
-                        point.NodeDistances))
+                        point.NodeDistances, point.ApproachWaypoint))
                 {
                     CityBenchSeatClaims.Release(point.BenchId, rest);
                     continue;

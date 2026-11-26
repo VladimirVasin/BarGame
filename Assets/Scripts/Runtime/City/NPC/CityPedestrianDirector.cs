@@ -1130,7 +1130,7 @@ namespace BarPromenade
                 : anchor.SecondNodeIndex;
         }
 
-        private bool IsCollisionActivationSafe(
+        internal bool IsCollisionActivationSafe(
             Vector3 position,
             float radius,
             CityPedestrianActor ignoredActor)

@@ -96,7 +96,7 @@ namespace BarPromenade
                     !point.IsReachableFrom(walker.TargetNodeIndex) ||
                     point.NodeDistances[walker.TargetNodeIndex] > RecruitGraphDistance ||
                     !TryReserveSlot(point, out var slot) ||
-                    !walker.BeginStopApproach(point.PedestrianNodeIndex, slot, point.Facing, point.NodeDistances)) continue;
+                    !walker.BeginStopApproach(point.PedestrianNodeIndex, slot, point.Facing, point.NodeDistances, point.EntryFor(slot))) continue;
                 waiters.Add(new Waiter(walker, point.StopIndex, point.StopId, slot) { Resident = id });
                 if (NetworkWaiters() >= MaximumWaiters) return;
             }

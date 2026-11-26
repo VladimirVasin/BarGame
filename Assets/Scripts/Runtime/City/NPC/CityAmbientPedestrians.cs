@@ -42,6 +42,8 @@ namespace BarPromenade
         private int serial;
         private uint entrySearch;
         private float spawnCountdown, crowdCheckCountdown;
+        private CityStreetGreetings greetings;
+        private CityStreetGusts gusts;
 
         internal int ActiveCount { get; private set; }
         internal CityAmbientWalkPlan WalkPlan => plan;
@@ -98,6 +100,10 @@ namespace BarPromenade
             ambient.movement = new CityAmbientWalking(ambient.plan, pavement, CityStreetSupportPlan.ForLayout(city.Layout),
                 city.Pedestrians.VehicleTraffic);
             ambient.lanePopulation = new int[city.PedestrianPlan.Links.Count];
+            int streetSlots = city.Pedestrians.Count + MaximumActive;
+            ambient.greetings = new CityStreetGreetings(streetSlots,
+                ambient.GetWalkingAdult, unchecked((int)city.PedestrianPlan.StableSeed ^ 0x57415645));
+            ambient.gusts = new CityStreetGusts(streetSlots, ambient.GetWalkingAdult, city.PedestrianPlan.StableSeed);
             city.Pedestrians.AmbientStreet = ambient;
             return ambient;
         }
@@ -137,6 +143,20 @@ namespace BarPromenade
         }
 
         internal CityPlaygroundVisit.Phase GetPlaygroundPhase(int index) => walkers[index].Playground.CurrentPhase;
+
+        private CityPedestrianPresentation GetWalkingAdult(int slot)
+        {
+            var residents = city.Pedestrians.Actors;
+            if (slot < residents.Count)
+            {
+                var actor = residents[slot];
+                return actor.MotionState == CityPedestrianMotionState.Walking && !actor.IsPersonalSpaceReacting &&
+                    !actor.IsYieldingToVehicle && !actor.IsPassingRetreat ? actor.Presentation : null;
+            }
+            Walker walker = walkers[slot - residents.Count];
+            return walker.Encounter != 0 && !walker.Walk.IsChild && !walker.AtRail && !walker.Walk.Backing
+                ? looks[walker.Look].Body : null;
+        }
 
         private int Target() => Mathf.Min(MaximumActive,
             CityResidentLifeRules.TargetAmbientPopulation(GameSessionState.GameTimeOfDayMinutes));
@@ -190,6 +210,9 @@ namespace BarPromenade
                 AdvanceWalker(index, ref walker, body, step, contactCount, heroHead);
             }
 
+            // Both populations have completed their walking step at this point.
+            greetings.Advance(delta, hero.position, city.Camera);
+            if (city.Weather != null) gusts.Advance(delta, hero.position, city.Weather.CurrentGust);
             spawnCountdown -= delta;
             if (ActiveCount >= target || spawnCountdown > 0f) return;
             spawnCountdown = TrySpawn(false) ? .9f : 1.2f;
@@ -577,6 +600,8 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            greetings?.Cancel();
+            gusts?.Cancel();
             for (int i = 0; i < walkers.Length; i++) Release(i);
             spawnCountdown = 0f;
         }

@@ -122,6 +122,230 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
+        [UnityTest]
+        public IEnumerator CityStreetGreetings_WalkersWaveInTurnWithoutBreakingStride()
+        {
+            var stage = new GameObject("Walking greeting");
+            stage.transform.position = StageOrigin;
+            var camera = new GameObject("Witness").AddComponent<Camera>();
+            camera.transform.SetParent(stage.transform, false);
+            camera.transform.localPosition = new Vector3(-.6f, 1.5f, -4.6f);
+            camera.transform.LookAt(StageOrigin + Vector3.up);
+            camera.clearFlags = CameraClearFlags.SolidColor;
+            camera.backgroundColor = Color.gray;
+            camera.enabled = false;
+            var light = new GameObject("Street light").AddComponent<Light>();
+            light.transform.SetParent(stage.transform, false);
+            light.type = LightType.Directional;
+            light.transform.rotation = Quaternion.Euler(45f, -30f, 0f);
+            bool fog = RenderSettings.fog;
+            var actors = new CityPedestrianActor[2];
+            var bodies = new CityPedestrianPresentation[2];
+            var wrists = new Transform[2];
+            var greetings = new CityStreetGreetings(2, i => bodies[i], 43);
+            try
+            {
+                RenderSettings.fog = false;
+                var floor = GameObject.CreatePrimitive(PrimitiveType.Plane);
+                floor.transform.SetParent(stage.transform, false);
+                for (int i = 0; i < 2; i++)
+                {
+                    var body = CityPedestrianDefaultNpcBody.Create(stage.transform,
+                        DefaultNpcPopulation.PedestrianId(i == 0 ? 0 : 14), null);
+                    var start = StageOrigin + new Vector3(i == 0 ? -2.4f : 2.4f, 0f, i == 0 ? .48f : -.48f);
+                    var direction = i == 0 ? Vector3.right : Vector3.left;
+                    var anchor = new CityPedestrianSpawnAnchor("start", start, 0, 1);
+                    var plan = new CityPedestrianPlan(7, 11, 3u, CityPedestrianPlanner.AgentRadius,
+                        new[] { new CityPedestrianNode("a", start - direction * 5f, false),
+                            new CityPedestrianNode("b", start + direction * 8f, false) },
+                        new[] { new CityPedestrianLink("walk", 0, 1, CityPedestrianLinkKind.Sidewalk) },
+                        new[] { anchor }, new[] { new Rect(-10f, -10f, 20f, 20f) });
+                    var actor = new GameObject("Street walker").AddComponent<CityPedestrianActor>();
+                    actors[i] = actor;
+                    actor.transform.SetParent(stage.transform, false);
+                    actor.gameObject.layer = CityPedestrianCollision.LayerIndex;
+                    actor.Initialize(new LevelStreet(), CityPedestrianPlanner.AgentRadius);
+                    actor.PrepareSpawn(plan, anchor, 1, .82f, 1f, i * .3f, 0, 31u);
+                    bodies[i] = body.gameObject.AddComponent<CityPedestrianPresentation>();
+                    bodies[i].Initialize(body);
+                    actor.BindPresentation(bodies[i]);
+                    body.Animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+                    wrists[i] = CityPedestrianHandProps.FindSocket(body.ModelRoot, "hand.R");
+                }
+                Physics.SyncTransforms();
+                yield return null;
+
+                // A missed attempt also waits a new interval.
+                greetings.Advance(60f, StageOrigin + Vector3.right * 80f, camera);
+                greetings.Advance(29.9f, StageOrigin, camera);
+                Assert.That(bodies[0].GreetingPartner, Is.Null);
+                greetings.Advance(30.1f, StageOrigin, camera);
+                Assert.That(bodies[0].GreetingPartner, Is.SameAs(bodies[1]));
+                int firstRaised = -1;
+                bool replied = false;
+                const float step = 1f / 30f;
+                for (int frame = 0; frame < 80; frame++)
+                {
+                    for (int i = 0; i < 2; i++)
+                    {
+                        float phase = bodies[i].WalkCycle;
+                        actors[i].Advance(step);
+                        float forwardStep = actors[i].LastDisplacement.x * (i == 0 ? 1f : -1f);
+                        Assert.That(forwardStep, Is.EqualTo(.82f * step).Within(.003f));
+                        Assert.That(bodies[i].WalkCycle, Is.GreaterThan(phase));
+                    }
+                    Vector3 leftSole = bodies[0].Registry.LeftFoot.position;
+                    Vector3 rightSole = bodies[1].Registry.RightFoot.position;
+                    greetings.Advance(step, StageOrigin, camera);
+                    Assert.That(bodies[0].Registry.LeftFoot.position, Is.EqualTo(leftSole));
+                    Assert.That(bodies[1].Registry.RightFoot.position, Is.EqualTo(rightSole));
+                    bool a = Raised(0), b = Raised(1);
+                    Assert.That(a && b, Is.False, "The reply must follow the first hand.");
+                    if (!(a || b)) continue;
+                    int raised = a ? 0 : 1;
+                    if (firstRaised < 0)
+                    {
+                        firstRaised = raised;
+                    }
+                    else if (raised != firstRaised)
+                    {
+                        replied = true;
+                    }
+                    if (frame == 13 || frame == 51)
+                    {
+                        // Skinned renderers cache a camera's palette within a rendered frame.
+                        yield return null;
+                        AreaCaptureFixture.CaptureCurrentCamera(camera, "CityStreetGreetings", frame == 13 ? "wave" : "reply", 960, 640);
+                    }
+                }
+                Assert.That(replied, Is.True, "Both wrists must reach head height on separate turns.");
+                Assert.That(bodies[0].GreetingPartner, Is.Null);
+                Assert.That(Raised(0) || Raised(1), Is.False);
+
+                greetings.Advance(60f, StageOrigin, camera);
+                Assert.That(bodies[0].GreetingPartner, Is.SameAs(bodies[1]));
+                bodies[0].gameObject.SetActive(false);
+                bodies[0].gameObject.SetActive(true);
+                bodies[0].SetMoving(true);
+                greetings.Advance(step, StageOrigin, camera);
+                Assert.That(bodies[1].GreetingPartner, Is.Null, "A recycled walker cannot receive the delayed reply.");
+            }
+            finally
+            {
+                greetings.Cancel();
+                foreach (var body in bodies) if (body != null) body.Shutdown();
+                RenderSettings.fog = fog;
+                Object.Destroy(stage);
+            }
+
+            bool Raised(int i) => wrists[i].position.y > bodies[i].Registry.HeadAnchor.position.y - .20f;
+        }
+
+        private sealed class LevelStreet : IWalkableArea
+        {
+            public bool Contains(Vector3 position, float radius = 0f) => true;
+            public Vector3 Constrain(Vector3 currentPosition, Vector3 desiredPosition, float radius = 0f) => desiredPosition;
+        }
+
+        [UnityTest]
+        public IEnumerator CityStreetGusts_HatAndCollarFollowWalkingBodiesOnSeparateCrests()
+        {
+            var stage = new GameObject("Wind on the pavement");
+            stage.transform.position = StageOrigin;
+            var camera = new GameObject("Street view").AddComponent<Camera>();
+            camera.transform.SetParent(stage.transform, false);
+            camera.transform.localPosition = new Vector3(1.7f, 1.5f, 3.6f);
+            camera.transform.LookAt(StageOrigin + Vector3.up);
+            camera.clearFlags = CameraClearFlags.SolidColor;
+            camera.backgroundColor = Color.gray;
+            camera.enabled = false;
+            var light = new GameObject("Street daylight").AddComponent<Light>();
+            light.transform.SetParent(stage.transform, false);
+            light.type = LightType.Directional;
+            light.transform.rotation = Quaternion.Euler(50f, 145f, 0f);
+            var bodies = new CityPedestrianPresentation[2];
+            var gusts = new CityStreetGusts(2, i => bodies[i], 0);
+            var baked = new Mesh();
+            bool fog = RenderSettings.fog;
+            try
+            {
+                RenderSettings.fog = false;
+                var floor = GameObject.CreatePrimitive(PrimitiveType.Plane);
+                floor.transform.SetParent(stage.transform, false);
+                for (int i = 0; i < 2; i++)
+                {
+                    var body = CityPedestrianDefaultNpcBody.Create(stage.transform,
+                        DefaultNpcPopulation.PedestrianId(i == 0 ? 0 : 14), null);
+                    var wardrobe = body.GetComponentInChildren<NpcWardrobe>(true);
+                    wardrobe.SetSlot("headwear", i == 0 ? "headwear.work" : null);
+                    if (i == 1) wardrobe.SetSlot("outerwear", "outerwear.cardigan");
+                    body.transform.localPosition = Vector3.right * (i - .5f) * 1.4f;
+                    bodies[i] = body.gameObject.AddComponent<CityPedestrianPresentation>();
+                    bodies[i].Initialize(body);
+                    body.Animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+                    bodies[i].SetMoving(true);
+                }
+                Physics.SyncTransforms();
+                yield return null;
+                var calm = new WindSample(90f, .2f);
+                var crest = new WindSample(90f, .88f);
+                gusts.Advance(20f, StageOrigin, calm);
+                Assert.That(bodies[0].RespondingToGust || bodies[1].RespondingToGust, Is.False);
+                for (int i = 0; i < 2; i++)
+                {
+                    var body = bodies[i];
+                    gusts.Advance(.05f, StageOrigin, crest);
+                    float phase = body.WalkCycle;
+                    for (int tick = 0; tick < 6; tick++)
+                    {
+                        foreach (var walker in bodies)
+                        {
+                            var travel = Vector3.forward * .082f;
+                            walker.transform.position += travel;
+                            walker.AdvanceTravelled(.1f, true, travel);
+                        }
+                        var sole = body.Registry.LeftFoot.position;
+                        gusts.Advance(.1f, StageOrigin, crest);
+                        Assert.That(body.Registry.LeftFoot.position, Is.EqualTo(sole));
+                    }
+                    Assert.That(body.WalkCycle, Is.GreaterThan(phase));
+                    Assert.That(body.RespondingToGust, Is.True);
+                    Assert.That(bodies[1 - i].RespondingToGust, Is.False);
+                    var wrist = CityPedestrianHandProps.FindSocket(body.Registry.ModelRoot, "hand.R");
+                    var palm = body.GetComponentInChildren<NpcHandPose>().GetAnatomicalFrame(false);
+                    Vector3 contact = wrist.position + wrist.rotation * palm.PalmCentreInHand;
+                    if (i == 0)
+                    {
+                        float gap = float.PositiveInfinity;
+                        foreach (var part in body.GetComponentInChildren<NpcWardrobe>().Garments)
+                        {
+                            if (part.Slot != "headwear" || part.Renderer is not SkinnedMeshRenderer hat || !hat.enabled) continue;
+                            foreach (var point in CityBusNpcPassengerPlayModeTests.CalibratedBakedWorldVertices(hat, baked))
+                                gap = Mathf.Min(gap, Vector3.Distance(point, contact));
+                        }
+                        Assert.That(gap, Is.LessThan(.045f), "The palm must actually meet the worn cap.");
+                    }
+                    else Assert.That(Vector3.Distance(contact,
+                        CityPedestrianHandProps.FindSocket(body.Registry.ModelRoot, "neck").position), Is.LessThan(.14f));
+                    Quaternion held = wrist.rotation;
+                    gusts.Advance(0f, StageOrigin, calm);
+                    Assert.That(Quaternion.Angle(held, wrist.rotation), Is.LessThan(.01f));
+                    yield return null;
+                    AreaCaptureFixture.CaptureCurrentCamera(camera, "CityStreetGusts", i == 0 ? "cap" : "collar", 960, 640);
+                    gusts.Advance(15f, StageOrigin, calm);
+                    Assert.That(body.RespondingToGust, Is.False);
+                }
+            }
+            finally
+            {
+                gusts.Cancel();
+                foreach (var body in bodies) if (body != null) body.Shutdown();
+                RenderSettings.fog = fog;
+                Object.Destroy(baked);
+                Object.Destroy(stage);
+            }
+        }
+
         private static void AssertCadenceThroughEvaluationThrottle(CityPedestrianPresentation walker)
         {
             const float phase = .1f;

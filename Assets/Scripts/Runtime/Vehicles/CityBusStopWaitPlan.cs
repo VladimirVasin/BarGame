@@ -17,13 +17,14 @@ namespace BarPromenade
             int pedestrianNodeIndex,
             Vector3 facing,
             IReadOnlyList<Vector3> waitSlots,
-            IReadOnlyList<float> nodeDistances)
+            IReadOnlyList<float> nodeDistances, IReadOnlyList<Vector3> queueEntries = null)
         {
             StopIndex = stopIndex;
             StopId = stopId;
             PedestrianNodeIndex = pedestrianNodeIndex;
             Facing = facing;
             WaitSlots = waitSlots;
+            this.queueEntries = queueEntries;
             NodeDistances = nodeDistances;
         }
 
@@ -44,6 +45,15 @@ namespace BarPromenade
         public Vector3 Facing { get; }
 
         public IReadOnlyList<Vector3> WaitSlots { get; }
+        private readonly IReadOnlyList<Vector3> queueEntries;
+
+        internal Vector3? EntryFor(Vector3 slot)
+        {
+            if (queueEntries == null) return null;
+            for (int i = 0; i < WaitSlots.Count; i++)
+                if (WaitSlots[i] == slot) return queueEntries[i];
+            return null;
+        }
 
         /// <summary>
         /// Graph distance from every pedestrian node to this stop, or

@@ -5,6 +5,8 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-26
 
+Walking waves, cap/collar on a gust, swept leaves, elbow-held door, bus arrival looks and wet treads. `CityStreetGreetings_WalkersWaveInTurnWithoutBreakingStride`, `CityStreetGusts_HatAndCollarFollowWalkingBodiesOnSeparateCrests`, `JanitorRecoversLeafOnSlopingPavement`, `DoorCourtesy_ElbowHoldsForNeighbourAndCloserWaits`, `LiveCity_WetShoesMarkTheShelterAndWaitersNoticeTheirOwnBus`. Queue entry follows the verified pavement branch. `LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement`: 01-05 yields to a resident at their destination or the hero.
+
 Pie: palm supports wrapper, slower. `SelectionAndExamine_UsePureMenuState` ate at zero. `InventoryPieClosesAndPlaysThreeBitesWipeAndBurp` exposed wrist bend before the last bite.
 
 `WorldResidentialAddresses`: insets, night panes, repairs, rail boxes, petunias.
@@ -14,19 +16,19 @@ Pie: palm supports wrapper, slower. `SelectionAndExamine_UsePureMenuState` ate a
 
 No clouds. `DirectionalAmbientWorld`, `CityStreetFogWalk`, `CityFogCheckpoint` (96 m), `CityRimFogVisibility`, `AlpineCliffFogSightline`, `SummitHome_BalconyAndApartmentDoorLookDownIntoTheCity`. `CitySouthEastRimFogAtReportedEdge`: rock in rain.
 
-Fair sellers and visitors walk home through both aisles. `CityFairDailyHours` checked closing, seating, occupancy, reopening, assignments.
+Fair sellers/visitors walk home through both aisles. `CityFairDailyHours`: closing, seats, occupancy, reopening, assignments.
 
 Children visit swings, bars, slides and balance modules. `CityParkPlaygroundChildVisit`, `CityCourtyardPlaygroundChildVisit`, `CitySlidePlaygroundChildVisit` and `CityBridgePlaygroundChildVisit` checked contacts, climbs and return. `CitySeesawDaylight` checked five layouts, paved paths, paired play, solo timeout, return and sunset.
 
-City rotates three boys and three girls through two daylight slots. `CityFairChildActionAssetSetup` verified contacts. `City Street Girls Model Contract` checked deterministic geometry and the FBX rig. `CityAmbientChildren` checked the common metre gait, distinct outfits and blink tiles. Reviewed City frames.
+Daylight slots rotate boys and girls. `CityFairChildActionAssetSetup`: contacts. `City Street Girls Model Contract`: deterministic FBX rig/geometry. `CityAmbientChildren`: metre gait, outfits and blinks.
 
-Fair children have distinct painted faces and hair, fitted coats and boots, and skinned trousers joined from each ankle through the waist. The garments reuse the default NPC normal and response maps. `City Fair Child Model Contract` checked deterministic export and FBX rig and mesh round-trip. Reviewed standing, walking and seated Blender views.
+Fair children: painted faces, distinct hair, fitted coats/boots, continuous skinned trousers, NPC normal/response maps. `City Fair Child Model Contract`: deterministic FBX rig/mesh round-trip. Reviewed standing, walking and seated Blender views.
 
-The fair's five garland spots aim at counters, the aisle, the toy table and the bench. `CityFairChildWardrobe` verified the lit areas, three child activities, contacts and pause/re-entry. Matched night views showed the direct light on the ground, counters, faces and clothes.
+Garland spots light counters, aisle, toy table and bench. `CityFairChildWardrobe`: lit ground, faces, clothes, child activities/contacts and pause/re-entry.
 
-City and the Home balcony spread local cubemap renders across frames. Platform shadows fade sooner while fixture output stays fixed. `CityEastSlopeFrameTime` checked native capture, shadow fade and fixed lamp output. Reviewed the dawn street view and the lit shelter.
+City/Home stagger cubemap faces. Platform shadows fade sooner. `CityEastSlopeFrameTime` checked native views, shadow fade and fixed lamp output at dawn and under the shelter.
 
-The east gable outlet clears the approach. Roof jets use mouth direction, gravity and a delayed weather response. Kerb grates gather shallow water with soft edges and inward ripples. Blender checked the fittings and deterministic export. `LiveCity_RainRunoffClearsTheGableWalkAndEntersTheKerbGrate` checked ground contact, both walks, pause and district release. Reviewed the grate and the pipe in drizzle and downpour.
+The gable outlet clears the approach. Roof jets follow mouth direction, gravity and delayed rain. Soft puddles ripple toward grates. Blender checked fittings/export. `LiveCity_RainRunoffClearsTheGableWalkAndEntersTheKerbGrate`: contacts, both walks, pause, unloading, drizzle and downpour.
 
 Unity Pipeline 1.0.1: `unity command editor focus` and `unity command scene list_open` checked live Editor access.
 

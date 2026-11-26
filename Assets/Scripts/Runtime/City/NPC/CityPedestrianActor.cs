@@ -109,7 +109,7 @@ namespace BarPromenade
         private Vector3? approachTarget;
         private IReadOnlyList<float> approachNodeDistances;
         private IReadOnlyList<float> residentNodeDistances;
-        private Vector3? waitSlot;
+        private Vector3? waitSlot, queueEntry;
         private Vector3 waitFacing = Vector3.forward;
         private IReadOnlyList<float> stopApproachNodeDistances;
         private Vector3 transferWaypoint;
@@ -117,6 +117,7 @@ namespace BarPromenade
         private Quaternion transferRotation = Quaternion.identity;
         private bool transferPassedWaypoint;
         private int benchNodeIndex = -1;
+        private Vector3? benchApproachWaypoint;
         public bool IsInitialized { get; private set; }
         public bool IsSpawned => presentation != null;
         public bool IsYielding { get; private set; }
@@ -176,6 +177,7 @@ namespace BarPromenade
 
         public bool TransferCompleted { get; private set; }
         public int StopWaitNodeIndex { get; private set; } = -1;
+        internal Vector3? QueueApproachTarget => MotionState == CityPedestrianMotionState.ApproachingStop ? queueEntry ?? waitSlot : null;
         public int CrosswalkDecisionCount { get; private set; }
         public int CrosswalksTaken { get; private set; }
         public Vector3 TravelDirection => IsWaitingToCross ? Vector3.zero : GetTravelDirection();
@@ -596,7 +598,7 @@ namespace BarPromenade
             int waitNodeIndex,
             Vector3 slotPosition,
             Vector3 facing,
-            IReadOnlyList<float> waitNodeDistances)
+            IReadOnlyList<float> waitNodeDistances, Vector3? entry = null)
         {
             if (!IsSpawned ||
                 (MotionState != CityPedestrianMotionState.Walking &&
@@ -616,6 +618,9 @@ namespace BarPromenade
             StopWaitNodeIndex = waitNodeIndex;
             stopApproachNodeDistances = waitNodeDistances;
             waitSlot = slotPosition;
+            Vector3 toSlot = slotPosition - Position;
+            toSlot.y = 0f;
+            queueEntry = toSlot.sqrMagnitude > .025f * .025f ? entry : null;
             Vector3 planarFacing = facing;
             planarFacing.y = 0f;
             waitFacing = planarFacing.sqrMagnitude > 0.0001f
@@ -637,9 +642,11 @@ namespace BarPromenade
                 return;
             }
 
+            presentation?.ClearBusArrival();
             StopWaitNodeIndex = -1;
             stopApproachNodeDistances = null;
             waitSlot = null;
+            queueEntry = null;
             blockedTime = 0f;
             MotionState = targetNodeIndex >= 0
                 ? CityPedestrianMotionState.Walking
@@ -658,7 +665,7 @@ namespace BarPromenade
             int benchNode,
             Vector3 slotPosition,
             Vector3 facing,
-            IReadOnlyList<float> benchNodeDistances)
+            IReadOnlyList<float> benchNodeDistances, Vector3? approachWaypoint = null)
         {
             if (!IsSpawned ||
                 MotionState != CityPedestrianMotionState.Walking ||
@@ -677,6 +684,7 @@ namespace BarPromenade
             }
 
             benchNodeIndex = benchNode;
+            benchApproachWaypoint = approachWaypoint;
             stopApproachNodeDistances = benchNodeDistances;
             waitSlot = slotPosition;
             Vector3 planarBenchFacing = facing;
@@ -778,7 +786,7 @@ namespace BarPromenade
 
             presentation.ClearSeat();
             transform.position = standPosition;
-            transferWaypoint = standPosition;
+            transferWaypoint = benchApproachWaypoint ?? standPosition;
             transferDestination = plan.Nodes[benchNodeIndex].Position;
             Vector3 back = transferDestination - standPosition;
             back.y = 0f;
@@ -799,8 +807,8 @@ namespace BarPromenade
                 characterController.enabled = false;
             }
 
-            transferWaypoint = waitSlot ?? transform.position;
-            transferDestination = transferWaypoint;
+            transferDestination = waitSlot ?? transform.position;
+            transferWaypoint = benchApproachWaypoint ?? transferDestination;
             transferRotation = Quaternion.LookRotation(
                 waitFacing,
                 Vector3.up);
@@ -1390,12 +1398,20 @@ namespace BarPromenade
                 return false;
             }
 
-            slot = waitSlot.Value;
+            // Reach the mouth of the reserved branch before turning off the pavement.
+            // The diagonal from the sidewalk node can cross the shelter's solid pole.
+            slot = queueEntry ?? waitSlot.Value;
             return true;
         }
 
         private void ArriveAtWaitSlot()
         {
+            if (queueEntry.HasValue)
+            {
+                queueEntry = null;
+                blockedTime = 0f;
+                return;
+            }
             MotionState = CityPedestrianMotionState.WaitingAtStop;
             blockedTime = 0f;
             lateralOffset = 0f;
@@ -1624,11 +1640,13 @@ namespace BarPromenade
             residentNodeDistances = null;
             stopApproachNodeDistances = null;
             waitSlot = null;
+            queueEntry = null;
             waitFacing = Vector3.forward;
             transferPassedWaypoint = false;
             transferRotation = Quaternion.identity;
             TransferCompleted = false;
             benchNodeIndex = -1;
+            benchApproachWaypoint = null;
             StopWaitNodeIndex = -1;
             SpawnAnchorId = string.Empty;
             IsPersonalSpaceReacting = false;

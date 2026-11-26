@@ -80,7 +80,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | City blueprint/roads | Two districts+park;144 IDs/−29.2% land; fronts/courts share ground/navigation. | `City{Layout,SpatialPlan,RoadGeometryPlan,CourtyardBlockPlanner}`, `BuildingLot` | Current |
 | Coastal utilities | City/Ridge/Home share exterior mains, courtyard branches and east-beach sewers. | `CityCoastalInfrastructure*`, `CityElectrical*`, `CityWaterNetwork*` | Current |
 | City elevation/stairs | Shared heights align stairs, ground and collision. Closed hillside cuts. | `CityElevation*`, `CityTerrainSurfacePlan`, `CityHillsideStairCut` | Current |
-| Terraced City | Service walks, gable court, loft/keeper, lit phones and household bins. | `CityHillside*`,`CityTerrace*`,`CityPawnshopDescent*`,`CityPigeon*` | Current |
+| Terraced City | Service walks, gable court, loft/keeper, lit phones, bins, shared door. | `CityHillside*`,`CityTerrace*`,`CityPawnshopDescent*`,`CityPigeon*`,`CityCourtDoorCourtesy` | Current |
 | City mountain boundary | Fractured cliffs, talus, river cave and dressed south portal. | `CityMountain{Boundary*,Talus*}`, `CityRockface*`, `CityFringeYard*`, `CitySouthTunnelArt` | Current |
 | Eastern mainland view | Closed boom, dry canopy, door wash and wide road optic; shared traffic grade, fading skyline/glow. | `CityEastExit*`, `CityEastRoadProfile`, `CityEastDistance*` | Current |
 | City litter | 36 Blender variants off roads; dense east/no near repeats; solids block; finite shared palette per root. | `CityLitterCatalog`, `CityLitter{Plan,Planner,WorldBuilder,Instancer}`, `CityEastLitter*` | Current |
@@ -135,14 +135,15 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | City surfaces | Nine areas/Home, bar UV0+1, road lots, curb/flags, shop brick. | `CitySurfaceLibrary`, `CityGroundSurfaceSystem` | Current |
 | Central Park surfaces | The divided park uses shared gravel, paths and bridge geometry from its pure surface plan. | `CityParkSurfaceAppearance`, `CityWorldBuilder` | Current |
 | Pedestrian personal space | Above alcohol `60`: guarding palm; above `80`: close shove. | `CityPedestrianPersonalSpace{Rules,Controller}`, `PlayerMotor` | Current |
-| Pedestrian street insults | Insult responses need the authored proximity/facing gates; the twenty-line bag deals once a round, surviving reloads. | `CityPedestrianInsult{Rules,Lines,Walk,SessionState,Controller}`, `CityPedestrianPersonalSpaceController` | Current |
+| City street gestures | Walking waves every 30–60 s; cap/collar on a gust. | `CityStreetGreetings`, `CityStreetGusts`, `CityStreetArmPose` | Current |
+| Pedestrian street insults | Proximity/facing gates. Twenty lines per shuffle, retained on reload. | `CityPedestrianInsult{Rules,Lines,Walk,SessionState,Controller}`, `CityPedestrianPersonalSpaceController` | Current |
 | City/Home pedestrians | 192 commutes. City ≤36 + ≤12 ambient (≤2 daylight children) + ≤2 janitors. Home 5/2. Playground visits. | `CityResidentJourneyDirector`, `CityAmbientPedestrians`, `CityPlaygroundVisit`, `CityJanitorDirector` | Current |
 | NPC Human V2 anatomy, appearance and visibility | Shared rigs; joint fields/volume and shaped hands/clothes retain UVs. | `NpcHumanV2AssetSetup`, `NpcDesignAppearanceCatalog`, `CharacterJointDeformation` | Current |
 | City district buses | Two/ring,shared transfers. Gap:no Home service/live map buses. | `City{District,Hillside}BusPlanner`, `CityBus{Director,Actor,Factory}` | Partial |
 | Midibus | Sedan lights, sliding leaves, fixed NPCs. | `CityBus{Presentation,DriverRig}` | Current |
 | Bus stop lighting | City/Home lit strip/apron;fixed daylight;soft shadows fade 12–24 m. | `CityBusStopLighting`, `CityNightAtmosphere` | Current |
 | Pedestrian bench rests | Eligible walkers reserve, sit, rest, stand and resume their route. | `CityBenchRest{Plan,Planner}`, `CityBenchNpcRestController` | Current |
-| City bus passengers | Two doors/10seats/3standing;remote. Gap:fares/live tracking. | `CityBusRide{Plan,Controller}`, `CityBusStopWait{Plan,Planner}` | Partial |
+| City bus passengers | Two doors, 10 seats, 3 standing. Remote trips, arrival looks, wet prints. Gap: fares/live tracking. | `CityBusRide{Plan,Controller}`, `CityBusStopWait{Plan,Planner}` | Partial |
 | City visual variants | Shared models and colliders, one glazed fabrication hall. | `CityDecoration*`, `CityMetalWorkshop` | Current |
 | Road-edge fences | Planned fences leave road and waterside openings clear. | `RoadFence{Planner,Plan,WorldBuilder}`, `CitySurfaceDescriptor` | Current |
 | Shops | 3 kiosks, Ridge talk. Shop shelves show offer prices; shared browser/3D receipt. | `RidgeKiosk*`, `IWorldShelfMenu`, `SupermarketShelfShop*` | Current |

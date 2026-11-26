@@ -592,7 +592,7 @@ namespace BarPromenade.Tests.PlayMode
         // uniform scale of one. The resulting external measurement uses BakeMesh.
         private static readonly HashSet<int> ReportedBakeModes = new HashSet<int>();
 
-        private static Vector3[] CalibratedBakedWorldVertices(SkinnedMeshRenderer skin, Mesh baked)
+        internal static Vector3[] CalibratedBakedWorldVertices(SkinnedMeshRenderer skin, Mesh baked)
         {
             Vector3[] reference = CityPedestrianShoeContacts.SkinWorldVertices(skin);
             var candidates = new Vector3[2][];

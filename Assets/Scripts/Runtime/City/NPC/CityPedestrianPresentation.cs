@@ -36,7 +36,7 @@ namespace BarPromenade
     /// city pedestrian. Route motion remains entirely code-owned.
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class CityPedestrianPresentation : MonoBehaviour
+    public sealed partial class CityPedestrianPresentation : MonoBehaviour
     {
         public const float LocomotionBlendDuration = 0.15f;
 
@@ -108,6 +108,46 @@ namespace BarPromenade
             new NpcAttentionHeadLayer();
         private readonly NpcAttentionNotice heroNotice = new NpcAttentionNotice();
         private CityPedestrianPresentation attentionPeer;
+        private CityStreetArmPose streetArm;
+        internal bool RespondingToGust { get; private set; }
+        internal bool CanMakeStreetGesture => isActiveAndEnabled && IsInitialized && IsMoving &&
+            !IsInBus && !IsRestingAtRail && AuthoredActionWeight <= 0f;
+        internal CityPedestrianPresentation GreetingPartner { get; private set; }
+
+        internal void BeginGreeting(CityPedestrianPresentation partner)
+        {
+            GreetingPartner = partner;
+            heroNotice.Reset();
+        }
+
+        internal void SampleGreeting(float seconds)
+        {
+            streetArm ??= new CityStreetArmPose(registry);
+            streetArm.Wave(GreetingPartner.Registry.HeadAnchor.position, seconds);
+        }
+
+        internal void EndGreeting()
+        {
+            if (!ReferenceEquals(GreetingPartner, null))
+            {
+                streetArm?.Restore();
+                SetAttentionFocus(null);
+            }
+            GreetingPartner = null;
+        }
+
+        internal void BraceForGust(Vector3 wind, float weight)
+        {
+            streetArm ??= new CityStreetArmPose(registry);
+            RespondingToGust = true;
+            streetArm.Brace(wind, weight);
+        }
+
+        internal void EndGust()
+        {
+            if (RespondingToGust) streetArm?.Restore();
+            RespondingToGust = false;
+        }
 
         public bool IsInitialized { get; private set; }
         public bool IsMoving { get; private set; }
@@ -233,6 +273,16 @@ namespace BarPromenade
 
         internal void UpdateStreetAttention(Vector3? heroFocus, CityPedestrianDirector street)
         {
+            if (busArrivalTarget != null)
+            {
+                SetAttentionFocus(busArrivalTarget.position + Vector3.up * 1.5f);
+                return;
+            }
+            if (GreetingPartner != null && GreetingPartner.GreetingPartner == this)
+            {
+                SetAttentionFocus(GreetingPartner.Registry.HeadAnchor.position);
+                return;
+            }
             Vector3? focus = heroNotice.Resolve(transform.position, transform.eulerAngles.y, heroFocus);
             attentionPeer = focus.HasValue ? null : street?.ResolveAttentionPeer(this, attentionPeer);
             if (attentionPeer != null) focus = attentionPeer.Registry.HeadAnchor.position;
@@ -247,6 +297,9 @@ namespace BarPromenade
         /// </summary>
         public void ClearAttention()
         {
+            ClearBusArrival();
+            EndGreeting();
+            EndGust();
             heroNotice.Reset();
             attentionPeer = null;
             attention.Restore();
@@ -641,6 +694,7 @@ namespace BarPromenade
                 EvaluateGraph(elapsed);
                 BlendGroundSeatTransition(elapsed);
                 attention.Apply(elapsed);
+                ApplyBusArrivalPose();
             }
             LastAdvanceDeltaTime = elapsed;
             Advanced?.Invoke(elapsed);
@@ -653,6 +707,10 @@ namespace BarPromenade
                 return;
             }
 
+            EndGreeting();
+            EndGust();
+            ClearBusArrival();
+            streetArm = null;
             railRest?.Release();
             if (doorStepMask != null)
             {
@@ -799,9 +857,11 @@ namespace BarPromenade
             }
 
             RestoreModelBasePosition();
+            streetArm?.Restore();
             standing?.RestoreBones();
             seatedPose?.RestoreBones();
             legLayer.Restore();
+            RestoreBusArrivalPose();
             attention.Restore();
             if (pendingWalkSeconds > 0f)
             {

@@ -16,6 +16,7 @@ namespace BarPromenade
         /// all stay clear of the structure.
         /// </summary>
         public const float ShelterOffsetAlongLane = -2.55f;
+        internal const float RoofWidth = 4.65f, RoofDepth = 1.18f;
 
         // The bench under the roof, in stop-local space. Local +Z faces
         // the road, so the sitter watches for the bus.
@@ -195,11 +196,11 @@ namespace BarPromenade
             Vector3 routeForward, Vector3 roadsideForward)
         {
             Quaternion rotation = ResolveRotation(routeForward, roadsideForward);
-            const float minX = ShelterOffsetAlongLane - 4.65f * .5f;
+            const float minX = ShelterOffsetAlongLane - RoofWidth * .5f;
             const float maxX = .38f;
             Vector3 center = shelterPosition + rotation * new Vector3((minX+maxX)*.5f,0,0);
             Vector3 side = rotation * Vector3.right * ((maxX-minX)*.5f);
-            Vector3 depth = rotation * Vector3.forward * (1.18f*.5f);
+            Vector3 depth = rotation * Vector3.forward * (RoofDepth * .5f);
             float x = Mathf.Abs(side.x)+Mathf.Abs(depth.x);
             float z = Mathf.Abs(side.z)+Mathf.Abs(depth.z);
             return Rect.MinMaxRect(center.x-x,center.z-z,center.x+x,center.z+z);
@@ -287,7 +288,7 @@ namespace BarPromenade
                 "Shelter Roof",
                 root,
                 new Vector3(x, 2.62f, 0f),
-                new Vector3(4.65f, 0.18f, 1.18f),
+                new Vector3(RoofWidth, 0.18f, RoofDepth),
                 assets.Frame,
                 false);
             assets.CreateFallbackBox(
