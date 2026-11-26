@@ -31,12 +31,12 @@ FBXs/JSON→`Assets/Resources/City/Hillside`;house `--model GlazedStairBay`.
 `build-city-residential-courtyard-3d-model.py`:6;`--validate-only`.
 
 `build-city-fair-3d-model.py`:10 props;`--verify-fbx`.
-`build-city-fair-child-3d-model.py`: 3 outfits/toys; `--body-only` updates child art.
+`build-city-fair-child-3d-model.py`: outfits/toys; `--body-only`.
+`build-city-street-girls-3d-model.py`: street outfits.
 FBXs/JSON: `Assets/Resources/City/{Fair,FairChild}`;
 source: `ArtSource/City/{Fair,FairChild}`.
-`build-city-fair-{player,child}-actions-3d-model.py`:6 hero/15 child clips;
-`Assets/Resources/{Player/CityFairPlayerActions,City/FairChild/ChildActions}.{fbx,json}`;
-launcher/`--validate-only`.
+`build-city-fair-{player,child}-actions-3d-model.py`:6 hero/16 child clips;
+`Assets/Resources/{Player/CityFairPlayerActions,City/FairChild/ChildActions}.{fbx,json}`.
 
 `build-city-cannery-3d-model.py`:10 FBXs/JSON→`Assets/Resources/City/Cannery`;
 source:`ArtSource/City/Cannery`;port maps/scale/`CartonStack`/contacts/truck/

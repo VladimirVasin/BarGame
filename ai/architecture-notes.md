@@ -2,11 +2,11 @@
 
 ## Current facts
 
-- **2026-11-26, fair child art.** One skinned trouser mesh per outfit. One head
-  mesh with identity rows and timed PNG expressions. Distinct hair and shared
-  `DefaultNpcDetail` maps. Child rig and measured anchors own all contacts.
-  Five bulb-bound spots cover counters/aisle with the fixed day floor.
-  City fog/SSAO/shadows/grade/post; direct pools leave air/bounce capacity.
+- **2026-11-26, child art.** Skinned trousers, PNG face rows, hair and shared
+  `DefaultNpcDetail` maps. Child bones own contacts. Five fair spots retain the
+  day floor. Three fair boys and three street girls have stable looks.
+  City leases two child slots, with one child-native step by metres. Quiet yards excluded. Shared City
+  bounce/SSAO/fog/shadows/grade/post, road SSR. Matte skin/fabric use no local FX.
 
 - **Accepted 2026-11-22, user — wristwatch.** H loans the existing camera and
   holds stationary context. Right pinch tracks the left cuff. Forearm bezel, session-minute LCD, bevels, matte finish and area fog/light/post.

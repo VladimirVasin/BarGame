@@ -8,7 +8,7 @@ namespace BarPromenade
     public enum CityFairChildAction
     {
         Idle, Walk, Turn, Stop, GoodsEnter, GoodsLoop, GoodsExit,
-        ToyEnter, ToyLoop, ToyExit, SitEnter, SitLoop, SitExit, AdjustSleeve, AdjustCap
+        ToyEnter, ToyLoop, ToyExit, SitEnter, SitLoop, SitExit, AdjustSleeve, AdjustCap, StreetWalk
     }
 
     public readonly struct CityFairChildFrame
@@ -29,6 +29,7 @@ namespace BarPromenade
     {
         public const string ResourcePath = "City/FairChild/ChildActions";
         public const float Height = 1.30f;
+        public const float StreetCycleMetres = .66f;
         public static readonly Vector3 SeatedPelvisFromDock = new Vector3(0f, .57f, -.54f);
         private static Manifest manifest;
         private static Dictionary<CityFairChildAction, Track> tracks;

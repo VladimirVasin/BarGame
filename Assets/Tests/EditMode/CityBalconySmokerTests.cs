@@ -365,7 +365,7 @@ namespace BarPromenade.Tests.EditMode
             IReadOnlyList<string> eligible =
                 CityBalconySmokerArchetypeCatalog.EligibleDesignIds;
             Assert.That(eligible.Count, Is.GreaterThanOrEqualTo(2));
-            CollectionAssert.AreEquivalent(DefaultNpcCatalog.ModelIds, eligible);
+            CollectionAssert.AreEquivalent(DefaultNpcCatalog.AdultModelIds, eligible);
             Assert.That(eligible, Does.Not.Contain(CityPedestrianResources.BabushkaDesignId));
             var observed = new HashSet<string>();
             var cell = new Vector2Int(7, 11);

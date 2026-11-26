@@ -15,10 +15,20 @@ namespace BarPromenade
             [SerializeField] private Texture2D brunetteAtlas;
             [SerializeField] private Texture2D blondAtlas;
             [SerializeField] private bool hasBlinkTile;
+            [SerializeField] private bool usesChildTiles;
+            [SerializeField] private int childRow;
             public string Id => id;
             public Texture2D Atlas => atlas;
             public bool HasBlinkTile => hasBlinkTile;
             public FaceBinding(string id, Texture2D atlas) : this(id, atlas, atlas, atlas) { }
+            public FaceBinding(string id, Texture2D atlas, int childRow, bool hasBlinkTile = false)
+                : this(id, atlas, atlas, atlas, hasBlinkTile)
+            {
+                usesChildTiles = true;
+                this.childRow = childRow;
+            }
+            internal bool UsesChildTiles => usesChildTiles;
+            internal Vector4 ChildTile => new Vector4(.25f, .25f, 0f, .75f - .25f * childRow);
             public FaceBinding(string id, Texture2D atlas, Texture2D brunetteAtlas, Texture2D blondAtlas)
                 : this(id, atlas, brunetteAtlas, blondAtlas, false) { }
             public FaceBinding(string id, Texture2D atlas, Texture2D brunetteAtlas, Texture2D blondAtlas, bool hasBlinkTile)
@@ -179,12 +189,13 @@ namespace BarPromenade
         public void RestoreFace()
         {
             if (string.IsNullOrEmpty(currentFaceId)) return;
-            Texture2D texture = CurrentAtlas;
+            FaceBinding face = RequireFace(currentFaceId);
+            Texture2D texture = face.GetAtlas(currentHairColorId);
             properties ??= new MaterialPropertyBlock();
             Color hairColor = RequireHairColor(currentHairColorId).Color;
             if (separateFaceRenderer != null)
             {
-                RestoreFaceTexture(separateFaceRenderer, texture);
+                RestoreFaceTexture(separateFaceRenderer, texture, face.UsesChildTiles ? face.ChildTile : null);
                 wardrobe.SetHairColor(hairColor);
                 return;
             }
@@ -203,22 +214,28 @@ namespace BarPromenade
             wardrobe.SetAtlas(texture);
         }
 
-        private void RestoreFaceTexture(Renderer renderer, Texture2D texture)
+        private void RestoreFaceTexture(Renderer renderer, Texture2D texture, Vector4? tile = null)
         {
             renderer.GetPropertyBlock(properties);
             properties.SetTexture("_BaseMap", texture); properties.SetTexture("_MainTex", texture);
+            if (tile.HasValue)
+                properties.SetVector(BaseMapTransform, tile.Value);
             renderer.SetPropertyBlock(properties); properties.Clear();
         }
 
-        /// <summary>The next tile to the left paints shut lids on the same face and mesh.</summary>
+        /// <summary>Samples the authored closed-eye tile on the same face mesh.</summary>
         internal void SetEyesClosed(bool closed)
         {
             if (blinkSurface == null || closed == blinkClosed) return;
-            if (closed && !RequireFace(currentFaceId).HasBlinkTile) return;
+            FaceBinding face = RequireFace(currentFaceId);
+            if (closed && !face.HasBlinkTile) return;
             blinkClosed = closed;
             properties ??= new MaterialPropertyBlock();
             blinkSurface.GetPropertyBlock(properties);
-            properties.SetVector(BaseMapTransform, new Vector4(1f, 1f, closed ? -.25f : 0f, 0f));
+            Vector4 tile = face.UsesChildTiles
+                ? face.ChildTile + new Vector4(0f, 0f, closed ? .5f : 0f, 0f)
+                : new Vector4(1f, 1f, closed ? -.25f : 0f, 0f);
+            properties.SetVector(BaseMapTransform, tile);
             blinkSurface.SetPropertyBlock(properties);
             properties.Clear();
         }

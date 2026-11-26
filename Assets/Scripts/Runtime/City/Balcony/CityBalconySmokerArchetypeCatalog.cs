@@ -5,7 +5,7 @@ namespace BarPromenade
 {
     public static class CityBalconySmokerArchetypeCatalog
     {
-        public static IReadOnlyList<string> EligibleDesignIds => DefaultNpcCatalog.ModelIds;
+        public static IReadOnlyList<string> EligibleDesignIds => DefaultNpcCatalog.AdultModelIds;
 
         public static bool IsEligible(string modelId) =>
             modelId == DefaultNpcCatalog.OrdinaryWorker || modelId == DefaultNpcCatalog.OrdinaryWoman;

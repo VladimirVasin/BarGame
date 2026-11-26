@@ -27,14 +27,16 @@ namespace BarPromenade
             public float DesiredOffset, NextProbe, Stopped;
             public int YieldTo, Blocker;
             public bool Backing, InPocket, Aligning, WaitingForRetreat, SurfaceBlocked, TightPassing, Kerb;
+            public bool IsChild;
 
             public bool NeedsAlignment => Aligning && Mathf.Abs(Offset - DesiredOffset) > .02f;
 
-            public Route(int link, int direction, float along) : this()
+            public Route(int link, int direction, float along, bool isChild = false) : this()
             {
                 Link = link;
                 Direction = direction;
                 Along = along;
+                IsChild = isChild;
             }
         }
 
@@ -327,7 +329,8 @@ namespace BarPromenade
             for (int i = 0; i < neighbours.Count; i++)
             {
                 int link = neighbours[i];
-                if (link == walk.Link || plan.Length(link) <= 0f) continue;
+                if (link == walk.Link || plan.Length(link) <= 0f ||
+                    walk.IsChild && !plan.AllowsChild(link)) continue;
                 connected = true;
                 int candidateDirection = plan.DirectionFrom(link, node);
                 float distance = candidateDirection > 0 ? 0f : plan.Length(link);
@@ -347,7 +350,7 @@ namespace BarPromenade
             // A short link can end before the yielding walker has made
             // enough room. Keep the encounter and the intended direction
             // while backing across that join.
-            if (!keepLane) walk = default;
+            if (!keepLane) walk = new Route(best, nextDirection, 0f, walk.IsChild);
             walk.Link = best;
             walk.Direction = walk.Backing ? -nextDirection : nextDirection;
             walk.Along = plan.ProjectDistance(best, feet);

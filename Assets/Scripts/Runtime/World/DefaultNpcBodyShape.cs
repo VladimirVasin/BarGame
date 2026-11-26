@@ -32,7 +32,8 @@ namespace BarPromenade
         [SerializeField] private bool usesAuthoredAnatomy;
         private int selectionVersion;
 
-        public bool IsConfigured => bindings.Length > 0 && referenceHeightMetres > 0f;
+        public bool IsConfigured => referenceHeightMetres > 0f &&
+            (bindings.Length > 0 || minimumHeightCm > 0 && minimumHeightCm == maximumHeightCm);
         public float ReferenceHeightMetres => referenceHeightMetres;
         public int MinHeightCm => minimumHeightCm > 0 ? minimumHeightCm : MinimumHeightCm;
         public int MaxHeightCm => maximumHeightCm > 0 ? maximumHeightCm : MaximumHeightCm;
@@ -79,6 +80,17 @@ namespace BarPromenade
             heightCm = referenceHeightCm;
             build = .5f; hasSelection = false; usesAuthoredAnatomy = false;
             RestoreShapes();
+        }
+
+        /// <summary>Keep a measured rig with one authored stature and no body morphs.</summary>
+        public void ConfigureFixedStature(int centimetres)
+        {
+            if (centimetres <= 0) throw new ArgumentOutOfRangeException(nameof(centimetres));
+            bindings = Array.Empty<Binding>();
+            referenceHeightMetres = centimetres * .01f;
+            minimumHeightCm = maximumHeightCm = centimetres;
+            referenceScale = transform.localScale;
+            PreserveAuthoredAnatomy();
         }
 
         public void ValidateBindings()

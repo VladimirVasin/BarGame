@@ -776,8 +776,9 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   Body caps `5/28/22/36/10` at 00/06/10/17/22h, cache 48. Ambient
   `2/8/10/12/4`, cache 18, combined 48, warm≤3. Half-hour ramps,
   arrivals per 12m≤4 combined/2 ambient, hidden handoffs, 60/40 target.
-  Ambient walkers use stairs, skip crossings/platform entries, pass at clear kerbs/turnouts and back across joins.
-  Others lean at quays, wide courts or Ridge rails until departure. House spurs use the full pavement.
+  Ambient walks use stairs, skip crossings/platforms and pass at kerbs.
+  Three boys and three girls rotate through two street child slots with a springing walk.
+  Adults lean at quays, courts or Ridge rails. House spurs use full pavement.
   Two uniformed janitors can sweep free paving or yard earth 14–34 m from the hero. New visits 18–32 s apart;
   after 55–95 s and 14 m separation, or beyond 52 m, they leave outside the shot.
   Public circuits turn at the sidewalk. Home is private with continuous pavement.

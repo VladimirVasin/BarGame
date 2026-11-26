@@ -104,6 +104,9 @@ namespace BarPromenade
         /// </summary>
         public const string PedestrianIdPrefix = "city.pedestrian.";
         internal const int AmbientAppearancesPerGender = 24;
+        private const string AmbientChildPrefix = "city.ambient.child.";
+        private const string AmbientGirlPrefix = "city.ambient.girl.";
+        internal const int AmbientChildCount = 6;
         private const int OriginalPedestrianCount = 13;
         // A fixed subset of the newer residential schedules, spread by the
         // stable ID hash. Enlarging the roster must not move these assignments.
@@ -243,6 +246,9 @@ namespace BarPromenade
             (woman ? "city.ambient.woman." : "city.ambient.man.") +
             index.ToString("00", System.Globalization.CultureInfo.InvariantCulture);
 
+        internal static string AmbientChildId(int index) =>
+            (index % 2 == 0 ? AmbientChildPrefix : AmbientGirlPrefix) + (index / 2 + 1);
+
         /// <summary>
         /// Allocates a fresh, bounded temporary cast through the same catalog,
         /// face and wardrobe selector as permanent characters. These identities
@@ -261,7 +267,7 @@ namespace BarPromenade
             Prepare();
             var models = new SortedDictionary<string, ModelDefinition>(StringComparer.Ordinal);
             var signature = new StringBuilder();
-            foreach (string available in modelId == AnyCatalogModel ? DefaultNpcCatalog.ModelIds : new[] { modelId })
+            foreach (string available in modelId == AnyCatalogModel ? DefaultNpcCatalog.AdultModelIds : new[] { modelId })
             {
                 ModelDefinition candidate = ReadModel(available, signature);
                 if (modelId != AnyCatalogModel || SupportsConstraints(candidate, constraints)) models.Add(available, candidate);
@@ -513,6 +519,18 @@ namespace BarPromenade
                     new SlotConstraint("trousers", "trousers.work"), new SlotConstraint("boots", "boots.work"),
                     new SlotConstraint("headwear", "headwear.work"), new SlotConstraint("gloves", new string[] { null }),
                     new SlotConstraint("scarf", new string[] { null }), new SlotConstraint("apron", new string[] { null })));
+            roster.Add(new CharacterDefinition(AmbientChildId(0), DefaultNpcCatalog.StreetChild, false,
+                new SlotConstraint("outfit", "outfit.raincoat")));
+            roster.Add(new CharacterDefinition(AmbientChildId(2), DefaultNpcCatalog.StreetChild, false,
+                new SlotConstraint("outfit", "outfit.quilted")));
+            roster.Add(new CharacterDefinition(AmbientChildId(4), DefaultNpcCatalog.StreetChild, false,
+                new SlotConstraint("outfit", "outfit.vest")));
+            roster.Add(new CharacterDefinition(AmbientChildId(1), DefaultNpcCatalog.StreetGirl, false,
+                new SlotConstraint("outfit", "outfit.bobjacket")));
+            roster.Add(new CharacterDefinition(AmbientChildId(3), DefaultNpcCatalog.StreetGirl, false,
+                new SlotConstraint("outfit", "outfit.braidedcoat")));
+            roster.Add(new CharacterDefinition(AmbientChildId(5), DefaultNpcCatalog.StreetGirl, false,
+                new SlotConstraint("outfit", "outfit.biboveralls")));
             return roster.ToArray();
 
             void RegisterCafeMan(MountainRoadCafeCastRole role, string coat, string hat, string apron) =>
@@ -570,7 +588,7 @@ namespace BarPromenade
                     throw new InvalidOperationException("Default NPC character IDs must be unique.");
                 // A free choice ranges over the whole catalog, so every model is
                 // read and every model's authored bindings enter the signature.
-                foreach (string modelId in character.UsesAnyCatalogModel ? DefaultNpcCatalog.ModelIds : new[] { character.ModelId })
+                foreach (string modelId in character.UsesAnyCatalogModel ? DefaultNpcCatalog.AdultModelIds : new[] { character.ModelId })
                     if (!models.ContainsKey(modelId)) models.Add(modelId, ReadModel(modelId, signature));
                 signature.Append(character.Id).Append(':').Append(character.ModelId ?? "<any>")
                     .Append(character.UsesRandomBody ? ":body;" : ":authored;");
@@ -586,7 +604,7 @@ namespace BarPromenade
             var usage = new Dictionary<string, int>(StringComparer.Ordinal);
             var expandedUsage = new Dictionary<string, int>(StringComparer.Ordinal);
             var modelUsage = new Dictionary<string, int>(StringComparer.Ordinal);
-            string[] catalogModels = new List<string>(DefaultNpcCatalog.ModelIds).ToArray();
+            string[] catalogModels = new List<string>(DefaultNpcCatalog.AdultModelIds).ToArray();
             // Reserve the earlier street tuples in their original order. A
             // converted slot otherwise releases a tuple to a later man and
             // can change the look of another resident or a named character.
@@ -644,7 +662,11 @@ namespace BarPromenade
             ModelDefinition model = models[modelId];
             bool transit = character.Id.StartsWith(BusDriverIdPrefix, StringComparison.Ordinal);
             bool parkPlayer = character.Id == ParkChessPlayer || character.Id == ParkCheckersPlayer;
-            string[] faces = parkPlayer ? new[] { character.Id == ParkChessPlayer ? "face-02" : "face-03" } :
+            string[] faces = character.Id.StartsWith(AmbientChildPrefix, StringComparison.Ordinal)
+                ? new[] { "street-child-" + character.Id.Substring(AmbientChildPrefix.Length) }
+                : character.Id.StartsWith(AmbientGirlPrefix, StringComparison.Ordinal)
+                ? new[] { "street-girl-" + character.Id.Substring(AmbientGirlPrefix.Length) }
+                : parkPlayer ? new[] { character.Id == ParkChessPlayer ? "face-02" : "face-03" } :
                 transit ? model.TransitFaces : model.Faces;
             var dimensions = new List<string[]> { faces, (parkPlayer || character.Id == Severin || character.Id == Marta) ? new[] { "gray" } : model.HairColors };
             int outerwearDimension = -1;

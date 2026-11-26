@@ -5,6 +5,8 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-26
 
+City's ambient pool rotates three boys and three girls through two slots. The shared stride follows route distance and the street leg layer tracks support. `CityFairChildActionAssetSetup` verified imported contacts. `City Street Girls Model Contract` checked deterministic geometry and the FBX rig round-trip. `CityAmbientChildren` verified a live girl walker and shared stride, distinct outfits and blink tiles. Reviewed all three outfits in City light.
+
 Fair children have distinct painted faces and hair, fitted coats and boots, and skinned trousers joined from each ankle through the waist. The garments reuse the default NPC normal and response maps. `City Fair Child Model Contract` checked deterministic export and FBX rig and mesh round-trip. Reviewed standing, walking and seated Blender views.
 
 The fair's five garland spots aim at counters, the aisle, the toy table and the bench. `CityFairChildWardrobe` verified the lit areas, three child activities, contacts and pause/re-entry. Matched night views showed the direct light on the ground, counters, faces and clothes.

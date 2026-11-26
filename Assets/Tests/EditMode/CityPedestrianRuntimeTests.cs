@@ -797,9 +797,8 @@ namespace BarPromenade.Tests.EditMode
                             archetype.DesignId)));
                 Assert.That(
                     archetype.CanRideBus,
-                    Is.True,
-                    "A default NPC rides Route 01 on the clip donor's " +
-                    "seated loop.");
+                    Is.EqualTo(!DefaultNpcCatalog.IsStreetChild(archetype.DesignId)),
+                    "Adult street designs have a seated ride; children only walk.");
                 Assert.That(
                     CityPedestrianResources.Roams(archetype.DesignId),
                     Is.True);

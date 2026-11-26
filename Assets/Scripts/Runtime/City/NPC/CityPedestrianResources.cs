@@ -589,6 +589,7 @@ namespace BarPromenade
                     var built = new CityPedestrianArchetype[models.Count];
                     for (int index = 0; index < models.Count; index++)
                     {
+                        bool child = DefaultNpcCatalog.IsStreetChild(models[index]);
                         built[index] = new CityPedestrianArchetype(
                             models[index],
                             DefaultNpcCatalog.GetResourcePath(models[index]),
@@ -596,9 +597,11 @@ namespace BarPromenade
                             DefaultNpcMaximumMovementSpeed,
                             DefaultNpcMinimumAnimationSpeed,
                             DefaultNpcMaximumAnimationSpeed,
-                            CityPedestrianArchetype.UnlimitedPoolInstances,
+                            child
+                                ? CityAmbientPedestrians.MaximumActiveChildren : CityPedestrianArchetype.UnlimitedPoolInstances,
                             0f,
-                            models[index] == DefaultNpcCatalog.OrdinaryWoman ? OrdinaryWomanSeatedRide : DefaultNpcSeatedRide);
+                            child ? null : models[index] == DefaultNpcCatalog.OrdinaryWoman
+                                ? OrdinaryWomanSeatedRide : DefaultNpcSeatedRide);
                     }
 
                     roamingArchetypes = built;

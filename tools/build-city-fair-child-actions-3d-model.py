@@ -27,7 +27,8 @@ CLIPS = (("Idle",4.,True),("Walk",1.25,True),("Turn",1.,False),("Stop",.5,False)
          ("GoodsEnter",1.25,False),("GoodsLoop",3.,True),("GoodsExit",1.25,False),
          ("ToyEnter",1.5,False),("ToyLoop",4.,True),("ToyExit",1.5,False),
          ("SitEnter",2.,False),("SitLoop",4.,True),("SitExit",2.,False),
-         ("AdjustSleeve",2.5,False),("AdjustCap",2.5,False))
+         ("AdjustSleeve",2.5,False),("AdjustCap",2.5,False),("StreetWalk",1.,True))
+STREET_CYCLE_METRES = .66
 
 
 def smooth(t):
@@ -79,6 +80,51 @@ def arm(rig,side,target,hand_direction=(0,-.08,1)):
     bpy.context.view_layer.update()
     error=(rig.pose.bones["SOCKET_Grip."+side].head-src(target)).length
     if error>.0002:raise ValueError(f"Child {side} IK residual {error:.6f} at {tuple(target)}")
+
+
+def street_foot(rig, side, phase):
+    foot = rig.pose.bones["foot." + side]
+    thigh = rig.pose.bones["thigh." + side]
+    shin = rig.pose.bones["shin." + side]
+    stance = .52
+    swing = max(0., (phase - stance) / (1. - stance))
+    height = .090 * math.sin(math.pi * swing) ** 2
+    forward = STREET_CYCLE_METRES * (.5 * stance - phase + smooth(swing))
+    target = src((-.079 if side == "L" else .079, .065 + height, forward))
+    hip = thigh.head.copy()
+    delta = target - hip
+    distance = delta.length
+    a, b = thigh.length, shin.length
+    if not abs(a-b) < distance < a+b:
+        raise ValueError(f"Street walk foot {side} cannot reach at phase {phase:.3f}")
+    axis = delta.normalized()
+    hint = src((0,0,1))
+    pole = (hint - axis * hint.dot(axis)).normalized()
+    along = (a*a - b*b + distance*distance) / (2*distance)
+    knee = hip + axis*along + pole*math.sqrt(a*a - along*along)
+    aim(rig, thigh.name, knee - hip)
+    aim(rig, shin.name, target - shin.head)
+    if (foot.head - target).length > .0002:
+        raise ValueError("Street walk lost its authored foot position")
+    pitch = 23 * math.sin(2 * math.pi * swing) * math.sin(math.pi * swing)
+    rotation = Quaternion(src((1,0,0)), math.radians(pitch)) @ rig.data.bones[foot.name].matrix_local.to_quaternion()
+    foot.matrix = Matrix.LocRotScale(foot.head.copy(), rotation, Vector((1,1,1)))
+    bpy.context.view_layer.update()
+
+
+def street_walk(rig, phase):
+    # Each planted shoe travels backwards at exactly the route's cycle speed.
+    # Catch the weight low, rise briskly over the supporting leg, then settle.
+    step = (phase * 2) % 1.
+    rise = math.sin(math.pi * step) ** 2
+    swing = math.cos(math.tau * phase)
+    move_pelvis(rig, (.016 * math.sin(math.tau * phase), .568 + .036 * rise, 0))
+    rotate(rig, "chest", (0,1,0), -7 * swing)
+    rotate(rig, "chest", (1,0,0), -3 + 2 * rise)
+    for side, sign in (("L",1),("R",-1)):
+        rotate(rig, "upper_arm." + side, (1,0,0), -26 * sign * swing)
+        rotate(rig, "forearm." + side, (1,0,0), -11 - 8 * abs(swing))
+        street_foot(rig, side, (phase + (0. if side == "L" else .5)) % 1.)
 
 
 def held(rig,kind,t=0.):
@@ -135,6 +181,8 @@ def construct(rig,name,phase):
     elif name=="Idle":
         rotate(rig,"chest",(1,0,0),.45*math.sin(phase*2*math.pi))
         rotate(rig,"head",(0,1,0),1.5*math.sin(phase*2*math.pi))
+    elif name=="StreetWalk":
+        street_walk(rig, phase % 1.)
     elif name=="Walk":
         wave=math.sin(2*math.pi*phase)
         for side,sign in (("L",1),("R",-1)):

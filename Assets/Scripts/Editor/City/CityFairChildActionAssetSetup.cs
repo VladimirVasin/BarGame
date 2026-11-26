@@ -127,7 +127,8 @@ namespace BarPromenade.Editor
                 int separator = clip.name.LastIndexOf('|');
                 if (separator >= 0) clip.name = clip.name.Substring(separator + 1);
                 string action = clip.name.Substring("FairChild".Length);
-                clip.loopTime = action == "Idle" || action == "Walk" || action.EndsWith("Loop", StringComparison.Ordinal);
+                clip.loopTime = action == "Idle" || action == "Walk" || action == "StreetWalk" ||
+                    action.EndsWith("Loop", StringComparison.Ordinal);
                 clip.loopPose = clip.loopTime;
             }
             importer.clipAnimations = clips;

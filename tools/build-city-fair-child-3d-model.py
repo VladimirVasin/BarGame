@@ -489,14 +489,15 @@ def triangle_count(parts):
     return sum(kit.triangle_count(component[0]) for part in parts for component in part.components)
 
 
-def face_atlas():
+def face_atlas(faces=None):
     canvas = atlas_kit.PixelCanvas(512,512)
     canvas.rect(0,0,512,512,(*SKIN,255))
-    faces = [
-        (43,85,64,83,5,18, (91,76,47), 1, True),
-        (44,84,62,82,4,15, (78,87,73), -1, False),
-        (41,87,65,84,5,16, (103,78,50), 0, True),
-    ]
+    if faces is None:
+        faces = [
+            (43,85,64,83,5,18, (91,76,47), 1, True),
+            (44,84,62,82,4,15, (78,87,73), -1, False),
+            (41,87,65,84,5,16, (103,78,50), 0, True),
+        ]
     for row,(left,right,nose,mouth,eye_height,mouth_width,iris,tilt,freckles) in enumerate(faces):
         for expression in range(4):
             ox,oy = expression*128,row*128
@@ -573,8 +574,8 @@ def create_material(texture,path):
     mat=bpy.data.materials.new("FairChild_"+texture);mat.use_nodes=True
     shader=mat.node_tree.nodes.get("Principled BSDF");shader.inputs["Roughness"].default_value=.80
     node=mat.node_tree.nodes.new("ShaderNodeTexImage");node.image=bpy.data.images.load(str(path/(texture+".png")),check_existing=True)
-    node.interpolation="Closest" if texture in ("ChildFace","ToyWood") else "Linear"
-    if texture=="ChildFace":
+    node.interpolation="Closest" if texture in ("ChildFace","StreetGirlFace","ToyWood") else "Linear"
+    if texture in ("ChildFace", "StreetGirlFace"):
         coord=mat.node_tree.nodes.new("ShaderNodeTexCoord")
         mapping=mat.node_tree.nodes.new("ShaderNodeVectorMath");mapping.operation="MULTIPLY_ADD"
         mapping.inputs[1].default_value=(.25,.25,1)
@@ -800,14 +801,14 @@ def part_bounds(parts):
 def rounded(values):return [round(float(v),6) for v in values]
 
 
-def manifest(parts,props,textures):
+def manifest(parts,props,textures,outfits=OUTFITS,generator=None,version=VERSION):
     records=[]
     for part in parts:
         low,high=part_bounds([part])
         records.append(dict(name=part.name,texture=part.texture,outfit=part.outfit,visible_body=part.visible,
             triangles=triangle_count([part]),bounds_min=rounded(low),bounds_max=rounded(high)))
     variants=[]
-    for outfit in OUTFITS:
+    for outfit in outfits:
         visible=[p for p in parts if p.visible or p.outfit==outfit]
         low,high=part_bounds(visible);count=triangle_count(visible)
         if count>12000:raise RuntimeError(f"Child {outfit} exceeds the visible triangle ceiling: {count}")
@@ -818,11 +819,11 @@ def manifest(parts,props,textures):
         geom=kit.merge_all(g for solids in prop.parts.values() for g in solids);low,high=kit.bounds(geom)
         prop_records.append(dict(name=prop.name,bounds_min=rounded(low),bounds_max=rounded(high),triangles=kit.triangle_count(geom),
             anchors=[dict(name=n,position=a["position"],parent=a["parent"]) for n,a in prop.anchors.items()]))
-    signature_data=dict(version=VERSION,bones=bone_specs(),parts=[dict(name=p.name,components=[
+    signature_data=dict(version=version,bones=bone_specs(),parts=[dict(name=p.name,components=[
         dict(binding=c[1],tile=c[2],vertices=[rounded(v) for v in c[0][0]],faces=c[0][1],uv=c[3]) for c in p.components]) for p in parts],
         textures={name:hashlib.sha256(canvas.png_bytes()).hexdigest() for name,canvas in textures.items()})
     checksum=hashlib.sha256(json.dumps(signature_data,sort_keys=True,separators=(",",":")).encode()).hexdigest()
-    return dict(generator="tools/build-city-fair-child-3d-model.py",generator_version=VERSION,blender_version=bpy.app.version_string,
+    return dict(generator=generator or "tools/build-city-fair-child-3d-model.py",generator_version=version,blender_version=bpy.app.version_string,
         build_signature=checksum,height_m=HEIGHT,bone_count=len(bone_specs()),forward="Unity +Z / Blender +Y",anatomical_left="-X",
         shared_body_triangles=triangle_count([p for p in parts if p.outfit is None]),
         shared_visible_body_triangles=triangle_count([p for p in parts if p.visible]),
@@ -836,9 +837,9 @@ def canonical(name):
     return pieces[0] if len(pieces)==2 and pieces[1].isdigit() else name
 
 
-def verify_fbx(path,payload,verify_props=True):
+def verify_fbx(path,payload,verify_props=True,model_name="FairChild"):
     bpy.ops.wm.read_factory_settings(use_empty=True)
-    bpy.ops.import_scene.fbx(filepath=str(path/"FairChild.fbx"),use_anim=False)
+    bpy.ops.import_scene.fbx(filepath=str(path/(model_name+".fbx")),use_anim=False)
     bpy.context.view_layer.update()
     objects={canonical(obj.name):obj for obj in bpy.context.scene.objects}
     for part in payload["parts"]:

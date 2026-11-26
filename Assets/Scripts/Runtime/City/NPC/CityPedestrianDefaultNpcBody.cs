@@ -67,7 +67,8 @@ namespace BarPromenade
                 actor.name = "Character";
                 // Face the wrapper's +Z the way every route-driven walker
                 // does, measured live as the port and the fair measure it.
-                CityPortCrew.AlignWorkerModelWithPlacement(actor);
+                if (!DefaultNpcCatalog.IsStreetChild(assignment.ModelId))
+                    CityPortCrew.AlignWorkerModelWithPlacement(actor);
                 // From here on one graph writes this body: the pedestrian
                 // presentation's. The village sampler rebuilds itself only
                 // if someone calls it, and nobody on the street does.

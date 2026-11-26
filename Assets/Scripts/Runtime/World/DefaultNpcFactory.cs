@@ -64,7 +64,7 @@ namespace BarPromenade
             try
             {
                 var presentation = instance.GetComponent<VillageResidentPresentation>();
-                if (initializeLocomotion)
+                if (initializeLocomotion && !DefaultNpcCatalog.IsStreetChild(modelId))
                 {
                     presentation.Initialize();
                     NpcFootstepSources.Register(instance.transform);

@@ -107,7 +107,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Cannery woman | Seamer/painted face/actions; hair contacts 8→2 afar with continuous time; camera/near keeps full; speech/pause. | `CanneryWoman{AssetProvider,Presentation,Hair,Wardrobe}`, `CanneryWomanAssetSetup` | Current |
 | Cannery receiver | Athletic 1.96 m actor/ski hat/3D glasses/painted face; own actions, shared contacts/speech/pause. | `CanneryReceiver{AssetProvider,Presentation}`, `CanneryReceiverAssetSetup` | Current |
 | Authored NPC outfits | Fixed outfits and modular items/slots/coverage/presets; editor selection. Gameplay clothing UI/save Deferred. | `NpcWardrobe`, `CanneryWomanWardrobe`, `NpcWardrobeEditor` | Current |
-| Global default NPCs | Stable men/women, shared surface maps, fitted Walk. | `DefaultNpc{Catalog,Population,Factory,Appearance,BodyShape}` | Current |
+| Global default NPCs | Stable adult/child looks, shared surface maps. | `DefaultNpc{Catalog,Population,Factory,Appearance,BodyShape}` | Current |
 | Hand poses | Hero/NPC authored cylindrical grip; independent weights, neutral release and surface alignment. | `NpcHandPose`, `CityCanneryController.DriverHands` | Current |
 | Cemetery mourner | The grave-side mourner uses her own authored presence, gestures and localized response. | `CemeteryMourner{Provider,Plan,Timeline,Presentation,Factory}`, `CityCemeteryMournerController` | Current |
 | Cemetery watchman and gate lodge | The watchman and lodge provide the authored grave-work offer and payment interaction. | `CemeteryWatchman{Provider,Plan,Quips,Interaction,Presentation,Factory}`, `CityCemeteryPlanner.AddLodge` | Current |
@@ -136,7 +136,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Central Park surfaces | The divided park uses shared gravel, paths and bridge geometry from its pure surface plan. | `CityParkSurfaceAppearance`, `CityWorldBuilder` | Current |
 | Pedestrian personal space | Above alcohol `60`: guarding palm; above `80`: close shove. | `CityPedestrianPersonalSpace{Rules,Controller}`, `PlayerMotor` | Current |
 | Pedestrian street insults | Insult responses need the authored proximity/facing gates; the twenty-line bag deals once a round, surviving reloads. | `CityPedestrianInsult{Rules,Lines,Walk,SessionState,Controller}`, `CityPedestrianPersonalSpaceController` | Current |
-| City/Home pedestrians | 192 commutes. City ≤36 + ≤12 walks/rail rests + ≤2 janitors. Balcony smokers lean. Hero/peer glances. Home 5/2. | `CityResidentJourneyDirector`, `CityPedestrianDirector`, `CityAmbientPedestrians`, `CityJanitorDirector` | Current |
+| City/Home pedestrians | 192 commutes. City ≤36 + ≤12 ambient (≤2 children) + ≤2 janitors. Home 5/2. | `CityResidentJourneyDirector`, `CityPedestrianDirector`, `CityAmbientPedestrians`, `CityJanitorDirector` | Current |
 | NPC Human V2 anatomy, appearance and visibility | Shared rigs; joint fields/volume and shaped hands/clothes retain UVs. | `NpcHumanV2AssetSetup`, `NpcDesignAppearanceCatalog`, `CharacterJointDeformation` | Current |
 | City district buses | Two/ring,shared transfers. Gap:no Home service/live map buses. | `City{District,Hillside}BusPlanner`, `CityBus{Director,Actor,Factory}` | Partial |
 | Midibus | Sedan lights, sliding leaves, fixed NPCs. | `CityBus{Presentation,DriverRig}` | Current |

@@ -18,16 +18,19 @@ namespace BarPromenade.Editor
             "ChildFace", "ChildSkin", "ToyWood",
             "RaincoatAtlas", "QuiltedAtlas", "VestAtlas"
         };
+        private static readonly string[] GirlTextures =
+            { "StreetGirlFace", "BobJacketAtlas", "BraidedCoatAtlas", "BibOverallsAtlas" };
 
         public override uint GetVersion() => 2;
 
-        private bool IsModel => Models.Any(name => string.Equals(assetPath,
+        private bool IsGirlModel => string.Equals(assetPath, ModelFolder + "StreetGirls.fbx", StringComparison.OrdinalIgnoreCase);
+        private bool IsModel => IsGirlModel || Models.Any(name => string.Equals(assetPath,
             ModelFolder + name + ".fbx", StringComparison.OrdinalIgnoreCase));
 
         private void OnPreprocessModel()
         {
             if (!IsModel || !(assetImporter is ModelImporter importer)) return;
-            bool body = string.Equals(assetPath, ModelFolder + "FairChild.fbx", StringComparison.OrdinalIgnoreCase);
+            bool body = IsGirlModel || string.Equals(assetPath, ModelFolder + "FairChild.fbx", StringComparison.OrdinalIgnoreCase);
             importer.globalScale = 1f;
             importer.useFileScale = true;
             importer.bakeAxisConversion = true;
@@ -66,14 +69,15 @@ namespace BarPromenade.Editor
         private void OnPreprocessTexture()
         {
             string name = Path.GetFileNameWithoutExtension(assetPath);
-            if (!Textures.Contains(name) || !string.Equals(Path.GetDirectoryName(assetPath)?.Replace('\\', '/') + "/",
+            if ((!Textures.Contains(name) && !GirlTextures.Contains(name)) || !string.Equals(Path.GetDirectoryName(assetPath)?.Replace('\\', '/') + "/",
                 ModelFolder, StringComparison.OrdinalIgnoreCase) || !(assetImporter is TextureImporter importer)) return;
             importer.textureType = TextureImporterType.Default;
             importer.textureShape = TextureImporterShape.Texture2D;
             importer.sRGBTexture = true;
             importer.alphaSource = TextureImporterAlphaSource.None;
-            importer.filterMode = name == "ChildFace" || name == "ToyWood" ? FilterMode.Point : FilterMode.Bilinear;
-            importer.mipmapEnabled = name != "ChildFace";
+            bool face = name == "ChildFace" || name == "StreetGirlFace";
+            importer.filterMode = face || name == "ToyWood" ? FilterMode.Point : FilterMode.Bilinear;
+            importer.mipmapEnabled = !face;
             importer.wrapMode = TextureWrapMode.Clamp;
             importer.npotScale = TextureImporterNPOTScale.None;
             importer.maxTextureSize = 512;

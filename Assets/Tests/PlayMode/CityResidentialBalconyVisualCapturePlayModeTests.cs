@@ -713,7 +713,7 @@ namespace BarPromenade.Tests.PlayMode
             compatibilityRoot.transform.position =
                 new Vector3(1000f, 0f, 1000f);
 
-            var observed = DefaultNpcCatalog.ModelIds;
+            var observed = DefaultNpcCatalog.AdultModelIds;
             for (int index = 0; index < observed.Count; index++)
             {
                 string designId = observed[index];

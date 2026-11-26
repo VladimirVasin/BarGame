@@ -21,10 +21,12 @@ namespace BarPromenade
         private const float BalanceRadius = 26f;
         private const float MinimumEntryDistance = 7f;
         private const float SpawnSpacing = 4f;
+        private const int AdultLookCount = DefaultNpcPopulation.AmbientAppearancesPerGender * 2;
+        internal const int MaximumActiveChildren = 2;
         private static readonly ProfilerMarker TickMarker = new ProfilerMarker("City.AmbientPedestrians");
 
         private readonly Walker[] walkers = new Walker[MaximumActive];
-        private readonly Look[] looks = new Look[DefaultNpcPopulation.AmbientAppearancesPerGender * 2];
+        private readonly Look[] looks = new Look[AdultLookCount + DefaultNpcPopulation.AmbientChildCount];
         private readonly List<CityAmbientWalkPlan.Entry> entries = new List<CityAmbientWalkPlan.Entry>(96);
         private readonly List<SpawnCandidate> candidates = new List<SpawnCandidate>(MaximumEntryProbes);
         private readonly CityAmbientWalking.Contact[] contacts = new CityAmbientWalking.Contact[MaximumStreetBodies + 1];
@@ -36,6 +38,7 @@ namespace BarPromenade
         private int[] lanePopulation;
         private int railVisits;
         private int cachedBodies;
+        private int activeChildren;
         private int serial;
         private uint entrySearch;
         private float spawnCountdown, crowdCheckCountdown;
@@ -82,7 +85,13 @@ namespace BarPromenade
             ambient.hero = city.Player.GameObject.transform;
             var playerBody = ambient.hero.GetComponent<CharacterController>();
             ambient.heroRadius = playerBody != null ? playerBody.radius : .32f;
-            ambient.plan = new CityAmbientWalkPlan(city.PedestrianPlan, city.Layout, city.BusPlans);
+            var childExclusions = new List<Rect>();
+            if (HomeYardSitePlanner.Create(city.Layout) is HomeYardSitePlan barYard)
+                childExclusions.Add(barYard.GroundBounds);
+            foreach (CityFringeYardDescriptor yard in city.World.FringeYardPlan.Yards)
+                if (yard.Kind == CityFringeYardKind.EastUtilityEdge)
+                    childExclusions.Add(yard.AreaBounds);
+            ambient.plan = new CityAmbientWalkPlan(city.PedestrianPlan, city.Layout, city.BusPlans, childExclusions);
             ambient.movement = new CityAmbientWalking(ambient.plan, pavement, CityStreetSupportPlan.ForLayout(city.Layout),
                 city.Pedestrians.VehicleTraffic);
             ambient.lanePopulation = new int[city.PedestrianPlan.Links.Count];
@@ -217,7 +226,9 @@ namespace BarPromenade
                     !movement.HasClearance(chosen.Position) ||
                     !movement.HasClearance(ahead))
                     continue;
-                return Spawn(chosen, direction);
+                int childTarget = Mathf.Min(MaximumActiveChildren, Target() / 5);
+                bool child = !warming && activeChildren < childTarget && plan.AllowsChild(chosen.Link);
+                return Spawn(chosen, direction, child: child) || child && Spawn(chosen, direction);
             }
             return false;
         }
@@ -291,12 +302,15 @@ namespace BarPromenade
                 hit.rigidbody == null && !(hit.collider is CharacterController);
         }
 
-        private bool Spawn(CityAmbientWalkPlan.Entry entry, int direction, CityRailRestSpot? rest = null)
+        private bool Spawn(CityAmbientWalkPlan.Entry entry, int direction, CityRailRestSpot? rest = null, bool child = false)
         {
             int slot = 0;
             while (slot < walkers.Length && walkers[slot].Encounter != 0) slot++;
             if (slot == walkers.Length) return false;
-            int look = AcquireLook(PreferWoman());
+            int look = child
+                ? AcquireLook(AdultLookCount, DefaultNpcPopulation.AmbientChildCount)
+                : AcquireLook(PreferWoman() ? DefaultNpcPopulation.AmbientAppearancesPerGender : 0,
+                    DefaultNpcPopulation.AmbientAppearancesPerGender);
             if (look < 0) return false;
             int encounter = ++serial;
             uint hash = CityPedestrianStableHash.Combine(city.PedestrianPlan.StableSeed, unchecked((uint)encounter));
@@ -334,10 +348,11 @@ namespace BarPromenade
             walkers[slot] = new Walker
             {
                 Encounter = encounter, Look = look, RailWorld = rest.HasValue ? city.World : null,
-                Walk = new CityAmbientWalking.Route(entry.Link, direction, entry.Distance),
+                Walk = new CityAmbientWalking.Route(entry.Link, direction, entry.Distance, child),
                 Speed = pace * CityResidentWorld.WalkingSpeed
             };
             ActiveCount++;
+            if (child) activeChildren++;
             return true;
         }
 
@@ -361,7 +376,7 @@ namespace BarPromenade
             }
             foreach (Walker walker in walkers)
             {
-                if (walker.Encounter == 0 ||
+                if (walker.Encounter == 0 || walker.Walk.IsChild ||
                     (looks[walker.Look].Body.transform.position - hero.position).sqrMagnitude > EntryRadius * EntryRadius)
                     continue;
                 // Count arrivals approaching from just outside the shot, too.
@@ -371,12 +386,11 @@ namespace BarPromenade
             return CityResidentLifeRules.PreferWomanForNextArrival(count, women);
         }
 
-        private int AcquireLook(bool woman)
+        private int AcquireLook(int first, int count)
         {
-            int first = woman ? DefaultNpcPopulation.AmbientAppearancesPerGender : 0;
             int free = -1;
             int cached = -1;
-            for (int i = first; i < first + DefaultNpcPopulation.AmbientAppearancesPerGender; i++)
+            for (int i = first; i < first + count; i++)
             {
                 if (looks[i].Leased) continue;
                 if (looks[i].Body == null)
@@ -385,9 +399,14 @@ namespace BarPromenade
                 }
                 else if (cached < 0 || looks[i].LastUse < looks[cached].LastUse) cached = i;
             }
-            if (cached >= 0 && (cachedBodies >= MaximumCachedBodies || free < 0 ||
-                serial - looks[cached].LastUse >= 12))
-                return cached;
+            if (cached >= 0)
+            {
+                if (free < 0) return cached;
+                bool reuse = first == AdultLookCount
+                    ? looks[cached].LastUse <= looks[free].LastUse
+                    : cachedBodies >= MaximumCachedBodies || serial - looks[cached].LastUse >= 12;
+                if (reuse) return cached;
+            }
             if (free < 0) return -1;
 
             if (cachedBodies >= MaximumCachedBodies)
@@ -402,7 +421,9 @@ namespace BarPromenade
                 looks[oldest].Body = null;
                 cachedBodies--;
             }
-            string id = DefaultNpcPopulation.AmbientPedestrianId(free - first, woman);
+            string id = first == AdultLookCount
+                ? DefaultNpcPopulation.AmbientChildId(free - first)
+                : DefaultNpcPopulation.AmbientPedestrianId(free - first, IsWoman(first));
             looks[free].Body = CityPedestrianFactory.CreateAmbientPresentation(transform, id);
             cachedBodies++;
             return free;
@@ -447,7 +468,7 @@ namespace BarPromenade
             contacts[index] = new CityAmbientWalking.Contact(walker.Encounter, position, CityAmbientWalking.Radius, walker.Walk);
             body.transform.SetPositionAndRotation(position, Quaternion.RotateTowards(body.transform.rotation,
                 Quaternion.LookRotation(facing), 210f * delta));
-            body.UpdateStreetAttention(heroHead, city.Pedestrians);
+            if (!walker.Walk.IsChild) body.UpdateStreetAttention(heroHead, city.Pedestrians);
             body.AdvanceTravelled(delta, moving, position - previous);
 
             if (walker.Walk.Stopped < 1.5f || !GameLog.IsVerbose || walker.Age < walker.NextBlockedLog) return;
@@ -504,9 +525,10 @@ namespace BarPromenade
             looks[walker.Look].Leased = false;
             walkers[index] = default;
             ActiveCount--;
+            if (walker.Walk.IsChild) activeChildren--;
         }
 
-        private static bool IsWoman(int look) => look >= DefaultNpcPopulation.AmbientAppearancesPerGender;
+        private static bool IsWoman(int look) => look >= DefaultNpcPopulation.AmbientAppearancesPerGender && look < AdultLookCount;
 
         private void OnDisable()
         {

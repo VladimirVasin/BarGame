@@ -88,6 +88,9 @@ namespace BarPromenade
         private float pendingEvaluationTime;
         private float walkCycleMetres;
         private float pendingWalkSeconds;
+        private DefaultNpcAppearance streetBlink;
+        private float streetBlinkPhase;
+        private const float StreetBlinkPeriod = 4.1f;
         private float groundedFootHeightOffset;
         private bool groundedFootHeightOffsetCaptured;
         private float archetypeGroundTrim;
@@ -183,7 +186,11 @@ namespace BarPromenade
             var defaultBody = registry.GetComponent<CityPedestrianDefaultNpcBody>();
             defaultBodyShape = defaultBody != null && defaultBody.Character != null
                 ? defaultBody.Character.GetComponent<DefaultNpcBodyShape>() : null;
-            walkCycleMetres = defaultBody != null && defaultBody.Character != null
+            if (registry.DesignId == DefaultNpcCatalog.StreetGirl && defaultBody != null)
+                streetBlink = defaultBody.Character.GetComponent<DefaultNpcAppearance>();
+            walkCycleMetres = DefaultNpcCatalog.IsStreetChild(registry.DesignId)
+                ? CityFairChildActions.StreetCycleMetres
+                : defaultBody != null && defaultBody.Character != null
                 ? CityPedestrianResources.DefaultNpcWalkCycleMetres * defaultBody.Character.transform.localScale.y : 0f;
             if (registry.Animator == null ||
                 registry.IdleClip == null ||
@@ -265,6 +272,7 @@ namespace BarPromenade
             float phase = IsFinite(phase01)
                 ? Mathf.Repeat(phase01, 1f)
                 : 0f;
+            streetBlinkPhase = phase * StreetBlinkPeriod;
             pendingEvaluationTime = 0f;
             pendingWalkSeconds = 0f;
             MinimumEvaluationInterval = 0f;
@@ -789,6 +797,11 @@ namespace BarPromenade
                 pendingWalkSeconds = 0f;
             }
             graph.Evaluate(deltaTime);
+            if (streetBlink != null)
+            {
+                streetBlinkPhase = Mathf.Repeat(streetBlinkPhase + deltaTime, StreetBlinkPeriod);
+                streetBlink.SetEyesClosed(streetBlinkPhase >= StreetBlinkPeriod - .13f);
+            }
             if (IsStandingInBus)
             {
                 standing.Apply();
@@ -950,6 +963,7 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            if (streetBlink != null) streetBlink.SetEyesClosed(false);
             railRest?.Release();
             walkingThroughBusDoor = false;
             standing?.Release();
@@ -1122,6 +1136,7 @@ namespace BarPromenade
             leftSoles = new List<SkinnedMeshRenderer>();
             rightSoles = new List<SkinnedMeshRenderer>();
             IReadOnlyList<Renderer> renderers = registry.Renderers;
+            bool child = DefaultNpcCatalog.IsStreetChild(registry.DesignId);
             for (int index = 0; index < renderers.Count; index++)
             {
                 if (!(renderers[index] is SkinnedMeshRenderer skinned))
@@ -1131,12 +1146,14 @@ namespace BarPromenade
 
                 string rendererName = skinned.name ?? string.Empty;
                 if (rendererName.IndexOf("LeftBootSole", StringComparison.Ordinal) >= 0 ||
-                    rendererName.EndsWith("Sole.L", StringComparison.Ordinal))
+                    rendererName.EndsWith("Sole.L", StringComparison.Ordinal) ||
+                    child && rendererName.EndsWith("Boots.L", StringComparison.Ordinal))
                 {
                     leftSoles.Add(skinned);
                 }
                 else if (rendererName.IndexOf("RightBootSole", StringComparison.Ordinal) >= 0 ||
-                         rendererName.EndsWith("Sole.R", StringComparison.Ordinal))
+                         rendererName.EndsWith("Sole.R", StringComparison.Ordinal) ||
+                         child && rendererName.EndsWith("Boots.R", StringComparison.Ordinal))
                 {
                     rightSoles.Add(skinned);
                 }

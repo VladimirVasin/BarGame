@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using NUnit.Framework;
@@ -8,8 +9,162 @@ using Object = UnityEngine.Object;
 
 namespace BarPromenade.Tests.PlayMode
 {
+    public sealed class CityStreetChildAssetsSetup : IPrebuildSetup
+    {
+        public void Setup()
+        {
+#if UNITY_EDITOR
+            const string assembly = ", BarPromenade.Editor";
+            Type.GetType("BarPromenade.Editor.CityFairChildActionAssetSetup" + assembly, true)
+                .GetMethod("BuildOrThrow", Type.EmptyTypes).Invoke(null, null);
+            Type.GetType("BarPromenade.Editor.CityStreetChildAssetSetup" + assembly, true)
+                .GetMethod("BuildGirlsOrThrow", Type.EmptyTypes).Invoke(null, null);
+#endif
+        }
+    }
+
     public sealed partial class AreaCaptureFixture
     {
+        [UnityTest]
+        [Timeout(240000)]
+        [PrebuildSetup(typeof(CityStreetChildAssetsSetup))]
+        [Explicit("Review the live street child stride in City.")]
+        public IEnumerator CityAmbientChildren()
+        {
+            GameSessionState.BeginNewGame();
+            GameSessionState.PrepareHomeReturn();
+            Assert.That(GameSessionState.TryStartGameTimeAt(12 * 60), Is.True);
+            AsyncOperation load = SceneManager.LoadSceneAsync(SceneIds.City, LoadSceneMode.Single);
+            CityGameRoot city = null;
+            float deadline = Time.realtimeSinceStartup + TimeoutSeconds * 2f;
+            while (Time.realtimeSinceStartup < deadline)
+            {
+                city = Object.FindAnyObjectByType<CityGameRoot>();
+                if (load.isDone && city != null && city.IsInitialized && !CompositionDriver.IsComposing) break;
+                yield return null;
+            }
+            Assert.That(city != null && city.IsInitialized && !CompositionDriver.IsComposing, Is.True,
+                "City did not finish composing before the scene deadline.");
+
+            CityAmbientPedestrians ambient = city.AmbientPedestrians;
+            CityAmbientWalkPlan walkPlan = ambient.WalkPlan;
+            bool stair = false, excluded = false;
+            for (int i = 0; i < city.PedestrianPlan.Links.Count; ++i)
+            {
+                if (walkPlan.Length(i) <= 0f) continue;
+                stair |= walkPlan.IsStair(i) && walkPlan.AllowsChild(i);
+                excluded |= !walkPlan.AllowsChild(i);
+            }
+            Assert.That(stair && excluded, Is.True, "The child graph includes stairs and preserves the quiet places.");
+
+            var looks = new HashSet<string>();
+            for (int i = 0; i < DefaultNpcPopulation.AmbientChildCount; ++i)
+            {
+                var assignment = DefaultNpcPopulation.GetAssignment(DefaultNpcPopulation.AmbientChildId(i));
+                Assert.That(assignment.ModelId, Is.EqualTo(i % 2 == 0
+                    ? DefaultNpcCatalog.StreetChild : DefaultNpcCatalog.StreetGirl));
+                Assert.That(looks.Add(assignment.FaceId), Is.True);
+            }
+            CityPedestrianPresentation walkingChild = null;
+            var children = new HashSet<string>();
+            deadline = Time.realtimeSinceStartup + 25f;
+            while (Time.realtimeSinceStartup < deadline && (walkingChild == null || children.Count < 2))
+            {
+                int activeChildren = 0;
+                for (int slot = 0; slot < CityAmbientPedestrians.MaximumActive; slot++)
+                {
+                    CityPedestrianPresentation body = ambient.GetWalkerBody(slot);
+                    if (body == null || !DefaultNpcCatalog.IsStreetChild(body.Registry.DesignId)) continue;
+                    activeChildren++;
+                    Assert.That(body.IsRestingAtRail || body.IsInBus || body.AuthoredActionClip != null, Is.False);
+                    Assert.That(body.Registry.WalkClip.name, Is.EqualTo("FairChildStreetWalk"));
+                    Assert.That(body.Registry.SitClip, Is.Null);
+                    Assert.That(body.GetComponentsInChildren<Collider>(true), Is.Empty);
+                    children.Add(body.Registry.GetComponent<CityPedestrianDefaultNpcBody>().CharacterId);
+                    if (body.Registry.DesignId == DefaultNpcCatalog.StreetGirl && body.IsMoving && body.WalkWeight > .95f)
+                        walkingChild = body;
+                }
+                Assert.That(activeChildren, Is.LessThanOrEqualTo(CityAmbientPedestrians.MaximumActiveChildren));
+                Assert.That(ambient.ActiveCount, Is.LessThanOrEqualTo(CityAmbientPedestrians.MaximumActive));
+                if (walkingChild != null && !walkingChild.isActiveAndEnabled) walkingChild = null;
+                if (walkingChild == null || children.Count < 2) yield return null;
+            }
+            Assert.That(children.Count, Is.GreaterThanOrEqualTo(2));
+            Assert.That(walkingChild, Is.Not.Null);
+
+            Camera camera = city.Camera;
+            Vector3 savedPosition = camera.transform.position;
+            Quaternion savedRotation = camera.transform.rotation;
+            float savedFov = camera.fieldOfView;
+            PlayerCameraFollow follow = camera.GetComponent<PlayerCameraFollow>();
+            bool wasFollowing = follow != null && follow.enabled;
+            if (follow != null) follow.enabled = false;
+            try
+            {
+                using (GameTimeScaleRuntime.AcquirePause())
+                {
+                    Transform child = walkingChild.transform;
+                    Vector3 focus = child.position + child.up * .65f;
+                    camera.fieldOfView = 40f;
+                    camera.transform.SetPositionAndRotation(focus + child.right * 2.9f + child.forward * 1.5f + child.up * .25f,
+                        Quaternion.LookRotation(-child.right * 2.9f - child.forward * 1.5f - child.up * .25f));
+                    walkingChild.ConfigureCycle(1f, .0f);
+                    walkingChild.Advance(0f, true, true);
+                    float low = walkingChild.Registry.PelvisAnchor.position.y;
+                    ChildFrame("01-live-weight-transfer");
+                    walkingChild.ConfigureCycle(1f, .25f);
+                    walkingChild.Advance(0f, true, true);
+                    Assert.That(walkingChild.Registry.PelvisAnchor.position.y - low, Is.GreaterThan(.015f));
+                    ChildFrame("02-live-spring");
+                    for (int frame = 0; frame < 16; frame++) walkingChild.Advance(.025f, false);
+                    Assert.That(walkingChild.WalkWeight, Is.EqualTo(0f).Within(.0001f));
+                    ambient.enabled = false;
+                    Assert.That(ambient.ActiveCount, Is.Zero);
+                    Assert.That(walkingChild.gameObject.activeSelf, Is.False);
+
+                    AnimationClip walkClip = walkingChild.Registry.WalkClip;
+                    for (int i = 1; i < DefaultNpcPopulation.AmbientChildCount; i += 2)
+                    {
+                        var girl = CityPedestrianFactory.CreateAmbientPresentation(ambient.transform,
+                            DefaultNpcPopulation.AmbientChildId(i));
+                        try
+                        {
+                            girl.transform.SetPositionAndRotation(child.position, child.rotation);
+                            girl.gameObject.SetActive(true);
+                            Assert.That(girl.Registry.WalkClip, Is.SameAs(walkClip));
+                            var face = System.Array.Find(girl.Registry.Animator.GetComponentsInChildren<SkinnedMeshRenderer>(),
+                                renderer => renderer.name == CityFairChildAssetProvider.FaceRendererName);
+                            Assert.That(face, Is.Not.Null);
+                            var properties = new MaterialPropertyBlock();
+                            for (int phase = 0; phase < 2; phase++)
+                            {
+                                girl.ConfigureCycle(1f, phase == 0 ? .12f : .98f);
+                                girl.Advance(0f, true, true);
+                                face.GetPropertyBlock(properties);
+                                Vector4 tile = properties.GetVector("_BaseMap_ST");
+                                Assert.That(tile.z, Is.EqualTo(phase == 0 ? 0f : .5f));
+                                Assert.That(tile.w, Is.EqualTo(.75f - .25f * (i / 2)));
+                                ChildFrame($"outfit-{i / 2 + 1}-phase-{phase + 1}");
+                            }
+                        }
+                        finally
+                        {
+                            girl.gameObject.SetActive(false);
+                            Object.Destroy(girl.gameObject);
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                if (follow != null) follow.enabled = wasFollowing;
+                camera.fieldOfView = savedFov;
+                camera.transform.SetPositionAndRotation(savedPosition, savedRotation);
+            }
+
+            void ChildFrame(string frame) => CaptureCurrentCamera(camera, "CityAmbientChildren", frame, 960, 720);
+        }
+
         [UnityTest]
         [Timeout(150000)]
         [Explicit("Observe both street populations on a normal walk from the home door.")]

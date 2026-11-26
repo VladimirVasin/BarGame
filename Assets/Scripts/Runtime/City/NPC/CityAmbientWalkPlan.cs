@@ -13,6 +13,7 @@ namespace BarPromenade
         private readonly CityPedestrianPlan streets;
         private readonly float[] lengths;
         private readonly bool[] busy;
+        private readonly bool[] childLinks;
         private readonly Dictionary<Vector2Int, List<Entry>> cells = new Dictionary<Vector2Int, List<Entry>>();
 
         internal readonly struct Entry
@@ -30,11 +31,12 @@ namespace BarPromenade
         }
 
         public CityAmbientWalkPlan(CityPedestrianPlan streets, CityLayout layout = null,
-            IReadOnlyList<CityBusPlan> busPlans = null)
+            IReadOnlyList<CityBusPlan> busPlans = null, IReadOnlyList<Rect> childExclusions = null)
         {
             this.streets = streets;
             lengths = new float[streets.Links.Count];
             busy = new bool[lengths.Length];
+            childLinks = new bool[lengths.Length];
             var platforms = new List<Vector3>();
             var publicEntrances = new List<Vector3>();
             if (layout != null)
@@ -61,6 +63,7 @@ namespace BarPromenade
                     continue;
 
                 lengths[index] = length;
+                childLinks[index] = !TouchesChildExclusion(link.Path, first, last, childExclusions);
                 // Arrivals use open pavements. Stair flights and their landings
                 // are connected travel, including the final join to the sidewalk.
                 if (stair) continue;
@@ -88,6 +91,7 @@ namespace BarPromenade
         public float Length(int link) => lengths[link];
         public string LinkId(int link) => streets.Links[link].Id;
         public bool IsStair(int link) => streets.Links[link].Kind == CityPedestrianLinkKind.Stair;
+        public bool AllowsChild(int link) => childLinks[link];
         public bool IsBusy(int link) => busy[link];
         public int LaneLimit(int link) => busy[link] && lengths[link] >= 14f ? 2 : 1;
 
@@ -152,6 +156,21 @@ namespace BarPromenade
                     (point - (start + delta * Mathf.Clamp01(Vector2.Dot(point - start, delta) / delta.sqrMagnitude))).sqrMagnitude;
                 if (distanceSquared < PlatformClearance * PlatformClearance) return true;
             }
+            return false;
+        }
+
+        private static bool TouchesChildExclusion(CityRoadPath path, Vector3 first, Vector3 last,
+            IReadOnlyList<Rect> exclusions)
+        {
+            if (exclusions == null) return false;
+            Rect bounds = path?.Bounds ?? Rect.MinMaxRect(Mathf.Min(first.x, last.x), Mathf.Min(first.z, last.z),
+                Mathf.Max(first.x, last.x), Mathf.Max(first.z, last.z));
+            // Include lateral manoeuvres around the centreline.
+            const float margin = 1f;
+            bounds = Rect.MinMaxRect(bounds.xMin - margin, bounds.yMin - margin,
+                bounds.xMax + margin, bounds.yMax + margin);
+            foreach (Rect exclusion in exclusions)
+                if (exclusion.Overlaps(bounds)) return true;
             return false;
         }
 
