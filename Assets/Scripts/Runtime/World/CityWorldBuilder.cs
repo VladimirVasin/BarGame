@@ -163,7 +163,8 @@ namespace BarPromenade
                 CityMountainBoundaryWorldBuilder.Build(
                     world,
                     layout,
-                    mountainBoundaryPlan);
+                    mountainBoundaryPlan,
+                    partition);
             CityFringeYardWorldResult fringeYard =
                 CityFringeYardWorldBuilder.Build(
                     world,

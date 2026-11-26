@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -8,7 +9,8 @@ namespace BarPromenade
     // four lower service yards. Low, buried blocks break the foot silhouette.
     internal static class CityMountainTalusWorldBuilder
     {
-        internal static void Build(Transform parent, CityLayout layout, CityMountainBoundaryPlan boundary)
+        internal static void Build(Transform parent, CityLayout layout, CityMountainBoundaryPlan boundary,
+            Predicate<Vector3> include)
         {
             var talus = CityMountainTalusPlan.ForLayout(layout);
             var ground = CityHillsideGroundPlan.ForLayout(layout);
@@ -50,13 +52,15 @@ namespace BarPromenade
                         }
                         if (!clear) continue;
                         Vector3 center = new Vector3(point.x, bottom + size.y * .5f - .46f, point.y);
+                        int meshIndex = variant++ % CityRockfallAssetProvider.VariantCount;
+                        if (include != null && !include(center)) continue;
                         var cell = new Vector2Int(Mathf.FloorToInt(center.x / 48f), Mathf.FloorToInt(center.z / 48f));
                         if (!batches.TryGetValue(cell, out var placements))
                         {
                             placements = new List<RuntimeMeshPlacement>();
                             batches.Add(cell, placements);
                         }
-                        placements.Add(new RuntimeMeshPlacement(CityRockfallAssetProvider.GetMesh(variant++ % CityRockfallAssetProvider.VariantCount),
+                        placements.Add(new RuntimeMeshPlacement(CityRockfallAssetProvider.GetMesh(meshIndex),
                             center, Quaternion.LookRotation(outward), size));
                     }
                 }

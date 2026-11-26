@@ -53,6 +53,72 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator RidgeStart_KeepsThePhysicalCliffAtTheReportedEdge()
+        {
+            yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
+            var blueprint = CityBlueprintCatalog.Default;
+            var settings = CityGenerationSettings.Default;
+            int seed = GameSessionState.DefaultCitySeed;
+            CityLayoutCache.PrimeCityPlans(blueprint, settings, seed, nameof(RidgeStart_KeepsThePhysicalCliffAtTheReportedEdge));
+            var plans = CityLayoutCache.WaitForPrimedPlans(blueprint, settings, seed);
+            yield return WaitForStreaming(() => plans == null || plans.IsCompleted, "menu plans ready");
+            CityLayoutCache.GetOrGenerate(blueprint, settings, seed);
+            Assert.That(NewGameStartService.TryStart(NewGameLocation.Ridge, 4 * 60 + 40), Is.True);
+            Assert.That(GameSessionState.TrySetDebugWeather(WeatherKind.HeavyRain), Is.True);
+            yield return WaitForDoorDestination(SceneIds.City);
+            var city = Object.FindAnyObjectByType<CityGameRoot>();
+            Assert.That(city.RidgeDistrictReady, Is.True);
+            Assert.That(city.LowerDistrictReady, Is.False);
+            var boundary = city.World.MountainBoundaryRoot;
+            Assert.That(boundary, Is.Not.Null, "A Ridge-only arrival must build the physical mountains.");
+            Assert.That(boundary.scene.name, Is.EqualTo(SceneIds.CityRidge));
+            var rim = boundary.transform.Find("Physical Ridges/mountain-south-east-outer-rim");
+            Assert.That(rim, Is.Not.Null);
+            var faces = rim.GetComponentsInChildren<MeshRenderer>();
+            var hero = city.Player;
+            hero.Motor.SetInputEnabled(false);
+            hero.Motor.Teleport(new Vector3(57.9f, 40.6f, -373.7f));
+            hero.GameObject.transform.rotation = Quaternion.LookRotation(Vector3.left);
+            Physics.SyncTransforms();
+            var camera = city.Camera;
+            var follow = camera.GetComponent<PlayerCameraFollow>();
+            follow.SetOrbitInputEnabled(false);
+            follow.Snap();
+            follow.RotateYaw(Mathf.DeltaAngle(camera.transform.eulerAngles.y, 90f));
+            follow.RotatePitch(-follow.CurrentOrbitPitch);
+            follow.Snap();
+            for (int frame = 0; frame < 8; frame++) yield return null;
+            Assert.That(city.LowerDistrictReady, Is.False);
+            Assert.That(RenderSettings.fog && city.Night.FogField.Particles.particleCount > 0, Is.True);
+            Assert.That(city.Rain.Intensity, Is.GreaterThan(.5f));
+
+            using (GameTimeScaleRuntime.AcquirePause())
+            {
+                foreach (var (name, yaw, horizontal) in new[] {
+                    ("streamed-rim-east", 90f, .82f), ("streamed-rim-south", 180f, .75f) })
+                {
+                    follow.RotateYaw(Mathf.DeltaAngle(camera.transform.eulerAngles.y, yaw));
+                    follow.Snap();
+                    if (SystemInfo.graphicsDeviceType != GraphicsDeviceType.Null)
+                        AreaCaptureFixture.CaptureCurrentCamera(camera, SceneIds.City, name);
+                    var ray = camera.ViewportPointToRay(new Vector3(horizontal, .5f));
+                    Assert.That(Physics.Raycast(ray, out var hit, 35f, Physics.DefaultRaycastLayers,
+                        QueryTriggerInteraction.Ignore) && hit.transform.IsChildOf(rim), Is.True,
+                        $"{name}: expected the rock in the shoulder camera, hit {hit.collider}.");
+                    if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.Null) continue;
+                    try
+                    {
+                        foreach (var face in faces) face.forceRenderingOff = true;
+                        AreaCaptureFixture.CaptureCurrentCamera(camera, SceneIds.City, name + "-hidden");
+                    }
+                    finally { foreach (var face in faces) face.forceRenderingOff = false; }
+                    Assert.That(AreaCaptureFixture.RimDifference(name, name + "-hidden", horizontal),
+                        Is.GreaterThan(8f), name + ": the cliff must remain distinguishable in predawn rain.");
+                }
+            }
+        }
+
+        [UnityTest]
         public IEnumerator MenuWarmup_ReusesSharedPlansAtTheStreetDoor()
         {
             CityLayoutCache.Reset();

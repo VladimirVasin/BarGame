@@ -5,7 +5,7 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-26
 
-Walking waves, cap/collar on a gust, swept leaves, elbow-held door, bus arrival looks and wet treads. `CityStreetGreetings_WalkersWaveInTurnWithoutBreakingStride`, `CityStreetGusts_HatAndCollarFollowWalkingBodiesOnSeparateCrests`, `JanitorRecoversLeafOnSlopingPavement`, `DoorCourtesy_ElbowHoldsForNeighbourAndCloserWaits`, `LiveCity_WetShoesMarkTheShelterAndWaitersNoticeTheirOwnBus`. Queue entry follows the verified pavement branch. `LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement`: 01-05 yields to a resident at their destination or the hero.
+Walking greetings, gusts, swept leaves, elbow-held doors, bus looks and wet treads. `CityStreetGreetings_WalkersWaveInTurnWithoutBreakingStride`, `CityStreetGusts_HatAndCollarFollowWalkingBodiesOnSeparateCrests`, `JanitorRecoversLeafOnSlopingPavement`, `DoorCourtesy_ElbowHoldsForNeighbourAndCloserWaits`, `LiveCity_WetShoesMarkTheShelterAndWaitersNoticeTheirOwnBus`. `LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement` checks queue access and 01-05 yielding to residents and the hero.
 
 Pie: palm supports wrapper, slower. `SelectionAndExamine_UsePureMenuState` ate at zero. `InventoryPieClosesAndPlaysThreeBitesWipeAndBurp` exposed wrist bend before the last bite.
 
@@ -14,7 +14,8 @@ Pie: palm supports wrapper, slower. `SelectionAndExamine_UsePureMenuState` ate a
 `WorldTonalReadability`: stairs, faces, night street. `CityNightSaturation`: balcony.
 `WorldContactFinishes`: rails, bus steps/grips, bar. `CharacterLightOnStreetAndInBar`: skin, cloth and hair.
 
-No clouds. `DirectionalAmbientWorld`, `CityStreetFogWalk`, `CityFogCheckpoint` (96 m), `CityRimFogVisibility`, `AlpineCliffFogSightline`, `SummitHome_BalconyAndApartmentDoorLookDownIntoTheCity`. `CitySouthEastRimFogAtReportedEdge`: rock in rain.
+Clouds removed. `DirectionalAmbientWorld`, `CityStreetFogWalk`, `CityFogCheckpoint`, `CityRimFogVisibility`, `AlpineCliffFogSightline`, `SummitHome_BalconyAndApartmentDoorLookDownIntoTheCity`, `CitySouthEastRimFogAtReportedEdge`.
+`RidgeStart_KeepsThePhysicalCliffAtTheReportedEdge` checks Ridge-only cliffs at entry.
 
 Fair sellers/visitors walk home through both aisles. `CityFairDailyHours`: closing, seats, occupancy, reopening, assignments.
 

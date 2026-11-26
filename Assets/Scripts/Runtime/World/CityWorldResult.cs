@@ -151,7 +151,7 @@ namespace BarPromenade
 
         internal CityWorldResult(GameObject root, HomeEntrance home, RoadWalkableArea walkableArea,
             IReadOnlyList<Collider> shelters, CityLayout layout, CityMountainBoundaryPlan mountain,
-            IReadOnlyList<CityRailRestSpot> railRests)
+            GameObject mountainRoot, IReadOnlyList<CityRailRestSpot> railRests)
         {
             Root = RidgeRoot = root;
             RailRests = railRests;
@@ -166,6 +166,7 @@ namespace BarPromenade
             FencePlan = new RoadFencePlan(Array.Empty<RoadFenceSegmentDescriptor>(), Array.Empty<RoadFenceOpeningDescriptor>());
             ArchShelterPlan = CityArchShelterPlan.Absent;
             MountainBoundaryPlan = mountain;
+            MountainBoundaryRoot = mountainRoot;
             FringeYardPlan = CityFringeYardPlanner.Create(layout, mountain);
             barsById = new Dictionary<string, BarEntrance>(StringComparer.Ordinal);
         }

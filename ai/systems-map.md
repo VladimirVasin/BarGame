@@ -81,7 +81,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Coastal utilities | City/Ridge/Home share exterior mains, courtyard branches and east-beach sewers. | `CityCoastalInfrastructure*`, `CityElectrical*`, `CityWaterNetwork*` | Current |
 | City elevation/stairs | Shared heights align stairs, ground and collision. Closed hillside cuts. | `CityElevation*`, `CityTerrainSurfacePlan`, `CityHillsideStairCut` | Current |
 | Terraced City | Service walks, gable court, loft/keeper, lit phones, bins, shared door. | `CityHillside*`,`CityTerrace*`,`CityPawnshopDescent*`,`CityPigeon*`,`CityCourtDoorCourtesy` | Current |
-| City mountain boundary | Fractured cliffs, talus, river cave and dressed south portal. | `CityMountain{Boundary*,Talus*}`, `CityRockface*`, `CityFringeYard*`, `CitySouthTunnelArt` | Current |
+| City mountain boundary | Districts own their cliffs and talus. Lower City owns the river cave and south portal. | `CityMountain{Boundary*,Talus*}`, `CityRockface*`, `CityFringeYard*`, `CitySouthTunnelArt` | Current |
 | Eastern mainland view | Closed boom, dry canopy, door wash and wide road optic; shared traffic grade, fading skyline/glow. | `CityEastExit*`, `CityEastRoadProfile`, `CityEastDistance*` | Current |
 | City litter | 36 Blender variants off roads; dense east/no near repeats; solids block; finite shared palette per root. | `CityLitterCatalog`, `CityLitter{Plan,Planner,WorldBuilder,Instancer}`, `CityEastLitter*` | Current |
 | Eastern checkpoint guards | Distinct guards alternate physical patrols; shared pair/E bubbles, passive shoulder rifles, pause/cleanup. | `CityEastGuard{Duty,Plan,Controller}`, `EastGuardActor` | Current |

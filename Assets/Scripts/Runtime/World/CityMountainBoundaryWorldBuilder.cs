@@ -46,7 +46,9 @@ namespace BarPromenade
         internal static GameObject Build(
             Transform parent,
             CityLayout layout,
-            CityMountainBoundaryPlan plan)
+            CityMountainBoundaryPlan plan,
+            CityDistrictStreamingPlan partition = null,
+            bool ridgeOnly = false)
         {
             if (parent == null)
             {
@@ -71,7 +73,9 @@ namespace BarPromenade
             var root = new GameObject("Mountain Boundary");
             root.transform.SetParent(parent, false);
 
-            if (plan.HasSouthWestCornerClosure)
+            Predicate<Vector3> include = partition == null ? null :
+                ridgeOnly ? partition.IsRidge : partition.IsLower;
+            if (!ridgeOnly && plan.HasSouthWestCornerClosure)
             {
                 CityMountainBoundaryMeshFactory.CreateCornerClosure(
                     root.transform,
@@ -85,17 +89,18 @@ namespace BarPromenade
                 CityMountainBoundaryMeshFactory.CreateRidge(
                     ridges,
                     plan.Ridges[index],
-                    layout);
+                    layout,
+                    include);
             }
 
-            CityMountainTalusWorldBuilder.Build(root.transform, layout, plan);
+            CityMountainTalusWorldBuilder.Build(root.transform, layout, plan, include);
 
-            if (plan.HasTunnel)
+            if (!ridgeOnly && plan.HasTunnel)
             {
                 BuildTunnel(root.transform, plan.Tunnel, plan);
             }
 
-            if (plan.HasRiverCave)
+            if (!ridgeOnly && plan.HasRiverCave)
             {
                 BuildRiverCave(root.transform, plan.RiverCave);
             }

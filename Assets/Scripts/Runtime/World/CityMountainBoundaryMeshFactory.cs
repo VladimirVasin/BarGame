@@ -22,10 +22,11 @@ namespace BarPromenade
         private const float ShoulderHeightRatio = 0.34f;
         private const float BackHeightRatio = 0f;
 
-        internal static GameObject CreateRidge(
+        internal static void CreateRidge(
             Transform parent,
             CityMountainRidgeDescriptor ridge,
-            CityLayout layout = null)
+            CityLayout layout,
+            Predicate<Vector3> include)
         {
             if (parent == null)
             {
@@ -44,9 +45,7 @@ namespace BarPromenade
                     nameof(ridge));
             }
 
-            var root = new GameObject(ridge.StableId);
-            root.transform.SetParent(parent, false);
-
+            Transform root = null;
             float[] distances = CreateStationDistances(ridge.Stations);
             int first = 0;
             int chunkIndex = 0;
@@ -60,19 +59,21 @@ namespace BarPromenade
                     last++;
                 }
 
-                CreateChunk(
-                    root.transform,
-                    ridge,
-                    first,
-                    last,
-                    distances,
-                    chunkIndex,
-                    layout);
+                // Assign the existing chunk as a unit so its faces and collider
+                // load together. The index and UV distances span the whole strip.
+                Vector3 midpoint = (ridge.Stations[first].Toe + ridge.Stations[last].Toe) * .5f;
+                if (include == null || include(midpoint))
+                {
+                    if (root == null)
+                    {
+                        root = new GameObject(ridge.StableId).transform;
+                        root.SetParent(parent, false);
+                    }
+                    CreateChunk(root, ridge, first, last, distances, chunkIndex, layout);
+                }
                 first = last;
                 chunkIndex++;
             }
-
-            return root;
         }
 
         internal static GameObject CreateCornerClosure(

@@ -240,7 +240,7 @@ namespace BarPromenade.Tests.PlayMode
             finally { UnityEngine.Object.DestroyImmediate(screenshot); }
         }
 
-        private static float RimDifference(string first, string second, float horizontal = .5f)
+        internal static float RimDifference(string first, string second, float horizontal = .5f)
         {
             var image = new Texture2D(2, 2, TextureFormat.RGB24, false);
             try

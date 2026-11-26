@@ -465,7 +465,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   lower offset 5.35 m. Wires clear roads by 7 m and avoid bays, galleries and roofs
   along all 16 mesh segments. At most 64 poles/192 spans; one shared-material cable
   mesh. Home clips the same plan to its 64 m balcony view;
-- Blender facets share render/collision. `CityMountainTalusPlan` grades open
+- Districts stream cliff meshes with their colliders and boulders. `CityMountainTalusPlan` grades open
   toes. Upper/south tongues reach 1.6–3.6 m. West utility gaps rise 0.09 m within
   0.35 m, with full-width material/boulders. Terrain sampling matches physics.
   Doors/courts/routes stay clear. The crest spans
@@ -476,7 +476,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   unavailable-travel thought and walks the ordinary rig back to `6.5 m`.
   No tunnel transition handler or cave interaction. North remains sea;
   east has the closed mainland road below. Only real western and southern rock
-  appears inside the 96 m street radius. Rock retains its shape in the depth and normals passes as its colour fades into haze at 78–95 m. It uses SSAO and a 0.10 contrast floor.
+  appears within 96 m. Rock keeps depth and normals as it fades into haze at 78–95 m, with SSAO and a 0.10 contrast floor.
   The omitted `(-1,-1)` cell holds one textured natural-soil
   slope around `16.2°`, outside navigation behind the exact L-shaped road
   fence, with no steps/terraces/platforms. Outer wings follow sampled terrain

@@ -22,6 +22,8 @@ namespace BarPromenade
             yield return new CompositionStep("ridge_streets", .22f);
 
             CityMountainBoundaryPlan mountain = CityMountainBoundaryPlanner.Create(layout);
+            GameObject mountainRoot = CityMountainBoundaryWorldBuilder.Build(
+                root, layout, mountain, partition, ridgeOnly: true);
             RoadWalkableArea walkable = RoadWalkableArea.FromLayout(layout, mountain);
             HomeEntrance home = null;
             yield return BuildRidgeGroundAndHomes(root, layout, walkable, value => home = value, true);
@@ -47,7 +49,7 @@ namespace BarPromenade
 
             ground.SetGrassContext(layout);
             yield return ground.FinalizeSurfaceSteps(true);
-            completed(new CityWorldResult(root.gameObject, home, walkable, shelters, layout, mountain, railRests));
+            completed(new CityWorldResult(root.gameObject, home, walkable, shelters, layout, mountain, mountainRoot, railRests));
             yield return new CompositionStep("ridge_complete", 1f);
         }
 
