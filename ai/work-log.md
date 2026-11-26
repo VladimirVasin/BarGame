@@ -5,13 +5,17 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-26
 
-`WorldTonalReadability` compared stairs, faces and night street. `CityNightSaturation` checked balcony return. `WorldContactFinishes` checked rails, bus grips/treads and pub fittings. `CharacterLightOnStreetAndInBar` checked skin, cloth and hair in colour/grayscale turns.
+`WorldResidentialAddresses`: City/Home mesh parity, night windows, alpine repairs, rail boxes and upward petunia blooms.
 
-Cut exterior clouds. `DirectionalAmbientWorld` checked clock/pause light on street, road, village, indoors and on balcony return.
+Paving seams pitched the sedan into the Works bridge. Axle contacts set its pose. `CityTrafficPassage` checked the recorded queue, opposing traffic and walkers clearing both lanes.
 
-The fair runs 09:00–22:00. Sellers and visitors leave through both aisles for separate nearby homes selected by walking distance. `CityFairDailyHours` checked the seated child's exit, night occupancy, morning reopening and the next evening's assignments. Reviewed closing and opening views.
+`WorldTonalReadability`: stairs, faces, night street. `CityNightSaturation`: balcony return. `WorldContactFinishes`: rails, bus grips/treads, pub fittings. `CharacterLightOnStreetAndInBar`: skin/cloth/hair in colour/grayscale turns.
 
-Children visit swings, bars, slides and balance modules. `CityParkPlaygroundChildVisit`, `CityCourtyardPlaygroundChildVisit`, `CitySlidePlaygroundChildVisit` and `CityBridgePlaygroundChildVisit` checked contacts, climbs and return. `CitySeesawDaylight` checked five layouts, paved paths, paired play, solo timeout, return and sunset. Reviewed City frames.
+Clouds removed. `DirectionalAmbientWorld`: clock/pause, exteriors, rooms, balcony return. `CityStreetFogWalk`: moving fog at rest and on a day/night shelter walk.
+
+Fair sellers and visitors walk through both aisles to distinct homes. `CityFairDailyHours` checked closing, the seated child, night occupancy, reopening and the next evening’s assignments.
+
+Children visit swings, bars, slides and balance modules. `CityParkPlaygroundChildVisit`, `CityCourtyardPlaygroundChildVisit`, `CitySlidePlaygroundChildVisit` and `CityBridgePlaygroundChildVisit` checked contacts, climbs and return. `CitySeesawDaylight` checked five layouts, paved paths, paired play, solo timeout, return and sunset.
 
 City rotates three boys and three girls through two daylight slots. `CityFairChildActionAssetSetup` verified contacts. `City Street Girls Model Contract` checked deterministic geometry and the FBX rig. `CityAmbientChildren` checked the common metre gait, distinct outfits and blink tiles. Reviewed City frames.
 
@@ -23,7 +27,7 @@ City and the Home balcony spread local cubemap renders across frames. Platform s
 
 The east gable outlet clears the approach. Roof jets use mouth direction, gravity and a delayed weather response. Kerb grates gather shallow water with soft edges and inward ripples. Blender checked the fittings and deterministic export. `LiveCity_RainRunoffClearsTheGableWalkAndEntersTheKerbGrate` checked ground contact, both walks, pause and district release. Reviewed the grate and the pipe in drizzle and downpour.
 
-Installed Unity Pipeline 1.0.1 for live Editor commands. `unity command editor focus` activated the BarGame window. `unity command scene list_open` returned its active scene.
+Unity Pipeline 1.0.1: `unity command editor focus` and `unity command scene list_open` checked live Editor access.
 
 ## 2026-11-25
 

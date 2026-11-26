@@ -536,6 +536,7 @@ namespace BarPromenade
                 Color facade =
                     CityExteriorAppearance
                         .CreateNightFacadeColor(lot);
+                if (ResidentialAddress.Applies(lot)) facade = new ResidentialAddress(lot, context.Layout.Seed).Tint(facade);
                 if (!TryClipToExteriorHalfSpace(
                         new Bounds(
                             localCenter,
@@ -678,6 +679,7 @@ namespace BarPromenade
             HomeExteriorContextPlan context,
             BuildingLot lot)
         {
+            var fittings = ResidentialAddress.Applies(lot) ? new ResidentialFrontage(parent, true) : null;
             int floorCount =
                 CityFacadeGrid.ResolveFloorCount(lot.Height);
             for (int floor = 0;
@@ -764,7 +766,7 @@ namespace BarPromenade
                         frontPosition,
                         rowSize,
                         floor,
-                        0);
+                        0, fittings);
                 }
                 BuildWindowRow(
                     parent,
@@ -773,8 +775,9 @@ namespace BarPromenade
                     backPosition,
                     rowSize,
                     floor,
-                    1);
+                    1, fittings);
             }
+            fittings?.Finish();
         }
 
         private static void BuildWindowRow(
@@ -784,7 +787,7 @@ namespace BarPromenade
             Vector3 cityPosition,
             Vector3 cityRowSize,
             int floor,
-            int side)
+            int side, ResidentialFrontage frontage)
         {
             bool runsAlongX =
                 cityRowSize.x > cityRowSize.z;
@@ -842,6 +845,19 @@ namespace BarPromenade
                     continue;
                 }
 
+                if (frontage != null && floor == 1)
+                {
+                    var address = new ResidentialAddress(lot, context.Layout.Seed);
+                    if (pane == address.Key % paneCount)
+                    {
+                        Vector3 outward = cityPosition - lot.Center;
+                        outward.y = 0;
+                        outward = PlayerHomeBalconyGeometry.ToHomeLocalDirection(context.PlayerHome, outward.normalized);
+                        CityResidentialFrontages.AddWindow(frontage, (int)(address.Household(side, floor, pane) % 4),
+                            exteriorPane.center - Vector3.up * (exteriorPane.size.y * .48f) + outward * .06f, outward,
+                            Mathf.Max(exteriorPane.size.x, exteriorPane.size.z), exteriorPane.size.y);
+                    }
+                }
                 CityWindowFamily family =
                     CityExteriorAppearance.ResolveWindowFamily(
                         lot,

@@ -138,11 +138,7 @@ namespace BarPromenade
             }
 
             FogField = Root.AddComponent<CityFogField>();
-            FogField.Initialize(
-                player,
-                CityNightResources.AtmosphereMaterial,
-                citySeed,
-                useCityLayers: true);
+            FogField.InitializeStreet(player, citySeed);
         }
 
         public void InitializeAtmosphere(

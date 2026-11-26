@@ -134,6 +134,10 @@ namespace BarPromenade
         public CharacterController CharacterController => characterController;
         public Vector3 Position => transform.position;
         public Vector3 LastDisplacement { get; private set; }
+        private float lastMovementStep;
+        internal Vector3 TrafficVelocity => lastMovementStep > 0f
+            ? Vector3.ClampMagnitude(Vector3.ProjectOnPlane(LastDisplacement, Vector3.up) / lastMovementStep, speed)
+            : Vector3.zero;
         public int PreviousNodeIndex => previousNodeIndex;
         public int TargetNodeIndex => targetNodeIndex;
         public int ResidentDestinationNode { get; private set; } = -1;
@@ -436,6 +440,7 @@ namespace BarPromenade
             }
 
             float safeDeltaTime = SanitizeDeltaTime(deltaTime);
+            lastMovementStep = safeDeltaTime;
             approachTarget = initialApproachTarget;
             approachNodeDistances = initialApproachNodeDistances;
             LastDisplacement = Vector3.zero;

@@ -60,6 +60,7 @@ namespace BarPromenade
             internal readonly LastRouteCarDriveProfile Profile;
             internal float ClearTime, PreviousHold = float.PositiveInfinity;
             internal int SnapshotIndex;
+            internal float VehicleClearance = float.PositiveInfinity;
             public Vector3 Position => Driver.transform.position;
             public Collider PhysicalBlocker { get; internal set; }
             public CityTrafficHull Hull => new CityTrafficHull(Position, Driver.transform.rotation, Bounds, .06f);
@@ -298,6 +299,7 @@ namespace BarPromenade
                     passingCar.ClearTime = 0f;
                     passingCar.PreviousHold = float.PositiveInfinity;
                     passingCar.PhysicalBlocker = null;
+                    passingCar.VehicleClearance = float.PositiveInfinity;
                     passingCar.Driver.Begin(route.Path, passingCar.Profile, 4f, distance);
                     passingCar.Driver.gameObject.SetActive(true);
                     cars[Count++] = passingCar;
@@ -364,7 +366,8 @@ namespace BarPromenade
                 var bus = city.Bus.GetVehicle(i).Actor;
                 if (bus == null || !bus.HasRoutePhase) continue;
                 var v = Next(i, new CityTrafficHull(bus.Position, bus.Rotation, bus.LocalVisualBounds, .12f));
-                if (bus.MotionState == CityBusMotionState.Dwelling || bus.MotionState == CityBusMotionState.RouteEnded) continue;
+                if (bus.MotionState == CityBusMotionState.Dwelling || bus.MotionState == CityBusMotionState.RouteEnded ||
+                    bus.IsHeldByVehicle) continue;
                 float reach = Mathf.Min(40f, Mathf.Max(18f, bus.Speed * 4f + bus.GetRequiredStoppingDistance()));
                 // A bus queued behind a sedan cannot reserve the junction through
                 // that sedan. Otherwise opposing queue leaders yield to each
@@ -431,6 +434,11 @@ namespace BarPromenade
                     if (hit) conflict = a * SampleSpacing;
                 }
             }
+            // Pedestrians clearing a car must still see its intended path when
+            // the hold is their own. A queue behind another vehicle ends at it.
+            car.VehicleClearance = car.Plan.KeepJunctionExitClear(car.Driver.Distance,
+                AmbientTrafficRules.StopDistance(car.Driver.Distance, conflict, AmbientTrafficRules.FollowingGap + SampleSpacing))
+                - car.Driver.Distance;
             AccumulateWalker(own, heroTransform.position, hero != null ? hero.radius : .35f,
                 hero != null ? hero.velocity : Vector3.zero, ref conflict);
             var people = city.Pedestrians.Actors;
@@ -438,12 +446,12 @@ namespace BarPromenade
             {
                 var p = people[i];
                 if (p.IsSpawned && !p.IsAttachedToVehicle)
-                    AccumulateWalker(own, p.Position, p.AgentRadius, p.TravelDirection * p.MovementSpeed, ref conflict);
+                    AccumulateWalker(own, p.Position, p.AgentRadius, p.TrafficVelocity, ref conflict);
             }
             var ambient = city.Pedestrians.AmbientStreet;
             if (ambient != null)
                 for (int i = 0; i < CityAmbientPedestrians.MaximumActive; i++)
-                    if (ambient.TryGetWalker(i, out var p, out _, out _)) AccumulateWalker(own, p, .35f, Vector3.zero, ref conflict);
+                    if (ambient.TryGetWalker(i, out var p, out _, out _)) AccumulateWalker(own, p, CityAmbientWalking.Radius, Vector3.zero, ref conflict);
             float hold = AmbientTrafficRules.StopDistance(car.Driver.Distance, conflict,
                 AmbientTrafficRules.FollowingGap + SampleSpacing);
             hold = car.Plan.KeepJunctionExitClear(car.Driver.Distance, hold);
@@ -540,19 +548,11 @@ namespace BarPromenade
                     Vector3.Dot(car.Driver.transform.forward, bus.TravelDirection) < .85f) continue;
                 // Probe full oriented bodies. The point/circle approximation
                 // can miss a sedan beside the nose while the long bus turns.
-                const float probeStep = .5f;
-                float limit = Mathf.Min(lookAhead, obstacle.ForwardClearance);
-                var carHull = car.Hull;
-                for (float ahead = 0f; ahead <= limit; ahead += probeStep)
-                {
-                    bus.SampleAhead(ahead, out var p, out var f);
-                    var hull = new CityTrafficHull(p, Quaternion.LookRotation(f), bus.LocalVisualBounds, .12f);
-                    if (!hull.Overlaps(carHull)) continue;
-                    float clearance = Mathf.Max(0f, ahead - probeStep);
+                var carHull = new CityTrafficHull(car.Position, car.Driver.transform.rotation, car.Bounds, .18f);
+                if (bus.TryGetBodyClearance(carHull, Mathf.Min(lookAhead, obstacle.ForwardClearance), out float clearance) &&
+                    clearance < obstacle.ForwardClearance)
                     obstacle = new CityBusObstacleState(true, clearance, CityBusBlockerKind.AmbientCar,
                         carHull.Centre, "ambient_sedan", i);
-                    break;
-                }
             }
         }
 

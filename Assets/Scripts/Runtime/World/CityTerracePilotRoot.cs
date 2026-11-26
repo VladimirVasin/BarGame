@@ -43,7 +43,7 @@ namespace BarPromenade
             Follow.Initialize(Camera, Player.GameObject.transform, false);
             gameObject.AddComponent<PauseMenuController>().Initialize(Player, Follow, null);
             var fog = gameObject.AddComponent<CityFogField>();
-            fog.Initialize(Player.GameObject.transform, CityNightResources.AtmosphereMaterial, GameSessionState.DefaultCitySeed, true);
+            fog.InitializeStreet(Player.GameObject.transform, GameSessionState.DefaultCitySeed);
             var rain = gameObject.AddComponent<CityRainField>();
             rain.Initialize(Player.GameObject.transform, CityNightResources.AtmosphereMaterial,
                 GameSessionState.DefaultCitySeed, .35f);

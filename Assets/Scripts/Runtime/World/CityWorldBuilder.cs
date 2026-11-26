@@ -1488,7 +1488,8 @@ namespace BarPromenade
                     building,
                     lot,
                     citySeed,
-                    foundationDepth);
+                    foundationDepth,
+                    layout);
                 CityMetalWorkshop.Build(layout, lot, registry);
                 CityFishCannerySign.BuildClock(layout, lot, registry);
                 return;

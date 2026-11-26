@@ -95,6 +95,7 @@ namespace BarPromenade
                 var registry = facade.Registry;
                 registry.GroundedWindowMask = facade.Mask;
                 groundedWindowMeshes.Apply(registry, facade.Mask);
+                CityResidentialFrontages.RebuildMasked(registry, facade.Lot, facade.Seed);
                 CityBuildingWindowSlotAppearance.Apply(registry.WindowGlassRenderer, registry, facade.Lot, facade.Seed);
                 if (incremental) yield return new CompositionStep("ground_facade_mesh", .98f);
             }

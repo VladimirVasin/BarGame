@@ -127,6 +127,11 @@ namespace BarPromenade
         internal bool RunsWithoutModel { get; set; }
         internal bool HasRoutePhase => isPrepared && (RunsWithoutModel || IsSpawned);
         public bool IsYielding { get; private set; }
+        private CityBusBlockerKind blockingRoadUser;
+        internal bool IsHeldByVehicle => MotionState == CityBusMotionState.Yielding && speed < .02f &&
+            blockingRoadUser is CityBusBlockerKind.BusBody or CityBusBlockerKind.AmbientCar or CityBusBlockerKind.CanneryTruck;
+        internal bool IsHeldByRoadUser => IsHeldByVehicle || MotionState == CityBusMotionState.Yielding && speed < .02f &&
+            blockingRoadUser is CityBusBlockerKind.Pedestrian or CityBusBlockerKind.Player;
         public bool IsBraking { get; private set; }
         public CityBusMotionState MotionState { get; private set; } =
             CityBusMotionState.Dormant;
@@ -933,6 +938,7 @@ namespace BarPromenade
                         2f * ServiceDeceleration * distanceToStop));
             }
 
+            blockingRoadUser = obstacles.Kind;
             IsYielding = obstacles.MustStop &&
                 obstacles.ForwardClearance <=
                 GetRequiredStoppingDistance() + speed + 1f;
@@ -1303,6 +1309,33 @@ namespace BarPromenade
                 Vector3.up);
         }
 
+        internal const float TrafficProbeStep = .5f;
+        private readonly List<CityTrafficHull> trafficPath = new List<CityTrafficHull>(64);
+
+        // Reused by every vehicle and pedestrian query until this bus moves.
+        internal CityTrafficHull TrafficHullAt(int step)
+        {
+            while (trafficPath.Count <= step)
+            {
+                SampleAhead(trafficPath.Count * TrafficProbeStep, out var point, out var heading);
+                trafficPath.Add(new CityTrafficHull(point, Quaternion.LookRotation(heading), LocalVisualBounds));
+            }
+            return trafficPath[step];
+        }
+
+        internal bool TryGetBodyClearance(CityTrafficHull other, float lookAhead, out float clearance)
+        {
+            int steps = Mathf.CeilToInt(lookAhead / TrafficProbeStep);
+            for (int i = 0; i <= steps; i++)
+                if (TrafficHullAt(i).Overlaps(other))
+                {
+                    clearance = Mathf.Max(0f, (i - 1) * TrafficProbeStep);
+                    return true;
+                }
+            clearance = float.PositiveInfinity;
+            return false;
+        }
+
         // Used only when two lines approach the same intersection. Follow the
         // actual bent road, including its elevation, instead of projecting a ray.
         internal void SampleAhead(float metres, out Vector3 position, out Vector3 forward)
@@ -1324,6 +1357,7 @@ namespace BarPromenade
             Quaternion rotation = forward.sqrMagnitude > 0.0001f
                 ? Quaternion.LookRotation(forward.normalized, Vector3.up)
                 : transform.rotation;
+            trafficPath.Clear();
             transform.SetPositionAndRotation(position, rotation);
             if (IsSpawned)
             {

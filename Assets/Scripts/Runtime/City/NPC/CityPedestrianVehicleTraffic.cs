@@ -67,7 +67,7 @@ namespace BarPromenade
                 Bounds bounds = new Bounds(bus.BodyCollider.center, bus.BodyCollider.size);
                 AddFootprint(bus.Position, bus.Rotation, bounds);
                 if (bus.MotionState == CityBusMotionState.Dwelling ||
-                    bus.MotionState == CityBusMotionState.RouteEnded) continue;
+                    bus.MotionState == CityBusMotionState.RouteEnded || bus.IsHeldByVehicle) continue;
                 float reach = Mathf.Clamp(bus.GetRequiredStoppingDistance() + bus.Speed + 2f,
                     MinimumLookAhead, MaximumLookAhead);
                 for (float ahead = PathStep; ahead < reach + PathStep; ahead += PathStep)
@@ -102,7 +102,7 @@ namespace BarPromenade
             {
                 var sedan = ambient.GetCar(i);
                 AddFootprint(sedan.Position, sedan.Driver.transform.rotation, sedan.Bounds);
-                float reach = Mathf.Min(MaximumLookAhead, sedan.Driver.Model.HoldDistance - sedan.Driver.Distance);
+                float reach = Mathf.Min(MaximumLookAhead, sedan.VehicleClearance);
                 for (float ahead = PathStep; ahead <= reach; ahead += PathStep)
                 {
                     sedan.Plan.Path.Sample(sedan.Driver.Distance + ahead, out var point, out var forward);
@@ -172,7 +172,7 @@ namespace BarPromenade
             {
                 var bus = buses.GetVehicle(i).Actor;
                 if (bus == null || !bus.HasRoutePhase || bus.MotionState == CityBusMotionState.Dwelling ||
-                    bus.MotionState == CityBusMotionState.RouteEnded) continue;
+                    bus.MotionState == CityBusMotionState.RouteEnded || bus.IsHeldByVehicle) continue;
                 float reach = Mathf.Min(CityBusActor.CruiseSpeed * seconds,
                     bus.Speed * seconds + .5f * CityBusActor.Acceleration * seconds * seconds);
                 Bounds bounds = bus.LocalVisualBounds;

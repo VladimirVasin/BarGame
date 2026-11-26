@@ -173,7 +173,7 @@ namespace BarPromenade.Tests.PlayMode
                 Is.InRange(0.11f, 0.13f));
             Assert.That(
                 night.FogField.FogRenderer.sharedMaterial,
-                Is.SameAs(CityNightResources.AtmosphereMaterial));
+                Is.SameAs(CityNightResources.StreetFogMaterial));
             Assert.That(
                 atmosphere.RealtimeLightCount,
                 Is.LessThanOrEqualTo(CityNightAtmosphere.MaximumRealtimeLights));

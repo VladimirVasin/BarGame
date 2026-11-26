@@ -624,8 +624,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   pole floodlight `1`. Fixed site lights (cemetery/ten church-garden uplights)
   remain separately owned;
   the scene Directional and transient lightning Directional are counted
-  separately. Bar, Supermarket and Stairwell lighting are unchanged. On City streets the hero climbs from lowland Exp2 `.090`/48 m to `.025`/110 m at the crest.
-  Low streets retain wind-driven haze below roofs. Night dims sky, haze,
+  separately. City streets share Exp2 `.090` and a 48 m far plane at every elevation. Night dims sky, haze,
   ambient and directional fill, leaving pools of light and their wet reflections visible.
   Summit Home/balcony see roofs down-slope past the upper bridge/dry ravine.
   Saturation `-24` day→`-30` night follows
@@ -742,8 +741,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   Home copies bounded street/terrain/perimeters without collision. Ordinary Blender panes
   keep a street-front primary and timed Residential extra;dark gaps/districts/
   special Bar/Home/Shop materials stay;
-- `CityFogField`:≤36 world particles/shared material;City/balcony use slow
-  wind-driven layers with absolute game-time phase/pause. Roofs clear/refill;
+- `CityFogField` carries up to 36 wind-driven particles. On streets, two scales of moving 3D density break up soft ellipsoids. Walls clip their visible thickness. Local contrast fades in beyond 2.6 m and out by 22 m. The balcony keeps clock-driven sheets. Sheltered areas clear and refill the field;
   road/village retain their field profile and weather shelter owner. Exp2 is
   per-area;only village haze breathes with gusts. Depth-tested soft halos stay;
 
@@ -785,10 +783,10 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   Walkers yield to safe refuges, wait for tails/followers and resume their route;
   Without refuge vehicles wait; collision persists, pooling resets yields.
   `CityAmbientTraffic`: four circulating City/Ridge sedans and one pooled pass-by.
-  After a 35–55 s delay, it looks for a clear hidden entry 40–66 m away with a
+  After 35–55 s it seeks a clear hidden entry 40–66 m away with a
   lane passing within 20 m of the hero. It returns to the pool past 80 m when hidden.
-  Permanent drivers, full hull holds, clear turn entries and 40 m forecasts.
-  Buses predict only to leaders. No boarding/overtaking/island/tunnel/closed exit.
+  Permanent drivers, axle-based pitch, clear turn entries, 40 m forecasts.
+  Bus hulls check people and vehicles. Queued buses release crossings. No sedan boarding/overtaking/island/tunnel/closed exit.
   Two near beam pairs, shared audio/LOD. Pause/dormancy keep, unload clears.
   Ridge:4 lit bays/silent sedan. Working/Residential:4 empty bays each,
   through aisles; shared grade/grass/nav/City map.

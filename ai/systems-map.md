@@ -45,7 +45,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | City ground | Height-aware joints, sectors and local grave/sand. | `CityGroundSurfaceSystem`, `GroundJointTopology` | Current |
 | Construction joints | Metric edges and thresholds. | `RuntimePrimitiveFactory`, `interior_kit.py` | Current |
 | City street support | Blender topology joins road, pavement and terrain. | `CityStreetSupportPlan`, `CityTerrainStreetBoundaryPlan`, `CityStreetSurfaceWorldBuilder` | Current |
-| City Blender ordinary buildings | Eight industrial types with staff vestibules. Housing lamps and covered passages. | `CityBuilding*`, `CityIndustrialEntranceGeometry`, `CityCoveredPassage*` | Current |
+| City Blender ordinary buildings | Eight industrial types with staff vestibules. Housing lamps, passages and address-specific frontages. | `CityBuilding*`, `CityCoveredPassage*`, `*ResidentialFrontage*` | Current |
 | Residential balcony life | Bounded pooled smokers occupy authored Residential docks; Home reconstructs its own balcony-gated selection. | `City/Balcony/CityBalconySmoker*`, `CityPedestrianHandProps` | Current |
 | Residential laundry | Residual L-shell; silent worker folds/carries the same cloth/basket; enamel sign/shared light/hum. | `CityLaundry{Plan,AssetProvider,Controller,WorldBuilder}`, `build-city-laundry-3d-model.py` | Current |
 | Residential dog park | Residual fenced yard; three articulated dogs, two permanent owners; open entry and local voices. | `CityDogPark{Plan,AssetProvider,Controller,WorldBuilder}`, `CityDogPose`, `CityDogActivity` | Current |
@@ -153,7 +153,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Supermarket cashier | Wall checkout/decor snacks;anchored palms/light;ordinary cashier,bulging 3D face/shared rig. | `SupermarketCashier{Provider,AssetRegistry,Factory,Presentation,Actor,SurveillanceState,BlinkState,Interaction}` | Current |
 | Supermarket CCTV corner cameras | Four authored corner cameras follow the hero without gameplay surveillance. | `SupermarketInteriorAssetRegistry`, `SupermarketSecurityCamera{,WorldBuilder}` | Current |
 | Supermarket fluorescent atmosphere | Visible fixtures own the store's restrained light, flicker and sound within explicit shared-resource budgets. | `SupermarketInteriorAtmosphere`, `SupermarketFluorescentFlicker` | Current |
-| City day/night presentation | Fog48m;night dims sky/fill. Ridge roads, booths and benches use fixed lamps/day floor. | `City{NightWorldBuilder,NightAtmosphere,AltitudeVisibility,DayNightController}`, `HomeBalconyExteriorAtmosphere` | Current |
+| City day/night presentation | Street fog volumes, 48 m visibility. Night dims sky/fill. Ridge fixtures keep a day floor. | `City{FogField,NightAtmosphere,AltitudeVisibility,DayNightController}`, `HomeBalconyExteriorAtmosphere` | Current |
 | Exterior weather | Rain contacts, wet film, snow and audio follow the clock. Gap: weather-driven grade. | `GameWeatherRules`, `CityWeatherController`, `CityRainContactField` | Partial |
 | Runtime cloth rags | Visible cloth uses shared bounded wind response and explicit attachment constraints. | `ClothPanelFactory`, `CityClothWindRegistry` | Current |
 | City wind | One gust for City/Home, cloth, vegetation and fixed-end wires. | `CityWindField`, `CityWindDressing*`, `CityCoastalInfrastructureWorldBuilder` | Current |

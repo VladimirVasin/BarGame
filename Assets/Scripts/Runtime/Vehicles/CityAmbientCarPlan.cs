@@ -8,6 +8,7 @@ namespace BarPromenade
     /// Three copies let the existing speed planner look through the loop seam.</summary>
     public sealed class CityAmbientCarPlan
     {
+        private const float SedanWheelbase = 2.70f;
         internal const float PassByMinimumEntry = 40f;
         internal const float PassByMaximumEntry = 66f;
         internal const float PassByNearRadius = 20f;
@@ -72,7 +73,7 @@ namespace BarPromenade
             var repeated = new List<Vector3>(loop.Count * 3);
             for (int lap = 0; lap < 3; lap++)
                 for (int i = lap == 0 ? 0 : 1; i < loop.Count; i++) repeated.Add(loop[i]);
-            Path = new LastRouteCarDrivePath(repeated);
+            Path = LastRouteCarDrivePath.FromSurveyedLane(repeated, SedanWheelbase);
             junctions = crossings.ToArray();
 
             int count = Mathf.CeilToInt(Length / PassBySampleSpacing);

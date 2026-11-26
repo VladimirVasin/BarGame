@@ -99,6 +99,7 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
+        [Category("CityTrafficPassage")]
         public IEnumerator LiveCity_AmbientTrafficClearsEastSlopeJunctionQueue()
         {
             Assert.That(GameSessionState.TryStartGameTimeAt(14 * 60), Is.True);
@@ -189,23 +190,85 @@ namespace BarPromenade.Tests.PlayMode
                 return 0f;
             }
 
-            void PlaceBus(CityBusDirector bus, string linkId, float along, float approach)
-            {
-                int index = Enumerable.Range(0, bus.Plan.Links.Count).Single(i => bus.Plan.Links[i].Id == linkId);
-                along -= approach;
-                while (along < 0f)
-                {
-                    var order = bus.Plan.OrderedLinkIndices;
-                    int slot = Enumerable.Range(0, order.Count).Single(i => order[i] == index);
-                    index = order[(slot + order.Count - 1) % order.Count];
-                    along += bus.Plan.Links[index].Length;
-                }
-                // Manual safety steps run while physics time is paused. Inspect
-                // the current pose rather than a previous interpolated frame.
-                bus.Actor.RigidBody.interpolation = RigidbodyInterpolation.None;
-                bus.Actor.ApplyDetachedPhase(new CityBusTimetable.Sample(index, along, 0f, -1, 0f, -1), 0);
-            }
+        }
 
+        [UnityTest]
+        [Category("CityTrafficPassage")]
+        public IEnumerator LiveCity_Route03ClearsSedanAndRoute02AtWorksJunction()
+        {
+            Assert.That(GameSessionState.TryStartGameTimeAt(14 * 60), Is.True);
+            yield return LoadProductionCity();
+            var traffic = city.AmbientTraffic;
+            var sedan = traffic.GetCar(2);
+            var turning = city.Bus.GetVehicle(2);
+            var through = city.Bus.GetVehicle(5);
+            Time.timeScale = 0f;
+            traffic.AutoAdvance = false;
+            city.Player.Motor.SetInputEnabled(false);
+            city.Player.Motor.Teleport(new Vector3(29.1f, 4.1f, -124.9f));
+
+            // Restore the occupied junction as recorded, including the leading sedan.
+            var recordedCentre = new Vector3(22.443903f, 4.8f, -128.553329f);
+            float nearest = sedan.Plan.Path.FindNearestDistance(recordedCentre);
+            sedan.Plan.Path.Sample(nearest, out _, out var heading);
+            var axle = recordedCentre - Quaternion.LookRotation(heading) * sedan.Bounds.center;
+            float entry = sedan.Plan.Length + Mathf.Repeat(sedan.Plan.Path.FindNearestDistance(axle), sedan.Plan.Length);
+            sedan.Driver.Begin(sedan.Plan.Path, sedan.Profile, 0f, entry);
+            PlaceBus(turning, "bus:road:7:2:7:1:route-02:80", 14.08599f);
+            PlaceBus(through, "bus-route:default-coastal:route-03:link:9", .3086215f);
+            Physics.SyncTransforms();
+            float turnStart = turning.DistanceAlongLoop, throughStart = through.DistanceAlongLoop;
+            // Someone is crossing immediately beyond the seam. Both queues
+            // must wait safely, then make progress once that lane is clear.
+            sedan.Plan.Path.Sample(entry + 11f, out var crossing, out var crossingHeading);
+            var hero = city.Player.Motor;
+            hero.Teleport(crossing + Vector3.up * PlayerFactory.GroundedRootOffset);
+            Physics.SyncTransforms();
+            for (int tick = 0; tick < 1300; tick++)
+            {
+                traffic.Advance(.05f);
+                Physics.SyncTransforms();
+                through.Advance(.05f);
+                turning.Advance(.05f);
+                Physics.SyncTransforms();
+                var a = new CityTrafficHull(turning.Actor.Position, turning.Actor.Rotation, turning.Actor.LocalVisualBounds);
+                var b = new CityTrafficHull(through.Actor.Position, through.Actor.Rotation, through.Actor.LocalVisualBounds);
+                Assert.That(a.Overlaps(b) || a.Overlaps(sedan.Hull) || b.Overlaps(sedan.Hull), Is.False,
+                    "Vehicle bodies touched at step " + tick);
+                Assert.That(sedan.Hull.ContainsCapsule(hero.transform.position, .35f) ||
+                    a.ContainsCapsule(hero.transform.position, .35f) || b.ContainsCapsule(hero.transform.position, .35f),
+                    Is.False, "The pedestrian must stay clear of all three bodies.");
+                if (tick == 199)
+                {
+                    Assert.That(sedan.Driver.Distance - entry, Is.GreaterThan(1f), "Cross the first surface seam.");
+                    Assert.That(sedan.Driver.Speed, Is.LessThan(.05f), "Stop for the crossing pedestrian.");
+                    hero.Teleport(crossing + Vector3.Cross(Vector3.up, crossingHeading) * 4f +
+                        Vector3.up * PlayerFactory.GroundedRootOffset);
+                    Physics.SyncTransforms();
+                }
+                if (tick % 100 == 0) yield return null;
+                if (sedan.Driver.Distance - entry > 22f && turning.DistanceAlongLoop - turnStart > 22f &&
+                    through.DistanceAlongLoop - throughStart > 22f) yield break;
+            }
+            Assert.Fail("Queue did not clear. Sedan " + sedan.Position + " physical blocker " + sedan.PhysicalBlocker?.name +
+                ", route 02 " + turning.Actor.Position + ", route 03 " + through.Actor.Position);
+        }
+
+        private static void PlaceBus(CityBusDirector bus, string linkId, float along, float approach = 0f)
+        {
+            int index = Enumerable.Range(0, bus.Plan.Links.Count).Single(i => bus.Plan.Links[i].Id == linkId);
+            along -= approach;
+            while (along < 0f)
+            {
+                var order = bus.Plan.OrderedLinkIndices;
+                int slot = Enumerable.Range(0, order.Count).Single(i => order[i] == index);
+                index = order[(slot + order.Count - 1) % order.Count];
+                along += bus.Plan.Links[index].Length;
+            }
+            // Manual safety steps run while physics time is paused. Inspect
+            // the current pose rather than a previous interpolated frame.
+            bus.Actor.RigidBody.interpolation = RigidbodyInterpolation.None;
+            bus.Actor.ApplyDetachedPhase(new CityBusTimetable.Sample(index, along, 0f, -1, 0f, -1), 0);
         }
 
         [UnityTest, Timeout(300000)]

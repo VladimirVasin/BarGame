@@ -151,6 +151,35 @@ namespace BarPromenade
             turnRates = BuildTurnRates(points, distances, reverseCuspIndex);
         }
 
+        // The survey can cross a shallow paving lip in centimetres. The sedan's
+        // axles straddle it: the local tangent there is not the pitch of the car.
+        internal static LastRouteCarDrivePath FromSurveyedLane(IReadOnlyList<Vector3> stations, float wheelbase)
+        {
+            var path = new LastRouteCarDrivePath(stations);
+            var heights = new float[path.PointCount];
+            for (int i = 0; i < heights.Length; i++)
+            {
+                float distance = path.distances[i];
+                var rear = path.SamplePosition(distance - wheelbase * .5f);
+                var front = path.SamplePosition(distance + wheelbase * .5f);
+                heights[i] = (rear.y + front.y) * .5f;
+                Vector3 between = front - rear;
+                float run = Flatten(between).magnitude;
+                Vector3 heading = Flatten(path.forwards[i]).normalized;
+                heading.y = run > MinimumSegmentLength ? between.y / run : 0f;
+                path.forwards[i] = heading.normalized;
+            }
+            for (int i = 0; i < heights.Length; i++) path.points[i].y = heights[i];
+            return path;
+        }
+
+        private Vector3 SamplePosition(float distance)
+        {
+            int segment = FindSegment(Mathf.Clamp(distance, 0f, Length));
+            float t = Mathf.InverseLerp(distances[segment], distances[segment + 1], distance);
+            return Vector3.Lerp(points[segment], points[segment + 1], t);
+        }
+
         public float Length => distances[distances.Length - 1];
         public int PointCount => points.Length;
         public Vector3 Start => points[0];

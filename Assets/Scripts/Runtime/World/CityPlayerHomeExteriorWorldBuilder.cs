@@ -88,6 +88,7 @@ namespace BarPromenade
             CityRainRunoffSite.AddLocalOutlet(instance.transform, new Vector3(-6.43f, -.003f, -4.92f), Vector3.down, .037f);
             CityRainRunoffSite.AddLocalOutlet(instance.transform, new Vector3(6.43f, -.003f, -4.92f), Vector3.down, .037f);
 
+            var frontage = new ResidentialFrontage(instance.transform);
             for (int index = 0; index < registry.Parts.Count; index++)
             {
                 PlayerHomeExteriorPartBinding binding =
@@ -107,12 +108,23 @@ namespace BarPromenade
                         $"for unknown sheet '{binding.Sheet}'.");
                 }
 
+                if (binding.SourceName == "Front Lit Window Glass")
+                {
+                    var filter = renderer.GetComponent<MeshFilter>();
+                    Vector3 center = instance.transform.InverseTransformPoint(
+                        filter.transform.TransformPoint(filter.sharedMesh.bounds.center));
+                    CityResidentialFrontages.AddWindow(frontage, 0, center + new Vector3(0f, -.72f, .055f),
+                        Vector3.forward, 1.37f, 1.52f);
+                    CityResidentialFrontages.AddWindow(frontage, 1, center + new Vector3(0f, -4.19f, .055f),
+                        Vector3.forward, 1.37f, 1.54f);
+                }
                 PlayerHomeExteriorSurfaceAppearance.Apply(
                     renderer,
                     surface,
                     binding.Emissive);
             }
 
+            frontage.Finish();
             return registry;
         }
 

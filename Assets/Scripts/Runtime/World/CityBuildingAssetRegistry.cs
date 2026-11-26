@@ -229,6 +229,7 @@ namespace BarPromenade
         // Runtime presentation uses the exact same selection as the glass
         // shader. No per-pane objects or duplicate random selection are needed.
         internal ulong GroundedWindowMask { get; set; }
+        internal ulong RailFlowerBoxMask { get; set; }
         internal ulong LitWindowMask { get; set; }
         internal ulong GuaranteedWindowMask { get; set; }
         internal ulong OptionalWindowMask { get; set; }

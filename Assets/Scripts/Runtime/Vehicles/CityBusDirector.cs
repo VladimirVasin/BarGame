@@ -549,9 +549,14 @@ namespace BarPromenade
             for (int i = 0; i < walkers.Count; i++)
             {
                 var walker = walkers[i];
-                if (walker.IsSpawned && (!walker.IsRouteBound || walker.IsCrossingRoad) &&
+                if (walker.IsSpawned && !walker.IsAttachedToVehicle &&
                     OverlapsOccupiedCapsule(walker.Position, walker.AgentRadius)) return false;
             }
+            var street = pedestrians.AmbientStreet;
+            if (street != null && street.ActiveCount > 0)
+                for (int i = 0; i < CityAmbientPedestrians.MaximumActive; i++)
+                    if (street.TryGetWalker(i, out var feet, out _, out _) &&
+                        OverlapsOccupiedCapsule(feet, CityAmbientWalking.Radius)) return false;
             return true;
         }
 
@@ -582,18 +587,16 @@ namespace BarPromenade
                     (other.Position - actor.Position).sqrMagnitude > 36f * 36f) continue;
                 var bounds = other.LocalVisualBounds;
                 float radius = bounds.extents.x;
-                float end = Mathf.Max(0f, bounds.extents.z - radius);
                 string routeId = otherVehicle.Plan.RouteId;
-                // Overlapping samples cover the nose, cabin and tail. Actual occupancy always
-                // wins, even against a higher-priority line. Parallel lanes stay open.
-                for (int station = -2; station <= 2; station++)
-                    CheckObstacle(other.Position + other.TravelDirection * (station * .5f * end),
-                        radius, lookAhead, ref obstacle, CityBusBlockerKind.BusBody, routeId, i, other);
+                var body = new CityTrafficHull(other.Position, other.Rotation, bounds, .12f);
+                if (actor.TryGetBodyClearance(body, Mathf.Min(lookAhead, obstacle.ForwardClearance), out float clearance) &&
+                    clearance < obstacle.ForwardClearance)
+                    obstacle = new CityBusObstacleState(true, clearance, CityBusBlockerKind.BusBody, body.Centre, routeId, i, other);
                 if (i >= VehicleIndex || other.MotionState == CityBusMotionState.Dwelling ||
-                    Mathf.Abs(Vector3.Dot(other.TravelDirection, actor.TravelDirection)) > .9f) continue;
-                // Once that bus has yielded to our hull, let us clear its route.
-                // The hull samples above still stop us if its body is in our way.
-                if (other.IsStoppedForBus(VehicleIndex)) continue;
+                    Vector3.Dot(other.TravelDirection, actor.TravelDirection) > .9f) continue;
+                // A stopped queue cannot claim a crossing through its leader.
+                // Its actual body above still protects the occupied lane.
+                if (other.IsHeldByRoadUser) continue;
                 // Lower line number claims a crossing before its nose enters it. If
                 // we already occupy its way out, finish clearing instead of deadlocking.
                 if (other.TryGetPathObstacleClearance(actor.Position, actor.LocalVisualBounds.extents.x,
@@ -949,6 +952,25 @@ namespace BarPromenade
                               CityBusActor.ObstacleStopPadding;
         }
 
+        private void CheckWalker(Vector3 feet, float radius, float lookAhead, ref CityBusObstacleState nearest,
+            CityBusBlockerKind kind, string id, int index = -1)
+        {
+            var bounds = actor.LocalVisualBounds;
+            float reach = lookAhead + bounds.extents.magnitude + bounds.center.magnitude + radius + 2f;
+            if ((feet - actor.Position).sqrMagnitude > reach * reach) return;
+            // Sample once for nearby people. The actual corners and the height at
+            // each pose matter when a long bus turns past someone on the pavement.
+            int steps = Mathf.CeilToInt(Mathf.Min(lookAhead, nearest.ForwardClearance) / CityBusActor.TrafficProbeStep);
+            for (int i = 0; i <= steps; i++)
+            {
+                if (!actor.TrafficHullAt(i).ContainsCapsule(feet, radius + CityBusActor.ObstacleLateralPadding)) continue;
+                float clearance = Mathf.Max(0f, (i - 1) * CityBusActor.TrafficProbeStep);
+                if (clearance < nearest.ForwardClearance)
+                    nearest = new CityBusObstacleState(true, clearance, kind, feet, id, index);
+                return;
+            }
+        }
+
         private CityBusObstacleState ResolveObstacleState()
         {
             float lookAhead = Mathf.Max(
@@ -961,14 +983,14 @@ namespace BarPromenade
             if (!actor.HasPlayerPassenger)
             {
                 float playerRadius = GetPlayerRadius();
-                CheckObstacle(
+                CheckWalker(
                     player.position,
                     playerRadius,
                     lookAhead,
                     ref obstacle, CityBusBlockerKind.Player, "player");
                 if (playerVelocity.sqrMagnitude > 0.0001f)
                 {
-                    CheckObstacle(
+                    CheckWalker(
                         player.position +
                         (playerVelocity * PlayerPredictionSeconds),
                         playerRadius,
@@ -984,46 +1006,28 @@ namespace BarPromenade
                 for (int index = 0; index < actors.Count; index++)
                 {
                     CityPedestrianActor pedestrian = actors[index];
-                    // A walker bound to Route 01 is a passenger, not an
-                    // obstacle, which mirrors the accepted rule that a hero
-                    // standing on his door dock does not make the bus yield
-                    // before it reaches its service pose.
-                    // The margin is thinner than it looks. Yielding uses
-                    // `lateralLimit = halfWidth + targetRadius +
-                    // ObstacleLateralPadding` = `1.74 m` for a walker, and a
-                    // wait slot has exactly one lateral position available to
-                    // it: a `1 m` sidewalk minus a `0.35 m` capsule and two
-                    // `0.15 m` navigation margins pins it at `3.50 m` from
-                    // the road centre against a corridor edge at `3.24 m`.
-                    // That is `0.26 m`, and a walker's own `0.15 m`
-                    // shoulder-shift spends most of it.
-                    if (!pedestrian.IsSpawned || pedestrian.IsAttachedToVehicle ||
-                        (pedestrian.IsRouteBound && !pedestrian.IsYieldingToVehicle && !pedestrian.IsCrossingRoad))
-                    {
-                        continue;
-                    }
+                    if (!pedestrian.IsSpawned || pedestrian.IsAttachedToVehicle) continue;
 
                     int resident = pedestrians.ResidentAtSlot(index);
                     string pedestrianId = resident >= 0 ? "resident" : "pedestrian_slot";
                     int pedestrianIndex = resident >= 0 ? resident : index;
-                    CheckObstacle(
+                    CheckWalker(
                         pedestrian.Position,
                         pedestrian.AgentRadius,
                         lookAhead,
                         ref obstacle, CityBusBlockerKind.Pedestrian, pedestrianId, pedestrianIndex);
-                    Vector3 travel = pedestrian.TravelDirection;
-                    if (travel.sqrMagnitude > 0.0001f)
-                    {
-                        CheckObstacle(
-                            pedestrian.Position +
-                            (travel *
-                             CityPedestrianPlanner.MaximumSpeed *
-                             PedestrianPredictionSeconds),
-                            pedestrian.AgentRadius,
-                            lookAhead,
-                            ref obstacle, CityBusBlockerKind.PedestrianPrediction, pedestrianId, pedestrianIndex);
-                    }
+                    Vector3 velocity = pedestrian.TrafficVelocity;
+                    if (velocity.sqrMagnitude > .0001f)
+                        CheckWalker(pedestrian.Position + velocity * PedestrianPredictionSeconds,
+                            pedestrian.AgentRadius, lookAhead, ref obstacle,
+                            CityBusBlockerKind.PedestrianPrediction, pedestrianId, pedestrianIndex);
                 }
+                var street = pedestrians.AmbientStreet;
+                if (street != null && street.ActiveCount > 0)
+                    for (int i = 0; i < CityAmbientPedestrians.MaximumActive; i++)
+                        if (street.TryGetWalker(i, out var feet, out _, out int encounter))
+                            CheckWalker(feet, CityAmbientWalking.Radius, lookAhead, ref obstacle,
+                                CityBusBlockerKind.Pedestrian, "ambient_walker", encounter);
             }
 
             return obstacle;

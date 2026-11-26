@@ -32,7 +32,8 @@ namespace BarPromenade
             Transform parent,
             BuildingLot lot,
             int citySeed,
-            float logicalFoundationDepth)
+            float logicalFoundationDepth,
+            CityLayout layout = null)
         {
             ValidateBuildArguments(parent, lot, logicalFoundationDepth);
             CityBuildingAssetRegistry registry = InstantiatePrototype(
@@ -44,6 +45,7 @@ namespace BarPromenade
                     registry);
             ApplyPose(registry.transform, pose);
             ApplyAppearance(registry, lot, citySeed);
+            CityResidentialFrontages.Build(registry, lot, citySeed, pose, layout);
             AddFacadeRunoff(registry.transform, lot);
             CityGroundSurfaceSystem.RegisterFacade(registry, lot, citySeed);
             BuildFoundation(
@@ -110,6 +112,7 @@ namespace BarPromenade
                     cityPose);
             ApplyPose(registry.transform, homePose);
             ApplyAppearance(registry, lot, context.Layout.Seed);
+            CityResidentialFrontages.Build(registry, lot, context.Layout.Seed, cityPose, context.Layout);
             AddFacadeRunoff(registry.transform, lot);
             CityGroundSurfaceSystem.RegisterFacade(registry, lot, context.Layout.Seed);
             CityMetalWorkshop.Build(context.Layout, lot, registry);
@@ -227,6 +230,7 @@ namespace BarPromenade
         {
             Color facade = CityExteriorAppearance
                 .CreateNightFacadeColor(lot);
+            if (ResidentialAddress.Applies(lot)) facade = new ResidentialAddress(lot, citySeed).Tint(facade);
             for (int index = 0; index < registry.Parts.Count; index++)
             {
                 CityBuildingPartBinding binding = registry.Parts[index];

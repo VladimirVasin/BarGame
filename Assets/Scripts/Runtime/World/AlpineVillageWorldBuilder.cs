@@ -2344,13 +2344,16 @@ namespace BarPromenade
             Vector2 wallFace,
             VillageAssetProvider kit)
         {
+            VillageHousehold household = VillageHouseholdCatalog.FindHouse(plot.StableId);
+            var joinery = household != null && kit != null ? new VillageResidentialFrontages(parent, household) : null;
             void CreateWindow(
                 Transform windowParent,
                 Vector3 position,
                 Vector3 dimensions)
             {
                 AlpineVillageWorldBuilder.CreateWindow(
-                    windowParent, position, dimensions, kit, lit: VillageHouseholdCatalog.IsOccupied(plot.StableId));
+                    windowParent, position, dimensions, kit, lit: household?.Occupied ?? false);
+                joinery?.Window(position, dimensions);
             }
 
             float half = wallFace.y;
@@ -2416,7 +2419,9 @@ namespace BarPromenade
                     AlpineVillageWorldBuilder.CreateWindow(
                         window.transform, position, dimensions, kit,
                         exactOpening: true, frosted: opening.Frosted);
+                    if (!opening.Frosted) joinery?.Window(position, dimensions);
                 }
+                joinery?.Finish();
                 return;
             }
 
@@ -2468,6 +2473,7 @@ namespace BarPromenade
                         new Vector3(0.05f, 0.72f, 0.58f));
                 }
 
+                joinery?.Finish();
                 return;
             }
 
@@ -2516,6 +2522,7 @@ namespace BarPromenade
                         new Vector3(0.05f, 0.80f, 0.62f));
                 }
             }
+            joinery?.Finish();
         }
 
         /// <summary>

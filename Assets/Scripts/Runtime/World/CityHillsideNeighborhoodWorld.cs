@@ -45,7 +45,7 @@ namespace BarPromenade
         {
             Transform placed = new GameObject("Building " + house.Lot.Cell).transform;
             placed.SetParent(parent, false);
-            var building = CityBuildingPrototypeWorldBuilder.BuildCity(placed, house.Lot, layout.Seed, FoundationDepth(layout, house));
+            var building = CityBuildingPrototypeWorldBuilder.BuildCity(placed, house.Lot, layout.Seed, FoundationDepth(layout, house), layout);
             foreach (Transform part in placed)
                 if (part.name.StartsWith(CityBuildingPrototypeWorldBuilder.FoundationObjectName, System.StringComparison.Ordinal))
                     RuntimePrimitiveFactory.ProfileStructuralBox(part.gameObject, .04f);

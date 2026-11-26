@@ -58,10 +58,6 @@ namespace BarPromenade
         private int approachStopIndex = -1;
         private float approachStopDistance = -1f;
 
-        internal bool IsStoppedForBus(int vehicle) =>
-            MotionState == CityBusMotionState.Yielding && speed == 0f &&
-            lastBlocker.Kind == CityBusBlockerKind.BusBody && lastBlocker.Index == vehicle;
-
         private void ReportApproachStall(float travelled, float requestedTravel, float deltaTime,
             bool approachingStop, int stopIndex, float stopDistance, CityBusObstacleState obstacles)
         {

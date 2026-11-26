@@ -194,7 +194,7 @@
 - **Accepted exceptions 2026-11-03/2026-11-05/2026-11-11,user — City visibility/night:**
   All City heights:Exp2 .090/48m;no downhill gradient. Home balcony keeps its
   separate far outlook. Night dims sky/fill/haze/reflections;fixed practicals stay.
-  CityFogField≤36 wind layers/shared Home time;pause/roof/dormancy/unload cleanup.
+  CityFogField≤36 wind particles. Street air integrates depth-clipped ellipsoids at 2.6–22 m. Two scales of one repeating R8 lattice drift and roll on scaled time. Balcony keeps clock-driven sheets. Pause/roof/dormancy/unload cleanup.
   CityEastDistance cameraXZ/post:skyline/windows/glow full≤12m→0at30m;
   far traffic/panorama fades first12m of south hills. Cached refs/MPB;no
   recurring loads/materials. Shared wind/probes/SSR/water/bounce/volumetrics/

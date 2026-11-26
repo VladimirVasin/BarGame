@@ -53,6 +53,7 @@ namespace BarPromenade
             {
                 GameObject building = assets.Create(plot.Model, plot.Id, settlement.transform,
                     plot.GroundCenter, plot.Rotation);
+                VillageResidentialFrontages.Abandoned(building.transform, plot);
                 if (!string.IsNullOrEmpty(plot.Yard))
                     assets.Create(plot.Yard, "Former Household Yard", building.transform,
                         plot.GroundCenter, plot.Rotation);

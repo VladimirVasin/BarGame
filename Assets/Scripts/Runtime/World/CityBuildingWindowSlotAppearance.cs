@@ -61,6 +61,8 @@ namespace BarPromenade
             registry.OptionalWindowMask = ResolveOptionalWindowMask(registry, lot, citySeed, guaranteed);
             registry.WindowScheduleSeed = CityExteriorAppearance.StableHash(citySeed, lot.Cell.x, lot.Cell.y,
                 Mathf.RoundToInt(lot.Center.x * 100f), Mathf.RoundToInt(lot.Center.z * 100f), lot.BuildingVariant) ^ 0x9e3779b9u;
+            bool housing = ResidentialAddress.Applies(lot);
+            var address = housing ? new ResidentialAddress(lot, citySeed) : default;
             ulong litWindowMask = ResolveTimedMask(registry, AbsoluteMinutes);
             for (int index = 0; index < registry.WindowSlots.Count; index++)
             {
@@ -87,8 +89,13 @@ namespace BarPromenade
                 if (lot.IsOrdinaryBuilding)
                     family = (litWindowMask & (1UL << shaderIndex)) != 0
                         ? CityWindowFamily.Warm : CityWindowFamily.Off;
-                int variant = (int)((paneHash >> 8) %
-                    CityWindowAppearance.VariantCount);
+                int variant = housing ? (address.Household(slot) % 4) switch
+                {
+                    0 => 1, // Kitchen curtain.
+                    1 => 0, // Clear plant window.
+                    2 => 3, // Sitting room lamp.
+                    _ => 2  // Storage blind.
+                } : (int)((paneHash >> 8) % CityWindowAppearance.VariantCount);
                 states[shaderIndex] =
                     ((int)family * CityWindowAppearance.VariantCount) +
                     variant;

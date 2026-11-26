@@ -13,6 +13,8 @@ namespace BarPromenade
 
         private static Material emissiveMaterial;
         private static Material atmosphereMaterial;
+        private static Material streetFogMaterial;
+        private static Texture3D streetDensityNoise;
 
         public static Material EmissiveMaterial
         {
@@ -35,31 +37,49 @@ namespace BarPromenade
             }
         }
 
-        public static Material AtmosphereMaterial
+        public static Material AtmosphereMaterial => SharedMaterial(ref atmosphereMaterial,
+            AtmosphereShaderResourcePath, "City Atmosphere Shared", true);
+
+        internal static Material StreetFogMaterial
         {
             get
             {
-                if (atmosphereMaterial == null)
+                if (streetFogMaterial != null) return streetFogMaterial;
+                SharedMaterial(ref streetFogMaterial, "Shaders/CityStreetFog", "City Street Fog Shared", false);
+                // A repeating 4 KiB lattice. Hardware interpolates all three axes and the
+                // shader samples it at two scales. Nothing is regenerated as the wind changes.
+                const int side = 16;
+                var values = new byte[side * side * side];
+                uint state = 0xD10F356Bu;
+                for (int i = 0; i < values.Length; i++)
                 {
-                    Shader shader = Resources.Load<Shader>(
-                        AtmosphereShaderResourcePath);
-                    if (shader == null)
-                    {
-                        throw new InvalidOperationException(
-                            $"Missing Resources shader " +
-                            $"'{AtmosphereShaderResourcePath}'.");
-                    }
-
-                    atmosphereMaterial = new Material(shader)
-                    {
-                        name = "City Atmosphere Shared",
-                        hideFlags = HideFlags.HideAndDontSave,
-                        enableInstancing = true
-                    };
+                    state ^= state << 13;
+                    state ^= state >> 17;
+                    state ^= state << 5;
+                    values[i] = (byte)(state >> 24);
                 }
-
-                return atmosphereMaterial;
+                streetDensityNoise = new Texture3D(side, side, side, TextureFormat.R8, false)
+                {
+                    name = "Street fog density", wrapMode = TextureWrapMode.Repeat,
+                    filterMode = FilterMode.Bilinear, hideFlags = HideFlags.HideAndDontSave
+                };
+                streetDensityNoise.SetPixelData(values, 0);
+                streetDensityNoise.Apply(false, true);
+                streetFogMaterial.SetTexture("_DensityNoise", streetDensityNoise);
+                return streetFogMaterial;
             }
+        }
+
+        private static Material SharedMaterial(ref Material material, string path, string name, bool instanced)
+        {
+            if (material != null) return material;
+            Shader shader = Resources.Load<Shader>(path);
+            if (shader == null) throw new InvalidOperationException($"Missing Resources shader '{path}'.");
+            material = new Material(shader)
+            {
+                name = name, hideFlags = HideFlags.HideAndDontSave, enableInstancing = instanced
+            };
+            return material;
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -74,6 +94,16 @@ namespace BarPromenade
             {
                 UnityEngine.Object.Destroy(atmosphereMaterial);
                 atmosphereMaterial = null;
+            }
+            if (streetFogMaterial != null)
+            {
+                UnityEngine.Object.Destroy(streetFogMaterial);
+                streetFogMaterial = null;
+            }
+            if (streetDensityNoise != null)
+            {
+                UnityEngine.Object.Destroy(streetDensityNoise);
+                streetDensityNoise = null;
             }
         }
     }

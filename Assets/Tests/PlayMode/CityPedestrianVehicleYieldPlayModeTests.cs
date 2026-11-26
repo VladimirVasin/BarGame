@@ -112,6 +112,7 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
+        [Category("CityTrafficPassage")]
         public IEnumerator Walker_ClearsVehicleWaitsForTailAndFollowingVehicleThenReturnsBeforeResuming()
         {
             CreateActor(new FlatArea());
@@ -138,6 +139,8 @@ namespace BarPromenade.Tests.PlayMode
             // refuge by a fraction of a stride. Let that stride settle.
             for (int i = 0; i < 30; i++) actor.Advance(Step, vehicleTraffic: traffic);
             Vector3 refuge = actor.Position;
+            Assert.That(actor.TrafficVelocity.sqrMagnitude, Is.LessThan(.0001f),
+                "Drivers must see a stationary walker in the refuge, even when the saved destination is across the lane.");
             actor.Advance(0f, vehicleTraffic: traffic);
             AssertPlanarDistance(actor.Position, refuge, 0.001f, "A paused yield must remain still.");
 
@@ -253,6 +256,7 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
+        [Category("CityTrafficPassage")]
         public IEnumerator Walker_WaitsAtKerbThenClearsCrossingBeforeBoarding()
         {
             CreateActor(new FlatArea(), atKerb: true);

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -22,6 +23,7 @@ namespace BarPromenade
         private static readonly int SoftParticleDistanceId =
             Shader.PropertyToID("_SoftParticleDistance");
         private static readonly int FogMotionId = Shader.PropertyToID("_FogMotion");
+        private static readonly int StreetFlowId = Shader.PropertyToID("_StreetFlow");
 
         [SerializeField] private ParticleSystem particles;
         [SerializeField] private ParticleSystemRenderer fogRenderer;
@@ -31,6 +33,8 @@ namespace BarPromenade
         private bool isSheltered;
         private MaterialPropertyBlock properties;
         private Vector2 windDrift;
+        private bool streetVolumes;
+        private Vector2 flowOffset;
 
         public bool IsInitialized { get; private set; }
         public bool CityLayers { get; private set; }
@@ -50,6 +54,13 @@ namespace BarPromenade
             Material fogMaterial,
             int seed,
             bool useCityLayers = false)
+            => Initialize(playerTransform, fogMaterial, seed, useCityLayers, false);
+
+        internal void InitializeStreet(Transform playerTransform, int seed)
+            => Initialize(playerTransform, CityNightResources.StreetFogMaterial, seed, true, true);
+
+        private void Initialize(Transform playerTransform, Material fogMaterial, int seed,
+            bool useCityLayers, bool streetVolumes)
         {
             player = playerTransform != null
                 ? playerTransform
@@ -60,9 +71,12 @@ namespace BarPromenade
             }
 
             CityLayers = useCityLayers;
+            this.streetVolumes = streetVolumes;
+            flowOffset = Vector2.zero;
+            windDrift = Vector2.zero;
             EnsureParticleSystem();
             PositionEmitter();
-            ConfigureParticleSystem(fogMaterial, seed);
+            ConfigureParticleSystem(fogMaterial, seed, streetVolumes);
             IsInitialized = true;
             RefreshMotion();
         }
@@ -71,7 +85,9 @@ namespace BarPromenade
         public void SetWindDrift(Vector2 horizontalMetersPerSecond)
         {
             if (!IsInitialized || !CityLayers) return;
-            Vector2 next = Vector2.ClampMagnitude(horizontalMetersPerSecond * .14f, .45f);
+            Vector2 next = streetVolumes
+                ? Vector2.ClampMagnitude(horizontalMetersPerSecond * .48f, 1.35f)
+                : Vector2.ClampMagnitude(horizontalMetersPerSecond * .14f, .45f);
             if ((next - windDrift).sqrMagnitude < .0001f) return;
             windDrift = next;
             ParticleSystem.VelocityOverLifetimeModule velocity = particles.velocityOverLifetime;
@@ -136,6 +152,13 @@ namespace BarPromenade
             }
 
             PositionEmitter();
+            if (streetVolumes && !isSheltered && fogRenderer.enabled)
+            {
+                // Integrate in texture cycles so a wind direction change cannot jump the field.
+                flowOffset += windDrift * (Time.deltaTime / 36f);
+                flowOffset.x = Mathf.Repeat(flowOffset.x, 1f);
+                flowOffset.y = Mathf.Repeat(flowOffset.y, 1f);
+            }
             RefreshMotion();
         }
 
@@ -148,6 +171,11 @@ namespace BarPromenade
                 GameTimeDayNightRules.MinutesPerDay + GameSessionState.GameTimeOfDayMinutes;
             float phase = (float)(minutes * .16 % (Math.PI * 2.0));
             properties.SetVector(FogMotionId, new Vector4(Mathf.Sin(phase), Mathf.Cos(phase), 1f, 1f - LayerOpacityMultiplier));
+            if (streetVolumes)
+            {
+                float roll = Time.time * .84f;
+                properties.SetVector(StreetFlowId, new Vector4(flowOffset.x, flowOffset.y, Mathf.Sin(roll), Mathf.Cos(roll)));
+            }
             fogRenderer.SetPropertyBlock(properties);
         }
 
@@ -186,7 +214,7 @@ namespace BarPromenade
             particleTransform.localScale = Vector3.one;
         }
 
-        private void ConfigureParticleSystem(Material fogMaterial, int seed)
+        private void ConfigureParticleSystem(Material fogMaterial, int seed, bool streetVolumes)
         {
             particles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
             particles.useAutoRandomSeed = false;
@@ -204,10 +232,10 @@ namespace BarPromenade
                 ? new ParticleSystem.MinMaxCurve(12f, 18f)
                 : new ParticleSystem.MinMaxCurve(10f, 14f);
             main.startSpeed = 0f;
-            main.startSize = CityLayers
+            main.startSize = streetVolumes ? new ParticleSystem.MinMaxCurve(7f, 12f) : CityLayers
                 ? new ParticleSystem.MinMaxCurve(6.5f, 14f)
                 : new ParticleSystem.MinMaxCurve(7.0f, 12.5f);
-            main.startRotation = new ParticleSystem.MinMaxCurve(
+            main.startRotation = streetVolumes ? new ParticleSystem.MinMaxCurve(0f) : new ParticleSystem.MinMaxCurve(
                 0f,
                 Mathf.PI * 2f);
             main.startColor = Color.white;
@@ -215,14 +243,14 @@ namespace BarPromenade
 
             ParticleSystem.EmissionModule emission = particles.emission;
             emission.enabled = true;
-            emission.rateOverTime = CityLayers ? 2.2f : 2.8f;
+            emission.rateOverTime = streetVolumes ? 1.5f : CityLayers ? 2.2f : 2.8f;
             emission.rateOverDistance = 0f;
 
             ParticleSystem.ShapeModule shape = particles.shape;
             shape.enabled = true;
             shape.shapeType = ParticleSystemShapeType.Box;
             shape.position = new Vector3(0f, 1.4f, 0f);
-            shape.scale = new Vector3(30f, 4.5f, 30f);
+            shape.scale = streetVolumes ? new Vector3(23f, 3.6f, 23f) : new Vector3(30f, 4.5f, 30f);
 
             ParticleSystem.VelocityOverLifetimeModule velocity =
                 particles.velocityOverLifetime;
@@ -251,7 +279,7 @@ namespace BarPromenade
                 CreateVisibilityGradient());
 
             DisableUnusedModules();
-            ConfigureRenderer(fogMaterial);
+            ConfigureRenderer(fogMaterial, streetVolumes);
 
             particles.Simulate(InitialFillSeconds, true, true, true);
             particles.Play(true);
@@ -278,15 +306,32 @@ namespace BarPromenade
             textureSheet.enabled = false;
         }
 
-        private void ConfigureRenderer(Material fogMaterial)
+        private void ConfigureRenderer(Material fogMaterial, bool streetVolumes)
         {
             fogRenderer.sharedMaterial = fogMaterial;
-            fogRenderer.renderMode = ParticleSystemRenderMode.Billboard;
-            fogRenderer.alignment = ParticleSystemRenderSpace.View;
+            fogRenderer.renderMode = streetVolumes ? ParticleSystemRenderMode.Mesh : ParticleSystemRenderMode.Billboard;
+            fogRenderer.alignment = streetVolumes ? ParticleSystemRenderSpace.World : ParticleSystemRenderSpace.View;
+            if (streetVolumes)
+            {
+                // One batched set of conservative bounds. The shader draws only the air inside.
+                fogRenderer.mesh = Resources.GetBuiltinResource<Mesh>("Sphere.fbx");
+                fogRenderer.SetActiveVertexStreams(new List<ParticleSystemVertexStream>
+                {
+                    ParticleSystemVertexStream.Position, ParticleSystemVertexStream.Color,
+                    ParticleSystemVertexStream.Center
+                });
+            }
+            else
+            {
+                fogRenderer.SetActiveVertexStreams(new List<ParticleSystemVertexStream>
+                {
+                    ParticleSystemVertexStream.Position, ParticleSystemVertexStream.Color, ParticleSystemVertexStream.UV
+                });
+            }
             fogRenderer.sortMode = ParticleSystemSortMode.Distance;
             fogRenderer.minParticleSize = 0.015f;
             fogRenderer.maxParticleSize = 0.18f;
-            fogRenderer.enableGPUInstancing = true;
+            fogRenderer.enableGPUInstancing = !streetVolumes;
             fogRenderer.shadowCastingMode = ShadowCastingMode.Off;
             fogRenderer.receiveShadows = false;
             fogRenderer.lightProbeUsage = LightProbeUsage.Off;
