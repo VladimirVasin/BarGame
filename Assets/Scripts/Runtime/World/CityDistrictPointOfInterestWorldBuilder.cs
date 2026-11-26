@@ -1173,6 +1173,9 @@ namespace BarPromenade
                 if(part=="Yard")
                 {
                     CityCanneryAssetProvider.ConfigureYard(model,plan);
+                    foreach (float z in new[] { -6.6f, 6.65f })
+                        CityRainRunoffSite.AddInlet(recipe, recipe.TransformPoint(new Vector3(1.1f, .1125f, z)),
+                            recipe.forward, .55f, .115f);
                     authoredBench = CityCanneryAssetProvider.FindPart(model, "FactoryRestBench");
                 }
                 if(part=="Hall")

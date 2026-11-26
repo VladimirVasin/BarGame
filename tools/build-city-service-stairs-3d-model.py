@@ -9,6 +9,8 @@ from pathlib import Path
 sys.dont_write_bytecode = True
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
+from rainwater_parts import pipe_wall
+
 kit = runpy.run_path(str(ROOT / "tools/build-city-terrace-3d-model.py"))
 port = kit["port"]
 OUTPUT = ROOT / "Assets/Resources/CityTerraces"
@@ -85,22 +87,26 @@ def build():
     part(root, "SteelDark", "Cast grate", grate)
 
     root = assembly("GableRainShoe")
+    socket = (0, 1.34, 0)
+    mouth = (.04, .86, -.69)
+    neck = (.025, .91, -.51)
+
     def pipe(g):
-        g.rod((0, .59, 0), (0, 3.4, 0), .077, port.METAL, 12)
-        for y in (.81, 2.48):
+        g.rod(socket, (0, 3.4, 0), .077, port.METAL, 12)
+        for y in (1.55, 2.48):
             box(g, (.11, y, 0), (.17, .055, .055))
             g.rod((0, y - .026, 0), (0, y + .026, 0), .089, port.METAL, 12)
     part(root, "Steel", "Painted downpipe", pipe)
+
     def elbow(g):
-        for a, b in [((0,.64,0),(0,.35,0)), ((0,.35,0),(-.18,.17,0)), ((-.18,.17,0),(-.35,.12,0))]:
-            g.rod(a, b, .081, port.METAL, 12)
-        g.rod((0,.59,0),(0,.65,0),.088,port.METAL,12)
+        wall = pipe_wall((socket, (0, 1.18, -.012), (0, 1.055, -.07), (0, .985, -.18), neck, mouth),
+                         .081, .009)
+        g.add(*wall, port.METAL)
+        g.rod((0, 1.307, 0), (0, 1.37, 0), .088, port.METAL, 12)
     part(root, "SteelLight", "Galvanized shoe", elbow)
-    def channel(g):
-        for z in (-.12,.12):
-            box(g, (-.49,.032,z), (.95,.065,.053), .008)
-        box(g, (-.49,.007,0), (.95,.015,.20))
-    part(root, "Concrete", "Outlet channel", channel)
+    port.empty("ANCHOR_RainSocket", root, socket)
+    port.empty("ANCHOR_RainMouth", root, mouth)
+    port.empty("ANCHOR_RainAxis", root, neck)
 
     root = assembly("CourtPourJoint")
     def boards(g):
@@ -139,6 +145,8 @@ def build():
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--validate-only", action="store_true")
+    parser.add_argument("--model-dir", type=Path, default=OUTPUT)
+    parser.add_argument("--only", choices=("GableRainShoe",))
     args = parser.parse_args(sys.argv[sys.argv.index("--")+1:] if "--" in sys.argv else [])
     roots = build()
     def measure(roots):
@@ -149,12 +157,13 @@ def main():
     assert abs(report[0]["bounds_max"][2] - 1.92) < .001
     roots = build()
     assert measure(roots) == report
-    path = OUTPUT / "ServiceStairs.json"
+    path = args.model_dir / "ServiceStairs.json"
     if args.validate_only:
         assert json.loads(path.read_text()) == report
     else:
         for root in roots:
-            port.base.export(root, OUTPUT / (root.name + ".fbx"))
+            if args.only is None or root.name == args.only:
+                port.base.export(root, args.model_dir / (root.name + ".fbx"))
         path.write_text(json.dumps(report, indent=2) + "\n")
     print("CITY SERVICE STAIRS: measured metre fittings and deterministic geometry")
 

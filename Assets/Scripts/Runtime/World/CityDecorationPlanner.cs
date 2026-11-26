@@ -936,7 +936,8 @@ namespace BarPromenade
                     nightPlan,
                     occupiedGroundPositions,
                     out Vector3 position,
-                    out Vector3 forward) ||
+                    out Vector3 forward,
+                    atGutter: kind == CityDecorationKind.RoadsideDrainAndCover) ||
                 !IsSeparated(position, placedPositions, minimumSpacing))
             {
                 return;
@@ -1216,7 +1217,8 @@ namespace BarPromenade
             ICollection<Vector3> occupiedGroundPositions,
             out Vector3 position,
             out Vector3 forward,
-            float depthOverride = -1f)
+            float depthOverride = -1f,
+            bool atGutter = false)
         {
             CityCafePlan cafe = CityCafePlan.Create(layout);
             float[] attempts =
@@ -1234,6 +1236,7 @@ namespace BarPromenade
                         out position,
                         out forward,
                         depthOverride) ||
+                    (atGutter && !TryMoveToGutter(layout, lot, ref position, ref forward)) ||
                     CityDecorationValidator.IsProtectedGroundAnchor(
                         position,
                         objectRadius,
@@ -1258,6 +1261,25 @@ namespace BarPromenade
             position = default;
             forward = default;
             return false;
+        }
+
+        private static bool TryMoveToGutter(CityLayout layout, BuildingLot lot,
+            ref Vector3 position, ref Vector3 forward)
+        {
+            RoadEdge edge = RoadEdge.ForCellFrontage(lot.Cell, lot.FrontageDirection);
+            if (!layout.HasRoad(edge) || layout.GetPathKind(edge) != CityPathKind.Street) return false;
+            CityRoadPath path = layout.RoadGeometry.Get(edge);
+            var projection = path.Project(new Vector2(position.x, position.z));
+            if (projection.DistanceAlong < 4f || path.Length - projection.DistanceAlong < 4f) return false;
+            var station = path.SampleDistance(projection.DistanceAlong);
+            Vector2 outward = station.Right * Mathf.Sign(projection.SignedLateral);
+            float kerb = layout.RoadWidth * .5f - CityStreetSurfacePlanner.SidewalkWidth;
+            Vector2 point = station.Position + outward * (kerb - .45f);
+            if (!CityStreetSupportPlan.ForLayout(layout).TrySampleTop(point, out float top, out var kind) ||
+                kind != FootstepGroundKind.Concrete) return false;
+            position = new Vector3(point.x, top - .012f, point.y);
+            forward = new Vector3(outward.x, 0f, outward.y);
+            return true;
         }
 
         private static bool IsCourtyardCell(CityLayout layout, Vector2Int cell)

@@ -40,6 +40,11 @@ namespace BarPromenade
             }
 
             var anchors = shell.GetComponentsInChildren<Transform>(true);
+            CityRainRunoffSite.AddOutlet(root, root.TransformPoint(new Vector3(-6.86f, .10f, .208f)),
+                root.TransformDirection(new Vector3(0f, -1f, .94f)), .043f);
+            for (float x = -5.95f; x <= 6f; x += 1.7f)
+                CityRainRunoffSite.AddInlet(root, root.TransformPoint(new Vector3(x, .004f, .32f)),
+                    root.forward, .82f, .10f);
             // The suspended opal diffuser reaches the walls and ceiling.
             // The shaded fixtures bring out the engine, bench and doorway hardware.
             AddFixture("Ceiling", "GEO_CeilingLens", new Color(1f, .89f, .73f), 3.1f, 6.5f, .24f);

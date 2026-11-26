@@ -114,7 +114,7 @@
 - **Accepted 2026-11-07,user — illuminated bus platforms:** City/Home share
   recessed neutral perimeter diffuser;4rail Spots→bench/back/waiting,pole→boarding,
   paired plate Spots. Dedup01/02/03/transfers;fixed CityNightAtmosphere/day≥2/3,
-  native range;soft256 shadows≤2visible stops/10maps,fade/hysteresis;strip air0.
+  native range;soft256 shadows≤2visible stops/10maps,fade12–24m;strip air0.
   Air4/bounce4/halos24/cubes2×256;depth/structure clipping. Shared24FX owners,
   GI/SSGI/SCGI/pass/fog/text/audio/story unchanged;bounded assets/cleanup.
   Art2.3/15a,story6/20/16/21/art9;CityBusStopLighting;cost unmeasured.
@@ -6116,7 +6116,7 @@
   no custom distance gate. Ordinary buildings lack generated LODs/LODGroup;
   simplified Home is not LOD. Auxiliary distance budgets stay.
   Warm/day≥`2/3`,halos/profiles/faults/dormancy/unload stay.
-  air4/bounce4/halos24/cubes2;wash adds no air/bounce entry/GI/post/shadow map.
+  air4/bounce4/halos24;2 filtered cubes, one face/frame;wash adds no air/bounce/GI/post/shadow map.
   `CityLightingContinuity`/`CityStreetWindowMinimum` pass clock/glass/wall/lifecycle.
   CPU/GPU frame cost unavailable;no gain claimed.
 - **Accepted — 2026-11-07, user — one lamp per residential entrance:**
@@ -6187,17 +6187,15 @@
   mountain profiles shape snow and wind. Auto uses the current clock slot.
   Scene travel and checkpoints keep the debug selection; New Game clears it.
 - **Accepted 2026-11-12,user — rain contacts:** City and active Home balcony
-  trace the first face from the wind direction. Native matching collision,
-  visible mesh cache and water footprints resolve the surface. The live puddle
-  rim also owns footstep classification. Cloth/ground absorb, hard parts
-  splash, glass carries beads, water clips its rings and grass darkens in place.
-  Authored eaves shed secondary drops; bus pane marks use the wipers and reset
-  with the pool. One batch, `128` drops, `8` new rain rays/frame plus eave drips;
-  bounded geometry/pose reads. Pause, shelter, balcony visibility and dormancy
-  own lifetime. Existing GI/SSGI/SCGI/SSAO/fog/air/shadows/grade and probe/SSR scope;
-  material/particle changes use wind and preserve bevel/COLOR/decal/rim/outline
-  ownership. Existing bloom/DOF/SMAA/vignette/grain/dither/flares/blur/lens scope.
-  Art §4/16, story §16/20. Performance unmeasured.
+  use wind and first-face mesh/collision/water. Puddle rims govern contacts
+  and steps. Cloth/soil absorb, hard parts splash, glass beads, water rings
+  stay inside rims, grass darkens. Eaves drip; bus wipers clear pooled beads.
+  One batch,128 drops/8 rain rays per frame plus eaves. Pause/shelter/visibility/dormancy.
+- **Accepted 2026-11-26,user — visible City drainage.** The raised gable shoe
+  sheds past the approach. Mouth axes launch jets under gravity. Kerb grates
+  gather soft-rim pools on sampled slopes with inward ripples. Indexed sites share
+  the rain batch. District rebinds refresh contacts. 24FX use City owners.
+  Existing road SSR/probes, light/fog and post. Art §4/7/16, story §16/20.
 - **Accepted — Deterministic lightning outside static local lighting:**
   Lightning shares the pure schedule: each `12`-game-minute window hashes
   into at most one strike (`70%`) whose start offset, azimuth and distance

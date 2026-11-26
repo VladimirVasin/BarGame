@@ -51,6 +51,10 @@ namespace BarPromenade
             if (!asset || !glass || !wire) throw new InvalidOperationException("Missing glazed fabrication hall assets.");
             var model = UnityEngine.Object.Instantiate(asset, registry.transform, false);
             model.name = "Glazed fabrication hall";
+            for (int bay = 0; bay < 3; bay++)
+                CityRainRunoffSite.AddLocalOutlet(registry.transform,
+                    new Vector3(-7.60f + bay * (15.5f / 3f), .197f, -5.944f),
+                    new Vector3(0f, -.12f, -.11f), .034f);
             Renderer originalWall = null, originalRoof = null;
             foreach (var part in registry.Parts)
             {

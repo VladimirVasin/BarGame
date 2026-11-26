@@ -149,7 +149,7 @@
   "animation_count": 0,
   "mesh_count": 310,
   "assembly_count": 145,
-  "triangle_count": 80946,
+  "triangle_count": 81270,
   "assemblies": [
     {
       "kind": "IndustrialStacksAndTanks",
@@ -4384,7 +4384,7 @@
       "bounds_max_source": [
         0.825,
         0.305,
-        0.056
+        0.05
       ],
       "bounds_min_unity": [
         -0.4,
@@ -4393,7 +4393,7 @@
       ],
       "bounds_max_unity": [
         0.825,
-        0.056,
+        0.05,
         0.305
       ]
     },
@@ -4443,7 +4443,9 @@
       "placement_contract": "ground_forward_frame",
       "canonical_reference": {
         "pipe_height": 0.94,
-        "runnel_reach": 1.13
+        "runnel_reach": 1.13,
+        "rain_mouth_y": 0.115,
+        "rain_mouth_z": 0.175
       },
       "scale_parameters": [],
       "unity_owned_parts": [],
@@ -4456,7 +4458,7 @@
       ],
       "bounds_min_source": [
         -0.26,
-        -0.117119,
+        -0.118739,
         0.0
       ],
       "bounds_max_source": [
@@ -4467,7 +4469,7 @@
       "bounds_min_unity": [
         -0.26,
         0.0,
-        -0.117119
+        -0.118739
       ],
       "bounds_max_unity": [
         0.26,
@@ -14335,8 +14337,8 @@
       "tint_role": "Street",
       "placement_mode": "recipe_local_rigid",
       "normalized_height_m": null,
-      "vertices": 136,
-      "triangles": 240,
+      "vertices": 200,
+      "triangles": 352,
       "bounds_min_source": [
         -0.33,
         -0.21,
@@ -14345,7 +14347,7 @@
       "bounds_max_source": [
         0.775,
         0.255,
-        0.056
+        0.05
       ],
       "bounds_min_unity": [
         -0.33,
@@ -14354,7 +14356,7 @@
       ],
       "bounds_max_unity": [
         0.775,
-        0.056,
+        0.05,
         0.255
       ],
       "uv_min": [
@@ -14375,8 +14377,8 @@
       "tint_role": "Masonry",
       "placement_mode": "recipe_local_rigid",
       "normalized_height_m": null,
-      "vertices": 40,
-      "triangles": 72,
+      "vertices": 88,
+      "triangles": 156,
       "bounds_min_source": [
         -0.4,
         -0.28,
@@ -14385,7 +14387,7 @@
       "bounds_max_source": [
         0.825,
         0.305,
-        0.028
+        0.024
       ],
       "bounds_min_unity": [
         -0.4,
@@ -14394,7 +14396,7 @@
       ],
       "bounds_max_unity": [
         0.825,
-        0.028,
+        0.024,
         0.305
       ],
       "uv_min": [
@@ -14495,12 +14497,12 @@
       "tint_role": "Street",
       "placement_mode": "recipe_local_rigid",
       "normalized_height_m": null,
-      "vertices": 68,
-      "triangles": 120,
+      "vertices": 130,
+      "triangles": 248,
       "bounds_min_source": [
         -0.1075,
-        -0.117119,
-        0.053942
+        -0.118739,
+        0.053
       ],
       "bounds_max_source": [
         0.1075,
@@ -14509,8 +14511,8 @@
       ],
       "bounds_min_unity": [
         -0.1075,
-        0.053942,
-        -0.117119
+        0.053,
+        -0.118739
       ],
       "bounds_max_unity": [
         0.1075,
@@ -19047,5 +19049,5 @@
       ]
     }
   ],
-  "build_signature": "d82f1622548e1ad64fd11f04fdcc59070a8b58630430f671d2e91ec4fb5ba549"
+  "build_signature": "93922a108a4bcfa920b1dec421134e69b0fadbd941b0a0c9c5f5d07ce6b2a28f"
 }

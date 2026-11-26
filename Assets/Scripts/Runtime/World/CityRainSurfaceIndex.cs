@@ -206,6 +206,14 @@ namespace BarPromenade
             return probe.Found;
         }
 
+        internal bool TraceStatic(Ray ray, float limit, out Contact contact)
+        {
+            var probe = new Probe { Index = this, Ray = ray };
+            statics?.Trace(ray, ref limit, ref probe);
+            contact = probe.Hit;
+            return probe.Found;
+        }
+
         private bool TryReceiver(Receiver receiver, Ray ray, float limit,
             out float distance, out Vector3 normal, out CityRainSurfaceKind kind)
         {

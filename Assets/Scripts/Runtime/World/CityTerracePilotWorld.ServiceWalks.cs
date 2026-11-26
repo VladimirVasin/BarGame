@@ -60,6 +60,8 @@ namespace BarPromenade
                 {
                     var grate = Fitting(root, "OutletShelf", flight.Start + Vector3.forward * 1.05f,
                         Quaternion.identity);
+                    CityRainRunoffSite.AddInlet(grate.transform,
+                        grate.transform.TransformPoint(Vector3.up * .023f), Vector3.right, .415f, .33f);
                     foreach (var r in grate.GetComponentsInChildren<Renderer>())
                         if (r.name.StartsWith("Outfall masonry", StringComparison.Ordinal))
                             CityFringeYardSurfaceAppearance.ApplyCombined(r, CityFringeYardSurfaceKind.Masonry,
@@ -161,22 +163,27 @@ namespace BarPromenade
             foreach (var house in CityHillsideNeighborhoodPlan.ForLayout(layout).Buildings)
                 if (house.Lot.Cell == new Vector2Int(22, -5))
                 {
-                    var at = new Vector3(house.FoundationBounds.xMin - .18f, house.ThresholdWorld.y,
+                    var at = new Vector3(house.ThresholdWorld.x - .05f, house.ThresholdWorld.y,
                         house.FoundationBounds.yMin + .55f);
                     var drain = Fitting(root, "GableRainShoe", at, Quaternion.identity);
+                    var fitted = drain.transform;
+                    Vector3 mouth = CityResidentialCourtyardAssetProvider.FindPart(fitted, "ANCHOR_RainMouth").position;
+                    Vector3 neck = CityResidentialCourtyardAssetProvider.FindPart(fitted, "ANCHOR_RainAxis").position;
+                    Vector3 socket = CityResidentialCourtyardAssetProvider.FindPart(fitted, "ANCHOR_RainSocket").position;
+                    CityRainRunoffSite.AddOutlet(fitted, mouth, mouth - neck, .072f);
                     // Only the straight downpipe stretches from its socket to the eaves.
                     foreach (var part in drain.GetComponentsInChildren<Renderer>())
                         if (part.name.StartsWith("Painted downpipe", StringComparison.Ordinal))
                         {
                             float height = house.Lot.Height;
                             var t = part.transform;
-                            Vector3 socket = new(at.x, at.y + .59f, at.z);
-                            Vector3 pivot = t.InverseTransformPoint(root.TransformPoint(socket));
+                            Vector3 pivot = t.InverseTransformPoint(socket);
                             Vector3 before = t.TransformPoint(pivot);
                             Vector3 localUp = t.InverseTransformDirection(root.up);
                             Vector3 scale = t.localScale;
                             int axis = Mathf.Abs(localUp.y) > Mathf.Abs(localUp.z) ? 1 : 2;
-                            scale[axis] *= (height - .59f) / (3.4f - .59f);
+                            float socketHeight = fitted.InverseTransformPoint(socket).y;
+                            scale[axis] *= (height - socketHeight) / (3.4f - socketHeight);
                             t.localScale = scale;
                             t.position += before - t.TransformPoint(pivot);
                         }

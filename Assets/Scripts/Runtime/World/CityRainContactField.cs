@@ -9,14 +9,14 @@ namespace BarPromenade
 {
     /// <summary>One small batch of near rain strokes and their surface responses.</summary>
     [DefaultExecutionOrder(410), DisallowMultipleComponent]
-    internal sealed class CityRainContactField : MonoBehaviour
+    internal sealed partial class CityRainContactField : MonoBehaviour
     {
         internal const int MaximumDrops = 128;
         internal const int MaximumWaterRings = 20;
         private const int MaximumGrassContacts = 12;
         internal const float DetailRadius = 12f;
         private const int MaximumSpawnsPerFrame = 8;
-        private const int MaximumQuads = 3 * MaximumDrops;
+        private const int MaximumQuads = 3 * MaximumDrops + RunoffQuadBudget;
         private const float MaximumViewDistance = 26f;
         private static readonly int WaterHitsId = Shader.PropertyToID("_CityRainWaterHits");
         private static readonly int WaterCountId = Shader.PropertyToID("_CityRainWaterHitCount");
@@ -65,6 +65,7 @@ namespace BarPromenade
         {
             additionalGeometry = additional;
             truck = movingTruck;
+            dirty = true;
             hasFocus = false;
         }
         private CityRainDripEdge[] edges;
@@ -125,6 +126,8 @@ namespace BarPromenade
             Shader.SetGlobalInt(WaterCountId, 0);
             Shader.SetGlobalInt(GrassCountId, 0);
             Clear();
+            runoffCells.Clear();
+            dirty = true;
             if (rain != null) rain.SetContactFade(Vector4.zero);
         }
 
@@ -142,6 +145,7 @@ namespace BarPromenade
             spawnCredit = 0f;
             nextDrip = 0f;
             hasFocus = false;
+            ResetRunoff();
         }
 
         private void LateUpdate()
@@ -175,9 +179,10 @@ namespace BarPromenade
         {
             if (dirty)
             {
-                surfaces.Rebuild(world, additionalGeometry);
-                dirty = false;
+                RebuildGeometry();
             }
+            surfaces.BeginFrame();
+            AdvanceRunoff(focus, deltaTime, intensity);
 
             for (int i = active - 1; i >= 0; i--)
             {
@@ -220,7 +225,6 @@ namespace BarPromenade
 
         private void PrepareMovingSurfaces(Vector3 focus)
         {
-            surfaces.BeginFrame();
             surfaces.AddMoving(hero, focus, 4f);
             if (buses != null)
                 foreach (CityBusDirector director in buses)
@@ -310,9 +314,9 @@ namespace BarPromenade
         {
             if (dirty)
             {
-                surfaces.Rebuild(world, additionalGeometry);
-                dirty = false;
+                RebuildGeometry();
             }
+            surfaces.BeginFrame();
             PrepareMovingSurfaces(rain.FollowTarget.position);
             return TryHit(ray, distance, out hit);
         }
@@ -374,6 +378,7 @@ namespace BarPromenade
                 }
                 DrawHit(drop, point, age / Lifetime(drop.Hit.Kind), eye, fade);
             }
+            DrawRunoff(eye);
 
             if (quads == 0) return;
             const MeshUpdateFlags flags = MeshUpdateFlags.DontRecalculateBounds | MeshUpdateFlags.DontValidateIndices;
@@ -453,13 +458,8 @@ namespace BarPromenade
 
         private void Quad(Vector3 centre, Vector3 right, Vector3 up, Color32 color, float alpha)
         {
-            if (quads == MaximumQuads) return;
-            color.a = (byte)Mathf.Clamp(Mathf.RoundToInt(color.a * alpha), 0, 255);
-            int index = quads++ * 4;
-            vertices[index] = new Vertex { Position = centre - right - up, Color = color, UV = new Vector2(-1f, -1f) };
-            vertices[index + 1] = new Vertex { Position = centre + right - up, Color = color, UV = new Vector2(1f, -1f) };
-            vertices[index + 2] = new Vertex { Position = centre + right + up, Color = color, UV = new Vector2(1f, 1f) };
-            vertices[index + 3] = new Vertex { Position = centre - right + up, Color = color, UV = new Vector2(-1f, 1f) };
+            AddQuad(centre - right - up, centre + right - up, centre + right + up,
+                centre - right + up, color, alpha, 1f);
         }
 
         private void CreateBatch()

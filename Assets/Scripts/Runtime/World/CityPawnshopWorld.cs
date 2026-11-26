@@ -19,6 +19,8 @@ namespace BarPromenade
             var root = new GameObject(RootName).transform;
             root.SetParent(parent, false);
             root.SetPositionAndRotation(plan.Origin, plan.Rotation);
+            CityRainRunoffSite.AddLocalOutlet(root, new Vector3(3.78f, .054f, 4.65f),
+                new Vector3(0f, -1f, .34f), .034f);
             var model = UnityEngine.Object.Instantiate(template, root, false);
             model.name = "Pawnshop Exterior 3D";
             foreach (Transform part in model.GetComponentsInChildren<Transform>(true))

@@ -56,6 +56,8 @@ namespace BarPromenade
             if (house.HasGlazedBay)
             {
                 var stairs = Place(ref bay, "GlazedStairBay", root, entry, facing);
+                CityRainRunoffSite.AddOutlet(stairs, stairs.TransformPoint(new Vector3(1.12f, .116f, .376f)),
+                    stairs.TransformDirection(new Vector3(0f, -.48f, 1f)), .031f);
                 Transform ceiling = CityResidentialCourtyardAssetProvider.FindPart(stairs, "ANCHOR_EntranceLampCeiling");
                 // The first landing projects over the doorway. Keep the whole
                 // fixture below its authored slab, with its chassis flush to

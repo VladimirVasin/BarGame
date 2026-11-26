@@ -44,6 +44,7 @@ namespace BarPromenade
                     registry);
             ApplyPose(registry.transform, pose);
             ApplyAppearance(registry, lot, citySeed);
+            AddFacadeRunoff(registry.transform, lot);
             CityGroundSurfaceSystem.RegisterFacade(registry, lot, citySeed);
             BuildFoundation(
                 parent,
@@ -109,6 +110,7 @@ namespace BarPromenade
                     cityPose);
             ApplyPose(registry.transform, homePose);
             ApplyAppearance(registry, lot, context.Layout.Seed);
+            AddFacadeRunoff(registry.transform, lot);
             CityGroundSurfaceSystem.RegisterFacade(registry, lot, context.Layout.Seed);
             CityMetalWorkshop.Build(context.Layout, lot, registry);
             CityFishCannerySign.BuildClock(context.Layout, lot, registry);
@@ -121,6 +123,17 @@ namespace BarPromenade
                 "Exterior " + FoundationObjectName);
             CityCoveredPassageWorld.Build(parent, lot, context.Layout.Seed, homePose);
             return registry;
+        }
+
+        private static void AddFacadeRunoff(Transform model, BuildingLot lot)
+        {
+            // Lower cap of the two rainwater runs on the prototype's front elevation.
+            Vector3 envelope = CityBuildingAssetProvider.GetExpectedEnvelope(lot.District, lot.BuildingVariant);
+            float x = envelope.x * .5f - .18f;
+            float front = envelope.z * .5f - (lot.District == CityDistrictKind.Residential ? 1.2f : 0f);
+            var outward = new Vector3(0f, -1f, .17f);
+            CityRainRunoffSite.AddLocalOutlet(model, new Vector3(-x, .197f, front + .039f), outward, .027f);
+            CityRainRunoffSite.AddLocalOutlet(model, new Vector3(x, .197f, front + .039f), outward, .027f);
         }
 
         private static CityBuildingAssetRegistry InstantiatePrototype(

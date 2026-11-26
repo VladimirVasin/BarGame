@@ -53,6 +53,7 @@ import city_cinema_model as cinema
 import city_waterworks_model as waterworks
 import city_river_parts as river_parts  # noqa: E402
 import city_coastal_site_parts as coastal_site_parts  # noqa: E402
+from rainwater_parts import pipe_wall
 
 
 GENERATOR_VERSION = "4.19.0"
@@ -1479,8 +1480,10 @@ def build_lot_ground_downpipe_outfall() -> AssemblySpec:
         # turns it out.
         local_vertical_solid(0.0, 0.10, 0.86, -0.06,
                              0.058, 0.058, top_scale=1.0, sides=9),
-        local_tube((0.0, 0.115, -0.055), (0.0, 0.115, 0.175),
-                   0.062, sides=9),
+        # Author the open bore in source axes, which keep the polygon winding.
+        pipe_wall([local_point(0, y, z) for y, z in
+                   ((.22, -.06), (.146, -.035), (.115, .035), (.115, .175))],
+                  .062, .008, sides=10),
         local_box(0.0, 0.905, -0.055, 0.185, 0.075, 0.075, 0.010),
         # The strap that holds it to the brick.
         local_box(0.0, 0.560, -0.098, 0.215, 0.038, 0.030, 0.006),
@@ -1500,7 +1503,8 @@ def build_lot_ground_downpipe_outfall() -> AssemblySpec:
         coordinate_profile="root_local_direct",
         expected_source_min_z=0.0,
         canonical_reference=(
-            ("pipe_height", 0.94), ("runnel_reach", 1.13)),
+            ("pipe_height", 0.94), ("runnel_reach", 1.13),
+            ("rain_mouth_y", .115), ("rain_mouth_z", .175)),
     )
 
 
@@ -1515,9 +1519,11 @@ def build_roadside_drain_and_cover() -> AssemblySpec:
     """
     kind, variant = "RoadsideDrainAndCover", 0
     street: list[Geometry] = [
-        # The grate: a frame sunk at the kerb line with five bars.
-        local_box(0.0, 0.020, 0.0, 0.66, 0.040, 0.42, 0.008),
-        *(local_box(bar_x, 0.048, 0.0, 0.052, 0.016, 0.34, 0.004)
+        # The shallow dark recess remains visible through the five bars.
+        local_box(0.0, 0.012, 0.0, 0.60, 0.008, 0.36, 0.002),
+        *(local_box(x, .020, 0, .042, .040, .42, .004) for x in (-.309, .309)),
+        *(local_box(0, .020, z, .576, .040, .042, .004) for z in (-.189, .189)),
+        *(local_box(bar_x, 0.028, 0.0, 0.052, 0.024, 0.34, 0.004)
           for bar_x in (-0.20, -0.10, 0.0, 0.10, 0.20)),
         # The lid, set apart the way a valve chamber always is.
         local_vertical_solid(0.62, 0.0, 0.034, 0.10,
@@ -1528,7 +1534,8 @@ def build_roadside_drain_and_cover() -> AssemblySpec:
     masonry: list[Geometry] = [
         # The concrete the ironwork is bedded into, proud by a
         # centimetre so the joint reads without becoming a lip.
-        local_box(0.0, 0.014, 0.0, 0.80, 0.028, 0.56, 0.010),
+        *(local_box(x, .012, 0, .075, .024, .56, .007) for x in (-.3625, .3625)),
+        *(local_box(0, .012, z, .65, .024, .075, .007) for z in (-.2425, .2425)),
         local_vertical_solid(0.62, 0.0, 0.022, 0.10,
                              0.205, 0.205, top_scale=0.96, sides=12),
     ]

@@ -85,6 +85,8 @@ namespace BarPromenade
             // alignment value; localPosition would be off by a factor of 100.
             Vector3 targetDoor = parent.TransformPoint(doorPosition);
             instance.transform.position += targetDoor - doorAnchor.position;
+            CityRainRunoffSite.AddLocalOutlet(instance.transform, new Vector3(-6.43f, -.003f, -4.92f), Vector3.down, .037f);
+            CityRainRunoffSite.AddLocalOutlet(instance.transform, new Vector3(6.43f, -.003f, -4.92f), Vector3.down, .037f);
 
             for (int index = 0; index < registry.Parts.Count; index++)
             {

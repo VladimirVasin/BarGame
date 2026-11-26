@@ -1,6 +1,5 @@
 using BarPromenade.Rendering;
 using UnityEngine;
-using UnityEngine.Rendering;
 
 namespace BarPromenade
 {
@@ -22,7 +21,7 @@ namespace BarPromenade
             enabled = false;
             owner = controller; RegionIndex = region; Position = position;
             InitializeCapture(bounds, position, 1 << CaptureLayer, CityReflectionController.CaptureRadius,
-                18f, RenderSettings.fogColor, ReflectionProbeTimeSlicingMode.AllFacesAtOnce);
+                18f, RenderSettings.fogColor);
             enabled = true;
         }
 

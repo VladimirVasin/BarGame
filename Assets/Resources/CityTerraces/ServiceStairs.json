@@ -125,26 +125,42 @@
   {
     "name": "GableRainShoe",
     "bounds_min": [
-      -0.965,
-      -0.0005,
-      -0.1465
+      -0.089,
+      0.78203,
+      -0.71185
     ],
     "bounds_max": [
       0.195,
       3.4,
-      0.1465
+      0.089
     ],
     "anchors": [
       {
-        "name": "Galvanized shoe",
+        "name": "ANCHOR_RainAxis",
+        "position": [
+          0.025,
+          0.91,
+          -0.51
+        ]
+      },
+      {
+        "name": "ANCHOR_RainMouth",
+        "position": [
+          0.04,
+          0.86,
+          -0.69
+        ]
+      },
+      {
+        "name": "ANCHOR_RainSocket",
         "position": [
           0.0,
-          0.0,
+          1.34,
           0.0
         ]
       },
       {
-        "name": "Outlet channel",
+        "name": "Galvanized shoe",
         "position": [
           0.0,
           0.0,
@@ -160,8 +176,8 @@
         ]
       }
     ],
-    "triangles": 448,
-    "geometry_signature": "67062f1b63cfba23561ca137ba8e8a2e5a6cc7ce571a0e626ace1a4c0736f022"
+    "triangles": 520,
+    "geometry_signature": "b38537b2939c8b2fb5d24808e38031196dd8b67ed9ead235f31d08b6ab5418d8"
   },
   {
     "name": "CourtPourJoint",

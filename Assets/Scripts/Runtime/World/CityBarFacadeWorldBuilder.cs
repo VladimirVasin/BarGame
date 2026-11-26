@@ -113,6 +113,9 @@ namespace BarPromenade
             // world point survives that split unchanged.
             Vector3 targetDoor = parent.TransformPoint(doorPosition);
             instance.transform.position += targetDoor - doorAnchor.position;
+            CityRainRunoffSite.AddLocalOutlet(instance.transform, new Vector3(-.02f, -.003f, -5.86f), Vector3.down, .058f);
+            CityRainRunoffSite.AddLocalOutlet(instance.transform, new Vector3(-8.52f, -.003f, 5.88f), Vector3.down, .054f);
+            CityRainRunoffSite.AddLocalOutlet(instance.transform, new Vector3(-13.39f, -.003f, -5.18f), Vector3.down, .054f);
 
             if (!registry.TryGetAnchor(
                     "sign_pivot",

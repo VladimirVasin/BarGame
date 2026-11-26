@@ -120,6 +120,14 @@ namespace BarPromenade
             {
                 Transform source = FindPart(root.transform, EntranceLightAnchorName);
                 source.rotation = rotation * Quaternion.LookRotation(Vector3.down, Vector3.forward);
+                var mouth = FindPart(root.transform, "ANCHOR_DrainOutfall");
+                CityRainRunoffSite.AddOutlet(root.transform, mouth.position,
+                    root.transform.TransformDirection(new Vector3(0f, -.46f, 1f)), .025f);
+            }
+            else if (index == (int)CityResidentialCourtyardPropKind.Drain)
+            {
+                var centre = FindPart(root.transform, "ANCHOR_DrainSurface");
+                CityRainRunoffSite.AddInlet(root.transform, centre.position, root.transform.right, .325f, .225f);
             }
             return root;
         }

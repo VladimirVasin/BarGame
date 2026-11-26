@@ -9,6 +9,8 @@ namespace BarPromenade
     public sealed class CityNightAtmosphere : MonoBehaviour
     {
         public const int MaximumRealtimeLights = 2048;
+        internal const float FullStopShadowDistance = 12f;
+        internal const float MaxStopShadowDistance = 24f;
         public const float MinimumTunnelFlickerMultiplier = 0.05f;
 
         private const float AvailabilityRefreshInterval = 0.35f;
@@ -498,7 +500,7 @@ namespace BarPromenade
                 GeometryUtility.CalculateFrustumPlanes(camera, stopShadowFrustum);
                 for (int slot = 0; slot < desiredShadowStops.Length; slot++)
                 { desiredShadowStops[slot] = -1; shadowStopDistances[slot] = float.PositiveInfinity; }
-                float reach = Mathf.Min(45f, camera.farClipPlane);
+                float reach = Mathf.Min(MaxStopShadowDistance, camera.farClipPlane);
                 for (int i = 0; i < busStopFixtures.Length; i++)
                 {
                     var stop = busStopFixtures[i];
@@ -532,7 +534,9 @@ namespace BarPromenade
                 if (index < 0) continue;
                 var stop = busStopFixtures[index];
                 float distance = Vector3.Distance(stop.transform.position, camera.transform.position);
-                float target = stop.isActiveAndEnabled ? Mathf.Clamp01((45f - distance) / 15f) : 0f;
+                float target = stop.isActiveAndEnabled
+                    ? Mathf.InverseLerp(MaxStopShadowDistance, FullStopShadowDistance, distance)
+                    : 0f;
                 if (stop.ShadowStrength <= .0001f && target > 0f)
                 { if (activeCount >= CityBusStopLighting.MaximumShadowedStops) continue; activeCount++; }
                 stop.ApplyShadowStrength(Mathf.MoveTowards(stop.ShadowStrength, target, step));

@@ -76,6 +76,13 @@ namespace BarPromenade
             Dock = Create("Dock");
             Dock.position = plan.Origin;
             CityPortAssetProvider.ApplyYardWear(Dock);
+            for (int i = 0; i < 4; i++)
+                CityRainRunoffSite.AddInlet(Dock, Dock.TransformPoint(new Vector3(12.2f + i * 1.63f,
+                    CityPortPlan.DeckHeight + .025f, -26.9f)), Dock.forward, .76f, .126f);
+            CityRainRunoffSite.AddLocalOutlet(Dock, new Vector3(-7.78f, 1.537f, -19.506f),
+                new Vector3(0f, -.11f, -.26f), .055f);
+            CityRainRunoffSite.AddLocalOutlet(Dock, new Vector3(3.78f, 1.537f, -19.506f),
+                new Vector3(0f, -.11f, -.26f), .055f);
             Vessel = Create("Trawler");
             Trolley = Create("Trolley");
             trolleyCollider = Trolley.GetComponent<Collider>();

@@ -3,6 +3,14 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
+## 2026-11-26
+
+City and the Home balcony spread local cubemap renders across frames. Platform shadows fade sooner while fixture output stays fixed. `CityEastSlopeFrameTime` checked native capture, shadow fade and fixed lamp output. Reviewed the dawn street view and the lit shelter.
+
+The east gable outlet clears the approach. Roof jets use mouth direction, gravity and a delayed weather response. Kerb grates gather shallow water with soft edges and inward ripples. Blender checked the fittings and deterministic export. `LiveCity_RainRunoffClearsTheGableWalkAndEntersTheKerbGrate` checked ground contact, both walks, pause and district release. Reviewed the grate and the pipe in drizzle and downpour.
+
+Installed Unity Pipeline 1.0.1 for live Editor commands. `unity command editor focus` activated the BarGame window. `unity command scene list_open` returned its active scene.
+
 ## 2026-11-25
 
 Ground contact blanks the facade block and its lights in City, Ridge and full Home models. `CityFacadeGroundContactAtBlockEdge` checked contact outside the frame. Reviewed day/night views.

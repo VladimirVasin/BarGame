@@ -206,6 +206,9 @@ namespace BarPromenade
                     }
                 }
 
+                if (descriptor.Kind is CityDecorationKind.RoadsideDrainAndCover or CityDecorationKind.LotGroundDownpipeOutfall)
+                    BuildRainDrainage(root, layout, descriptor, homeContext);
+
                 if (homeContext == null)
                 {
                     if (descriptor.Kind == CityDecorationKind.ParkBandstand)
@@ -240,6 +243,25 @@ namespace BarPromenade
             }
 
             BuildChunks(root, chunks);
+        }
+
+        private static void BuildRainDrainage(Transform root, CityLayout layout,
+            CityDecorationDescriptor descriptor, HomeExteriorContextPlan homeContext)
+        {
+            GetDecorationFrame(layout, descriptor, out Vector3 origin, out _, out Vector3 forward);
+            bool inlet = descriptor.Kind == CityDecorationKind.RoadsideDrainAndCover;
+            Vector3 point = origin + (inlet ? Vector3.up * .040f : Vector3.up * .115f + forward * .175f);
+            if (homeContext != null)
+            {
+                point = PlayerHomeBalconyGeometry.ToHomeLocal(homeContext.PlayerHome, point);
+                if (point.x < HomeExteriorViewBuilder.ExteriorMinimumX) return;
+                forward = PlayerHomeBalconyGeometry.ToHomeLocalDirection(homeContext.PlayerHome, forward);
+            }
+            if (inlet) CityRainRunoffSite.AddInlet(root, root.TransformPoint(point),
+                root.TransformDirection(forward), .30f, .21f,
+                homeContext == null ? CityStreetSupportPlan.ForLayout(layout) : null);
+            else CityRainRunoffSite.AddOutlet(root, root.TransformPoint(point),
+                root.TransformDirection(forward), .054f);
         }
 
         private static void BuildPhoneBoothLightAnchor(Transform root, CityLayout layout,

@@ -129,6 +129,8 @@ namespace BarPromenade
             // localPosition would move the shop by a factor of one hundred.
             Vector3 targetDoor = parent.TransformPoint(doorPosition);
             instance.transform.position += targetDoor - doorAnchor.position;
+            CityRainRunoffSite.AddLocalOutlet(instance.transform, new Vector3(-7.705f, .237f, -5.72f), Vector3.down, .033f);
+            CityRainRunoffSite.AddLocalOutlet(instance.transform, new Vector3(7.705f, .237f, -5.72f), Vector3.down, .033f);
 
             foreach (SupermarketExteriorPartBinding binding in registry.Parts)
             {

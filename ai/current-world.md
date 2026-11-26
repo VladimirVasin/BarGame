@@ -636,10 +636,10 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
 
 - City and Home share fast wetting and slow recession to drizzle by absolute
   game time. New Game resets the film. MPBs keep pigment/relief; `42` puddles
-  share one soft-rim sheet `3 mm` above the road. Near rain ends on the first
-  visible surface, with material splashes, water rings, glass beads and eave
-  drips. Bus beads ride the panes and use the wiper mask. Home runs contacts
-  only in the balcony shot;
+  share a soft-rim sheet. Near rain gives material splashes, water rings,
+  glass beads and eave drips. Downpipes throw water along their own axes;
+  shallow pools ripple toward open grates. Bus beads follow the wiper mask.
+  Home runs contacts only in the balcony shot.
 - Camera-following cloud ceiling uses a passive `220`-triangle hemisphere,
   one packed density texture and three profiles (`47 / 119 / 109 m`). City
   and Home balcony share the seed, frame and absolute phase. Road and Village
@@ -653,7 +653,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   station cube. City:9 areas plus diner, real lamps/windows/traffic;
   Finite air uses integrated depth; bounce/metal; cafe shares two reflection slots.
   Home balcony shares City; indoors off. Dark places retained.
-  Filtered256 captures:one pending per owner, no actors/vehicles/precipitation;
+  Filtered256:one pending/owner;City/Home slices faces;no actors/traffic/weather;
   post-submit watchdog gives bounded frame grace for cold stalls.
   moving lights never recapture. No small-object volume shadows.
   Cleanup; GPU unmeasured; Lights/fog/weather/story stay.
@@ -918,7 +918,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   4quarter-rail Spots→bench/backpanel/waiting;pole Spot→front-door apron.
   Shared mesh/anchors;fixed `CityNightAtmosphere`/day≥2/3/native range/far;
   plate2shadowless Spots stay;platforms dedup. Camera shadows≤2visible
-  stops/soft256/≤10maps/fade30–45m;strip air0,power fixed;shared FX budgets stay.
+  stops/soft256/≤10maps/fade12–24m;strip air0,power fixed;shared FX budgets stay.
   The bus displays dark digits on its pale front panel and light digits on the sides and rear.
   In drizzle and light rain, scattered small drops cling to its panes. Drops run down the glass in heavy rain.
   Each bus serves its own ordered stops, opens both doors and dwells for ten

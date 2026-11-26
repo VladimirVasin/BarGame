@@ -208,13 +208,15 @@ def make_assemblies(api):
 
 def validate(api, assemblies, problems):
     # Preserve the pre-coastal catalogue outside the remodelled cinema, gazebo,
-    # waterworks, last-route island and the two bus stops recharted for the surface pass.
-    changed = {"NightlifeCinema", "ParkBandstand", "ParkChessTables", "ParkChessLampPendant", "PoiOldTownWaterworksShell", "PoiNightlifeLastRouteIslandShell", "Route01ShelterShell", "Route01PoleShell"}
+    # waterworks, last-route island, bus stops and the two open rainwater fittings.
+    changed = {"NightlifeCinema", "ParkBandstand", "ParkChessTables", "ParkChessLampPendant",
+               "PoiOldTownWaterworksShell", "PoiNightlifeLastRouteIslandShell", "Route01ShelterShell",
+               "Route01PoleShell", "LotGroundDownpipeOutfall", "RoadsideDrainAndCover"}
     unchanged = tuple(a for a in assemblies[:134] if a.kind not in changed)
     previous = api.hashlib.sha256(api.json.dumps(api.signature_payload(
         unchanged, generator_version="4.13.0"), sort_keys=True,
         separators=(",", ":")).encode("utf-8")).hexdigest()
-    if previous != "7e33f4c06e0499873d209a516701ef0649c8c18325d93c397db59fe87cb55867":
+    if previous != "c04e137057dc0fdf878d6c6bcd111b2f8255502cd1bb67c52ce4e91f915d0683":
         problems.append("Coastal site package changed a previously authored City misc mesh")
     selected = [a for a in assemblies if a.kind in KINDS]
     total = sum(api.triangle_count(p.geometry) for a in selected for p in a.parts)

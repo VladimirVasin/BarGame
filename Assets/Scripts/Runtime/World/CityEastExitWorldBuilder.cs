@@ -101,9 +101,12 @@ namespace BarPromenade
                 AddBox(fence, new Vector3(0f, .9275f, 0f), new Vector3(CityEastExitPlan.FenceThickness, 1.855f, 4f));
             }
             float drainX = plan.YardBounds.xMin + 10.5f;
-            Place(templates, root, "DrainCover", "Road Drain Crossing",
+            Transform crossingDrain = Place(templates, root, "DrainCover", "Road Drain Crossing",
                 new Vector3(drainX, plan.SampleRoadTop(drainX) + .015f, plan.CheckpointPosition.z),
                 Quaternion.identity, Vector3.one);
+            for (float z = -3.4f; z <= 3.4f; z += 1.7f)
+                CityRainRunoffSite.AddInlet(crossingDrain, crossingDrain.TransformPoint(new Vector3(0f, .042f, z)),
+                    crossingDrain.right, .78f, .46f);
 
             CityEastExitDressingWorldBuilder.Build(root, plan, dressing, templates, out Collider rainShelter);
             BuildSiteLights(root, dressing, fringePlan, templates);
