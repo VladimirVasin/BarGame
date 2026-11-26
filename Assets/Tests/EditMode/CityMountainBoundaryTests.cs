@@ -849,7 +849,7 @@ namespace BarPromenade.Tests.EditMode
 
         [Test]
         [Category("CityMountain")]
-        public void WorldBuilders_CreatePhysicalRimOpenTunnelAndBackdrop()
+        public void WorldBuilders_CreatePhysicalRimOpenTunnelAndViewLimit()
         {
             CityLayout layout = CreateDefaultLayout();
             CityMountainBoundaryPlan plan =
@@ -866,10 +866,7 @@ namespace BarPromenade.Tests.EditMode
                         host.transform,
                         layout,
                         plan);
-                CityMountainBackdropWorldResult backdrop =
-                    CityMountainBackdropWorldBuilder.Build(
-                        host.transform,
-                        camera);
+                CityStreetViewRange range = CityStreetViewRange.Install(camera);
 
                 Assert.That(physical, Is.Not.Null);
                 Transform ridges = FindChild(
@@ -1163,52 +1160,8 @@ namespace BarPromenade.Tests.EditMode
                             item is SceneTransitionService),
                     Is.False);
 
-                Assert.That(backdrop.Root, Is.Not.Null);
-                Assert.That(backdrop.RidgeRenderers.Count, Is.EqualTo(4));
-                Assert.That(
-                    backdrop.Root.GetComponentsInChildren<Collider>(true),
-                    Is.Empty);
-                Assert.That(
-                    backdrop.Root.GetComponentsInChildren<Light>(true),
-                    Is.Empty);
-                Assert.That(
-                    backdrop.RidgeRenderers
-                        .Select(item => item.sharedMaterial)
-                        .Distinct()
-                        .Count(),
-                    Is.EqualTo(1));
-                Assert.That(
-                    backdrop.RidgeRenderers.All(item =>
-                        item.shadowCastingMode == ShadowCastingMode.Off &&
-                        (item.name.Contains("West") ||
-                         item.name.Contains("South")) &&
-                        !item.name.Contains("East") &&
-                        !item.name.Contains("North")),
-                    Is.True);
-                foreach (MeshRenderer south in backdrop.RidgeRenderers
-                             .Where(item => item.name.Contains("South")))
-                {
-                    Vector3[] vertices = south
-                        .GetComponent<MeshFilter>()
-                        .sharedMesh
-                        .vertices;
-                    float[] riverAxisHeights = vertices
-                        .Where(item =>
-                            item.z < 0f && Mathf.Abs(item.x) < 0.05f)
-                        .Select(item => item.y)
-                        .ToArray();
-                    Assert.That(riverAxisHeights.Length, Is.GreaterThan(1));
-                    Assert.That(
-                        riverAxisHeights.Max() - riverAxisHeights.Min(),
-                        Is.GreaterThan(1f),
-                        "The distant south rim still collapses over the " +
-                        "closed cave mouth.");
-                }
-
-                backdrop.Follower.AlignToCamera(camera);
-                Assert.That(
-                    backdrop.Root.transform.position,
-                    Is.EqualTo(camera.transform.position));
+                Assert.That(range.GetComponent<Camera>(), Is.EqualTo(camera));
+                Assert.That(CityStreetViewRange.Install(camera), Is.SameAs(range));
             }
             finally
             {

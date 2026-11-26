@@ -22,7 +22,7 @@ namespace BarPromenade
         public const float MinimumFallbackSpawnDistance = 5f;
         public const float MaximumSpawnDistance = 22f;
         public const float MaximumVisibleSpawnDistance =
-            RuntimeSceneSetup.CityFarClipPlane - 2f;
+            46f;
         public const float DespawnDistance = 36f;
         private CityAltitudeVisibility streetVisibility;
         private Predicate<Vector3> districtReady;

@@ -129,10 +129,10 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(DepthOfFieldMode.Gaussian));
             Assert.That(
                 depthOfField.gaussianStart.value,
-                Is.EqualTo(8f));
+                Is.EqualTo(16f));
             Assert.That(
                 depthOfField.gaussianEnd.value,
-                Is.EqualTo(28f));
+                Is.EqualTo(56f));
             Assert.That(
                 volume.GetComponent<
                     BarPromenade.Rendering

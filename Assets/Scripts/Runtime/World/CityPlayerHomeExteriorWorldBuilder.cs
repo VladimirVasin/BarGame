@@ -113,10 +113,15 @@ namespace BarPromenade
                     var filter = renderer.GetComponent<MeshFilter>();
                     Vector3 center = instance.transform.InverseTransformPoint(
                         filter.transform.TransformPoint(filter.sharedMesh.bounds.center));
-                    CityResidentialFrontages.AddWindow(frontage, 0, center + new Vector3(0f, -.72f, .055f),
-                        Vector3.forward, 1.37f, 1.52f);
-                    CityResidentialFrontages.AddWindow(frontage, 1, center + new Vector3(0f, -4.19f, .055f),
-                        Vector3.forward, 1.37f, 1.54f);
+                    // Both panes have the same glass and frame profile. Fit
+                    // between the glass front and the front of the native sash.
+                    var backing = center + Vector3.forward * .014f;
+                    const float frameDepth = (.060f + .075f * .5f) - (.022f + .014f);
+                    const float clearWidth = 1.45f - 2f * .11f;
+                    CityResidentialFrontages.AddWindow(frontage, 0, backing, Vector3.forward,
+                        new Vector2(clearWidth, 1.55f - 2f * .11f), frameDepth);
+                    CityResidentialFrontages.AddWindow(frontage, 1, backing + Vector3.down * 3.46f, Vector3.forward,
+                        new Vector2(clearWidth, 1.60f - 2f * .11f), frameDepth);
                 }
                 PlayerHomeExteriorSurfaceAppearance.Apply(
                     renderer,

@@ -89,7 +89,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(plan.IsEnabled, Is.True);
             Assert.That(plan.RoadBounds.yMin, Is.GreaterThan(city.World.ChurchCourtyardPlan.Grounds.yMax),
                 "The road remains north of the existing church and its garden.");
-            Assert.That(Camera.main.farClipPlane, Is.EqualTo(48f).Within(.001f));
+            Assert.That(Camera.main.farClipPlane, Is.EqualTo(96f).Within(.001f));
             Assert.That(RenderSettings.fogDensity, Is.EqualTo(RuntimeSceneSetup.CityFogDensity).Within(.0001f));
             Assert.That(landing.TryResolveStandingPosition(new Vector2(
                 city.World.ChurchPlan.DoorGroundPosition.x - 2f,
@@ -280,6 +280,7 @@ namespace BarPromenade.Tests.PlayMode
                 clock.enabled = false;
                 Camera camera = Camera.main;
                 PlayerCameraFollow follow = camera.GetComponent<PlayerCameraFollow>();
+                CaptureCurrentCamera(camera, SceneIds.City, "fog-ordinary-follow");
                 float ordinaryFov = follow.FollowFieldOfView;
                 follow.enabled = false;
                 city.Player.Motor.SetInputEnabled(false);
@@ -289,11 +290,12 @@ namespace BarPromenade.Tests.PlayMode
                 city.Player.Motor.Teleport(exit.ApproachStart + Vector3.up * PlayerFactory.GroundedRootOffset);
                 city.Visibility.Refresh(true);
                 CityFogField fog = city.Night.FogField;
-                Assert.That(fog.CityLayers, Is.True);
+                Assert.That(fog.FogRenderer.renderMode, Is.EqualTo(ParticleSystemRenderMode.Mesh));
+                Assert.That(fog.LayerOpacityMultiplier, Is.EqualTo(.35f));
                 Assert.That(fog.Particles.main.maxParticles, Is.EqualTo(CityFogField.MaximumParticles));
                 Assert.That(fog.Particles.main.useUnscaledTime, Is.False);
-                Assert.That(RenderSettings.fogDensity, Is.EqualTo(.090f).Within(.0001f));
-                Assert.That(camera.farClipPlane, Is.EqualTo(48f));
+                Assert.That(RenderSettings.fogDensity, Is.EqualTo(.030f).Within(.0001f));
+                Assert.That(camera.farClipPlane, Is.EqualTo(96f));
                 fog.SetSheltered(true);
                 Assert.That(fog.Particles.particleCount, Is.Zero);
                 fog.SetSheltered(false);
@@ -316,6 +318,9 @@ namespace BarPromenade.Tests.PlayMode
 
                 GameObject panorama = GameObject.Find(CityEastDistanceWorldBuilder.ObjectName);
                 var properties = new MaterialPropertyBlock();
+                var skyline = panorama.GetComponentsInChildren<MeshRenderer>(true).Where(renderer =>
+                    renderer.sharedMaterial.GetFloat("_StreetSkyline") > .5f).ToArray();
+                Assert.That(skyline.Length, Is.EqualTo(3));
                 foreach (MeshRenderer renderer in panorama.GetComponentsInChildren<MeshRenderer>(true))
                 {
                     float role = renderer.sharedMaterial.GetFloat("_Role");
@@ -323,7 +328,7 @@ namespace BarPromenade.Tests.PlayMode
                     Vector4 gate = properties.GetVector("_CheckpointView");
                     if (role >= 3f && role <= 5f)
                         Assert.That(gate, Is.EqualTo(new Vector4(exit.CheckpointPosition.x,
-                            exit.CheckpointPosition.z, 12f, 30f)), renderer.name);
+                            exit.CheckpointPosition.z, 6f, 10f)), renderer.name);
                     else
                         Assert.That(gate, Is.EqualTo(Vector4.zero),
                             "The valley and road retain their ordinary visibility: " + renderer.name);
@@ -334,8 +339,12 @@ namespace BarPromenade.Tests.PlayMode
                 CityLighthouseIslandPlan island = CityLighthouseIslandPlanner.Create(city.Layout.Seed, city.World.SeacoastPlan);
                 Assert.That(island, Is.Not.Null);
                 CitySeacoastFrame shore = city.World.SeacoastPlan.Frame;
-                Vector3 shoreEye = new Vector3(island.IslandCenter.x,
-                    shore.BeachEdgeTopY + EyeHeight, shore.WaterlineZ - 1f);
+                Rect pier = CitySeacoastPlanner.PierFootprint(shore);
+                Vector3 pierEye = new Vector3(pier.center.x, shore.SeaTopY +
+                    CitySeacoastPlanner.PierDeckTopAboveSea + EyeHeight, pier.yMax - 2.5f);
+                Vector3 sandEye = new Vector3(pier.xMax + 3f, shore.BeachEdgeTopY + EyeHeight, pier.yMin - 1f);
+                Renderer[] lighthouse = GameObject.Find(CityLighthouseIslandWorldBuilder.RootName)
+                    .GetComponentsInChildren<Renderer>();
                 foreach (int minute in new[] { 720, 1260 })
                 {
                     AdvanceNightGradeClock(minute);
@@ -344,7 +353,7 @@ namespace BarPromenade.Tests.PlayMode
                     foreach (var view in new[]
                     {
                         (Name: "near", Offset: new Vector2(-6f, 0f)),
-                        (Name: "middle", Offset: new Vector2(-21f, 0f)),
+                        (Name: "middle", Offset: new Vector2(-8f, 0f)),
                         (Name: "side-outside", Offset: new Vector2(-6f, 34f))
                     })
                     {
@@ -352,6 +361,8 @@ namespace BarPromenade.Tests.PlayMode
                         Vector3 eye = new Vector3(ground.x, exit.SampleGroundTop(ground) + EyeHeight, ground.y);
                         yield return View("checkpoint-" + view.Name + "-" + light, eye,
                             exit.RoadEnd + new Vector3(10000f, 60f, 0f));
+                        if (minute == 720 && view.Name != "middle")
+                            CaptureWithoutSkyline(camera, SceneIds.City, "fog-checkpoint-" + view.Name + "-day", skyline);
                     }
                     yield return View("street-" + light, street.Position, street.Target);
                     if (minute == 720)
@@ -366,10 +377,17 @@ namespace BarPromenade.Tests.PlayMode
                             "Local layer shape must move with absolute game time.");
                         CaptureCurrentCamera(camera, SceneIds.City, "fog-street-day-layer-motion");
                     }
-                    yield return View("lighthouse-" + light, shoreEye,
-                        Vector3.Lerp(island.IslandCenter, island.LanternPosition, .45f));
+                    Vector3 aim = Vector3.Lerp(island.IslandCenter, island.LanternPosition, .45f);
+                    yield return View("lighthouse-pier-" + light, pierEye, aim);
+                    Assert.That(lighthouse.All(r => r.enabled), Is.True);
+                    Assert.That(CitySeaResources.WaterMaterial.GetFloat("_LanternGlint"), Is.Positive);
+                    yield return View("lighthouse-sand-" + light, sandEye, aim);
+                    Assert.That(lighthouse.All(r => !r.enabled), Is.True);
+                    Assert.That(CitySeaResources.WaterMaterial.GetFloat("_LanternGlint"), Is.Zero);
                 }
 
+                float streetOpacity = fog.LayerOpacityMultiplier;
+                VerifyStreetDrawRadius(96f);
                 GameSessionState.PrepareHomeArrival(HomeArrivalKind.Normal);
                 GameSessionState.EnterHome();
                 yield return SceneManager.LoadSceneAsync(SceneIds.HomeInterior, LoadSceneMode.Single);
@@ -388,17 +406,15 @@ namespace BarPromenade.Tests.PlayMode
                 yield return null;
                 yield return null;
                 Assert.That(home.ExteriorAtmosphere.IsBalconyVisibilityActive, Is.True);
-                Assert.That(home.ExteriorAtmosphere.FogField.CityLayers, Is.True);
+                Assert.That(home.ExteriorAtmosphere.FogField.LayerOpacityMultiplier,
+                    Is.EqualTo(streetOpacity));
                 foreach (int minute in new[] { 720, 1260 })
                 {
                     AdvanceNightGradeClock(minute);
                     home.DayNight.RefreshImmediate();
                     yield return null;
-                    bool summit = home.ExteriorContext.Layout.HasSummitHome;
-                    Assert.That(RenderSettings.fogDensity, Is.EqualTo(summit ?
-                        HomeSummitOutlook.FogDensity : RuntimeSceneSetup.CityFogDensity).Within(.0001f));
-                    Assert.That(Camera.main.farClipPlane, Is.EqualTo(summit ?
-                        HomeSummitOutlook.FarPlane : RuntimeSceneSetup.CityFarClipPlane));
+                    Assert.That(RenderSettings.fogDensity, Is.EqualTo(RuntimeSceneSetup.CityFogDensity).Within(.0001f));
+                    Assert.That(Camera.main.farClipPlane, Is.EqualTo(RuntimeSceneSetup.CityFarClipPlane));
                     CaptureCurrentCamera(Camera.main, SceneIds.HomeInterior, "fog-balcony-" + minute);
                 }
                 home.Player.Motor.Teleport(home.Layout.PlayerSpawn);
@@ -425,6 +441,126 @@ namespace BarPromenade.Tests.PlayMode
             {
                 if (clock != null) clock.enabled = true;
                 GameSessionState.BeginNewGame("Test City fog checkpoint cleanup");
+            }
+        }
+
+        [UnityTest]
+        [Explicit("Compare the actual Alpine Village cliff sightline against the same view with the distant city hidden.")]
+        public IEnumerator AlpineCliffFogSightline()
+        {
+            GameSessionState.BeginNewGame();
+            GameSessionState.TryStartGameTimeAt(720);
+            AlpineVillageRoot village = null;
+            yield return LoadOutdoorVillage(result => village = result);
+            try
+            {
+                var valley = GameObject.Find(AlpineVillageDistanceWorldBuilder.ObjectName);
+                var skyline = valley.GetComponentsInChildren<MeshRenderer>();
+                var properties = new MaterialPropertyBlock();
+                Vector3 cliff = village.Plan.Expansion.CliffEdge;
+                foreach (var renderer in skyline)
+                {
+                    renderer.GetPropertyBlock(properties);
+                    Assert.That(properties.GetVector("_CheckpointView"), Is.EqualTo(new Vector4(cliff.x, cliff.z, 6f, 12f)));
+                }
+                Camera camera = Camera.main;
+                village.Player.Motor.SetInputEnabled(false);
+                foreach (var renderer in village.Player.GameObject.GetComponentsInChildren<Renderer>())
+                    renderer.enabled = false;
+                foreach (float back in new[] { 4f, 16f })
+                {
+                    Vector3 foot = cliff + village.Plan.Uphill * back + village.Plan.SlopeRight * 1.4f;
+                    foot.y = AlpineVillageTerrainSampler.SampleHeight(village.Plan, new Vector2(foot.x, foot.z));
+                    village.Player.Motor.Teleport(foot + Vector3.up * PlayerFactory.GroundedRootOffset);
+                    yield return null;
+                    Vector3 eye = foot + Vector3.up * EyeHeight;
+                    camera.transform.SetPositionAndRotation(eye, Quaternion.LookRotation(
+                        AlpineVillageDistanceWorldBuilder.CityAimPoint(village.Plan) - eye));
+                    string frame = back < 6f ? "fog-city-cliff" : "fog-city-away";
+                    CaptureCurrentCamera(camera, SceneIds.AlpineVillage, frame);
+                    CaptureWithoutSkyline(camera, SceneIds.AlpineVillage, frame, skyline);
+                }
+                VerifyStreetDrawRadius(RuntimeSceneSetup.CityFarClipPlane);
+            }
+            finally { GameSessionState.BeginNewGame(); }
+        }
+
+        private static void CaptureWithoutSkyline(Camera camera, string area, string frame, MeshRenderer[] skyline)
+        {
+            try
+            {
+                foreach (var renderer in skyline) renderer.forceRenderingOff = true;
+                CaptureCurrentCamera(camera, area, frame + "-control");
+            }
+            finally
+            {
+                foreach (var renderer in skyline) renderer.forceRenderingOff = false;
+            }
+        }
+
+        private static void VerifyStreetDrawRadius(float streetRadius)
+        {
+            // At this bearing both targets fit inside the flat far plane; only the radial limit hides the far one.
+            var host = new GameObject("Draw radius witness camera");
+            var marker = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            var target = new RenderTexture(128, 72, 24);
+            var pixel = new Texture2D(1, 1, TextureFormat.RGB24, false);
+            var material = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
+            var previous = RenderTexture.active;
+            bool fog = RenderSettings.fog;
+            try
+            {
+                RenderSettings.fog = false;
+                var camera = host.AddComponent<Camera>();
+                camera.enabled = false;
+                camera.transform.position = Vector3.up * 1000f;
+                camera.fieldOfView = 70f;
+                camera.aspect = 16f / 9f;
+                camera.farClipPlane = streetRadius;
+                camera.clearFlags = CameraClearFlags.SolidColor;
+                camera.backgroundColor = Color.black;
+                camera.cullingMask = 1 << 30;
+                camera.targetTexture = target;
+                var range = CityStreetViewRange.Install(camera);
+                marker.layer = 30;
+                marker.transform.localScale = Vector3.one * 2f;
+                marker.GetComponent<MeshRenderer>().sharedMaterial = material;
+                var direction = new Vector3(.85f, 0f, 1f).normalized;
+                var mesh = marker.GetComponent<MeshRenderer>();
+                mesh.enabled = false;
+                float nearDistance = streetRadius * .83f;
+                float farDistance = streetRadius * 1.15f;
+                int background = Brightness(farDistance);
+                mesh.enabled = true;
+                int near = Brightness(nearDistance), far = Brightness(farDistance);
+                range.enabled = false;
+                int control = Brightness(farDistance);
+                Debug.Log($"Street cutoff: background {background}, near {near}, far {far}, unrestricted {control}.");
+                Assert.That(near, Is.GreaterThan(background + 10));
+                Assert.That(far, Is.EqualTo(background).Within(2));
+                Assert.That(control, Is.GreaterThan(background + 10));
+
+                byte Brightness(float meters)
+                {
+                    marker.transform.position = camera.transform.position + direction * meters;
+                    Vector3 uv = camera.WorldToViewportPoint(marker.transform.position);
+                    camera.Render();
+                    RenderTexture.active = target;
+                    pixel.ReadPixels(new Rect((int)(uv.x * target.width), (int)(uv.y * target.height), 1, 1), 0, 0);
+                    pixel.Apply();
+                    return ((Color32)pixel.GetPixel(0, 0)).r;
+                }
+            }
+            finally
+            {
+                RenderSettings.fog = fog;
+                RenderTexture.active = previous;
+                Object.DestroyImmediate(host);
+                Object.DestroyImmediate(marker);
+                Object.DestroyImmediate(material);
+                Object.DestroyImmediate(pixel);
+                target.Release();
+                Object.DestroyImmediate(target);
             }
         }
 
@@ -661,7 +797,7 @@ namespace BarPromenade.Tests.PlayMode
             void VerifyLens()
             {
                 Assert.That(camera.fieldOfView, Is.EqualTo(follow.FollowFieldOfView).Within(.1f));
-                Assert.That(camera.farClipPlane, Is.EqualTo(48f).Within(.001f));
+                Assert.That(camera.farClipPlane, Is.EqualTo(96f).Within(.001f));
                 Assert.That(RenderSettings.fogDensity, Is.EqualTo(RuntimeSceneSetup.CityFogDensity).Within(.0001f));
             }
         }
@@ -733,7 +869,7 @@ namespace BarPromenade.Tests.PlayMode
                 for (int frame = 0; frame < 8; frame++) yield return null;
                 Assert.That(camera.fieldOfView, Is.EqualTo(follow.FollowFieldOfView).Within(.1f),
                     "Full-fence shots retain the normal third-person lens.");
-                Assert.That(camera.farClipPlane, Is.EqualTo(48f).Within(.001f));
+                Assert.That(camera.farClipPlane, Is.EqualTo(96f).Within(.001f));
                 Assert.That(RenderSettings.fogDensity, Is.EqualTo(RuntimeSceneSetup.CityFogDensity).Within(.0001f));
                 CaptureCurrentCamera(camera, SceneIds.City, "east-exit-fence-" + name + "-" + phase);
             }

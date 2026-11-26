@@ -171,10 +171,6 @@ namespace BarPromenade
             ReportBlock("mountain_and_fringe", blockTimer);
             yield return new CompositionStep("mountain_and_fringe", 0.30f);
             blockTimer.Restart();
-            CityMountainBackdropWorldResult mountainBackdrop =
-                partition == null && mountainBoundaryPlan.IsEnabled
-                    ? CityMountainBackdropWorldBuilder.Build(world)
-                    : null;
             // The block's sub-stages report under their own rows so the
             // split between planning, batching, the river's primitives,
             // the stairs and the fences is measurable; the block row
@@ -521,7 +517,6 @@ namespace BarPromenade
                 mountainBoundaryRoot,
                 fringeYardPlan,
                 fringeYard,
-                mountainBackdrop,
                 windDressingPlan,
                 windDressingRoot,
                 archShelterPlan,

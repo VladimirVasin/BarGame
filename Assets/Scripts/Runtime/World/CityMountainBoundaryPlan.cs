@@ -46,7 +46,7 @@ namespace BarPromenade
         public const float TunnelPortalDepth = 1.6f;
 
         public const float RiverCaveOpeningHeight = 8f;
-        public const float RiverCaveThroatDepth = 56f;
+        public const float RiverCaveThroatDepth = RuntimeSceneSetup.CityFarClipPlane + 8f;
         public const float RiverCavePortalDepth = 1.6f;
 
         private static readonly CityMountainBoundaryDefinition

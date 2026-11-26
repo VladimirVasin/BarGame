@@ -11,13 +11,8 @@ namespace BarPromenade
     /// times the old mol beacon's height, carrying the rotating
     /// lantern.
     ///
-    /// The island stands at the edge of visibility on purpose. From
-    /// the esplanade and the waterline sand it is a breath of
-    /// silhouette in the fog; from the pier head it firms up; from
-    /// anywhere deeper in the city it is past the 48 m far plane and
-    /// simply not there. Its geometry is fixed in world space — no
-    /// camera following — so walking the shore moves it the way a
-    /// real island moves: not at all.
+    /// The fishing pier frames the fixed offshore landmark. Walking its boards
+    /// changes the distance and parallax; the lantern controller gates the view.
     ///
     /// Everything here is presentation. No colliders, no walkable
     /// contribution, no real light: the fog and the far plane keep
@@ -26,15 +21,7 @@ namespace BarPromenade
     public static class CityLighthouseIslandPlanner
     {
         /// <summary>
-        /// How far past the waterline the island anchors. The sea
-        /// apron follows the island (it is one constant), so the real
-        /// ceiling is the 48 m far plane: at 39 m the waterline sand
-        /// still sees the whole island (~40 m to the lantern, full
-        /// alpha), the pier head (~26 m) keeps its firmed-up view,
-        /// and from the esplanade (~46 m) the tower's top dissolves
-        /// into the self-fade band while the mound holds — the island
-        /// at the very edge of what the far plane permits. Pushing
-        /// past ~40 starts erasing it from the waterline itself.
+        /// The sea apron shares this anchor. The pier head is about 26 m from the island.
         /// </summary>
         internal const float OffshoreDistance = 39f;
 
@@ -46,7 +33,7 @@ namespace BarPromenade
         /// sea-level anchor. The lantern's LIGHT deliberately does
         /// not follow (only the lens does, to fit the lamp room):
         /// beams at full throw and a later fade band are what keep
-        /// the flash visible from the shore. The floor is the
+        /// the flash visible from the pier. The floor is the
         /// lantern invariant: at 0.78 the lamp still clears its
         /// 12 m over the sea.
         /// </summary>

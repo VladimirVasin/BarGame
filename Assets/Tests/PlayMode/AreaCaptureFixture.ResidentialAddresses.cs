@@ -21,17 +21,10 @@ namespace BarPromenade.Tests.PlayMode
                 var catalog = Resources.Load<GameObject>("Housing/FrontageModules");
                 Assert.That(catalog.GetComponentsInChildren<MeshFilter>().Length, Is.EqualTo(19));
                 CheckPetuniaOrientation(catalog.transform.Find("RailPetunias").GetComponent<MeshFilter>());
-                var source = catalog.transform.Find("WindowKitchen").GetComponent<MeshFilter>();
-                Bounds sill = source.sharedMesh.bounds;
-                var authored = new Bounds(source.transform.TransformPoint(sill.center), Vector3.zero);
-                foreach (var vertex in source.sharedMesh.vertices) authored.Encapsulate(source.transform.TransformPoint(vertex));
-                Assert.That(authored.max.y, Is.InRange(.98f, 1.03f), "authored window height in metres");
-                Assert.That(authored.max.z, Is.InRange(.24f, .28f), "sill faces out from the glass");
-
                 yield return SceneManager.LoadSceneAsync(SceneIds.City);
                 CityGameRoot city = null;
                 yield return WaitFor(() => (city = Object.FindAnyObjectByType<CityGameRoot>()) && city.IsInitialized, "City");
-                var stock = Object.FindObjectsByType<CityBuildingAssetRegistry>(FindObjectsSortMode.None)
+                var stock = Object.FindObjectsByType<CityBuildingAssetRegistry>()
                     .Where(r => r.District == CityDistrictKind.Residential).ToArray();
                 Assert.That(stock.Length, Is.GreaterThan(3));
                 foreach (var model in stock) CheckFrontage(model.transform);
@@ -44,6 +37,20 @@ namespace BarPromenade.Tests.PlayMode
                 BuildingLot LotFor(CityBuildingAssetRegistry model) => addresses[model.WindowScheduleSeed].First();
                 ResidentialAddress Address(CityBuildingAssetRegistry model) => new ResidentialAddress(LotFor(model), city.Layout.Seed);
                 CheckRailFlowerBoxes(stock, LotFor, city.Layout.Seed);
+                foreach (string side in new[] { "Front", "Rear" })
+                {
+                    var slot = stock[0].WindowSlots.First(p => p.Side == side && p.OpeningKind == CityBuildingOpeningKind.Window);
+                    for (int kind = 0; kind < 4; kind++) CheckWindowInset(slot, kind);
+                }
+                var kitchen = (from model in stock
+                    let address = Address(model)
+                    from slot in model.WindowSlots
+                    where slot.Side == "Front" && slot.Floor == 1 && slot.OpeningKind == CityBuildingOpeningKind.Window &&
+                        (address.Household(slot) % 4) == 0 && (slot.Bay / 2 & 1) == (int)(address.Key & 1) &&
+                        (model.GroundedWindowMask & (1UL << slot.Uv2SlotId)) == 0
+                    select (model, slot)).First();
+                CaptureAddress(kitchen.model.transform, kitchen.slot.LocalCenter, "kitchen-window-oblique", 1.8f, .7f, 1.35f);
+                CaptureAddress(kitchen.model.transform, kitchen.slot.LocalCenter, "kitchen-window-front", 2.3f, .3f);
                 var repeated = stock.GroupBy(r => r.StableId).OrderByDescending(g => g.Count()).First().ToArray();
                 var examples = repeated.GroupBy(r => Address(r).Family).Select(g => g.First())
                     .Concat(repeated).Distinct().Take(3).ToArray();
@@ -197,6 +204,32 @@ namespace BarPromenade.Tests.PlayMode
             CollectionAssert.AreEquivalent(new[] { "geraniums", "petunias" }, seen);
         }
 
+        private static void CheckWindowInset(CityBuildingWindowSlot pane, int kind)
+        {
+            var sample = new GameObject("Window inset sample");
+            try
+            {
+                var kit = new ResidentialFrontage(sample.transform);
+                CityResidentialFrontages.AddWindow(kit, pane, kind);
+                kit.Finish();
+                float sign = pane.Side == "Rear" ? -1f : 1f;
+                Vector2 size = pane.SizeMeters;
+                float bar = Mathf.Min(.14f, Mathf.Min(size.x * .14f, size.y * .10f));
+                var filters = sample.GetComponentsInChildren<MeshFilter>();
+                Assert.That(filters.Length, Is.EqualTo(2), "Both furnishings and glazing must be present.");
+                foreach (var filter in filters)
+                {
+                    Bounds b = filter.sharedMesh.bounds;
+                    Vector3 offset = b.center - pane.LocalCenter;
+                    Assert.That(Mathf.Abs(offset.x) + b.extents.x, Is.LessThan(size.x * .5f - bar));
+                    Assert.That(Mathf.Abs(offset.y) + b.extents.y, Is.LessThan(size.y * .5f - bar));
+                    Assert.That(offset.z * sign - b.extents.z, Is.GreaterThan(.018f), "Opaque pane hid the insert.");
+                    Assert.That(offset.z * sign + b.extents.z, Is.LessThan(.030f), "Insert protruded past the sash.");
+                }
+            }
+            finally { Object.DestroyImmediate(sample); }
+        }
+
         private static void CheckFrontage(Transform house)
         {
             var root = house.Find(ResidentialFrontage.RootName);
@@ -222,14 +255,14 @@ namespace BarPromenade.Tests.PlayMode
             }));
         }
 
-        private static void CaptureAddress(Transform house, Vector3 localTarget, string label, float distance = 7.5f, float eyeDrop = 3.4f)
+        private static void CaptureAddress(Transform house, Vector3 localTarget, string label, float distance = 7.5f, float eyeDrop = 3.4f, float sideOffset = .19f)
         {
             var camera = Camera.main;
             var saved = new DefaultNpcCameraState(camera);
             try
             {
                 var target = house.TransformPoint(localTarget);
-                var eye = house.TransformPoint(new Vector3(localTarget.x + distance * .19f,
+                var eye = house.TransformPoint(new Vector3(localTarget.x + distance * sideOffset,
                     Mathf.Max(1.7f, localTarget.y - eyeDrop), localTarget.z + distance));
                 camera.transform.SetPositionAndRotation(eye, Quaternion.LookRotation(target - eye));
                 CaptureCurrentCamera(camera, "ResidentialAddresses", label);

@@ -145,6 +145,12 @@ namespace BarPromenade
         private static readonly int UniformId =
             Shader.PropertyToID("_Uniform");
 
+        private static readonly int ViewStrengthId = Shader.PropertyToID("_ViewStrength");
+        private Transform hero;
+        private Rect pier;
+        private float deckTop;
+        private Renderer islandRenderer;
+        private float previousStrength = -1f;
         private Transform lanternPivot;
         private Renderer lensRenderer;
         private Renderer[] beamRenderers;
@@ -155,7 +161,7 @@ namespace BarPromenade
             Transform pivot,
             Renderer lens,
             Renderer[] beams,
-            Vector3 worldPosition)
+            Vector3 worldPosition, Renderer island)
         {
             lanternPivot = pivot != null
                 ? pivot
@@ -165,12 +171,41 @@ namespace BarPromenade
                 : throw new ArgumentNullException(nameof(lens));
             beamRenderers = beams ??
                 throw new ArgumentNullException(nameof(beams));
+            islandRenderer = island;
             lanternWorldPosition = worldPosition;
             propertyBlock = new MaterialPropertyBlock();
             Apply();
         }
 
-        private void Update()
+        public void BindPier(Transform observer, CitySeacoastFrame shore)
+        {
+            hero = observer;
+            pier = CitySeacoastPlanner.PierFootprint(shore);
+            deckTop = shore.SeaTopY + CitySeacoastPlanner.PierDeckTopAboveSea;
+            Apply();
+        }
+
+        private void OnDisable()
+        {
+            if (islandRenderer != null) SetViewStrength(0f);
+        }
+
+        private void SetViewStrength(float strength)
+        {
+            if (strength == previousStrength) return;
+            previousStrength = strength;
+            bool visible = strength > 0f;
+            islandRenderer.enabled = visible;
+            lensRenderer.enabled = visible;
+            foreach (Renderer beam in beamRenderers) beam.enabled = visible;
+            propertyBlock.Clear();
+            propertyBlock.SetFloat(ViewStrengthId, strength);
+            islandRenderer.SetPropertyBlock(propertyBlock);
+            propertyBlock.Clear();
+            CitySeaResources.SetLighthouseViewStrength(strength);
+        }
+
+        private void LateUpdate()
         {
             Apply();
         }
@@ -181,6 +216,18 @@ namespace BarPromenade
             {
                 return;
             }
+
+            float strength = 0f;
+            if (hero != null)
+            {
+                Vector3 foot = hero.position;
+                float inset = Mathf.Min(Mathf.Min(foot.x - pier.xMin, pier.xMax - foot.x),
+                    Mathf.Min(foot.z - pier.yMin, pier.yMax - foot.z));
+                if (foot.y >= deckTop - .25f && foot.y <= deckTop + 2f)
+                    strength = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(inset / .45f));
+            }
+            SetViewStrength(strength);
+            if (strength <= 0f) return;
 
             float azimuth = CityLighthouseLanternRules
                 .CurrentBeamAzimuthDegrees();
@@ -198,15 +245,7 @@ namespace BarPromenade
             // Day and night both: the night factor only swings the
             // intensity between the day floor and the full blaze.
             float night = CityNightSiteLightRegistry.NightFactor;
-            float intensity = Mathf.Lerp(DayIntensity, 1f, night);
-            for (int index = 0;
-                 index < beamRenderers.Length;
-                 index++)
-            {
-                beamRenderers[index].enabled = true;
-            }
-
-            lensRenderer.enabled = true;
+            float intensity = Mathf.Lerp(DayIntensity, 1f, night) * strength;
 
             // The classic sweep-past flash: when a beam crosses the
             // camera's bearing, the lens itself surges. This is the

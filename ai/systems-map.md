@@ -125,7 +125,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Dialogue faces | Expressive hero/foreman mouths, brows/blink follow reveal/pause; soil and snack state retained. | `SpeechFaceAnimation`, `SpeechFaceAtlasPresenter` | Current |
 | Sea water | Shared water drive owns sea swell, foam and uneven shore swash. | `CitySeaResources`, `CityWaterResources` | Current |
 | Beach sand | Deterministic shallow relief and compressible foot trails over a coarser fixed collider. | `CityBeachSandPlan`, `CitySandTreading` | Current |
-| Lighthouse island | One distant fog-framed island landmark owns its silhouette, beacon/beam and authored sightline. | `CityLighthouseIsland{Plan,Planner,MeshFactory,WorldBuilder,Resources}` | Current |
+| Lighthouse island | The fishing pier reveals the island, rotating beacon and sea glint. | `CityLighthouseIsland{Plan,Planner,MeshFactory,WorldBuilder,Resources}` | Current |
 | Seacoast fisherman | Close two-hand grip, raised PNG face/beard volume; clip-driven ember/shared exhale. | `SeacoastFisherman*`, `HomeBalconySmokingExhaleEffect` | Current |
 | Park chess gazebo | Plank deck, two default residents, playable boards, one central pendant and rain shelter. | `CityParkGazebo*`, `CityParkFurniture*`, `ParkChessPlayer*` | Current |
 | Park chess-set men | Imported chess and draught pieces retain the measured table and opening-layout contracts. | `CityChessBoardGeometry`, `CityChessSetPlan` | Current |
@@ -153,7 +153,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Supermarket cashier | Wall checkout/decor snacks;anchored palms/light;ordinary cashier,bulging 3D face/shared rig. | `SupermarketCashier{Provider,AssetRegistry,Factory,Presentation,Actor,SurveillanceState,BlinkState,Interaction}` | Current |
 | Supermarket CCTV corner cameras | Four authored corner cameras follow the hero without gameplay surveillance. | `SupermarketInteriorAssetRegistry`, `SupermarketSecurityCamera{,WorldBuilder}` | Current |
 | Supermarket fluorescent atmosphere | Visible fixtures own the store's restrained light, flicker and sound within explicit shared-resource budgets. | `SupermarketInteriorAtmosphere`, `SupermarketFluorescentFlicker` | Current |
-| City day/night presentation | Street fog volumes, 48 m visibility. Night dims sky/fill. Ridge fixtures keep a day floor. | `City{FogField,NightAtmosphere,AltitudeVisibility,DayNightController}`, `HomeBalconyExteriorAtmosphere` | Current |
+| City day/night presentation | City streets and balcony share fog volumes and a 96 m radius. Night dims sky/fill. Ridge fixtures keep a day floor. | `City{FogField,NightAtmosphere,AltitudeVisibility,DayNightController}`, `HomeBalconyExteriorAtmosphere` | Current |
 | Exterior weather | Rain contacts, wet film, snow and audio follow the clock. Gap: weather-driven grade. | `GameWeatherRules`, `CityWeatherController`, `CityRainContactField` | Partial |
 | Runtime cloth rags | Visible cloth uses shared bounded wind response and explicit attachment constraints. | `ClothPanelFactory`, `CityClothWindRegistry` | Current |
 | City wind | One gust for City/Home, cloth, vegetation and fixed-end wires. | `CityWindField`, `CityWindDressing*`, `CityCoastalInfrastructureWorldBuilder` | Current |

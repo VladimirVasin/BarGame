@@ -5,13 +5,13 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-26
 
-`WorldResidentialAddresses`: City/Home mesh parity, night windows, alpine repairs, rail boxes and upward petunia blooms.
+`WorldResidentialAddresses`: City/Home insets, night panes, alpine repairs, rail boxes and upright petunias.
 
-Paving seams pitched the sedan into the Works bridge. Axle contacts set its pose. `CityTrafficPassage` checked the recorded queue, opposing traffic and walkers clearing both lanes.
+`CityTrafficPassage`: axle contacts on the Works bridge, queues and walkers.
 
 `WorldTonalReadability`: stairs, faces, night street. `CityNightSaturation`: balcony return. `WorldContactFinishes`: rails, bus grips/treads, pub fittings. `CharacterLightOnStreetAndInBar`: skin/cloth/hair in colour/grayscale turns.
 
-Clouds removed. `DirectionalAmbientWorld`: clock/pause, exteriors, rooms, balcony return. `CityStreetFogWalk`: moving fog at rest and on a day/night shelter walk.
+Clouds removed. `DirectionalAmbientWorld`: clock/rooms. `CityStreetFogWalk`: wind. `CityFogCheckpoint`: 96 m. `CityRimFogVisibility`: near cliffs. `AlpineCliffFogSightline`: landmark. `SummitHome_BalconyAndApartmentDoorLookDownIntoTheCity`: room return.
 
 Fair sellers and visitors walk through both aisles to distinct homes. `CityFairDailyHours` checked closing, the seated child, night occupancy, reopening and the next evening’s assignments.
 

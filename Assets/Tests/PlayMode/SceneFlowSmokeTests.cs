@@ -2066,6 +2066,11 @@ namespace BarPromenade.Tests.PlayMode
             var balcony = home.BalconyLayout;
             Camera camera = Camera.main;
             var actor = home.Player.GameObject.transform;
+            CityFogField fog = home.ExteriorAtmosphere.FogField;
+            var viewRange = camera.GetComponent<CityStreetViewRange>();
+            Assert.That(viewRange, Is.Not.Null);
+            Assert.That(viewRange.enabled, Is.False);
+            float roomFarPlane = camera.farClipPlane;
             var feet = new Vector3(balcony.BalconyBounds.xMax - .65f, PlayerFactory.GroundedRootOffset, balcony.DoorCenter.z);
             Vector3 insideDoor = new Vector3(balcony.DoorCenter.x - 1.1f, feet.y, feet.z);
             Assert.That(home.BalconyDoor.TrySetOpenFraction(1f), Is.True);
@@ -2074,6 +2079,15 @@ namespace BarPromenade.Tests.PlayMode
             yield return CrossDoor(feet);
             yield return WaitUntil(() => home.ExteriorAtmosphere.IsBalconyVisibilityActive, "Balcony city visibility never activated.");
             for (int frame = 0; frame < 8; frame++) yield return null;
+            Assert.That(viewRange.isActiveAndEnabled, Is.True);
+            Assert.That(camera.farClipPlane, Is.EqualTo(RuntimeSceneSetup.CityFarClipPlane));
+            Assert.That(RenderSettings.fogMode, Is.EqualTo(FogMode.ExponentialSquared));
+            Assert.That(RenderSettings.fogDensity, Is.EqualTo(RuntimeSceneSetup.CityFogDensity));
+            Assert.That(fog.LayerOpacityMultiplier, Is.EqualTo(RuntimeSceneSetup.CityFogLayerOpacity));
+            Assert.That(fog.Player, Is.SameAs(actor));
+            Assert.That(fog.FogRenderer.sharedMaterial, Is.SameAs(CityNightResources.StreetFogMaterial));
+            Assert.That(fog.FogRenderer.renderMode, Is.EqualTo(ParticleSystemRenderMode.Mesh));
+            Assert.That(fog.Particles.particleCount, Is.Positive);
             var chosen = new Pose(camera.transform.position, camera.transform.rotation);
             Assert.That(Vector3.Distance(chosen.position, room.TransformPoint(new Vector3(5.58f, 2.02f, .22f))), Is.LessThan(.005f));
             Assert.That(camera.fieldOfView, Is.EqualTo(70f).Within(.01f));
@@ -2128,10 +2142,23 @@ namespace BarPromenade.Tests.PlayMode
                 Type.GetType("BarPromenade.Editor.CityMapArtReferenceExport, BarPromenade.Editor", true)
                     .GetMethod("ExportCurrent", Type.EmptyTypes).Invoke(null, null);
 #endif
+            Color daylightFog = RenderSettings.fogColor;
+            GameSessionState.AdvanceGameTime((float)(720f / GameTimeState.GameMinutesPerRealSecond));
+            home.DayNight.RefreshImmediate();
+            Assert.That(RenderSettings.fogColor.grayscale, Is.LessThan(daylightFog.grayscale));
+            Assert.That(camera.backgroundColor, Is.EqualTo(RenderSettings.fogColor));
+            if (Environment.GetEnvironmentVariable("BAR_PROMENADE_SUMMIT_HOME") == "1")
+                AreaCaptureFixture.CaptureCurrentCamera(camera, "SummitHome", "04-night-balcony");
             yield return CrossDoor(insideDoor);
             yield return WaitUntil(() => home.FixedCamera.ActiveShotKind != HomeCameraShotKind.Balcony, "Returning indoors kept the balcony camera.");
+            yield return WaitUntil(() => !home.ExteriorAtmosphere.IsBalconyVisibilityActive, "Balcony fog remained active indoors.");
+            Assert.That(viewRange.enabled || RenderSettings.fog, Is.False);
+            Assert.That(fog.Particles.particleCount, Is.Zero);
+            Assert.That(camera.farClipPlane, Is.EqualTo(roomFarPlane));
             yield return CrossDoor(feet);
             yield return WaitUntil(() => home.FixedCamera.ActiveShotKind == HomeCameraShotKind.Balcony, "Second entry did not select the balcony frame.");
+            yield return WaitUntil(() => viewRange.isActiveAndEnabled && fog.Particles.particleCount > 0,
+                "Street fog did not return on the second visit.");
             Assert.That(Vector3.Distance(camera.transform.position, chosen.position), Is.LessThan(.005f));
             Assert.That(Quaternion.Angle(camera.transform.rotation, chosen.rotation), Is.LessThan(.05f));
 

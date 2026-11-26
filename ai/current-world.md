@@ -242,7 +242,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   `AlpineVillageJunctionPlan`: ports/contours/snow; editable asphalt/soil masks
   bake shared 2x2 albedo/linear-response atlases. Other paths raised; no warehouse snow island.
   `AlpineVillageDistanceWorldBuilder` uses six checkpoint meshes with storm
-  materials below the gap: city/windows/glow/land/rock/vegetation.
+  materials below the gap. The city, windows, glow and relief fade together 6–12 m from the cliff.
   Cableway is the sole exit. Walkability: core/expansion minus walls/trees/cable
   cut/lodge/cliff/avalanche; ruin collision follows remains, props use MeshColliders.
   The `74°` rise/visible barriers close edges. Paths reserve compacted strips,
@@ -472,16 +472,13 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   `10 m` river mouth; rock stops both banks. The open `8 x 5.5 m` south portal has cut voussoirs and damp plinths.
   A staggered barrel covers the first `12 m` above the terrain-overlapping floor.
   The `72 m` shell then bends west to hide its end
-  and the backdrop. Navigation reaches `11 m`; crossing `8 m` shows the
+  from the mouth. Navigation reaches `11 m`; crossing `8 m` shows the
   unavailable-travel thought and walks the ordinary rig back to `6.5 m`.
   No tunnel transition handler or cave interaction. North remains sea;
-  east has the closed mainland road below. Two camera-relative west/south
-  layers at `39.4-43.2 m` keep world azimuth within `48 m` far clip, without
-  collision/lights/navigation/world bounds. `CityMountainPhysical` shades
-  `CityMountainRockAlbedo` with City SSAO. Colour/depth/normals share dither
-  at `39–47.5 m` at sea level and lift with altitude. Contrast follows Exp2
-  to a `0.10` floor. The fog-exempt shell mixes `0.86`
-  toward City fog. The omitted `(-1,-1)` cell holds one textured natural-soil
+  east has the closed mainland road below. Only real western and southern rock
+  appears inside the 96 m street radius. Colour, depth and normals share the
+  78–95 m dissolve. Rock uses City SSAO and a 0.10 contrast floor.
+  The omitted `(-1,-1)` cell holds one textured natural-soil
   slope around `16.2°`, outside navigation behind the exact L-shaped road
   fence, with no steps/terraces/platforms. Outer wings follow sampled terrain
   and diagonal toe; the whole turning ridge profile welds west to south.
@@ -538,9 +535,8 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   Road optic spans junction to boom; canopy washes door. Canopy/shed Spots: day floor/halos/shadows.
   `CityEastRoadProfile`: shared road/land/car/lamp datum; `RoadGroundCuts` bends.
   First mast keeps a fixed Light; later shells/lenses/halos/pools are passive.
-  East valley skyline/windows/glow fade 12–30m from post. Far-depth (.20m)
-  panorama and traffic fade on entering either southern hill over 12m.
-  Post uses lowland visibility.
+  The skyline, windows and glow fade 6–10 m from the checkpoint. Ordinary
+  road, traffic, lamps and terrain keep real depth and the street radius.
   2 cars: exported lanes/session phase/pause/time guard;
   no gameplay/Light/physics/shadow/audio;
 - `CityEastGuardDuty`: one home, one three-point out-and-back patrol; swap
@@ -559,8 +555,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   Paving/Bed faces on main spans, lower frontages and the cave approach,
   retaining the landward rail seat. River parapets preserve stair openings and
   bank-road pads; road-edge fences treat decks as support-only. Route 03 crosses Works.
-  The mapped bridge walk connects routes 01 and 02. In `default-coastal`, water/bed continue over
-  `48 m` behind the southern mountain. Both walks extend from `Z=-182` to
+  The mapped bridge walk connects routes 01 and 02. In `default-coastal`, water and bed continue `104 m` behind the southern mountain. Both walks extend from `Z=-182` to
   rock stops at `Z=-208`; cave water/space behind them remain outside nav.
   Low lanterns at `13 m` pitch keep emissive lenses/halos; pooled spill and
   sparse upper lamps always burn, at least two thirds by day (§20).
@@ -624,7 +619,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   pole floodlight `1`. Fixed site lights (cemetery/ten church-garden uplights)
   remain separately owned;
   the scene Directional and transient lightning Directional are counted
-  separately. City streets share Exp2 `.090` and a 48 m far plane at every elevation. Night dims sky, haze,
+  separately. City streets and the Home balcony share Exp2 `.030`, a radial 96 m cutoff and a 16–56 m Gaussian band. Night dims sky, haze,
   ambient and directional fill, leaving pools of light and their wet reflections visible.
   Summit Home/balcony see roofs down-slope past the upper bridge/dry ravine.
   Saturation `-24` day→`-30` night follows
@@ -738,10 +733,10 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   replaces soil/grass in the outer `1.5 m` with asphalt on the same plane.
   Hard ground stays. Grave cuts and sand stay local. River stairs/rails, timber
   deck and facade corners use profiles. Wood ends at the quay on both banks.
-  Home copies bounded street/terrain/perimeters without collision. Ordinary Blender panes
+  Home copies bounded street/terrain/perimeters without collision. Furnished panes fit behind the outer sash in City and Home. Ordinary panes
   keep a street-front primary and timed Residential extra;dark gaps/districts/
   special Bar/Home/Shop materials stay;
-- `CityFogField` carries up to 36 wind-driven particles. On streets, two scales of moving 3D density break up soft ellipsoids. Walls clip their visible thickness. Local contrast fades in beyond 2.6 m and out by 22 m. The balcony keeps clock-driven sheets. Sheltered areas clear and refill the field;
+- `CityFogField` carries up to 36 wind-driven particles. On streets and the Home balcony, two scales of moving 3D density break up soft ellipsoids. Opaque surfaces clip each volume. Their local haze is clear within 10 m of the camera or hero and fades back in by 18 m. The first 6.5 m around the hero and camera stay clear of these volumes. They build up by 11 m and dissolve by 22 m. Sheltered areas clear and refill the field;
   road/village retain their field profile and weather shelter owner. Exp2 is
   per-area;only village haze breathes with gusts. Depth-tested soft halos stay;
 
@@ -868,7 +863,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   instantiated by the default street catalog. Their staged availability does
   not place them in City, Home or the bus population. Home transforms the shared pavement
   graph into its local exterior, retaining a bounded `100 m` approach context
-  beyond the facade while rendering its `48 m` street slice;
+  beyond the facade while rendering its `96 m` street slice;
 - two midibuses per line, spaced half a circuit apart. The `8.25 x 2.38 x 2.95 m`
   body and `4.5 m` wheelbase remain. Pressed panels, round sedan optics,
   sealed door headers, fixed mirrors, worn paint/vinyl and a moulded floor
@@ -1143,10 +1138,8 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   the abandoned lighthouse island (`CityLighthouseIslandPlanner`): a
   fixed presentation-only rock mound with ruined fishermen's shacks, a
   wrecked hull and a ~15 m banded lighthouse whose lantern genuinely
-  rotates (two opposed additive beams, pure seed+minute rules,
-  night-gated), rendered on its own no-fog shaders with a
-  camera-distance self-fade inside the 48 m far plane — visible from
-  the esplanade, sand and pier head, gone from every street;
+  rotates day and night. Only the fishing pier reveals the island, its beams
+  and the matching sea glint. The deck footprint also applies in third person.
 - Port (`CityPort*`): west berth, 20 m plated trawler, hinged holds, windlass,
   worn deck, two cranes, cart/cold store. First unpaused entry starts supply.
   Three loads. Autonomous scenes/reentry;
@@ -1232,8 +1225,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   releases vessels, audio and water slots before another local pass; camera
   movement does not control spawning. Two
   dedicated Blender variants use `0.42` presentation scale, slow staggered
-  motion, the sea's wave pose and hull self-haze inside the unchanged `48 m`
-  far plane. Warm working searchlights retain a two-thirds daytime floor;
+  motion, the sea’s wave pose and hull self-haze inside the street draw radius. Warm working searchlights retain a two-thirds daytime floor;
   bounded moving water glints/wakes preserve the lighthouse's separate lamp.
   Two soft positional motor loops and one sparse shared horn belong to the
   vessels. They add no realtime Light, docking, interaction, navigation, map
@@ -2270,8 +2262,8 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   stop/pedestrian limits stay separate. Same seed/ground/street/facade/pub recipes:
   asphalt/sidewalks/markings/lots/windows/lamps/signals; the home line
   stop pole is Home-local/collider-free. Home has its own exterior lighting and shared saturation.
-  The summit outlook uses `.0048`/410 m. Other balcony views use `.090`/48 m with local fog.
-  Both keep fixed world-anchored street/bar lights;
+  The balcony uses the street fog profile. Nearby buildings and the bridge are visible through the moving haze.
+  Street and bar lights stay at their world positions.
   MainRoom/Bathroom/disable/destroy restore captured Home visibility/light.
   Only that shot runs5day/2night distance-managed pedestrians in the fog band;
   leaving pools them. The static stop activates no bus/director: no complete-body,

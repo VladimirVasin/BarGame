@@ -25,6 +25,9 @@ namespace BarPromenade
             if (courtyardLife != null) courtyardLife.PresentationObserver = Player.GameObject.transform;
             world.Root.GetComponentInChildren<CityOffshoreBoatController>()
                 ?.AttachHero(Player.GameObject.transform);
+            if (world.SeacoastPlan != null)
+                world.Root.GetComponentInChildren<CityLighthouseLanternController>()
+                    ?.BindPier(Player.GameObject.transform, world.SeacoastPlan.Frame);
             CitySandTreading sand = world.Root.GetComponentInChildren<CitySandTreading>();
             if (sand != null)
             {
@@ -192,8 +195,7 @@ namespace BarPromenade
                     TunnelShelter.Initialize(
                         Player.GameObject.transform,
                         world.MountainBoundaryPlan.Tunnel,
-                        cityFog,
-                        world.MountainBackdrop ?? districtBackdrop);
+                        cityFog);
                 }
                 // The surf bed sits under everything near the north
                 // shore: driven by the hero's distance to the waterline

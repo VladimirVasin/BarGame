@@ -137,16 +137,29 @@ namespace BarPromenade
             kit.Finish();
         }
 
-        private static void AddWindow(ResidentialFrontage kit, CityBuildingWindowSlot pane, int kind)
+        internal static void AddWindow(ResidentialFrontage kit, CityBuildingWindowSlot pane, int kind)
         {
             var outward = pane.Side == "Rear" ? Vector3.back : Vector3.forward;
-            Vector3 point = pane.LocalCenter - Vector3.up * (pane.SizeMeters.y * .48f) + outward * .045f;
-            AddWindow(kit, kind, point, outward, pane.SizeMeters.x, pane.SizeMeters.y);
+            // The prototype has an opaque pane 18 mm from the wall and a sash
+            // at 30 mm. Only the clear opening between its four bars is available.
+            Vector2 size = pane.SizeMeters;
+            float bar = Mathf.Min(.14f, Mathf.Min(size.x * .14f, size.y * .10f));
+            AddWindow(kit, kind, pane.LocalCenter + outward * .018f, outward,
+                size - Vector2.one * (2f * bar), .030f - .018f);
         }
 
-        internal static void AddWindow(ResidentialFrontage kit, int kind, Vector3 point, Vector3 outward, float width, float height)
+        internal static void AddWindow(ResidentialFrontage kit, int kind, Vector3 backingCenter,
+            Vector3 outward, Vector2 opening, float availableDepth)
         {
-            var scale = new Vector3(width * .93f, height * .93f, 1f);
+            // The four authored modules share a metre-wide sill. In their
+            // local space its back is at -8 mm and its nose is at +262 mm.
+            // Fit the whole assembly, including the glass, between the opaque
+            // backing and the face of the original frame.
+            const float clearance = .0015f;
+            if (availableDepth <= 2f * clearance) return;
+            var scale = new Vector3(opening.x, opening.y * .97f, (availableDepth - 2f * clearance) / .270f);
+            Vector3 point = backingCenter - Vector3.up * (.495f * scale.y) +
+                outward * (clearance + .008f * scale.z);
             kit.Add(Windows[kind], point, outward, scale);
             kit.Add("WindowGlass", point, outward, scale);
         }

@@ -42,8 +42,8 @@ namespace BarPromenade.Tests.PlayMode
             Vector3 downhill = new Vector3(.64f, -.09f, .77f);
             yield return Observe(low, downhill, "01-quay");
             float lowDensity = RenderSettings.fogDensity, lowClip = city.Camera.farClipPlane;
-            Assert.That(lowDensity, Is.EqualTo(.090f).Within(.0001f));
-            Assert.That(lowClip, Is.EqualTo(48f).Within(.01f));
+            Assert.That(lowDensity, Is.EqualTo(.030f).Within(.0001f));
+            Assert.That(lowClip, Is.EqualTo(96f).Within(.01f));
             Assert.That(city.Night.FogField.LayerOpacityMultiplier, Is.EqualTo(1f).Within(.01f));
             yield return Observe(middle, downhill, "02-court");
             float midDensity = RenderSettings.fogDensity, midClip = city.Camera.farClipPlane;

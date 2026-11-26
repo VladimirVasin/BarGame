@@ -36,7 +36,7 @@ namespace BarPromenade
         public const float MinimumNightSpawnRetryDelay = 4f;
         public const float MaximumNightSpawnRetryDelay = 10f;
         public const float InitialApproachCompletionDistance =
-            RuntimeSceneSetup.CityFarClipPlane * 0.5f;
+            24f;
         public const float DaytimeDistantSimulationInnerDistance =
             InitialApproachCompletionDistance + 8f;
         public const float DaytimeDistantSimulationFullDistance =

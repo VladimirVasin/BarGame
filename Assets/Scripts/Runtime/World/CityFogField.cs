@@ -23,6 +23,7 @@ namespace BarPromenade
         private static readonly int SoftParticleDistanceId =
             Shader.PropertyToID("_SoftParticleDistance");
         private static readonly int FogMotionId = Shader.PropertyToID("_FogMotion");
+        private static readonly int StreetObserverId = Shader.PropertyToID("_StreetObserver");
         private static readonly int StreetFlowId = Shader.PropertyToID("_StreetFlow");
 
         [SerializeField] private ParticleSystem particles;
@@ -43,11 +44,6 @@ namespace BarPromenade
         public ParticleSystem Particles => particles;
         public ParticleSystemRenderer FogRenderer => fogRenderer;
         public float LayerOpacityMultiplier { get; private set; } = 1f;
-
-        internal void SetLayerOpacity(float multiplier)
-        {
-            LayerOpacityMultiplier = Mathf.Clamp01(multiplier);
-        }
 
         public void Initialize(
             Transform playerTransform,
@@ -72,6 +68,7 @@ namespace BarPromenade
 
             CityLayers = useCityLayers;
             this.streetVolumes = streetVolumes;
+            LayerOpacityMultiplier = streetVolumes ? RuntimeSceneSetup.CityFogLayerOpacity : 1f;
             flowOffset = Vector2.zero;
             windDrift = Vector2.zero;
             EnsureParticleSystem();
@@ -173,6 +170,7 @@ namespace BarPromenade
             properties.SetVector(FogMotionId, new Vector4(Mathf.Sin(phase), Mathf.Cos(phase), 1f, 1f - LayerOpacityMultiplier));
             if (streetVolumes)
             {
+                properties.SetVector(StreetObserverId, player.position + Vector3.up * 1.35f);
                 float roll = Time.time * .84f;
                 properties.SetVector(StreetFlowId, new Vector4(flowOffset.x, flowOffset.y, Mathf.Sin(roll), Mathf.Cos(roll)));
             }

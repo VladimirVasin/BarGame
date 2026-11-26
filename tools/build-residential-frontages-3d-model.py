@@ -154,7 +154,8 @@ def windows():
     result=[]
     for name in ("Kitchen","Plants","Sitting","Storage"):
         m=Module("Window"+name)
-        # The existing pane is the back of this shallow projecting reveal.
+        # Model depth runs from the backing to the sill nose. The installer
+        # fits this entire profile between the host pane and its sash.
         m.box((0,.015,.127),(.98,.055,.27),"zinc")
         for side in (-1,1):
             m.box((side*.47,.49,.12),(.042,.98,.24),"cream")

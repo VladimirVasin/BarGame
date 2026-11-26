@@ -247,6 +247,7 @@ namespace BarPromenade
         // a fresh material, whichever order the builders ran in.
         private static Vector3 lanternPosition;
         private static bool lanternConfigured;
+        private static float lanternViewStrength;
 
         public static Material WaterMaterial
         {
@@ -388,10 +389,11 @@ namespace BarPromenade
         /// re-apply through Configure. Only the sea gets this: the
         /// river and the fountain keep the shader's zero.
         /// </summary>
-        internal static void ConfigureLighthouse(Vector3 position)
+        internal static void ConfigureLighthouse(Vector3 position, float viewStrength = 1f)
         {
             lanternPosition = position;
             lanternConfigured = true;
+            lanternViewStrength = viewStrength;
             ApplyLantern(WaterMaterial);
         }
 
@@ -414,6 +416,13 @@ namespace BarPromenade
                 LanternBeamDir(azimuthDegrees));
         }
 
+        internal static void SetLighthouseViewStrength(float strength)
+        {
+            if (strength == lanternViewStrength) return;
+            lanternViewStrength = strength;
+            if (waterMaterial != null) waterMaterial.SetFloat(LanternGlintId, LighthouseGlint * strength);
+        }
+
         private static void ApplyLantern(Material material)
         {
             material.SetVector(
@@ -427,7 +436,7 @@ namespace BarPromenade
             material.SetColor(
                 LanternColorId,
                 CityLighthouseIslandResources.LighthouseLensColor);
-            material.SetFloat(LanternGlintId, LighthouseGlint);
+            material.SetFloat(LanternGlintId, LighthouseGlint * lanternViewStrength);
             material.SetVector(
                 LanternBeamDirId,
                 LanternBeamDir(

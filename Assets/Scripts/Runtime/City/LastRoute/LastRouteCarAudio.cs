@@ -48,7 +48,7 @@ namespace BarPromenade
         /// <summary>The exterior tail ends where the city's visible slice
         /// does, the same tie the bus makes.</summary>
         public const float EngineMaximumDistance =
-            RuntimeSceneSetup.CityFarClipPlane;
+            48f;
 
         public const float TyreMinimumDistance = 2f;
         public const float TyreMaximumDistance = 30f;

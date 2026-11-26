@@ -16,18 +16,13 @@ namespace BarPromenade
     [DisallowMultipleComponent]
     public sealed class HomeBalconyExteriorAtmosphere : MonoBehaviour
     {
-        public const float FogAnchorDepth = 25.5f;
-
         /// <summary>
         /// How far past the facade the rain's follow point stands. The
         /// field is a <see cref="CityRainField.FieldExtent"/> box centred
         /// on its target, so half an extent puts the near edge ON the
         /// facade plane: the balcony camera stands inside the footprint
         /// and streaks fall past the lens, as they do around the hero in
-        /// the street. The fog anchor could not serve here - at 25.5 m
-        /// the nearest streak stood 12 m out, half gone to the city's
-        /// Exp2 haze, two centimetres wide at a tenth alpha: enabled,
-        /// simulating and invisible through every slot of the schedule.
+        /// the street.
         /// </summary>
         public const float RainAnchorDepth =
             CityRainField.FieldExtent * 0.5f;
@@ -61,13 +56,12 @@ namespace BarPromenade
         private bool hasExteriorLightingSample;
         private long lastThunderStrikeId = long.MinValue;
         private BuildingLot homeLot;
-        private bool summitHome;
+        private CityStreetViewRange streetViewRange;
         private CityLightingPresentation localLighting;
 
         public bool IsInitialized { get; private set; }
         public bool IsBalconyVisibilityActive { get; private set; }
         public Transform ExteriorRoot { get; private set; }
-        public Transform FogAnchor { get; private set; }
         public CityFogField FogField { get; private set; }
         public Transform RainAnchor { get; private set; }
         public CityRainField RainField { get; private set; }
@@ -99,7 +93,7 @@ namespace BarPromenade
             Transform exteriorRoot,
             CityNightWorldResult exteriorNight,
             HomeExteriorContextPlan exteriorContext,
-            Transform lightingFocus,
+            Transform player,
             HomeBalconyLayoutPlan balcony,
             HomeInteriorLayoutPlan interior,
             int citySeed)
@@ -127,9 +121,9 @@ namespace BarPromenade
             {
                 throw new ArgumentNullException(nameof(exteriorContext));
             }
-            if (lightingFocus == null)
+            if (player == null)
             {
-                throw new ArgumentNullException(nameof(lightingFocus));
+                throw new ArgumentNullException(nameof(player));
             }
             if (balcony == null)
             {
@@ -141,15 +135,15 @@ namespace BarPromenade
             }
 
             homeLot = exteriorContext.PlayerHome;
-            summitHome = exteriorContext.Layout.HasSummitHome;
+            streetViewRange = CityStreetViewRange.Install(targetCamera);
             homeVisibility = VisibilitySnapshot.Capture(targetCamera);
             homeLighting = LightingSnapshot.Capture();
-            BuildExteriorFog(balcony, citySeed);
+            BuildExteriorFog(player, citySeed);
             BuildExteriorRain(interior, balcony, citySeed);
             BuildExteriorLighting(
                 exteriorNight,
                 exteriorContext,
-                lightingFocus);
+                player);
 
             BuildCityPostProcessVolume();
             CityWetSurfaceRegistry.InitializeOrResume(
@@ -223,6 +217,7 @@ namespace BarPromenade
                 return;
             }
 
+            CityDayNightController.ApplySkyFog(targetCamera, sample.NightFactor);
             RuntimeSceneSetup.ApplyCityExteriorLighting(
                 sample,
                 updateEnvironment);
@@ -328,29 +323,13 @@ namespace BarPromenade
             IsInitialized = false;
         }
 
-        private void BuildExteriorFog(
-            HomeBalconyLayoutPlan balcony,
-            int citySeed)
+        private void BuildExteriorFog(Transform player, int citySeed)
         {
-            GameObject anchorObject = new GameObject(
-                "Home Exterior Fog Anchor");
-            FogAnchor = anchorObject.transform;
-            FogAnchor.SetParent(ExteriorRoot, false);
-            FogAnchor.localPosition = new Vector3(
-                HomeExteriorViewBuilder.ExteriorMinimumX +
-                FogAnchorDepth,
-                balcony.StreetGroundY,
-                PlayerHomeBalconyGeometry.BalconyCenterZ);
-
             GameObject fogObject = new GameObject(
                 "Home Exterior Fog Field");
             fogObject.transform.SetParent(ExteriorRoot, false);
             FogField = fogObject.AddComponent<CityFogField>();
-            FogField.Initialize(
-                FogAnchor,
-                CityNightResources.AtmosphereMaterial,
-                citySeed,
-                useCityLayers: true);
+            FogField.InitializeStreet(player, citySeed);
 
             GameObject rainSoundObject = new GameObject(
                 "Home Exterior Rain Sound");
@@ -514,24 +493,13 @@ namespace BarPromenade
             if (useCityVisibility)
             {
                 RuntimeSceneSetup.ApplyCityExteriorVisibility(targetCamera);
-                if (summitHome)
-                {
-                    targetCamera.farClipPlane = HomeSummitOutlook.FarPlane;
-                    RenderSettings.fogDensity = HomeSummitOutlook.FogDensity;
-                }
                 SetExteriorLightingEnabled(true);
-                if (hasExteriorLightingSample)
-                {
-                    RuntimeSceneSetup.ApplyCityExteriorLighting(
-                        exteriorLightingSample);
-                }
-                else
-                {
-                    RuntimeSceneSetup.ApplyCityExteriorLighting();
-                }
-                // Air at pavement height stays in the ravine below the summit.
-                // The elevated observer already sees continuous depth fog over the city.
-                FogField.FogRenderer.enabled = !summitHome;
+                DayNightVisualSample sample = hasExteriorLightingSample
+                    ? exteriorLightingSample
+                    : GameTimeDayNightRules.Evaluate(GameSessionState.GameTimeOfDayMinutes);
+                CityDayNightController.ApplySkyFog(targetCamera, sample.NightFactor);
+                RuntimeSceneSetup.ApplyCityExteriorLighting(sample);
+                SetBalconyFogActive(true);
                 RainField.RainRenderer.enabled = true;
 
                 CityPostProcessVolume.weight = 1f;
@@ -543,7 +511,7 @@ namespace BarPromenade
 
             SetPedestriansActive(false);
             SetBalconySmokersVisible(false);
-            FogField.FogRenderer.enabled = false;
+            SetBalconyFogActive(false);
             RainField.RainRenderer.enabled = false;
 
             ThunderSound.StopAll();
@@ -552,6 +520,15 @@ namespace BarPromenade
             homeVisibility.Restore(targetCamera);
             homeLighting.Restore();
             IsBalconyVisibilityActive = false;
+        }
+
+        private void SetBalconyFogActive(bool active)
+        {
+            if (streetViewRange != null) streetViewRange.enabled = active;
+            if (FogField == null || FogField.FogRenderer == null) return;
+            FogField.FogRenderer.enabled = active;
+            FogField.SetSheltered(!active);
+            FogField.enabled = active;
         }
 
         private void SetPedestriansActive(bool active)
@@ -586,11 +563,7 @@ namespace BarPromenade
             {
                 CityPostProcessVolume.weight = 0f;
             }
-            if (FogField != null &&
-                FogField.FogRenderer != null)
-            {
-                FogField.FogRenderer.enabled = false;
-            }
+            SetBalconyFogActive(false);
             if (RainField != null &&
                 RainField.RainRenderer != null)
             {
@@ -664,7 +637,6 @@ namespace BarPromenade
             runtimeCityProfile =
                 RuntimeSceneSetup
                     .CreateCityNoirRuntimeProfile();
-            if (summitHome) RuntimeSceneSetup.AddGaussianDepthOfField(runtimeCityProfile, 65f, 235f, .58f);
             CityPostProcessVolume.profile = runtimeCityProfile;
             runtimeCityProfile.TryGet(out cityColorAdjustments);
             cityTones = Rendering.WorldTonalGrade.Configure(runtimeCityProfile, 1f, 1f, 1f);

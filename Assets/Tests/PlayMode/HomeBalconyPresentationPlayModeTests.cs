@@ -301,7 +301,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 home.ExteriorAtmosphere
                     .FogField.FogRenderer.enabled,
-                Is.EqualTo(!home.ExteriorContext.Layout.HasSummitHome));
+                Is.True);
             Assert.That(
                 home.ExteriorAtmosphere
                     .CityPostProcessVolume.weight,
@@ -316,7 +316,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 RenderSettings.fogDensity,
                 Is.EqualTo(
-                        home.ExteriorContext.Layout.HasSummitHome ? HomeSummitOutlook.FogDensity : RuntimeSceneSetup.CityFogDensity)
+                        RuntimeSceneSetup.CityFogDensity)
                     .Within(0.0001f));
             Assert.That(
                 RenderSettings.fogColor,
@@ -329,7 +329,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 camera.farClipPlane,
                 Is.EqualTo(
-                        home.ExteriorContext.Layout.HasSummitHome ? HomeSummitOutlook.FarPlane : RuntimeSceneSetup.CityFarClipPlane)
+                        RuntimeSceneSetup.CityFarClipPlane)
                     .Within(0.001f));
             AssertCityLighting(
                 homeSun,
@@ -339,19 +339,18 @@ namespace BarPromenade.Tests.PlayMode
             FogMode dayFogMode = RenderSettings.fogMode;
             Color dayFogColor = RenderSettings.fogColor;
             float dayFogDensity = RenderSettings.fogDensity;
-            Color dayBackgroundColor = camera.backgroundColor;
             float dayFarClipPlane = camera.farClipPlane;
             GameSessionState.AdvanceGameTime((float)(720f / GameTimeState.GameMinutesPerRealSecond));
             home.DayNight.RefreshImmediate();
             Assert.That(RenderSettings.fog, Is.EqualTo(dayFog));
             Assert.That(RenderSettings.fogMode, Is.EqualTo(dayFogMode));
-            Assert.That(RenderSettings.fogColor, Is.EqualTo(dayFogColor));
+            Assert.That(RenderSettings.fogColor.grayscale, Is.LessThan(dayFogColor.grayscale));
             Assert.That(
                 RenderSettings.fogDensity,
                 Is.EqualTo(dayFogDensity));
             Assert.That(
                 camera.backgroundColor,
-                Is.EqualTo(dayBackgroundColor));
+                Is.EqualTo(RenderSettings.fogColor));
             Assert.That(
                 camera.farClipPlane,
                 Is.EqualTo(dayFarClipPlane));
@@ -419,7 +418,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 home.ExteriorAtmosphere
                     .FogField.FogRenderer.enabled,
-                Is.EqualTo(!home.ExteriorContext.Layout.HasSummitHome));
+                Is.True);
             Assert.That(
                 home.ExteriorAtmosphere
                     .CityPostProcessVolume.weight,
@@ -1023,42 +1022,22 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 atmosphere.ExteriorRoot,
                 Is.SameAs(home.ExteriorView));
-            Assert.That(atmosphere.FogAnchor, Is.Not.Null);
-            Assert.That(
-                atmosphere.FogAnchor.localPosition.x,
-                Is.EqualTo(
-                        HomeExteriorViewBuilder.ExteriorMinimumX +
-                        HomeBalconyExteriorAtmosphere.FogAnchorDepth)
-                    .Within(0.001f));
-            Assert.That(
-                atmosphere.FogAnchor.localPosition.x,
-                Is.GreaterThan(
-                    HomeExteriorViewBuilder.ExteriorMinimumX));
-
             CityFogField fog = atmosphere.FogField;
             Assert.That(fog, Is.Not.Null);
             Assert.That(fog.IsInitialized, Is.True);
             Assert.That(
                 fog.Player,
-                Is.SameAs(atmosphere.FogAnchor));
+                Is.SameAs(home.Player.GameObject.transform));
             Assert.That(
                 fog.Particles.main.maxParticles,
                 Is.EqualTo(CityFogField.MaximumParticles));
             Assert.That(
                 fog.FogRenderer.sharedMaterial,
-                Is.SameAs(
-                    CityNightResources.AtmosphereMaterial));
+                Is.SameAs(CityNightResources.StreetFogMaterial));
+            Assert.That(fog.FogRenderer.renderMode, Is.EqualTo(ParticleSystemRenderMode.Mesh));
             Assert.That(fog.FogRenderer.enabled, Is.False);
 
-            // The rain stands on its own anchor, not the fog's: half a
-            // field out, so the field is born on the facade plane and the
-            // balcony lens is inside it. On the fog's 25.5 m anchor the
-            // nearest streak stood 12 m off, fogged, and the balcony read
-            // dry through every slot of the schedule.
             Assert.That(atmosphere.RainAnchor, Is.Not.Null);
-            Assert.That(
-                atmosphere.RainAnchor,
-                Is.Not.SameAs(atmosphere.FogAnchor));
             Assert.That(
                 atmosphere.RainAnchor.localPosition.x,
                 Is.EqualTo(

@@ -32,8 +32,8 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(field.FogRenderer.renderMode, Is.EqualTo(ParticleSystemRenderMode.Mesh));
             Assert.That(field.FogRenderer.sharedMaterial.shader.isSupported, Is.True);
             Assert.That(field.Particles.main.maxParticles, Is.EqualTo(36));
-            Assert.That(camera.farClipPlane, Is.EqualTo(48f));
-            Assert.That(RenderSettings.fogDensity, Is.EqualTo(.09f).Within(.0001f));
+            Assert.That(camera.farClipPlane, Is.EqualTo(96f));
+            Assert.That(RenderSettings.fogDensity, Is.EqualTo(.030f).Within(.0001f));
 
             var hero = city.Player.GameObject.transform;
             var stop = CityBusNetworkFurniture.Stops(city.BusPlans)

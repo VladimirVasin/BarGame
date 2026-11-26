@@ -36,7 +36,6 @@ namespace BarPromenade
             GameObject mountainBoundaryRoot,
             CityFringeYardPlan fringeYardPlan,
             CityFringeYardWorldResult fringeYard,
-            CityMountainBackdropWorldResult mountainBackdrop,
             CityWindDressingPlan windDressingPlan,
             GameObject windDressingRoot,
             CityArchShelterPlan archShelterPlan,
@@ -122,7 +121,6 @@ namespace BarPromenade
             FringeYardPlan = fringeYardPlan ??
                 throw new ArgumentNullException(nameof(fringeYardPlan));
             FringeYard = fringeYard;
-            MountainBackdrop = mountainBackdrop;
             WindDressingPlan = windDressingPlan ??
                 throw new ArgumentNullException(
                     nameof(windDressingPlan));
@@ -240,7 +238,6 @@ namespace BarPromenade
             FringePracticalAnchors { get; }
         public CityEastExitPlan EastExitPlan { get; }
         public CityEastExitWorldResult EastExit { get; }
-        public CityMountainBackdropWorldResult MountainBackdrop { get; }
         public CityWindDressingPlan WindDressingPlan { get; }
         public GameObject WindDressingRoot { get; }
         public CityArchShelterPlan ArchShelterPlan { get; }

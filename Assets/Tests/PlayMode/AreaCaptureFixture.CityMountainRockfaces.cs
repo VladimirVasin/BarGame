@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.IO;
 using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
@@ -25,6 +26,79 @@ namespace BarPromenade.Tests.PlayMode
         [Explicit("Physical ridge relief at the reported summit wall and along the original approaches. Run alone.")]
         [PrebuildSetup(typeof(CityRockfaceAssetsSetup))]
         public IEnumerator CityMountainRockfaces() => CaptureCityLocalAcceptance(ReviewMountainRockfaces);
+
+        [UnityTest]
+        [Explicit("Render the reported City rim with a live local fog field.")]
+        public IEnumerator CityRimFogVisibility() => CaptureCityLocalAcceptance(ReviewRimFogVisibility);
+
+        private static IEnumerator ReviewRimFogVisibility(CityGameRoot city)
+        {
+            var foot = new Vector3(-171f, 36.4f, -362f);
+            city.Player.Motor.Teleport(foot);
+            CityFogField mist = city.Night.FogField;
+            mist.SetSheltered(true);
+            mist.SetSheltered(false);
+            Assert.That(mist.Particles.particleCount, Is.Positive);
+
+            var rims = city.World.MountainBoundaryRoot.transform.Find("Physical Ridges");
+            var rock = rims.Find("mountain-south-west-before-tunnel");
+            var faces = rock.GetComponentsInChildren<MeshRenderer>();
+            foreach (Vector3 outward in new[] { Vector3.left, Vector3.back })
+            {
+                string name = outward == Vector3.left ? "west" : "south";
+                Vector3 eye = foot - outward * 3f + Vector3.up * 1.9f;
+                PoseLocalAcceptanceCamera(city, eye, foot + outward * 22f + Vector3.up * 6f, 70f);
+                yield return null;
+                const float MaximumRockDistance = 12f;
+                var sightline = new Ray(eye, city.Camera.transform.forward);
+                Assert.That(rock.GetComponentsInChildren<MeshCollider>()
+                    .Any(body => body.Raycast(sightline, out _, MaximumRockDistance)), Is.True,
+                    "The camera must aim at a nearby physical wall.");
+
+                string frame = "rim-fog-" + name;
+                CaptureCurrentCamera(city.Camera, SceneIds.City, frame, 640, 360);
+                try
+                {
+                    mist.FogRenderer.forceRenderingOff = true;
+                    CaptureCurrentCamera(city.Camera, SceneIds.City, frame + "-clear", 640, 360);
+                    mist.FogRenderer.forceRenderingOff = false;
+                    foreach (var face in faces) face.forceRenderingOff = true;
+                    CaptureCurrentCamera(city.Camera, SceneIds.City, frame + "-hidden", 640, 360);
+                }
+                finally
+                {
+                    mist.FogRenderer.forceRenderingOff = false;
+                    foreach (var face in faces) face.forceRenderingOff = false;
+                }
+                float contrast = RimDifference(frame, frame + "-hidden");
+                Assert.That(contrast, Is.GreaterThan(18f), "Local fog erased the visible rock face.");
+                Assert.That(RimDifference(frame, frame + "-clear"), Is.LessThan(contrast * .20f),
+                    "Dense fog washed out the near rock.");
+            }
+        }
+
+        private static float RimDifference(string first, string second)
+        {
+            var image = new Texture2D(2, 2, TextureFormat.RGB24, false);
+            try
+            {
+                Color32[] a = Read(first), b = Read(second);
+                float difference = 0f;
+                const int sampleWidth = 48, sampleHeight = 32;
+                for (int y = 180 - sampleHeight / 2; y < 180 + sampleHeight / 2; y++)
+                for (int x = 320 - sampleWidth / 2; x < 320 + sampleWidth / 2; x++)
+                    difference += Mathf.Abs(a[y * 640 + x].g - b[y * 640 + x].g);
+                return difference / (sampleWidth * sampleHeight);
+            }
+            finally { UnityEngine.Object.DestroyImmediate(image); }
+
+            Color32[] Read(string frame)
+            {
+                string path = Path.Combine(Directory.GetCurrentDirectory(), "Captures", SceneIds.City, frame + ".png");
+                Assert.That(image.LoadImage(File.ReadAllBytes(path)), Is.True);
+                return image.GetPixels32();
+            }
+        }
 
         private static IEnumerator ReviewMountainRockfaces(CityGameRoot city)
         {

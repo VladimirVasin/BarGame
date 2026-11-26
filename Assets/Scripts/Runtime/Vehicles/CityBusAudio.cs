@@ -19,7 +19,7 @@ namespace BarPromenade
     {
         public const float ExteriorMinimumDistance = 24f;
         public const float ExteriorMaximumDistance =
-            RuntimeSceneSetup.CityFarClipPlane;
+            48f;
         public const float InteriorMinimumDistance = 4.5f;
         public const float InteriorMaximumDistance = 24f;
         public const float DoorMinimumDistance = 3.5f;

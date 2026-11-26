@@ -328,7 +328,7 @@ namespace BarPromenade.Tests.PlayMode
                 new Vector3(-19.5f, 3.22f, -9f), new Vector3(-4f, 5f, -1f));
             yield return CapturePort(camera, city, port, crew, unload + 31d, "port-14-night-cold-store",
                 new Vector3(8f, 3.22f, -11f), new Vector3(0f, 3f, -12f));
-            Assert.That(camera.farClipPlane, Is.EqualTo(48f));
+            Assert.That(camera.farClipPlane, Is.EqualTo(96f));
             Assert.That(crew.CaptainHandsMatch, Is.True);
             Assert.That(crew.CraneHandsMatch, Is.True);
             Assert.That(crew.TrolleyHandsMatch, Is.True);

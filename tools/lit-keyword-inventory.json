@@ -421,7 +421,7 @@
       "sha256": "0b055fa7c64dfb23110cbc79643f803edc48ffce81007ad418ca16beae69284a"
     },
     "Assets/Scripts/Runtime/Rendering/SceneCompositeRendererFeature.cs": {
-      "sha256": "75cc794016910dab362f49f066fbdaaf99e9bbd5fe0dd72bcb9b884ec3051bc6"
+      "sha256": "863e74713e0eb788a3ed3ed884c04c25d2f73737ced13b4526c6312bde07fdf3"
     },
     "Assets/Scripts/Runtime/Rendering/SceneScreenSpaceReflectionScope.cs": {
       "sha256": "8a60876179e23d2a8c58f0a9dad8c3f6f14199053b77d8880d333a5f0042ecf6"
@@ -514,7 +514,7 @@
       "sha256": "acdbbdd46859e5e450e02d86a86c0782bbc9781d09326fbeea1acf2cadeb73a6"
     },
     "Assets/Scripts/Runtime/World/CityEastDistanceWorldBuilder.cs": {
-      "sha256": "edf7d056dcf52a46e78daef2e754789372de26bfd0c6d2b02233f5e62eb6ccbf"
+      "sha256": "759df0f97a63e098196fb7ad0b335c9fb4a2fb93fd8b383c5d3082955e45b88b"
     },
     "Assets/Scripts/Runtime/World/CityEastExitDressingWorldBuilder.cs": {
       "sha256": "468df73d574a3f31d2ec7e62a65a64f13cfd6928f623a28547e30a88c4ba498e"
@@ -556,16 +556,13 @@
       "sha256": "6007d349b8c451887cdb4544b1c9072ddf545ca6e902911530ae9dc18823684c"
     },
     "Assets/Scripts/Runtime/World/CityLighthouseIslandResources.cs": {
-      "sha256": "da2768cef464f1e149fdd8135241c88cc123453003a5b1275c85886ddb10cb55"
+      "sha256": "10f96496fa84c67002df5d32ba8782f4e0536bdf323629e1e4f1393e58392e08"
     },
     "Assets/Scripts/Runtime/World/CityLitterInstancer.cs": {
       "sha256": "ea6a4bd93b1926915b375c40eed805005f09a1da1cb667c5217c1c8b8219910f"
     },
-    "Assets/Scripts/Runtime/World/CityMountainBackdropResources.cs": {
-      "sha256": "3cd8f7e712f64c093a4a75f121082e1b78087abaade6c008a08b9313bb0c9a00"
-    },
     "Assets/Scripts/Runtime/World/CityMountainSurfaceAppearance.cs": {
-      "sha256": "6fe5741c4cb4eb82ddf435f256291b00961c59810bddcdb1b3bdbc1f7a26c650"
+      "sha256": "143a2bcd4bc9ace0b04472f6a175166257446a32d8d4d900cc46d9087e3785f6"
     },
     "Assets/Scripts/Runtime/World/CityNightResources.cs": {
       "sha256": "290049094d36cced43f8867bad0df70aaaa56e34f8f28fe9192ad3f49c2f2478"
@@ -595,7 +592,7 @@
       "sha256": "74b21e58c2027ce81686a7d895c875c44f9db355f732622ea43fbbe5b95747ea"
     },
     "Assets/Scripts/Runtime/World/CitySeaResources.cs": {
-      "sha256": "b601c91f0cb905838c12e4857bc8b77262c4c92e8cd0a5e4872f22978265a8a8"
+      "sha256": "1a8d8c9dd7d082e7642d6b7134be785e69d2090c7811af650e491ccb5fb1a556"
     },
     "Assets/Scripts/Runtime/World/CitySeacoastSurfaceAppearance.cs": {
       "sha256": "76bdab11c70966025ddf4d0a65cbd15b1e68dff81afb35931095b21f5a49d905"
@@ -605,6 +602,9 @@
     },
     "Assets/Scripts/Runtime/World/CityStreetSurfaceWorldBuilder.cs": {
       "sha256": "f8792896519266ddd577a3dc0c0e592a10ccb140e2c7a53d2b620e1448e29947"
+    },
+    "Assets/Scripts/Runtime/World/CityStreetViewRange.cs": {
+      "sha256": "00923fcda97cc37f2f9705b105ad5c6ca6a22e287cee6cad9ef45116e0515efc"
     },
     "Assets/Scripts/Runtime/World/CitySurfaceLibrary.cs": {
       "sha256": "eed4851f5bebc1b71a79d52a8bd9abc161e99a5c7e04276e60184a073970234d"
@@ -784,7 +784,7 @@
       "sha256": "010e88cce3fa580539ead0885a2f9b24be8cfb0f8a260f268704f00c8d5492f7"
     },
     "Assets/Scripts/Runtime/Core/RuntimeSceneSetup.cs": {
-      "sha256": "fddccdc98fe69edee74f56a9b6a8d7977f9e077581f57e5958214bf684fd4e8f"
+      "sha256": "ba0a58037bdd2d29f85c408817a1c188a2d81b496bd97c0f9bf8118ee5653e5d"
     },
     "Assets/Scripts/Runtime/Scenes/StairwellInteriorAtmosphere.cs": {
       "sha256": "8a524daa5240971cce222dceec56e6b888d28a8183f089b7d4d26be1c45a0b65"

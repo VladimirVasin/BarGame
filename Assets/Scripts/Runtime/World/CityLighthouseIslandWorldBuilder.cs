@@ -75,13 +75,13 @@ namespace BarPromenade
             Transform root = new GameObject(RootName).transform;
             root.SetParent(parent, false);
 
-            BuildSilhouette(root, plan);
-            BuildLantern(root, plan);
+            Renderer island = BuildSilhouette(root, plan);
+            BuildLantern(root, plan, island);
 
             return root.gameObject;
         }
 
-        private static void BuildSilhouette(
+        private static Renderer BuildSilhouette(
             Transform root,
             CityLighthouseIslandPlan plan)
         {
@@ -107,14 +107,14 @@ namespace BarPromenade
             ConfigurePresentationRenderer(renderer);
             island.AddComponent<RuntimeGeneratedMeshOwner>()
                 .Initialize(mesh);
-            // Kept readable so the whole silhouette can be verified
-            // as presentation data, the mountain backdrop's way.
+            // The geometry contract reads the combined silhouette.
             mesh.UploadMeshData(false);
+            return renderer;
         }
 
         private static void BuildLantern(
             Transform root,
-            CityLighthouseIslandPlan plan)
+            CityLighthouseIslandPlan plan, Renderer island)
         {
             Transform assembly = new GameObject(
                 "Lighthouse Lantern").transform;
@@ -178,12 +178,12 @@ namespace BarPromenade
                 pivot,
                 lensRenderer,
                 beamRenderers,
-                assembly.position);
+                assembly.position, island);
 
             // The lantern casts no real light, but the sea is told
             // where it stands so the water can lay its glitter — the
             // controller keeps the beam azimuth current from here on.
-            CitySeaResources.ConfigureLighthouse(assembly.position);
+            CitySeaResources.ConfigureLighthouse(assembly.position, 0f);
         }
 
         private static void ConfigurePresentationRenderer(

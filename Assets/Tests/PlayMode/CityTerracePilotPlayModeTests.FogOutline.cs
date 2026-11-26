@@ -199,12 +199,12 @@ namespace BarPromenade.Tests.PlayMode
                 void AssertStreetProfile()
                 {
                     Assert.That(RenderSettings.fogMode, Is.EqualTo(FogMode.ExponentialSquared));
-                    Assert.That(RenderSettings.fogDensity, Is.EqualTo(.090f).Within(.0001f));
-                    Assert.That(camera.farClipPlane, Is.EqualTo(48f).Within(.01f));
+                    Assert.That(RenderSettings.fogDensity, Is.EqualTo(.030f).Within(.0001f));
+                    Assert.That(camera.farClipPlane, Is.EqualTo(96f).Within(.01f));
                     Assert.That(depth.active, Is.True);
                     Assert.That(depth.mode.value, Is.EqualTo(DepthOfFieldMode.Gaussian));
-                    Assert.That(depth.gaussianStart.value, Is.EqualTo(8f));
-                    Assert.That(depth.gaussianEnd.value, Is.EqualTo(28f));
+                    Assert.That(depth.gaussianStart.value, Is.EqualTo(16f));
+                    Assert.That(depth.gaussianEnd.value, Is.EqualTo(56f));
                 }
 
                 void CheckRoofContrast()

@@ -17,7 +17,7 @@ namespace BarPromenade
         public const float MaximumEngineVolume = 0.26f;
         public const float MaximumHornVolume = 0.28f;
         public const float MinimumDistance = 18f;
-        public const float MaximumDistance = RuntimeSceneSetup.CityFarClipPlane;
+        public const float MaximumDistance = 48f;
         public const float EngineCutoffFrequency = 760f;
         public const float HornCutoffFrequency = 1250f;
         public const float MinimumHornInterval = 90f;

@@ -9,8 +9,7 @@ namespace BarPromenade
     /// pipeline fog is effectively the clear colour, so the
     /// silhouette grades its own haze mix toward the city fog colour
     /// by camera distance, and both fade themselves out before the
-    /// 48 m far plane can clip them (the mountain backdrop's trick,
-    /// with distance made explicit).
+    /// 48 m street draw limit.
     /// </summary>
     internal static class CityLighthouseIslandResources
     {
@@ -20,15 +19,7 @@ namespace BarPromenade
             "Shaders/CityLighthouseBeam";
 
         /// <summary>
-        /// The distance-graded haze mix, retuned to the user's call:
-        /// the island must read from the SHORE, not only from the
-        /// pier. From the waterline sand (~40 m) it now sits at
-        /// HazeFar — ~14 % contrast, a legible silhouette with its
-        /// day-mark banding, not a hint; from the pier head (~27 m)
-        /// it eases toward HazeNear — ~28 %, the closest look the
-        /// city offers. The far plateau lands right at the sand's
-        /// own viewing distance, so the beach is where the island
-        /// finishes appearing.
+        /// Haze softens the tower toward the landward end of the fishing pier.
         /// </summary>
         public const float HazeNear = 0.72f;
         public const float HazeFar = 0.86f;
@@ -36,24 +27,13 @@ namespace BarPromenade
         public const float HazeFarDistance = 41f;
 
         /// <summary>
-        /// The self-fade band. With the island at its far-plane-
-        /// limited anchor the esplanade sees the lantern at ~46 m:
-        /// the band lets the tower's top melt into the air from
-        /// there (the mound beneath stays), and still closes half a
-        /// metre inside the 48 m far plane so nothing ever pops. The
-        /// waterline sand (~40 m to the lantern) sits fully before
-        /// the band and keeps the whole island.
+        /// The island dissolves before the street draw limit.
         /// </summary>
         public const float FadeStartDistance = 44.5f;
         public const float FadeEndDistance = 47.5f;
 
         /// <summary>
-        /// The LIGHT outlives the tower: the beams and the lens fade
-        /// on their own later band, still closing inside the 48 m
-        /// far plane. From the esplanade (~46-47 m) the silhouette
-        /// has all but dissolved while the sweeping flash still
-        /// carries - which is exactly a lighthouse in fog: the light
-        /// first, the tower maybe.
+        /// The beam tips dissolve slightly farther out than the tower.
         /// </summary>
         public const float BeamFadeStartDistance = 46.8f;
         public const float BeamFadeEndDistance = 47.8f;

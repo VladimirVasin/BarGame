@@ -126,6 +126,11 @@ namespace BarPromenade
 
         internal static void SetSkyFill(Camera camera, float nightFactor)
         {
+            Shader.SetGlobalFloat(SkyFillLossId, ApplySkyFog(camera, nightFactor));
+        }
+
+        internal static float ApplySkyFog(Camera camera, float nightFactor)
+        {
             float fillLoss = (1f - NightSkyFill) * Mathf.Clamp01(nightFactor);
             Color haze = RuntimeSceneSetup.CityFogColor;
             if (fillLoss > 0f)
@@ -137,7 +142,7 @@ namespace BarPromenade
             }
             RenderSettings.fogColor = haze;
             camera.backgroundColor = haze;
-            Shader.SetGlobalFloat(SkyFillLossId, fillLoss);
+            return fillLoss;
         }
 
         private void OnDisable()

@@ -5,9 +5,8 @@ namespace BarPromenade
 {
     /// <summary>
     /// Exposes the physically open tunnel's shelter state to the shared
-    /// weather owner, while directly suppressing the exterior-only fog and
-    /// mountain shell. The test is descriptor-driven rather than a scene
-    /// trigger so the same entrance volume survives when the real destination
+    /// weather owner and suppresses the exterior fog. The test uses the tunnel
+    /// descriptor so the same entrance volume survives when the real destination
     /// ships.
     /// </summary>
     [DisallowMultipleComponent]
@@ -20,7 +19,6 @@ namespace BarPromenade
         private Transform player;
         private CityMountainTunnelDescriptor tunnel;
         private CityFogField fog;
-        private CityMountainBackdropWorldResult backdrop;
         private bool sheltered;
 
         public bool IsInitialized { get; private set; }
@@ -29,8 +27,7 @@ namespace BarPromenade
         public void Initialize(
             Transform playerTransform,
             CityMountainTunnelDescriptor tunnelDescriptor,
-            CityFogField fogField,
-            CityMountainBackdropWorldResult mountainBackdrop)
+            CityFogField fogField)
         {
             if (IsInitialized)
             {
@@ -43,7 +40,6 @@ namespace BarPromenade
                 : throw new ArgumentNullException(nameof(playerTransform));
             tunnel = tunnelDescriptor;
             fog = fogField;
-            backdrop = mountainBackdrop;
             IsInitialized = true;
             Refresh(true);
         }
@@ -90,27 +86,6 @@ namespace BarPromenade
             {
                 fog.SetSheltered(sheltered);
             }
-
-            SetBackdropVisible(!sheltered);
-        }
-
-        private void SetBackdropVisible(bool visible)
-        {
-            if (backdrop?.RidgeRenderers == null)
-            {
-                return;
-            }
-
-            for (int index = 0;
-                 index < backdrop.RidgeRenderers.Count;
-                 index++)
-            {
-                Renderer renderer = backdrop.RidgeRenderers[index];
-                if (renderer != null)
-                {
-                    renderer.enabled = visible;
-                }
-            }
         }
 
         private void OnDisable()
@@ -136,8 +111,6 @@ namespace BarPromenade
             {
                 fog.SetSheltered(false);
             }
-
-            SetBackdropVisible(true);
         }
 
         private static Vector3 Flatten(Vector3 direction)

@@ -7,9 +7,11 @@ Shader "Bar Promenade/City East Distance"
         _Role("Panorama Surface Role", Float) = 0
         _DepthBandMeters("Far Depth Band (Metres)", Float) = 0.20
         _DepthWrite("Opaque Panorama Depth", Float) = 1
+        [HideInInspector] _StreetSkyline("Project inside street radius", Float) = 0
         _ViewDirection("View Hemisphere", Vector) = (1, 0, 0, 0)
         _Visibility("Area Visibility", Range(0, 1)) = 1
         _CheckpointView("Checkpoint XZ / Full / Hidden Distance", Vector) = (0, 0, 0, 0)
+        _ViewpointEyeY("Viewpoint Eye Height", Float) = 0
         [HideInInspector] _EastHillView("Eastern Hillside", Vector) = (0, 0, 0, 0)
         [HideInInspector] _QuarterView("Joined upper streets", Vector) = (0, 0, 0, 0)
         [HideInInspector] _WestHillView("Western Hillside", Vector) = (0, 0, 0, 0)
@@ -43,9 +45,11 @@ Shader "Bar Promenade/City East Distance"
                 float _Role;
                 float _DepthBandMeters;
                 float _DepthWrite;
+                float _StreetSkyline;
                 float4 _ViewDirection;
                 float _Visibility;
                 float4 _CheckpointView;
+                float _ViewpointEyeY;
                 float4 _EastHillView;
                 float4 _WestHillView;
                 float4 _QuarterView;
@@ -88,16 +92,19 @@ Shader "Bar Promenade/City East Distance"
                 // interpolation across broad terrain faces.
                 // Only the final 20 cm of camera depth is used by the panorama.
                 // Source depth orders its surfaces; nearer world depth wins.
-                float4 band = mul(UNITY_MATRIX_P,
-                    float4(0, 0, -(_ProjectionParams.z - _DepthBandMeters), 1));
-                float sourceDepth = max(0.01, -TransformWorldToView(world).z);
-                float fraction = 300.0 / (300.0 + sourceDepth);
-                #if UNITY_REVERSED_Z
-                    clipPosition.z = clipPosition.w * (band.z / band.w) * fraction;
-                #else
-                    clipPosition.z = clipPosition.w * (1.0 -
-                        (1.0 - band.z / band.w) * fraction);
-                #endif
+                if (_DepthBandMeters > 0)
+                {
+                    float4 band = mul(UNITY_MATRIX_P,
+                        float4(0, 0, -(_ProjectionParams.z - _DepthBandMeters), 1));
+                    float sourceDepth = max(0.01, -TransformWorldToView(world).z);
+                    float fraction = 300.0 / (300.0 + sourceDepth);
+                    #if UNITY_REVERSED_Z
+                        clipPosition.z = clipPosition.w * (band.z / band.w) * fraction;
+                    #else
+                        clipPosition.z = clipPosition.w * (1.0 -
+                            (1.0 - band.z / band.w) * fraction);
+                    #endif
+                }
                 output.panoramaAlpha = 1.0h - max(HillsideCoverage(_QuarterView), max(HillsideCoverage(_EastHillView), HillsideCoverage(_WestHillView)));
                 output.positionCS = clipPosition;
                 output.uv = input.uv;
@@ -106,22 +113,37 @@ Shader "Bar Promenade/City East Distance"
                 return output;
             }
 
-            half4 DistanceFragment(Varyings input) : SV_Target
+            half4 DistanceFragment(Varyings input, out float depth : SV_Depth) : SV_Target
             {
                 UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
                 clip(input.panoramaAlpha - 0.0001h);
                 float3 ray = input.world - _WorldSpaceCameraPos;
                 clip(dot(ray, _ViewDirection.xyz));
                 float d = length(ray);
+                depth = input.positionCS.z;
+                if (_StreetSkyline > .5)
+                {
+                    // Preserve the authored bearing and source depth order in the last 20 cm of the street sphere.
+                    float cosView = dot(ray / max(d, .001), GetViewForwardDir());
+                    float radius = _ProjectionParams.z - _DepthBandMeters * (300.0 / (300.0 + d));
+                    float eyeDepth = radius * max(cosView, .001);
+                    depth = saturate((rcp(eyeDepth) - _ZBufferParams.w) / _ZBufferParams.z);
+                }
                 half3 normal = normalize(input.normal);
-                // The skyline belongs to the checkpoint approach, not every
-                // east-facing street. Each rendering camera evaluates its own
-                // horizontal position; a zero band leaves the village alone.
                 half cityVisibility = 1.0h;
-                if (_Role > 2.5 && _Role < 5.5 && _CheckpointView.w > _CheckpointView.z)
-                    cityVisibility = 1.0h - (half)smoothstep(
-                        _CheckpointView.z, _CheckpointView.w,
-                        distance(_WorldSpaceCameraPos.xz, _CheckpointView.xy));
+                if (_CheckpointView.w > 0)
+                {
+                    float horizontal = distance(_WorldSpaceCameraPos.xz, _CheckpointView.xy);
+                    cityVisibility = (1 - smoothstep(_CheckpointView.z, _CheckpointView.w, horizontal)) *
+                        (1 - smoothstep(3.0, 6.0, abs(_WorldSpaceCameraPos.y - _ViewpointEyeY)));
+                    clip(cityVisibility - 0.0001h);
+                }
+                half rangeFade = 1.0h;
+                if (_DepthBandMeters <= 0)
+                {
+                    clip(_ProjectionParams.z - d);
+                    rangeFade = 1 - smoothstep(_ProjectionParams.z - 9.0, _ProjectionParams.z, d);
+                }
                 if (_Role > 13.5)
                 {
                     // Both the lens haze and the pool use source-space depth,
@@ -132,7 +154,7 @@ Shader "Bar Promenade/City East Distance"
                     float soft = exp(-radius * 4.5) * (1.0 - smoothstep(0.55, 1.0, radius));
                     float reach = exp(-d / (_Role > 14.5 ? 1100.0 : 2400.0));
                     float alpha = soft * reach * (_Role > 14.5 ? 0.23 : 0.12);
-                    return half4(_Tint.rgb, alpha * _Visibility * input.panoramaAlpha);
+                    return half4(_Tint.rgb, alpha * rangeFade * _Visibility * input.panoramaAlpha);
                 }
                 if (_Role > 4.5 && _Role < 5.5)
                 {
@@ -232,7 +254,8 @@ Shader "Bar Promenade/City East Distance"
                 // surfaces through buildings or pop them at the outer bound.
                 bool emissive = (_Role >= 4 && _Role <= 5) || (_Role >= 10 && _Role <= 11) || _Role >= 13;
                 surface *= emissive ? 1.0h : CitySkyFill();
-                return half4(lerp(_HazeColor.rgb * CitySkyFill(), surface, visibility * _Visibility * cityVisibility), input.panoramaAlpha);
+                half3 haze = _DepthBandMeters > 0 ? _HazeColor.rgb * CitySkyFill() : unity_FogColor.rgb;
+                return half4(lerp(haze, surface, visibility * rangeFade * _Visibility), input.panoramaAlpha * cityVisibility);
             }
             ENDHLSL
         }

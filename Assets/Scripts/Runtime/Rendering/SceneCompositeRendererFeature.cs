@@ -17,6 +17,7 @@ namespace BarPromenade.Rendering
 
         private SceneCompositePass pass;
         private CleanGlobalsPass globalsPass;
+        private CityStreetViewRangePass streetRangePass;
         private HomeToiletUnderwaterPass toiletUnderwaterPass;
         private AlpineColdFrostPass coldFrostPass;
         private NpcNameplatePass nameplatePass;
@@ -72,6 +73,8 @@ namespace BarPromenade.Rendering
         public override void Create()
         {
             ResolveResources();
+            streetRangePass?.Dispose();
+            streetRangePass = new CityStreetViewRangePass();
 
             pass?.Dispose();
             volumePass?.Dispose();
@@ -113,6 +116,8 @@ namespace BarPromenade.Rendering
             mothersHouseVolumeScheduled = false;
             pass?.ResetDebugState();
             CameraData cameraData = renderingData.cameraData;
+            if (cameraData.camera.TryGetComponent(out CityStreetViewRange streetRange) && streetRange.isActiveAndEnabled)
+                renderer.EnqueuePass(streetRangePass);
             if (toiletUnderwaterPass != null && cameraData.resolveFinalTarget &&
                 toiletUnderwaterPass.IsNeeded(cameraData.camera))
                 renderer.EnqueuePass(toiletUnderwaterPass);
@@ -269,6 +274,8 @@ namespace BarPromenade.Rendering
             mothersHouseVolumePass?.Dispose();
             mothersHouseVolumePass = null;
             globalsPass = null;
+            streetRangePass?.Dispose();
+            streetRangePass = null;
             toiletUnderwaterPass?.Dispose();
             toiletUnderwaterPass = null;
             coldFrostPass?.Dispose();

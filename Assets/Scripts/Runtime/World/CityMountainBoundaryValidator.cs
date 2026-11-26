@@ -490,7 +490,7 @@ namespace BarPromenade
                     CityMountainBoundaryDefinition.TunnelPhysicalDepth +
                     Tolerance ||
                 tunnel.VisualDepth <=
-                    RuntimeSceneSetup.CityFarClipPlane +
+                    CityMountainBoundaryDefinition.TunnelSightOcclusionDistance +
                     tunnel.WalkableDepth)
             {
                 throw new InvalidOperationException(

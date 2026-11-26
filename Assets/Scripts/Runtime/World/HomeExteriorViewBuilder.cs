@@ -853,9 +853,16 @@ namespace BarPromenade
                         Vector3 outward = cityPosition - lot.Center;
                         outward.y = 0;
                         outward = PlayerHomeBalconyGeometry.ToHomeLocalDirection(context.PlayerHome, outward.normalized);
+                        // This clipped proxy has a solid pane. Its inner half
+                        // supplies the backing, its outer half holds the insert.
+                        Vector3 across = Vector3.Cross(Vector3.up, outward);
+                        float width = Mathf.Abs(Vector3.Dot(exteriorPane.size, across));
+                        float depth = Mathf.Abs(Vector3.Dot(exteriorPane.extents, outward));
+                        Vector3 backing = exteriorPane.center;
                         CityResidentialFrontages.AddWindow(frontage, (int)(address.Household(side, floor, pane) % 4),
-                            exteriorPane.center - Vector3.up * (exteriorPane.size.y * .48f) + outward * .06f, outward,
-                            Mathf.Max(exteriorPane.size.x, exteriorPane.size.z), exteriorPane.size.y);
+                            backing, outward, new Vector2(width, exteriorPane.size.y), depth);
+                        exteriorPane.center = backing - outward * (depth * .5f);
+                        exteriorPane.size -= new Vector3(Mathf.Abs(outward.x), 0f, Mathf.Abs(outward.z)) * depth;
                     }
                 }
                 CityWindowFamily family =

@@ -4,6 +4,7 @@ Shader "Bar Promenade/City Street Fog"
     {
         [HideInInspector] _FogMotion("Field phase and opacity loss", Vector) = (0, 0, 0, 0)
         [HideInInspector] _StreetFlow("Wind travel and roll", Vector) = (0, 0, 0, 1)
+        [HideInInspector] _StreetObserver("Hero centre", Vector) = (0, 0, 0, 0)
         [HideInInspector] _DensityNoise("Air density", 3D) = "" {}
     }
     SubShader
@@ -29,6 +30,7 @@ Shader "Bar Promenade/City Street Fog"
             CBUFFER_START(UnityPerMaterial)
                 float4 _FogMotion;
                 float4 _StreetFlow;
+                float4 _StreetObserver;
             CBUFFER_END
             TEXTURE3D(_DensityNoise);
             SAMPLER(sampler_DensityNoise);
@@ -84,7 +86,17 @@ Shader "Bar Promenade/City Street Fog"
                 float2 uv = GetNormalizedScreenSpaceUV(input.positionCS);
                 float eyeDepth = LinearEyeDepth(SampleSceneDepth(uv), _ZBufferParams);
                 float sceneDistance = eyeDepth / max(.001, dot(ray, GetViewForwardDir()));
-                float entry = max(closest - halfChord, 2.6);
+                const float clearRadius = 6.5;
+                float3 toHero = _StreetObserver.xyz - eye;
+                float heroDistanceSq = dot(toHero, toHero);
+                float nearLimit = clearRadius;
+                if (heroDistanceSq < clearRadius * clearRadius)
+                {
+                    // In third person the camera is behind the hero. Start outside both clear regions.
+                    float along = dot(toHero, ray);
+                    nearLimit = max(nearLimit, along + sqrt(along * along + clearRadius * clearRadius - heroDistanceSq));
+                }
+                float entry = max(closest - halfChord, nearLimit);
                 float exitDistance = min(min(closest + halfChord, sceneDistance), 22.0);
                 float thickness = exitDistance - entry;
                 clip(thickness - .001);
@@ -103,8 +115,13 @@ Shader "Bar Promenade/City Street Fog"
                 folds.xy += .046 * _StreetFlow.zw;
                 half fold = SAMPLE_TEXTURE3D(_DensityNoise, sampler_DensityNoise, folds).r;
                 half billow = smoothstep(.27h, .68h, bank * .60h + fold * .40h);
-                float distanceFade = smoothstep(2.6, 5.5, mid) * (1 - smoothstep(14.0, 22.0, mid));
-                float opticalDepth = thickness * meanDensity * distanceFade * (.06 + 2.6 * billow) * input.opacity;
+                float distanceFade = smoothstep(clearRadius, 11.0, min(mid, distance(p, _StreetObserver.xyz))) * (1 - smoothstep(14.0, 22.0, mid));
+                // A short sightline ending on a nearby wall should stay readable
+                // even when several moving ellipsoids overlap in front of it.
+                float3 surface = eye + sceneDistance * ray;
+                float surfaceDistance = min(sceneDistance, distance(surface, _StreetObserver.xyz));
+                float surfaceFade = smoothstep(10.0, 18.0, surfaceDistance);
+                float opticalDepth = thickness * meanDensity * distanceFade * surfaceFade * (.06 + 2.6 * billow) * input.opacity;
                 half height = (p.y - input.centerAndRadius.y) * metric.y;
                 half skyScatter = lerp(.84h, 2.35h, saturate(.36h + .39h * height + .55h * fold));
                 // Practical lights already scatter through City's local-light volume pass.

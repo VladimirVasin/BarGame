@@ -15,8 +15,11 @@ namespace BarPromenade
         public const float MinimumSpawnDistance = 76f;
         public const float MaximumSpawnDistance = 86f;
         public const float RecycleDistance = 92f;
-        public const float FogHiddenDistance =
-            RuntimeSceneSetup.CityFarClipPlane + 8f;
+        public const float FogHiddenDistance = 56f;
+        // Standalone lines keep their authored encounter band. The live City
+        // shifts it outward with the camera so the whole bus enters behind fog.
+        private float StreetRangeExtension => city != null && city.Camera != null
+            ? Mathf.Max(0f, city.Camera.farClipPlane - (FogHiddenDistance - 8f)) : 0f;
         public const float InitialApproachCompletionDistance = 24f;
         public const float MaximumInitialApproachPathDistance = 180f;
         public const float MaximumInitialApproachDuration = 60f;
@@ -455,7 +458,7 @@ namespace BarPromenade
                 if (mayRecycle &&
                     !actor.HasPlayerPassenger &&
                     actor.GetClosestPlanarBodyDistance(player.position) >=
-                        RecycleDistance)
+                        RecycleDistance + StreetRangeExtension)
                 {
                     ReleaseActor(true);
                     spawnCooldown = GetRandomRange(
@@ -498,8 +501,7 @@ namespace BarPromenade
         {
             if (actor == null || !actor.HasRoutePhase) return;
             float distance = actor.GetClosestPlanarBodyDistance(player.position);
-            float extraRange = city != null && city.Camera != null
-                ? Mathf.Max(0f, city.Camera.farClipPlane - RuntimeSceneSetup.CityFarClipPlane) : 0f;
+            float extraRange = StreetRangeExtension;
             float revealRange = MaximumSpawnDistance + extraRange;
             if (!actor.IsSpawned && distance <= revealRange && CanRevealLine())
             {
@@ -669,12 +671,12 @@ namespace BarPromenade
             }
 
             if (!TrySelectSpawnCandidate(
-                    MinimumSpawnDistance,
-                    MaximumSpawnDistance,
+                    MinimumSpawnDistance + StreetRangeExtension,
+                    MaximumSpawnDistance + StreetRangeExtension,
                     out CityBusSpawnAnchor selected) &&
                 !TrySelectSpawnCandidate(
-                    FogHiddenDistance,
-                    MaximumSpawnDistance,
+                    FogHiddenDistance + StreetRangeExtension,
+                    MaximumSpawnDistance + StreetRangeExtension,
                     out selected))
             {
                 return false;
@@ -847,7 +849,7 @@ namespace BarPromenade
                 actor.LocalVisualBounds);
             if (bodyDistance < minimumBodyDistance ||
                 bodyDistance > maximumBodyDistance ||
-                bodyDistance < FogHiddenDistance)
+                bodyDistance < FogHiddenDistance + StreetRangeExtension)
             {
                 return false;
             }

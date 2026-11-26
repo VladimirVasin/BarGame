@@ -12,6 +12,8 @@ namespace BarPromenade
     {
         public const string ObjectName = "Distant City Below Broken Road";
         public const float BasinDropMeters = 1740f;
+        public const float CliffCityFullDistance = 6f;
+        public const float CliffCityHiddenDistance = 12f;
         public const float StormVisibilityFloor = .065f;
 
         public static GameObject Build(Transform parent, AlpineVillagePlan plan)
@@ -32,6 +34,9 @@ namespace BarPromenade
             instance.transform.localScale = source.transform.lossyScale;
             Vector3 sourceScale = source.transform.lossyScale;
             Vector3 inverseScale = new Vector3(1f / sourceScale.x, 1f / sourceScale.y, 1f / sourceScale.z);
+            var cliffView = new MaterialPropertyBlock();
+            CityEastDistanceWorldBuilder.SetViewpoint(cliffView, plan.Expansion.CliffEdge,
+                CliffCityFullDistance, CliffCityHiddenDistance);
             int count = 0;
             foreach (MeshRenderer template in source.GetComponentsInChildren<MeshRenderer>(true))
             {
@@ -47,7 +52,9 @@ namespace BarPromenade
                 meshObject.transform.localScale = Vector3.Scale(template.transform.lossyScale, inverseScale);
                 Material material = CityEastDistanceWorldBuilder.MaterialFor(role, village: true);
                 material.SetVector("_ViewDirection", downhill);
-                CityEastDistanceWorldBuilder.ConfigureRenderer(meshObject.GetComponent<MeshRenderer>(), material);
+                var renderer = meshObject.GetComponent<MeshRenderer>();
+                CityEastDistanceWorldBuilder.ConfigureRenderer(renderer, material);
+                renderer.SetPropertyBlock(cliffView);
                 count++;
             }
             if (count != 6)

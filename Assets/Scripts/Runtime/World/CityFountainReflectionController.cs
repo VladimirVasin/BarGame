@@ -73,7 +73,7 @@ namespace BarPromenade
             reflectionCamera.nearClipPlane =
                 RuntimeSceneSetup.GameplayNearClipPlane;
             reflectionCamera.farClipPlane =
-                RuntimeSceneSetup.CityFarClipPlane;
+                48f;
             reflectionCamera.clearFlags = CameraClearFlags.SolidColor;
             reflectionCamera.backgroundColor =
                 RuntimeSceneSetup.CityFogColor;

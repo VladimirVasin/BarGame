@@ -2,6 +2,7 @@ Shader "Bar Promenade/City Lighthouse Island"
 {
     Properties
     {
+        _ViewStrength("Pier visibility", Range(0, 1)) = 1
         _HazeColor("City Haze Color", Color) = (0.330, 0.380, 0.355, 1)
         _HazeNear("Haze Near", Range(0, 1)) = 0.72
         _HazeFar("Haze Far", Range(0, 1)) = 0.86
@@ -42,6 +43,7 @@ Shader "Bar Promenade/City Lighthouse Island"
 
             CBUFFER_START(UnityPerMaterial)
                 half4 _HazeColor;
+                half _ViewStrength;
                 half _HazeNear;
                 half _HazeFar;
                 float _HazeNearDistance;
@@ -111,7 +113,7 @@ Shader "Bar Promenade/City Lighthouse Island"
                     _FadeStartDistance,
                     _FadeEndDistance,
                     dist);
-                return half4(color * CitySkyFill(), fade);
+                return half4(color * CitySkyFill(), fade * _ViewStrength);
             }
             ENDHLSL
         }

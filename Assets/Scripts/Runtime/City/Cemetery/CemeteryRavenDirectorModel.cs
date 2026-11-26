@@ -113,7 +113,7 @@ namespace BarPromenade
         /// the hysteresis — no timers.
         /// </summary>
         public const float ReturnDistanceMeters =
-            0.7f * RuntimeSceneSetup.CityFarClipPlane;
+            33.6f;
 
         /// <summary>The pair never moves as one object: takeoffs are
         /// split by a fraction of a second, returns by most of one.

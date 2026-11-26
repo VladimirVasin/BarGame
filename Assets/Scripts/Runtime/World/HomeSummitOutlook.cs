@@ -7,8 +7,7 @@ namespace BarPromenade
     internal static class HomeSummitOutlook
     {
         // At the upper street the first lower-city rooflines are nearly 200 m away.
-        internal const float FarPlane = 410f;
-        internal const float FogDensity = .0048f;
+        private const float SceneryRadius = 410f;
 
         // Authored from the approved 16:9 gameplay frame, in apartment space.
         // The balcony uses this fixed lens and pose each time the hero steps outside.
@@ -43,7 +42,7 @@ namespace BarPromenade
             {
                 if (!patch.IsSupport || patch.Kind != CityStreetSupportKind.Asphalt || fullDetail.Overlaps(patch.Bounds)) continue;
                 var centre = patch.Bounds.center;
-                if (centre.y < eye.z || (centre - new Vector2(eye.x, eye.z)).sqrMagnitude > FarPlane * FarPlane) continue;
+                if (centre.y < eye.z || (centre - new Vector2(eye.x, eye.z)).sqrMagnitude > SceneryRadius * SceneryRadius) continue;
                 int start = roadVertices.Count;
                 foreach (var p in patch.TopVertices) roadVertices.Add(p + Vector3.up * .06f);
                 for (int j = 2; j < patch.TopVertices.Count; j++)
@@ -74,7 +73,7 @@ namespace BarPromenade
             }
 
             const float step = 8f;
-            int half = Mathf.CeilToInt(FarPlane / step);
+            int half = Mathf.CeilToInt(SceneryRadius / step);
             int across = 2 * half + 1;
             var vertices = new Vector3[across * (half + 1)];
             var valid = new bool[vertices.Length];
@@ -85,7 +84,7 @@ namespace BarPromenade
             {
                 var p = new Vector2(eye.x + (col - half) * step, eye.z + row * step);
                 int i = row * across + col;
-                if ((p - new Vector2(eye.x, eye.z)).sqrMagnitude > FarPlane * FarPlane) continue;
+                if ((p - new Vector2(eye.x, eye.z)).sqrMagnitude > SceneryRadius * SceneryRadius) continue;
                 bool found = false;
                 float y = 0f;
                 if (quarter.TerrainBounds.Contains(p)) { y = quarter.SampleSoil(p); found = true; }
@@ -119,7 +118,7 @@ namespace BarPromenade
             void Add(BuildingLot lot)
             {
                 var delta = lot.Center - eye;
-                if (!lot.HasBuilding || lot.IsPlayerHome || delta.z < 0f || delta.sqrMagnitude > FarPlane * FarPlane) return;
+                if (!lot.HasBuilding || lot.IsPlayerHome || delta.z < 0f || delta.sqrMagnitude > SceneryRadius * SceneryRadius) return;
                 if (lot.IsOrdinaryBuilding)
                 {
                     var pose = CityBuildingPrototypePlacement.ResolveExpectedCityPose(lot);

@@ -418,7 +418,6 @@ namespace BarPromenade
             {
                 districtPlan = new CityDistrictStreamingPlan(Layout);
                 districtWalkableArea = new DistrictWalkableArea(this);
-                districtBackdrop = CityMountainBackdropWorldBuilder.Build(transform, camera);
             }
 
             bool firstRidge = districtPlan != null && WantsRidgeArrival();

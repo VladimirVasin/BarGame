@@ -26,7 +26,6 @@ namespace BarPromenade
         private PlayerCameraFollow cityFollow;
         private InteractionPromptView cityPrompt;
         private float nextDistrictCheck;
-        private CityMountainBackdropWorldResult districtBackdrop;
         private CityFogField cityFog;
         private IBoardGameMatch savedChess, savedDraughts;
         private IBoardGameMatch RestoreParkMatch(CityBoardGameKind kind) =>

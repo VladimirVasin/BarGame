@@ -38,8 +38,11 @@ namespace BarPromenade
         public static readonly Quaternion CityMoonlightRotation =
             Quaternion.Euler(48f, -34f, 0f);
 
-        public const float CityFogDensity = 0.090f;
-        public const float CityFarClipPlane = 48f;
+        public const float CityFogDensity = 0.030f;
+        internal const float CityFogLayerOpacity = 0.35f;
+        internal const float CityGaussianStart = 16f;
+        internal const float CityGaussianEnd = 56f;
+        public const float CityFarClipPlane = 96f;
         public const float MountainRoadFogDensity = 0.026f;
         public const float MountainRoadFarClipPlane = 120f;
 
@@ -105,7 +108,7 @@ namespace BarPromenade
             SetPostProcessing(camera, true);
             ApplyCityExteriorVisibility(camera);
             ApplyCityExteriorLighting();
-            BindAuthoredVolumeDepthOfField();
+            BindAuthoredVolumeDepthOfField(CityGaussianStart, CityGaussianEnd);
             return camera;
         }
 
@@ -116,7 +119,7 @@ namespace BarPromenade
         /// never dirtied. The override is ensured on the clone, so a
         /// stale authored profile still gets the city defaults.
         /// </summary>
-        public static void BindAuthoredVolumeDepthOfField()
+        private static void BindAuthoredVolumeDepthOfField(float gaussianStart = 8f, float gaussianEnd = 28f)
         {
             Volume[] volumes = Object.FindObjectsByType<Volume>();
             for (int index = 0; index < volumes.Length; index++)
@@ -131,7 +134,7 @@ namespace BarPromenade
                 }
 
                 AddGaussianDepthOfField(
-                    volume.profile, 8f, 28f, 1.5f);
+                    volume.profile, gaussianStart, gaussianEnd, 1.5f);
                 volume.gameObject
                     .AddComponent<DepthOfFieldSettingsBinder>()
                     .Initialize(volume.profile);
@@ -597,7 +600,7 @@ namespace BarPromenade
 
             // Complete the far blur within the street fog. A focal plane
             // near the far clip puts the haze and its silhouettes in different blur bands.
-            AddGaussianDepthOfField(profile, 8f, 28f, 1.5f);
+            AddGaussianDepthOfField(profile, CityGaussianStart, CityGaussianEnd, 1.5f);
             return profile;
         }
 

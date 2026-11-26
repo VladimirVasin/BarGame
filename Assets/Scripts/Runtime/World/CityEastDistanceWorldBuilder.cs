@@ -14,8 +14,8 @@ namespace BarPromenade
         public const string ResourcePath = "City/EastExit/CityEastDistance3D";
         public const string ObjectName = "Distant Mainland Road and City";
         public const float DepthBandMeters = .20f;
-        public const float CheckpointCityFullDistance = 12f;
-        public const float CheckpointCityHiddenDistance = 30f;
+        public const float CheckpointCityFullDistance = 6f;
+        public const float CheckpointCityHiddenDistance = 10f;
 
         private static readonly int CheckpointViewId = Shader.PropertyToID("_CheckpointView");
 
@@ -82,9 +82,7 @@ namespace BarPromenade
                 hillView.SetVector(id, zone);
                 checkpointView.SetVector(id, zone);
             }
-            checkpointView.SetVector(CheckpointViewId, new Vector4(
-                plan.CheckpointPosition.x, plan.CheckpointPosition.z,
-                CheckpointCityFullDistance, CheckpointCityHiddenDistance));
+            SetViewpoint(checkpointView, plan.CheckpointPosition, CheckpointCityFullDistance, CheckpointCityHiddenDistance);
             foreach (MeshRenderer renderer in instance.GetComponentsInChildren<MeshRenderer>(true))
             {
                 int role = RoleOf(renderer.name);
@@ -108,6 +106,12 @@ namespace BarPromenade
             return instance;
         }
 
+        internal static void SetViewpoint(MaterialPropertyBlock properties, Vector3 point, float full, float hidden)
+        {
+            properties.SetVector(CheckpointViewId, new Vector4(point.x, point.z, full, hidden));
+            properties.SetFloat("_ViewpointEyeY", point.y + 1.6f);
+        }
+
         internal static int RoleOf(string meshName)
         {
             for (int i = 0; i < Roles.Length; i++)
@@ -127,6 +131,7 @@ namespace BarPromenade
             // Shader-displaced distant geometry must not be culled by its
             // unprojected source bounds. This is a renderer override, not
             // a mutation or clone of the shared imported mesh asset.
+            if (material.GetFloat("_DepthBandMeters") <= 0f) return;
             float units = Mathf.Max(.0001f, renderer.transform.lossyScale.x);
             renderer.localBounds = new Bounds(Vector3.zero, Vector3.one * (50000f / units));
         }
@@ -143,6 +148,7 @@ namespace BarPromenade
             Shader shader = Resources.Load<Shader>("Shaders/CityEastDistance");
             if (shader == null || !shader.isSupported)
                 throw new InvalidOperationException("Missing or unsupported mainland distance shader.");
+            bool skyline = role >= 3 && role <= 5;
             var material = new Material(shader)
             {
                 name = (village ? "Village Distance " : "East Distance ") + Roles[role] + " (Shared)",
@@ -154,7 +160,8 @@ namespace BarPromenade
                 ? RuntimeSceneSetup.AlpineVillageFogColor : RuntimeSceneSetup.CityFogColor);
             material.SetColor("_Tint", Colours[role]);
             material.SetFloat("_Role", role);
-            material.SetFloat("_DepthBandMeters", DepthBandMeters);
+            material.SetFloat("_DepthBandMeters", village || skyline ? DepthBandMeters : 0f);
+            material.SetFloat("_StreetSkyline", !village && skyline ? 1f : 0f);
             material.SetFloat("_DepthWrite", role == 5 || role >= 14 ? 0f : 1f);
             material.SetVector("_ViewDirection", Vector3.right);
             material.SetFloat("_Visibility", 1f);

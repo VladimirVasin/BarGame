@@ -32,6 +32,7 @@ namespace BarPromenade
             volume.profile = profile;
             volumeObject.AddComponent<DepthOfFieldSettingsBinder>().Initialize(profile);
             Camera = RuntimeSceneSetup.EnsureCityNight();
+            CityStreetViewRange.Install(Camera);
             Camera.transform.SetParent(transform, true);
             if (RenderSettings.sun != null && RenderSettings.sun.gameObject.scene == gameObject.scene)
                 RenderSettings.sun.transform.SetParent(transform, true);

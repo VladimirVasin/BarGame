@@ -281,13 +281,19 @@ namespace BarPromenade.Tests.EditMode
             CityLayout layout = CreateDefaultLayout();
             CityLighthouseIslandPlan plan = CreateDefaultPlan(
                 layout,
-                out _);
+                out CitySeacoastPlan coast);
 
             var parent =
                 new GameObject("Lighthouse Glint Test").transform;
             try
             {
-                CityLighthouseIslandWorldBuilder.Build(parent, plan);
+                var island = CityLighthouseIslandWorldBuilder.Build(parent, plan);
+                Assert.That(CitySeaResources.WaterMaterial.GetFloat("_LanternGlint"), Is.Zero);
+                var observer = new GameObject("Pier observer").transform;
+                observer.SetParent(parent, false);
+                Vector2 pier = CitySeacoastPlanner.PierFootprint(coast.Frame).center;
+                observer.position = new Vector3(pier.x, coast.Frame.SeaTopY + CitySeacoastPlanner.PierDeckTopAboveSea, pier.y);
+                island.GetComponentInChildren<CityLighthouseLanternController>().BindPier(observer, coast.Frame);
 
                 // The lantern is not a Light; building the island is
                 // what tells the sea where it stands.

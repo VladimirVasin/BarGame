@@ -99,8 +99,8 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(root.Player.Visual, Is.InstanceOf<Player3DCharacterPresentation>());
             Assert.That(root.Camera.GetUniversalAdditionalCameraData().renderPostProcessing, Is.True);
             Assert.That(RenderSettings.fog, Is.True);
-            Assert.That(RenderSettings.fogDensity, Is.EqualTo(.090f).Within(.0001f));
-            Assert.That(root.Camera.farClipPlane, Is.EqualTo(48f).Within(.001f));
+            Assert.That(RenderSettings.fogDensity, Is.EqualTo(.030f).Within(.0001f));
+            Assert.That(root.Camera.farClipPlane, Is.EqualTo(96f).Within(.001f));
             Assert.That(root.Plan.TotalRise, Is.EqualTo(7.68f).Within(.001f));
             AssertAuthoredSurfaces();
             AssertBoundaryGuards();

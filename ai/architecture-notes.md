@@ -192,14 +192,15 @@
   world motion/alcohol recovery/pause/debug owners stay;story acts/events action-driven.
 
 - **Accepted exceptions 2026-11-03/2026-11-05/2026-11-11,user — City visibility/night:**
-  All City heights:Exp2 .090/48m;no downhill gradient. Home balcony keeps its
-  separate far outlook. Night dims sky/fill/haze/reflections;fixed practicals stay.
-  CityFogField≤36 wind particles. Street air integrates depth-clipped ellipsoids at 2.6–22 m. Two scales of one repeating R8 lattice drift and roll on scaled time. Balcony keeps clock-driven sheets. Pause/roof/dormancy/unload cleanup.
-  CityEastDistance cameraXZ/post:skyline/windows/glow full≤12m→0at30m;
-  far traffic/panorama fades first12m of south hills. Cached refs/MPB;no
+  City streets and the Home balcony share Exp2 .030, a 96 m radius and a 16–56 m Gaussian band. Night dims sky/fill/haze/reflections;fixed practicals stay.
+  Accepted 2026-11-26, user: City street fog leaves 6.5 m clear around hero and camera,
+  rising to full local strength at 11 m. Depth-clipped ellipsoids drift on two R8 scales
+  out to 22 m at 35% opacity. The surface depth keeps nearby rock and walls clear through 10 m and restores full fog influence by 18 m. Returning indoors restores the room camera.
+  The fishing pier alone reveals the island, beams and sea glint. Mainland skyline/windows/glow
+  fade 6–10 m from the checkpoint and 6–12 m from the village cliff. Outside, all vanish.
+  City roads, traffic and mountains retain physical depth. Mountain Road keeps its own valley silhouette and lights. Cached refs/MPBs avoid
   recurring loads/materials. Shared wind/probes/SSR/water/bounce/volumetrics/
-  fog/Gaussian focus/SSAO/soft shadows/surfaces/bloom/SMAA/vignette/grain;
-  new pass/SSGI/SCGI/lens0. Art3.3/9,story16/21/art9.
+  fog/Gaussian focus/SSAO/soft shadows/surfaces/bloom/SMAA/vignette/grain. Art3.3/9,story16/21/art9.
 
 - **Accepted 2026-11-03,user — City/balcony night saturation:**
   Runtime grades:day `-24`→night `-30`, shared dawn/dusk/fractional clock.
@@ -3511,8 +3512,8 @@
   Pinned borders weld four Blender faces in render/collision chunks.
   Rear mass casts no distant shadow. Opaque `CityMountainPhysical`
   uses MPBs, `CityMountainRockAlbedo` and City SSAO. Forward/depth/normals
-  share the horizontal dither band (39–47.5 m at sea level) and altitude scale.
-  Native Exp2 reaches 0.10 beyond the 9–20 m approach. Portal/lining retain
+  share the horizontal dither band (78–95 m on City streets).
+  The native fog blends in with distance and keeps a 0.10 rock contrast floor. Portal/lining retain
   `RuntimePrimitiveLit`. The floor reaches `0.25 m` beneath the terrain edge,
   raised `0.03 m`; walls sit `0.04 m` outside portal faces and overlap floor/
   ceiling, whose overhang is another `0.04 m`. Conforming terrain, narrow ruts,
@@ -3522,8 +3523,7 @@
   `8 x 5.5 m` gate-free opening into twelve `6 m` floor/lining chords. The
   first `12 m` are straight/collidered with exact joints; later overlaps follow
   each `4°` westward turn. The axis leaves the entry sightline by `40 m`;
-  total `72 m` hides the uncapped end beyond `11 m` navigation plus `48 m`
-  far clip. At the earlier `8 m` decision plane, while
+  the bend hides the end of the `72 m` lining. At the earlier `8 m` decision plane, while
   `TravelAvailable` is false, an inward crossing shows one localized thought,
   walks the normal rig back to `6.5 m` facing inward, and rearms only after
   that retreat. This automatic boundary owns no prompt action, fake `SceneId`
@@ -3533,13 +3533,8 @@
   daytime floor and a deterministic sparse two-dip fault. Its exact lens also
   owns the short-range mono ballast buzz and synchronized crackle. Entering the
   physical lining changes the player-following rain to a dry-core shape,
-  clears exterior fog particles and hides the camera-relative ridge shell;
-  all three restore with mouth hysteresis on exit.
-  Shell: `39.4-43.2 m` inside clip `48 m`; `CityMountainBackdropFollower`
-  copies translation only. Shader skips distance fog, mixes `0.86` toward
-  `RuntimeSceneSetup.CityFogColor`, matching physical `0.10`/shared Exp2.
-  West/south only, closed above river mouth; no collider/Light/shadow/probe/
-  navigation/map/world bounds or fog/grade/clip change. Map reads physical
+  clears exterior fog particles and restores them on leaving. West and south show
+  the physical slopes inside the street draw radius. The map reads
   `CityWorldResult.MountainBoundaryPlan`: west/south toe→foot hatching,
   river ends in rock, arch/`12 m` throat; hidden cave/`72 m` tail absent,
   north/east exact.
@@ -3719,7 +3714,7 @@
   declared crossing metadata. World construction, navigation, pedestrians,
   bus routing and the City map consume the same validated plan rather than
   rediscovering the corridor from coordinates. `default-coastal` extends that
-  contract south of the core: water and bed continue more than `48 m` behind
+  contract south of the core: water and bed continue `104 m` behind
   the mountain, while both `3 m` promenades remain walkable from world
   `Z=-182` to physical rock stops at `Z=-208`. The player may walk to either
   stop but cannot enter the cave; it owns no prompt, interaction, scene or
@@ -3850,7 +3845,7 @@
 - **Accepted 2026-11-04 — Player home on the summit street:** The compact city's
   one Home entrance opens onto Ridge Street west of its upper bridge, near 03-04.
   The balcony opens to the approved fixed 70° frame behind the hero: truss bridge left, ravine below, concrete return at right. `HomeSummitOutlook`
-  uses the surveyed building footprints and bridge; a longer fog range is local to the summit view.
+  places the lower city at its surveyed coordinates. The shared City fog profile keeps the bridge legible.
   The lower residential site retains its neighbourhood courtyard and platform 02-02. Other layouts prefer a residential lot across the bar,
   then a deterministic fallback within `48 m` traversable distance. Home is
   `8.8 m` tall and its City facade uses the shared third-floor
@@ -4070,8 +4065,7 @@
   drop against a `2.05 m` cabin, so the catalog clears the roof with room to
   spare.
   The moving runtime remains City-only. A valid Home/Balcony route would
-  require a real Street pass-through whose two complete-body seams both lie at
-  or beyond the fog-hidden `56 m` boundary. Home keeps its pedestrian exterior
+  require a through street with both complete-body seams beyond the fog radius. Home keeps its pedestrian exterior
   runtime and reconstructs the nearby Home stop as a static collider-free pole,
   but composes no bus actor or director.
 - **Accepted — a contextual effect reads its host clip's phase, never its own
@@ -7672,7 +7666,7 @@
   retired style/console-effect keys are ignored. DoF changes runtime/cloned
   profiles only; disabled intoxication forces zero.
 - **Accepted — shared depth of field has two tiers:** the
-  scene tier is Gaussian. City `8/28/1.5` completes the blur inside its fog at all heights.
+  scene tier is Gaussian. City `16/56/1.5` completes the blur inside its fog at all heights.
   six interiors retain radius `0.55`: Bar `6/18`, Home `5/14`, Stairwell
   `5/16`, Supermarket `7/20`, Church `5/13`, Mother's House `4.5/13`.
   Exteriors, including Road `20/92/0.65`, stay. Modal `CinematicDepthOfField`

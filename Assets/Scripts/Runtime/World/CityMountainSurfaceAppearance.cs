@@ -24,16 +24,9 @@ namespace BarPromenade
         public const float PhysicalVisibilityFloor = 0.10f;
         public const float NativeFogNearDistance = 9f;
         public const float NativeFogFarDistance = 12f;
-        // The handoff band hugs the far clip (48 m), straddling the
-        // near backdrop ring (39.4 m) as the ring swap requires. It
-        // used to run 31-43 m, but at fog density 0.07 the rock's
-        // 10%-dot silhouette is still faintly readable at 31 m - so a
-        // player standing at the south rim (the cave promenade) watched
-        // the ridge crest dissolve mid-air into a bright hole. By 39 m
-        // the dots are haze-coloured and indistinguishable from fog, so
-        // the same handoff becomes invisible.
-        public const float PhysicalHandoffNearDistance = 39f;
-        public const float PhysicalHandoffFarDistance = 47.5f;
+        // The real rock dissolves completely before the street visibility limit.
+        public const float PhysicalHandoffNearDistance = RuntimeSceneSetup.CityFarClipPlane * (39f / 48f);
+        public const float PhysicalHandoffFarDistance = RuntimeSceneSetup.CityFarClipPlane - 1f;
         private const float MinimumUvScale = 0.35f;
         private const int HashSalt = 7000;
 
@@ -113,15 +106,6 @@ namespace BarPromenade
 
                 return physicalRidgeMaterial;
             }
-        }
-
-        internal static void SetCityVisibility(float density, float farPlane)
-        {
-            if (physicalRidgeMaterial == null) return;
-            float scale = farPlane / RuntimeSceneSetup.CityFarClipPlane;
-            physicalRidgeMaterial.SetFloat(FogDensityId, density);
-            physicalRidgeMaterial.SetFloat(HandoffNearId, PhysicalHandoffNearDistance * scale);
-            physicalRidgeMaterial.SetFloat(HandoffFarId, PhysicalHandoffFarDistance * scale);
         }
 
         public static HomeSurfaceRecipe GetRecipe()

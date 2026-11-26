@@ -78,7 +78,7 @@ namespace BarPromenade
         private const float PierWidth = 2.2f;
         private const float PierReach = 14.0f;
         private const float PierRootDepth = 4.0f;
-        private const float PierDeckTopAboveSea = 0.72f;
+        internal const float PierDeckTopAboveSea = 0.72f;
         private const float PierDeckThickness = 0.12f;
         private const float PierPileSpacing = 2.4f;
         private const float PierPileThickness = 0.26f;
@@ -287,12 +287,7 @@ namespace BarPromenade
             }
 
             float waterline = frame.WaterlineZ;
-            float pierLateral = ResolvePierLateral(frame);
-            destination.Add(Rect.MinMaxRect(
-                pierLateral - PierWidth * 0.5f,
-                waterline - PierRootDepth,
-                pierLateral + PierWidth * 0.5f,
-                waterline + PierReach));
+            destination.Add(PierFootprint(frame));
 
             CityPortPlan port = CityPortPlan.Create(frame);
             if (port != null)
@@ -507,6 +502,13 @@ namespace BarPromenade
                 portOrigin);
             grounds = Union(beachRow, seaRow);
             return true;
+        }
+
+        internal static Rect PierFootprint(CitySeacoastFrame frame)
+        {
+            float x = ResolvePierLateral(frame);
+            return Rect.MinMaxRect(x - PierWidth * .5f, frame.WaterlineZ - PierRootDepth,
+                x + PierWidth * .5f, frame.WaterlineZ + PierReach);
         }
 
         private static float ResolvePierLateral(
