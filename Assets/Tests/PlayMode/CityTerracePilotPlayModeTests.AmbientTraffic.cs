@@ -326,21 +326,50 @@ namespace BarPromenade.Tests.PlayMode
             city.Player.Motor.Teleport(crossing + Vector3.up * PlayerFactory.GroundedRootOffset);
             Physics.SyncTransforms();
             float initial = car.Driver.Distance;
+            float brakeVolume = 0f;
             for (int tick = 0; tick < 240; tick++)
             {
                 traffic.Advance(.05f);
+                brakeVolume = Mathf.Max(brakeVolume, car.Feedback.BrakeVolume);
                 if (tick % 4 == 0) yield return null;
             }
+            Assert.That(brakeVolume, Is.Positive, "Obstruction braking drives the road friction sound.");
+            Assert.That(car.Feedback.BrakeVolume, Is.Zero, "A stationary sedan no longer sounds as if its tyres are moving.");
             Assert.That(car.Driver.Distance - initial, Is.GreaterThan(4f), "Sedan never left its entry: " + car.Position +
                 "; physical=" + car.PhysicalBlocker?.name + "; hold=" + car.Driver.Model.HoldDistance + "; at=" + initial);
             Assert.That(car.Driver.Speed, Is.LessThan(.05f), "The sedan must stop before the hero.");
             Assert.That(car.Hull.ContainsCapsule(city.Player.GameObject.transform.position, .35f), Is.False);
+            int firstCues = car.Feedback.HornCount;
+            Assert.That(firstCues, Is.Positive, "A continuously blocked sedan must signal after braking.");
+            bool pressed = false;
             float waiting = car.Driver.Distance;
             for (int tick = 0; tick < 420; tick++)
             {
                 traffic.Advance(.05f);
+                if (!pressed && car.Feedback.HornReach >= .99f)
+                {
+                    yield return null;
+                    var rig = car.Person.Rig;
+                    var hand = rig.HandPose.GetAnatomicalFrame(false);
+                    var palm = rig.RightHand.position + rig.RightHand.rotation * hand.PalmCentreInHand;
+                    var hub = car.Registry.SteeringWheelPivot.position + car.Driver.SteeringWheelDriverSide * .016f;
+                    Assert.That(Vector3.Distance(palm, hub), Is.LessThan(.025f), "The horn cue has a palm contact on the pad.");
+                    Assert.That(car.Person.LeftGripDistance, Is.LessThan(.025f), "The other hand keeps its grip.");
+                    if (SystemInfo.graphicsDeviceType != UnityEngine.Rendering.GraphicsDeviceType.Null)
+                    {
+                        var shot = city.Camera.transform;
+                        var previous = new Pose(shot.position, shot.rotation);
+                        Vector3 view = car.Driver.transform.forward * 2.4f + Vector3.up * .8f;
+                        shot.SetPositionAndRotation(hub + view, Quaternion.LookRotation(-view));
+                        AreaCaptureFixture.CaptureCurrentCamera(city.Camera, "AmbientTraffic", "horn-contact", 1280, 720);
+                        shot.SetPositionAndRotation(previous.position, previous.rotation);
+                    }
+                    pressed = true;
+                }
                 if (tick % 8 == 0) yield return null;
             }
+            Assert.That(pressed, Is.True, "The hand must finish reaching the horn during a repeated cue.");
+            Assert.That(car.Feedback.HornCount, Is.GreaterThan(firstCues));
             Assert.That(car.Driver.Distance, Is.EqualTo(waiting).Within(.06f), "No collision bypass after prolonged waiting.");
             Debug.Log("Ambient traffic: real hero held the sedan beyond the ride timeout.");
 
@@ -360,6 +389,7 @@ namespace BarPromenade.Tests.PlayMode
                 if (tick % 4 == 0) yield return null;
             }
             Assert.That(car.Driver.Distance, Is.GreaterThan(waiting + 3f), "The sedan must resume when the person clears its lane.");
+            Assert.That(car.Feedback.HornReach, Is.Zero, "The hand returns to the wheel once the lane clears.");
 
             float paused = car.Driver.Distance;
             Time.timeScale = 0f;

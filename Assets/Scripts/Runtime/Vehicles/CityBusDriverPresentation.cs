@@ -167,7 +167,8 @@ namespace BarPromenade
         public void ApplyPose(
             float rightHandButtonBlend,
             float doorLookWeight,
-            float deltaTime)
+            float deltaTime,
+            float hornReach = 0f)
         {
             if (!IsInitialized)
             {
@@ -215,7 +216,7 @@ namespace BarPromenade
                 FocusStretchDistance = 0f;
                 NeckStretchRatio = 1f;
             }
-            ApplySteeringHands(RightHandButtonBlend);
+            ApplySteeringHands(RightHandButtonBlend, hornReach);
             RefreshContactDiagnostics();
         }
 
@@ -238,7 +239,7 @@ namespace BarPromenade
             ApplyLookAt(
                 busRegistry.DriverDoorLookAnchor.position,
                 0f);
-            ApplySteeringHands(0f);
+            ApplySteeringHands(0f, 0f);
             SetBlinkClosure(0f);
             RefreshContactDiagnostics();
         }
@@ -613,7 +614,7 @@ namespace BarPromenade
         private Quaternion MeasureHandFrame(Transform hand, Transform grip) =>
             Quaternion.Inverse(Quaternion.LookRotation(grip.position - hand.position, registry.transform.forward)) * hand.rotation;
 
-        private void ApplySteeringHands(float buttonBlend)
+        private void ApplySteeringHands(float buttonBlend, float hornReach)
         {
             Transform wheel = busRegistry.SteeringWheelPivot;
             Vector3 shaft = -wheel.TransformDirection(busRegistry.SteeringWheelAxisLocal).normalized;
@@ -626,7 +627,7 @@ namespace BarPromenade
             Pose left = WheelWrist(true, leftRimContact, leftHandAttachment);
             Pose right = WheelWrist(false, rightRimContact, rightHandAttachment);
             if (fingers.LeftGripWeight < 1f) fingers.SetGrip(true, 1f);
-            float rightGrip = 1f - Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(buttonBlend / .25f));
+            float rightGrip = 1f - Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(Mathf.Max(buttonBlend, hornReach) / .25f));
             if (!Mathf.Approximately(fingers.RightGripWeight, rightGrip)) fingers.SetGrip(false, rightGrip);
 
             Vector3 button = busRegistry.DoorButtonPressAnchor.position;
@@ -635,9 +636,17 @@ namespace BarPromenade
             Vector3 buttonWrist = button - buttonRotation * rightIndexOffset;
             Vector3 reach = Vector3.Lerp(right.position, buttonWrist, buttonBlend) +
                 registry.transform.up * (Mathf.Sin(buttonBlend * Mathf.PI) * ReachArcHeight);
+            Quaternion rightRotation = Quaternion.Slerp(right.rotation, buttonRotation, buttonBlend);
+            if (hornReach > 0f)
+            {
+                if (Vector3.Dot(shaft, registry.RightUpperArm.position - wheel.position) < 0f) shaft = -shaft;
+                Pose press = CityHornHand.PressPose(wheel, shaft, registry.transform.up, fingers, .018f);
+                reach = Vector3.Lerp(reach, press.position, hornReach);
+                rightRotation = Quaternion.Slerp(rightRotation, press.rotation, hornReach);
+            }
             ApplyArmPose(registry.LeftUpperArm, registry.LeftForearm, registry.LeftHand, left.position, left.rotation, -registry.transform.right);
             ApplyArmPose(registry.RightUpperArm, registry.RightForearm, registry.RightHand, reach,
-                Quaternion.Slerp(right.rotation, buttonRotation, buttonBlend), registry.transform.right);
+                rightRotation, registry.transform.right);
 
             Vector3 RimPoint(Transform anchor, float firstFeed)
             {

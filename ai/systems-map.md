@@ -139,7 +139,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Pedestrian street insults | Proximity/facing gates. Twenty lines per shuffle, retained on reload. | `CityPedestrianInsult{Rules,Lines,Walk,SessionState,Controller}`, `CityPedestrianPersonalSpaceController` | Current |
 | City/Home pedestrians | 192 commutes. City ≤36 + ≤12 ambient (≤2 daylight children) + ≤2 janitors. Home 5/2. Playground visits. | `CityResidentJourneyDirector`, `CityAmbientPedestrians`, `CityPlaygroundVisit`, `CityJanitorDirector` | Current |
 | NPC Human V2 anatomy, appearance and visibility | Shared rigs; joint fields/volume and shaped hands/clothes retain UVs. | `NpcHumanV2AssetSetup`, `NpcDesignAppearanceCatalog`, `CharacterJointDeformation` | Current |
-| City district buses | Two/ring,shared transfers. Gap:no Home service/live map buses. | `City{District,Hillside}BusPlanner`, `CityBus{Director,Actor,Factory}` | Partial |
+| City district buses | Two/ring, transfers, curve profiles. Gap:Home service/live buses. | `CityBus{Director,Actor,Timetable}`, `City{District,Hillside}BusPlanner` | Partial |
 | Midibus | Sedan lights, sliding leaves, fixed NPCs. | `CityBus{Presentation,DriverRig}` | Current |
 | Bus stop lighting | City/Home lit strip/apron;fixed daylight;soft shadows fade 12–24 m. | `CityBusStopLighting`, `CityNightAtmosphere` | Current |
 | Pedestrian bench rests | Eligible walkers reserve, sit, rest, stand and resume their route. | `CityBenchRest{Plan,Planner}`, `CityBenchNpcRestController` | Current |
@@ -183,7 +183,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Continuous 3D player interactions | Positioned entry/exit/contact continuity; optional exit hold/tail timing; owned presentation/input cleanup. | `PlayerAnimatedInteraction{Timeline,Controller}`, `PlayerDoorAction{Plan,Controller,Target}` | Current |
 | Sofa sleep and wake | Two hand-supported pelvis steps with seated stops; domed pillow dents and recovers. | `HomeBedInteraction{,Plan}`, `PlayerAnimatedInteractionPelvisPath` | Current |
 | City bench and park game-table seats | Shared sit/rest/stand; owning seat retains E/prompt and nested handlers through cleanup. | `CityParkBenchPlanner`, `CityBenchSit{Plan,WorldBuilder}` | Current |
-| City sedans and parking | Four roaming + rare pass-by. Ridge sedan; two empty four-bay district lots. | `CityAmbientTraffic`, `{Ridge,District}Parking*` | Current |
+| City sedans and parking | Four + pass-by, curve/brake/horn. Ridge sedan; two empty lots. | `CityAmbientTraffic`, `CityRoadVehicleFeedback`, `{Ridge,District}Parking*` | Current |
 | Ferryman radio and road speech | Three stations, playheads and cabin reactions persist; passenger exit switches the radio off. | `LastRouteRadioMusicPlayer`, `LastRouteRideSpeech{Session,View}` | Current |
 | Ferryman coin | One authored coin supplies the toss and contained glovebox pile; shared material, no pickups. | `LastRouteCoinAsset`, `LastRouteGloveboxCoins` | Current |
 | The last route | Shared Ferryman identity and outfit; ride stages, blackouts, arrivals, drunkenness refusal. | `DefaultNpcPopulation`, `LastRouteFerrymanFactory`, `LastRouteRideController`, `LastRouteFerrymanRideRules` | Current |

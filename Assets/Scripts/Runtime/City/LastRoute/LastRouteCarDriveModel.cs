@@ -17,11 +17,13 @@ namespace BarPromenade
             float acceleration,
             float braking,
             float maximumLateralAcceleration,
-            float minimumCorneringSpeed)
+            float minimumCorneringSpeed,
+            float obstacleDeceleration = 0f)
         {
             CruiseSpeed = Require(cruiseSpeed, nameof(cruiseSpeed));
             Acceleration = Require(acceleration, nameof(acceleration));
             Braking = Require(braking, nameof(braking));
+            ObstacleDeceleration = obstacleDeceleration > 0f ? Require(obstacleDeceleration, nameof(obstacleDeceleration)) : 0f;
             MaximumLateralAcceleration = Require(
                 maximumLateralAcceleration,
                 nameof(maximumLateralAcceleration));
@@ -40,6 +42,7 @@ namespace BarPromenade
         public float CruiseSpeed { get; }
         public float Acceleration { get; }
         public float Braking { get; }
+        internal float ObstacleDeceleration { get; }
 
         /// <summary>
         /// Metres per second squared of side load the Ferryman is willing to
@@ -155,6 +158,8 @@ namespace BarPromenade
         private readonly LastRouteCarDriveProfile profile;
         private float holdDistance = float.PositiveInfinity;
         private float directionChangePause;
+        private float obstacleBrakeRate;
+        internal bool IsObstacleBraking { get; private set; }
         private bool hasChangedDirection;
 
         public LastRouteCarDriveModel(
@@ -267,6 +272,8 @@ namespace BarPromenade
             // gear is already forward and must not be found again.
             hasChangedDirection = Distance >= path.ReverseLength;
             directionChangePause = 0f;
+            obstacleBrakeRate = 0f;
+            IsObstacleBraking = false;
             Speed = Mathf.Clamp(
                 Sanitize(speed),
                 0f,
@@ -313,8 +320,11 @@ namespace BarPromenade
         /// because it is the whole of the cornering behaviour and it is much
         /// easier to assert directly than to infer from a trace.
         /// </summary>
-        public float EvaluateTargetSpeed()
+        public float EvaluateTargetSpeed() => EvaluateTargetSpeed(out _);
+
+        private float EvaluateTargetSpeed(out bool obstacleLimited)
         {
+            obstacleLimited = false;
             if (directionChangePause > 0f)
             {
                 return 0f;
@@ -344,7 +354,7 @@ namespace BarPromenade
             // And so is a give-way line, for as long as it is down. Same
             // arithmetic, so a car braking to a stop line settles onto it
             // the same way it settles onto the terminus.
-            if (!float.IsPositiveInfinity(holdDistance))
+            if (profile.ObstacleDeceleration == 0f && !float.IsPositiveInfinity(holdDistance))
             {
                 limit = Mathf.Min(
                     limit,
@@ -381,6 +391,12 @@ namespace BarPromenade
                 limit = Mathf.Min(limit, entry);
             }
 
+            if (profile.ObstacleDeceleration > 0f && !float.IsPositiveInfinity(holdDistance))
+            {
+                float obstacleLimit = CityRoadBraking.SpeedLimit(holdDistance - Distance, Speed, profile.ObstacleDeceleration);
+                obstacleLimited = obstacleLimit < limit;
+                limit = Mathf.Min(obstacleLimit, limit);
+            }
             return Mathf.Max(0f, limit);
         }
 
@@ -418,10 +434,17 @@ namespace BarPromenade
                 return;
             }
 
-            TargetSpeed = EvaluateTargetSpeed();
-            Speed = Speed < TargetSpeed
-                ? Mathf.Min(TargetSpeed, Speed + (profile.Acceleration * step))
-                : Mathf.Max(TargetSpeed, Speed - (profile.Braking * step));
+            TargetSpeed = EvaluateTargetSpeed(out bool obstacleLimited);
+            IsObstacleBraking = obstacleLimited && TargetSpeed < Speed;
+            if (IsObstacleBraking)
+                Speed = CityRoadBraking.Apply(Speed, TargetSpeed, holdDistance - Distance,
+                    profile.ObstacleDeceleration, CityRoadBraking.SedanEmergencyDeceleration, step, ref obstacleBrakeRate);
+            else
+            {
+                obstacleBrakeRate = 0f;
+                Speed = Mathf.MoveTowards(Speed, TargetSpeed,
+                    (Speed < TargetSpeed ? profile.Acceleration : profile.Braking) * step);
+            }
             Speed = Mathf.Max(0f, Speed);
 
             Distance = Mathf.Min(path.Length, Distance + (Speed * step));

@@ -157,6 +157,7 @@ namespace BarPromenade
         {
             var path = new LastRouteCarDrivePath(stations);
             var heights = new float[path.PointCount];
+            var headings = new Vector3[path.PointCount];
             for (int i = 0; i < heights.Length; i++)
             {
                 float distance = path.distances[i];
@@ -165,11 +166,29 @@ namespace BarPromenade
                 heights[i] = (rear.y + front.y) * .5f;
                 Vector3 between = front - rear;
                 float run = Flatten(between).magnitude;
-                Vector3 heading = Flatten(path.forwards[i]).normalized;
+                Vector3 heading = Flatten(path.SamplePosition(distance + .85f) -
+                    path.SamplePosition(distance - .85f)).normalized;
+                if (heading.sqrMagnitude < .001f) heading = Flatten(path.forwards[i]).normalized;
                 heading.y = run > MinimumSegmentLength ? between.y / run : 0f;
-                path.forwards[i] = heading.normalized;
+                headings[i] = heading.normalized;
             }
-            for (int i = 0; i < heights.Length; i++) path.points[i].y = heights[i];
+            for (int i = 0; i < heights.Length; i++)
+            {
+                float distance = path.distances[i];
+                float before = Mathf.Max(0f, distance - 1.5f);
+                float after = Mathf.Min(path.Length, distance + 1.5f);
+                path.turnRates[i] = Vector3.Angle(Flatten(HeadingAt(before)), Flatten(HeadingAt(after))) /
+                    Mathf.Max(MinimumSegmentLength, after - before);
+                path.points[i].y = heights[i];
+                path.forwards[i] = headings[i];
+            }
+
+            Vector3 HeadingAt(float distance)
+            {
+                int segment = path.FindSegment(distance);
+                float blend = Mathf.InverseLerp(path.distances[segment], path.distances[segment + 1], distance);
+                return Vector3.Slerp(headings[segment], headings[segment + 1], blend);
+            }
             return path;
         }
 

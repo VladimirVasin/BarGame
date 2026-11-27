@@ -103,6 +103,9 @@ namespace BarPromenade
         /// right turn.
         /// </summary>
         public float SteeringWheelDegrees { get; private set; }
+        internal Vector3 SteeringWheelDriverSide => hasSteeringWheel
+            ? registry.SteeringWheelPivot.TransformDirection(steeringWheelAxisLocal)
+            : -transform.forward;
 
         public void Initialize(LastRouteCarAssetRegistry carRegistry)
         {

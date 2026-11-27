@@ -94,6 +94,58 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void AmbientDriver_BuildsBrakeForceAndStopsAtTheHold()
+        {
+            var root = new GameObject("City service braking");
+            try
+            {
+                root.AddComponent<BoxCollider>();
+                var driver = root.AddComponent<LastRouteCarDriver>();
+                driver.ExternallyDriven = true;
+                driver.KeepBodyCollider = true;
+                var profile = new LastRouteCarDriveProfile(6f, 1.45f, 4.8f, 2.65f, 2.2f, 2.35f);
+                driver.Begin(new LastRouteCarDrivePath(new[] { Vector3.zero, Vector3.forward * 100f }), profile, 6f);
+                driver.Model.SetHold(9.3f);
+                driver.Advance(.05f);
+                Assert.That(driver.Model.IsObstacleBraking, Is.True);
+                Assert.That(driver.Speed, Is.InRange(5.95f, 5.999f), "Brake effort takes time to build.");
+                float previous = driver.Speed;
+                for (int i = 0; i < 220; i++)
+                {
+                    driver.Advance(.025f);
+                    Assert.That(driver.Speed, Is.LessThanOrEqualTo(previous + .01f));
+                    Assert.That(driver.Distance, Is.LessThanOrEqualTo(9.301f));
+                    previous = driver.Speed;
+                }
+                Assert.That(driver.Distance, Is.EqualTo(9.3f).Within(.06f));
+                Assert.That(driver.Speed, Is.LessThan(.02f));
+            }
+            finally { Object.DestroyImmediate(root); }
+        }
+
+        [Test]
+        public void ObstructedHorn_ContactsOncePerIntervalAndCancelsBeforeContact()
+        {
+            var horn = new CityHornTimeline();
+            int cues = 0;
+            for (int i = 0; i < 15; i++)
+                if (horn.Advance(.05f, true, 5f)) cues++;
+            Assert.That(horn.Reach, Is.GreaterThan(0f));
+            for (int i = 0; i < 30; i++)
+                if (horn.Advance(.05f, false, 5f)) cues++;
+            Assert.That(cues, Is.Zero);
+            Assert.That(horn.Reach, Is.Zero);
+
+            for (int i = 0; i < 130; i++)
+                if (horn.Advance(.05f, true, 5f))
+                {
+                    cues++;
+                    Assert.That(horn.Reach, Is.EqualTo(1f).Within(.025f));
+                }
+            Assert.That(cues, Is.EqualTo(2));
+        }
+
+        [Test]
         public void Drivers_AppendPermanentOrdinaryIdentitiesAfterExistingCast()
         {
             var roster = DefaultNpcPopulation.Characters;

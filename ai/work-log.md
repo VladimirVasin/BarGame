@@ -5,6 +5,17 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-27
 
+City buses and sedans read curves and build brake force ahead of occupied
+lanes. The bus timetable shares the curve limits. Friction tracks motion,
+and a timed hub press gives each horn cue.
+`CurvatureTimetable_UsesRoadShapeAcrossJunctionLinks`,
+`ObstacleBraking_BeginsBeyondTheEmergencyDistance` and
+`ObstructedHorn_ContactsOncePerIntervalAndCancelsBeforeContact` verified
+turn speed, braking and cue timing.
+`LiveCity_AmbientTrafficSharesRoadsAndKeepsEveryBusPlatformAccessible`
+verified tyre-friction output, palm and rim contacts, and both boarding doors.
+Reviewed the horn contact and day/night traffic frames.
+
 City bins search on the grounded rig. Dock/day/run fixes the result, including
 declined finds and checkpoint rollback. A marked last-sip stack offers Finish
 and credits the matching empty stack at the swallow.

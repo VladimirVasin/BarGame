@@ -1878,6 +1878,50 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void ObstacleBraking_BeginsBeyondTheEmergencyDistance()
+        {
+            RuntimeFixture fixture = RuntimeFixture.Create("Early obstacle braking", CreateDirectedApproachPlan(
+                80f, includeStop: false, farZ: 135f));
+            try
+            {
+                fixture.SpawnDirectly();
+                for (int i = 0; i < 90; i++)
+                    fixture.Actor.Advance(.05f, CityBusObstacleState.Clear, 0f);
+                float speed = fixture.Actor.Speed;
+                float start = fixture.Actor.DistanceAlongLink;
+                const float clearance = 9.65f;
+                Assert.That(speed, Is.GreaterThan(5.5f));
+                Assert.That(fixture.Actor.GetRequiredStoppingDistance(), Is.LessThan(clearance));
+                fixture.Actor.Advance(.05f, new CityBusObstacleState(true, clearance), 0f);
+                Assert.That(fixture.Actor.Speed, Is.InRange(speed - .05f, speed - .001f));
+                for (int i = 0; i < 200; i++)
+                {
+                    float room = clearance - (fixture.Actor.DistanceAlongLink - start);
+                    fixture.Actor.Advance(.025f, new CityBusObstacleState(true, room), 0f);
+                }
+                Assert.That(fixture.Actor.Speed, Is.LessThan(.03f));
+                Assert.That(fixture.Actor.DistanceAlongLink - start,
+                    Is.EqualTo(clearance - CityBusActor.ObstacleStopPadding).Within(.08f));
+            }
+            finally { fixture.Destroy(); }
+        }
+
+        [Test]
+        public void CurvatureTimetable_UsesRoadShapeAcrossJunctionLinks()
+        {
+            var plan = CreateDirectedApproachPlan(80f, includeStop: false, farZ: 145f,
+                markEveryLinkAsJunction: true);
+            int first = plan.OrderedLinkIndices[0];
+            CityBusTimetable table = CityBusTimetable.ForPlan(plan);
+            float straight = table.SpeedLimitAt(first, 10f, 1f);
+            float junction = table.SpeedLimitAt(first, plan.Links[first].Length - 1.5f, 1f);
+            Assert.That(straight, Is.GreaterThan(CityBusActor.CruiseSpeed * .85f));
+            Assert.That(junction, Is.LessThan(straight));
+            var scheduled = table.At(table.TimeAt(first, 15f));
+            Assert.That(scheduled.Speed, Is.EqualTo(straight).Within(.03f));
+        }
+
+        [Test]
         public void ObstacleProbe_IgnoresBalconyHeightSeparation()
         {
             RuntimeFixture fixture = null;
@@ -1923,18 +1967,8 @@ namespace BarPromenade.Tests.EditMode
                     "Boundary Safety",
                     CreateCyclicPlan(false));
                 fixture.SpawnDirectly();
-                fixture.Actor.Advance(
-                    10f,
-                    CityBusObstacleState.Clear,
-                    0f);
-                fixture.Actor.Advance(
-                    1.3f,
-                    CityBusObstacleState.Clear,
-                    0f);
-
-                Assert.That(
-                    fixture.Actor.DistanceAlongLink,
-                    Is.InRange(37f, 39.9f));
+                fixture.Actor.ApplyDetachedPhase(
+                    new CityBusTimetable.Sample(0, 38.5f, 3.5f, -1, 0f, -1), 0);
                 Vector3 targetOnNextTraversal =
                     new Vector3(2f, 0.08f, 80.4f);
                 Assert.That(
@@ -1957,9 +1991,9 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(fixture.Actor.IsYielding, Is.True);
                 Assert.That(
                     fixture.Actor.DistanceAlongLink,
-                    Is.EqualTo(distanceBeforeBraking).Within(0.0001f),
-                    "The bus must brake on the current link instead of " +
-                    "crossing its ordered seam into the obstacle.");
+                    Is.InRange(distanceBeforeBraking,
+                        Mathf.Min(39.99f, distanceBeforeBraking + Mathf.Max(0f, clearance - CityBusActor.ObstacleStopPadding) + .0001f)),
+                    "The bus must brake without consuming the safety margin or crossing the seam.");
             }
             finally
             {

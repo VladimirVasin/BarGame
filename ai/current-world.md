@@ -780,9 +780,9 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   `CityAmbientTraffic`: four circulating City/Ridge sedans and one pooled pass-by.
   After 35–55 s it seeks a clear hidden entry 40–66 m away with a
   lane passing within 20 m of the hero. It returns to the pool past 80 m when hidden.
-  Permanent drivers, axle-based pitch, clear turn entries, 40 m forecasts.
-  Bus hulls check people and vehicles. Queued buses release crossings. No sedan boarding/overtaking/island/tunnel/closed exit.
-  Two near beam pairs, shared audio/LOD. Pause/dormancy keep, unload clears.
+  Fixed drivers, axle pitch, 40m forecasts. Buses/sedans read curvature, brake
+  with local sound, and press the hub to warn while blocked. Queues release
+  crossings. Sedan boarding/island/tunnel/exit absent. Two near beam pairs.
   Ridge:4 lit bays/silent sedan. Working/Residential:4 empty bays each,
   through aisles; shared grade/grass/nav/City map.
   Persistent `city.pedestrian.NN` keeps model/face/hair/clothes as IDs grow. Six library residents stay local.

@@ -515,6 +515,7 @@ namespace BarPromenade
             if (actor.IsSpawned)
             {
                 presentation.SetCabinViewDistance(actor.HasPlayerPassenger ? 0f : distance);
+                actor.RoadFeedbackAudible = actor.HasPlayerPassenger || distance < CityRoadVehicleFeedback.AudibleDistance;
                 actor.CirculationSpeedFactor = CirculationPace();
                 detachedPhase = double.NaN;
                 actor.Advance(deltaTime + backgroundTime, ResolveObstacleState(), GetNightFactor(), GetRainIntensity());
@@ -978,7 +979,7 @@ namespace BarPromenade
         {
             float lookAhead = Mathf.Max(
                 MinimumObstacleLookAhead,
-                actor.GetRequiredStoppingDistance() + actor.Speed + 2f);
+                actor.GetComfortableStoppingDistance() + 2f);
             var obstacle = CityBusObstacleState.Clear;
             AccumulateOtherBuses(lookAhead, ref obstacle);
             CanneryTraffic?.AccumulateObstacle(actor, lookAhead, ref obstacle);
@@ -1033,6 +1034,7 @@ namespace BarPromenade
                                 CityBusBlockerKind.Pedestrian, "ambient_walker", encounter);
             }
 
+            actor.AccumulateRoadObstacle(lookAhead, ref obstacle);
             return obstacle;
         }
 

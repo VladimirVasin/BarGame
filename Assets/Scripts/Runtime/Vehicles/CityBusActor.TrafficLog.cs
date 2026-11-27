@@ -5,7 +5,7 @@ namespace BarPromenade
     internal enum CityBusBlockerKind
     {
         Unknown, BusBody, BusPrediction, Player, PlayerPrediction,
-        Pedestrian, PedestrianPrediction, CanneryTruck, CanneryReservation, AmbientCar
+        Pedestrian, PedestrianPrediction, CanneryTruck, CanneryReservation, AmbientCar, RoadObstacle
     }
 
     public readonly struct CityBusObstacleState
@@ -16,7 +16,7 @@ namespace BarPromenade
             : this(mustStop, forwardClearance, CityBusBlockerKind.Unknown, default) { }
 
         internal CityBusObstacleState(bool mustStop, float forwardClearance, CityBusBlockerKind kind,
-            Vector3 point, string id = null, int index = -1, CityBusActor bus = null)
+            Vector3 point, string id = null, int index = -1, CityBusActor bus = null, bool queued = false)
         {
             MustStop = mustStop;
             ForwardClearance = mustStop && !float.IsNaN(forwardClearance) && !float.IsInfinity(forwardClearance)
@@ -25,6 +25,7 @@ namespace BarPromenade
             Point = point;
             Id = id;
             Index = index;
+            Queued = queued || bus != null && (bus.IsHeldByObstacle || bus.CurrentStopIndex >= 0);
             BusState = bus?.MotionState;
             BusStallId = bus?.TrafficStallId ?? 0;
             BusStopIndex = bus?.CurrentStopIndex ?? -1;
@@ -39,6 +40,10 @@ namespace BarPromenade
         internal CityBusMotionState? BusState { get; }
         internal long BusStallId { get; }
         internal int BusStopIndex { get; }
+        private bool Queued { get; }
+        internal bool AllowsHorn => MustStop && !Queued &&
+            Kind is CityBusBlockerKind.BusBody or CityBusBlockerKind.Player or CityBusBlockerKind.Pedestrian
+                or CityBusBlockerKind.CanneryTruck or CityBusBlockerKind.AmbientCar or CityBusBlockerKind.RoadObstacle;
 
         internal bool SameSource(CityBusObstacleState other) =>
             Kind == other.Kind && Index == other.Index && Id == other.Id;
@@ -164,6 +169,7 @@ namespace BarPromenade
             CityBusBlockerKind.CanneryTruck => "cannery_truck",
             CityBusBlockerKind.CanneryReservation => "cannery_reservation",
             CityBusBlockerKind.AmbientCar => "ambient_car",
+            CityBusBlockerKind.RoadObstacle => "road_obstacle",
             _ => obstacle.MustStop ? "unknown" : "none"
         };
     }

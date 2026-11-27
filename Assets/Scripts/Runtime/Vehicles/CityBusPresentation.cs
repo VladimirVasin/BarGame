@@ -165,6 +165,9 @@ namespace BarPromenade
         private Renderer instrumentDetail;
         private bool nearbyCabin = true;
         private float pendingDriverPoseTime;
+        private float hornReach;
+
+        internal void SetHornReach(float reach) => hornReach = reach;
 
         public void Initialize(CityBusAssetRegistry assetRegistry)
         {
@@ -583,6 +586,7 @@ namespace BarPromenade
             suspensionPitch = 0f;
             suspensionRoll = 0f;
             pendingDriverPoseTime = 0f;
+            hornReach = 0f;
             SetCabinViewDistance(0f);
             RestorePose(suspensionVisualBase);
             RestorePose(frontDoorForwardLeafBase);
@@ -1371,7 +1375,8 @@ namespace BarPromenade
                 driverPresentation.ApplyPose(
                     driverDoorSample.RightHandButtonBlend,
                     driverDoorSample.DoorLook01,
-                    pendingDriverPoseTime);
+                    pendingDriverPoseTime,
+                    hornReach * (1f - driverDoorSample.RightHandButtonBlend));
                 pendingDriverPoseTime = 0f;
             }
         }

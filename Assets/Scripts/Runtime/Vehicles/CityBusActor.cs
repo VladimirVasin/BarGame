@@ -60,7 +60,6 @@ namespace BarPromenade
             placeIndex >= StandingPlaceStart && placeIndex < CabinCapacity;
 
         public const float CruiseSpeed = 6f;
-        public const float JunctionSpeed = 3.2f;
         public const float Acceleration = 1.45f;
         public const float ServiceDeceleration = 2.35f;
         public const float EmergencyDeceleration = 5.25f;
@@ -103,6 +102,13 @@ namespace BarPromenade
         private const int MaximumObstacleProbeLinkDepth = 8;
         private const uint RandomFallbackSeed = 0xA341316Cu;
         private CityBusPlan plan;
+        private CityBusTimetable timetable;
+        private CityRoadVehicleFeedback roadFeedback;
+        private float obstacleBrakeRate;
+        private readonly CityRoadObstacleProbe roadObstacleProbe = new CityRoadObstacleProbe();
+        private CityRoadObstacleProbe.SamplePath sampleRoadAhead;
+        internal bool IsHeldByObstacle => IsYielding && speed < .08f;
+        internal bool RoadFeedbackAudible { get; set; } = true;
         private CityBusPresentation presentation;
         private BoxCollider bodyCollider;
         private Rigidbody rigidBody;
@@ -198,6 +204,7 @@ namespace BarPromenade
             ValidateBounds(fullVisualBounds, nameof(fullVisualBounds));
             ValidateDimensions(busDimensions);
             localVisualBounds = fullVisualBounds;
+            sampleRoadAhead = SampleAhead;
             dimensions = busDimensions;
             bodyCollider = GetComponent<BoxCollider>();
             bodyCollider.enabled = false;
@@ -268,6 +275,7 @@ namespace BarPromenade
                 throw new ArgumentOutOfRangeException(nameof(anchor));
             }
 
+            timetable = CityBusTimetable.ForPlan(plan);
             currentLinkIndex = anchor.LinkIndex;
             loopBoundaryLinkIndex = plan.OrderedLinkIndices[0];
             distanceAlongLink = Mathf.Clamp(
@@ -326,6 +334,11 @@ namespace BarPromenade
             presentation.gameObject.SetActive(true);
             if (audioPresentation == null) InitializeEngineAudio();
             audioPresentation.BindPresentation(presentation);
+            if (roadFeedback == null)
+            {
+                roadFeedback = gameObject.AddComponent<CityRoadVehicleFeedback>();
+                roadFeedback.Initialize(true, 4f + FleetVehicleIndex % 3, Vector3.up + Vector3.forward * (dimensions.Length * .4f));
+            }
             rigidBody.position = transform.position;
             rigidBody.rotation = transform.rotation;
             rigidBody.detectCollisions = true;
@@ -354,6 +367,8 @@ namespace BarPromenade
             bodyCollider.enabled = false;
             rigidBody.detectCollisions = false;
             StopEngineAudio();
+            roadFeedback?.ResetPlayback();
+            roadObstacleProbe.Reset();
             CityBusPresentation released = presentation;
             presentation = null;
             if (released != null)
@@ -645,12 +660,15 @@ namespace BarPromenade
             presentation?.AdvanceWipers(rainIntensity, safeDeltaTime);
             if (MotionState == CityBusMotionState.Dwelling)
             {
+                roadFeedback?.ResetPlayback();
                 AdvanceDwell(safeDeltaTime);
                 return;
             }
 
             if (MotionState == CityBusMotionState.RouteEnded)
             {
+                roadFeedback?.ResetPlayback();
+                presentation?.SetHornReach(0f);
                 IsYielding = false;
                 IsBraking = true;
                 speed = 0f;
@@ -677,6 +695,18 @@ namespace BarPromenade
                 : (speed * speed) /
                   (2f * EmergencyDeceleration) +
                   ObstacleStopPadding;
+        }
+
+        internal float GetComfortableStoppingDistance() =>
+            CityRoadBraking.LookAhead(speed, ServiceDeceleration) + ObstacleStopPadding;
+
+        internal void AccumulateRoadObstacle(float lookAhead, ref CityBusObstacleState nearest)
+        {
+            if (!IsSpawned) return;
+            var hit = roadObstacleProbe.Find(sampleRoadAhead, transform, localVisualBounds,
+                Mathf.Min(lookAhead, nearest.ForwardClearance), out float clearance);
+            if (hit != null && clearance < nearest.ForwardClearance)
+                nearest = new CityBusObstacleState(true, clearance, CityBusBlockerKind.RoadObstacle, hit.bounds.center);
         }
 
         public bool TryGetPathObstacleClearance(
@@ -905,10 +935,8 @@ namespace BarPromenade
                 return;
             }
 
-            float speedLimit = CurrentLink.Kind ==
-                               CityBusRouteLinkKind.Straight
-                ? CruiseSpeed * CirculationSpeedFactor
-                : JunctionSpeed * CirculationSpeedFactor;
+            float speedLimit = timetable.SpeedLimitAt(
+                currentLinkIndex, distanceAlongLink, CirculationSpeedFactor);
             bool approachingStop = TryGetNextStop(
                 out int stopIndex,
                 out float stopDistance);
@@ -939,53 +967,32 @@ namespace BarPromenade
             }
 
             blockingRoadUser = obstacles.Kind;
-            IsYielding = obstacles.MustStop &&
-                obstacles.ForwardClearance <=
-                GetRequiredStoppingDistance() + speed + 1f;
-            if (obstacles.MustStop)
+            float safeTravel = obstacles.MustStop
+                ? Mathf.Max(0f, obstacles.ForwardClearance - ObstacleStopPadding)
+                : float.PositiveInfinity;
+            float obstacleLimit = CityRoadBraking.SpeedLimit(safeTravel, speed, ServiceDeceleration);
+            IsYielding = obstacles.MustStop && safeTravel <= GetComfortableStoppingDistance() + .25f;
+            bool obstacleBraking = obstacles.MustStop && obstacleLimit <= speedLimit && obstacleLimit < speed;
+            float previousSpeed = speed;
+            if (obstacleBraking)
+                speed = CityRoadBraking.Apply(speed, obstacleLimit, safeTravel, ServiceDeceleration,
+                    EmergencyDeceleration, deltaTime, ref obstacleBrakeRate);
+            else
             {
-                float obstacleSpeedLimit = Mathf.Sqrt(
-                    2f * EmergencyDeceleration * Mathf.Max(
-                        0f,
-                        obstacles.ForwardClearance -
-                        ObstacleStopPadding));
-                speedLimit = Mathf.Min(speedLimit, obstacleSpeedLimit);
+                obstacleBrakeRate = 0f;
+                float target = Mathf.Min(speedLimit, obstacleLimit);
+                speed = Mathf.MoveTowards(speed, target, (target < speed ? ServiceDeceleration : Acceleration) * deltaTime);
             }
 
-            float previousSpeed = speed;
-            float rate = speedLimit < speed
-                ? (IsYielding
-                    ? EmergencyDeceleration
-                    : ServiceDeceleration)
-                : Acceleration;
-            speed = Mathf.MoveTowards(
-                speed,
-                speedLimit,
-                rate * deltaTime);
-            IsBraking = speed < previousSpeed - 0.0001f ||
-                        IsYielding;
-            float travel = (previousSpeed + speed) * 0.5f * deltaTime;
-            if (obstacles.MustStop)
+            IsBraking = speed < previousSpeed - 0.0001f || IsYielding;
+            float travel = (previousSpeed + speed) * .5f * deltaTime;
+            if (pendingTravel + travel > safeTravel)
             {
-                float safeTravel = Mathf.Max(
-                    0f,
-                    obstacles.ForwardClearance - ObstacleStopPadding);
-                if (travel > safeTravel)
-                {
-                    travel = safeTravel;
-                    speed = 0f;
-                    IsBraking = true;
-                    IsYielding = true;
-                    if (safeTravel <= 0f)
-                    {
-                        // A full yield banks nothing. The carried remainder is
-                        // never large enough to move the bus on its own, but
-                        // that is an accident of the loop threshold rather
-                        // than a promise; the contract here is that a bus
-                        // stopped for a person does not creep.
-                        pendingTravel = 0f;
-                    }
-                }
+                pendingTravel = Mathf.Min(safeTravel, pendingTravel);
+                travel = Mathf.Max(0f, safeTravel - pendingTravel);
+                speed = 0f;
+                IsBraking = IsYielding = true;
+                obstacleBraking = previousSpeed > 0f;
             }
 
             float travelled = MoveAlongRoute(
@@ -993,6 +1000,7 @@ namespace BarPromenade
                 approachingStop ? stopIndex : -1,
                 approachingStop ? stopDistance : float.PositiveInfinity);
             distanceSinceSpawn += travelled;
+            if (IsSpawned) roadObstacleProbe.Travel(travelled);
             if (MotionState != CityBusMotionState.Dwelling &&
                 MotionState != CityBusMotionState.RouteEnded)
             {
@@ -1028,6 +1036,15 @@ namespace BarPromenade
                         speed)
                     : default;
                 ApplyDriverDoorSample(driverDoor);
+            }
+            if (IsSpawned && roadFeedback != null)
+            {
+                bool hornAllowed = MotionState == CityBusMotionState.Yielding &&
+                    (obstacleBraking || speed < .08f) && obstacles.AllowsHorn &&
+                    presentation.DriverDoorSample.RightHandButtonBlend < .01f;
+                roadFeedback.Advance(deltaTime, previousSpeed, (previousSpeed - speed) / deltaTime,
+                    obstacleBraking, hornAllowed, RoadFeedbackAudible);
+                presentation.SetHornReach(roadFeedback.HornReach);
             }
             presentation?.SetMotion(
                 travelled,
@@ -1118,6 +1135,9 @@ namespace BarPromenade
 
         private void BeginDwell(int stopIndex)
         {
+            roadFeedback?.ResetPlayback();
+            presentation?.SetHornReach(0f);
+            obstacleBrakeRate = 0f;
             CityBusStopDescriptor stop = plan.Stops[stopIndex];
             currentStopIndex = stopIndex;
             LastServedStopIndex = stopIndex;
@@ -1294,15 +1314,10 @@ namespace BarPromenade
                 return 0f;
             }
 
-            CityBusRouteLink link = CurrentLink;
             float lookAhead = Mathf.Max(
                 0.75f,
                 dimensions.Wheelbase * 0.35f);
-            EvaluateLink(
-                link,
-                Mathf.Min(link.Length, distanceAlongLink + lookAhead),
-                out _,
-                out Vector3 futureForward);
+            SampleAhead(lookAhead, out _, out Vector3 futureForward);
             return Vector3.SignedAngle(
                 transform.forward,
                 futureForward,
@@ -1444,6 +1459,9 @@ namespace BarPromenade
         {
             EndStall("route_reset");
             plan = null;
+            timetable = null;
+            roadObstacleProbe.Reset();
+            obstacleBrakeRate = 0f;
             currentLinkIndex = -1;
             loopBoundaryLinkIndex = -1;
             currentStopIndex = -1;

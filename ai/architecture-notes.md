@@ -47,16 +47,15 @@
   `2026-11-24`: district lots each have four empty bays, two graded mouths,
   shared materials/lights, safe arrivals and test-only sedan paths.
 
-- **Accepted 2026-11-15, user — ambient City traffic.** Four sedans:
-  City/Ridge lanes; spawn off turns; 40m forecast. Hulls win over priority/
-  clear-exit; no timed bypass. Bus forecasts end at leaders.
-  Default IDs; grounded paths/no retraces, double sums.
-  Two dipped pairs; shared LOD/materials/audio; pause/dormancy keep, unload clears.
-  Island/tunnel/closed exit excluded. City FX/finishes; story16/21/art9.
-  `2026-11-16`: one pooled pass-by uses surveyed lane samples and active hull
-  forecasts. Off-camera/fog-hidden release beyond 80 m removes road occupancy.
-  The new driver allocates after the bus IDs. The shared sedan keeps City
-  wetness, fog, SSAO, grade, reflections, post and bounded beams.
+- **Accepted 2026-11-15, user — ambient City traffic.** Four City/Ridge sedans,
+  40m forecast, full bodies win over priority. No timed bypass; bus forecasts
+  end at leaders. Default IDs, grounded paths.
+  Two dipped pairs. Island/tunnel/exit excluded. `2026-11-16`: pooled pass-by
+  spawns off turns, releases hidden beyond 80m; driver ID follows bus IDs.
+  `2026-11-27`,user (§6): city buses/sedans read curvature and brake ahead.
+  Bus clock shares limits. Nearby brake friction and short horn pulses at hub
+  contact; hand returns to rim. Lead vehicle only. Pool/disable clears cues.
+  City GI/SSAO/fog/shadows/grade/SSR/probes/materials/post retained; story16/21/art9.
 
 - **Accepted 2026-11-15, user — Ferryman and sedan.** Default reserved
   `last-route.ferryman`: long coat/cap/work boots at both stops. Two-door sedan,

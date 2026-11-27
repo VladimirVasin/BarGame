@@ -168,6 +168,14 @@ namespace BarPromenade
         private SeatedArmHandAttachment rightHandAttachment;
         private bool hasSteeringArms;
         private float steeringHandsWeight;
+        private LastRouteCarDriver hornDriver;
+        private float hornReach;
+
+        internal void SetHornReach(LastRouteCarDriver driver, float reach)
+        {
+            hornDriver = driver;
+            hornReach = reach;
+        }
         private LastRouteDoorHandContact doorHand;
 
         public bool IsInitialized { get; private set; }
@@ -936,7 +944,7 @@ namespace BarPromenade
             if (hasSteeringArms)
             {
                 rigAnchors.HandPose.SetGrip(true, steeringHandsWeight, NpcHandGripKind.Cylindrical);
-                rigAnchors.HandPose.SetGrip(false, steeringHandsWeight, NpcHandGripKind.Cylindrical);
+                rigAnchors.HandPose.SetGrip(false, steeringHandsWeight * (1f - hornReach), NpcHandGripKind.Cylindrical);
             }
             if (steeringHandsWeight <= 0f || !hasSteeringArms)
             {
@@ -963,7 +971,7 @@ namespace BarPromenade
                 rigAnchors.RightGripSocket,
                 rightHandAttachment,
                 carRegistry.RightSteeringGrip,
-                transform.right);
+                transform.right, hornReach);
             LeftGripDistance = Vector3.Distance(
                 rigAnchors.LeftGripSocket.position,
                 carRegistry.LeftSteeringGrip.position);
@@ -979,7 +987,8 @@ namespace BarPromenade
             Transform socket,
             in SeatedArmHandAttachment attachment,
             Transform grip,
-            Vector3 elbowSide)
+            Vector3 elbowSide,
+            float pressWeight = 0f)
         {
             // At partial weight the hand is asked for a point BETWEEN where
             // the clip drew its socket and the grip, so the ease is a short
@@ -996,6 +1005,13 @@ namespace BarPromenade
                 Quaternion.Inverse(attachment.SocketRotationInHand);
             Vector3 handPosition = targetPosition -
                 handRotation * attachment.SocketPositionInHand;
+            if (pressWeight > 0f && hornDriver != null)
+            {
+                Pose press = CityHornHand.PressPose(carRegistry.SteeringWheelPivot,
+                    hornDriver.SteeringWheelDriverSide, transform.up, rigAnchors.HandPose, .016f);
+                handPosition = Vector3.Lerp(handPosition, press.position, pressWeight);
+                handRotation = Quaternion.Slerp(handRotation, press.rotation, pressWeight);
+            }
             Vector3 elbowHint =
                 upperArm.position +
                 elbowSide * 0.17f +

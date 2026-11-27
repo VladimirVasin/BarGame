@@ -82,6 +82,9 @@ namespace BarPromenade
         private readonly double[] linkStarts, arrivals;
         internal double Duration { get; }
         private double Length { get; }
+        private const float CurveSectionLength = 2f;
+        private const float CurveMeasureRadius = 1.5f;
+        private const float MaximumLateralAcceleration = 2.1f;
 
         private CityBusTimetable(CityBusPlan plan)
         {
@@ -94,23 +97,30 @@ namespace BarPromenade
             {
                 linkStarts[link] = length;
                 var lane = plan.Links[link];
-                var stops = new List<int>(plan.GetStopIndices(link));
-                stops.Sort((a, b) => plan.Stops[a].DistanceAlongLink.CompareTo(plan.Stops[b].DistanceAlongLink));
-                double from = 0d;
-                foreach (int stop in stops)
-                {
-                    double at = plan.Stops[stop].DistanceAlongLink;
-                    if (at > from) Add(at);
-                }
-                if (lane.Length > from) Add(lane.Length);
-                length += lane.Length;
+                var boundaries = new SortedSet<float> { 0f, lane.Length };
+                foreach (int stop in plan.GetStopIndices(link))
+                    boundaries.Add(plan.Stops[stop].DistanceAlongLink);
+                var stops = new HashSet<float>(boundaries);
+                int sectionCount = Mathf.Max(1, Mathf.CeilToInt(lane.Length / CurveSectionLength));
+                for (int i = 1; i < sectionCount; i++)
+                    boundaries.Add(lane.Length * i / sectionCount);
 
-                void Add(double end)
+                float from = 0f;
+                Span previous = null;
+                foreach (float end in boundaries)
                 {
-                    sections.Add(new Span { Link = link, Along = from, Length = end - from,
-                        Cap = lane.Kind == CityBusRouteLinkKind.Straight ? CityBusActor.CruiseSpeed : CityBusActor.JunctionSpeed });
+                    if (end <= from) continue;
+                    float cap = CurveLimit(plan, link, (from + end) * .5f);
+                    if (previous != null && previous.Cap == cap && !stops.Contains(from))
+                        previous.Length = end - previous.Along;
+                    else
+                    {
+                        previous = new Span { Link = link, Along = from, Length = (double)end - from, Cap = cap };
+                        sections.Add(previous);
+                    }
                     from = end;
                 }
+                length += lane.Length;
             }
             Length = length;
             spans = sections.ToArray();
@@ -159,6 +169,38 @@ namespace BarPromenade
             Duration = time;
             serviceTimes = visits.ToArray();
             serviceStops = indices.ToArray();
+        }
+
+        private static float CurveLimit(CityBusPlan plan, int link, float along)
+        {
+            var lane = plan.Links[link];
+            float start = Mathf.Max(0f, along - CurveMeasureRadius);
+            float end = along + CurveMeasureRadius;
+            CityBusActor.EvaluateLink(lane, start, out _, out var before);
+            CityBusActor.EvaluateLink(lane, Mathf.Min(lane.Length, end), out _, out var after);
+            if (end > lane.Length)
+            {
+                var next = plan.Links[plan.GetNextOrderedLinkIndex(link)];
+                end = lane.Length + Mathf.Min(end - lane.Length, next.Length);
+                CityBusActor.EvaluateLink(next, end - lane.Length, out _, out after);
+            }
+            before.y = after.y = 0f;
+            float angle = Vector3.Angle(before, after) * Mathf.Deg2Rad;
+            if (angle < .001f) return CityBusActor.CruiseSpeed;
+            float radius = (end - start) / angle;
+            float cap = Mathf.Sqrt(MaximumLateralAcceleration * radius);
+            return Mathf.Clamp(Mathf.Floor(cap * 10f) * .1f, 2.8f, CityBusActor.CruiseSpeed);
+        }
+
+        internal float SpeedLimitAt(int link, float along, float pace)
+        {
+            double distance = Wrap(linkStarts[link] + along, Length);
+            int i = FloorIndex(distances, distance);
+            Span span = spans[i];
+            double remaining = Math.Max(0d, span.Length - (distance - distances[i]));
+            double exit = span.Exit * pace;
+            return (float)Math.Min(span.Cap * pace,
+                Math.Sqrt(exit * exit + 2d * CityBusActor.ServiceDeceleration * remaining));
         }
 
         internal static double Wrap(double value, double period)
