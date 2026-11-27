@@ -1,7 +1,7 @@
 {
     "schemaVersion": 1,
     "blueprintId": "default-coastal",
-    "fingerprint": "b4bbd3d02c7685f18d22fba4d359eb4122a15666189f5c0e8475c45e7ebccc0d",
+    "fingerprint": "d40e889f54559e526d08c4474dc496b3ef4a5b2fcc962e31b3e1bf4967e00b6a",
     "citySeed": 20260727,
     "worldBounds": {
         "serializedVersion": "2",
@@ -73953,6 +73953,60 @@
             ]
         },
         {
+            "id": "ravine-house:surviving-floor",
+            "role": "building",
+            "points": [
+                {
+                    "x": -4.050000190734863,
+                    "y": -362.3999938964844
+                },
+                {
+                    "x": -4.139999866485596,
+                    "y": -361.0
+                },
+                {
+                    "x": -3.570000171661377,
+                    "y": -360.5999755859375
+                },
+                {
+                    "x": -3.7199997901916504,
+                    "y": -359.5999755859375
+                },
+                {
+                    "x": -2.869999885559082,
+                    "y": -358.6999816894531
+                },
+                {
+                    "x": -3.0999999046325684,
+                    "y": -357.4499816894531
+                },
+                {
+                    "x": -2.260000228881836,
+                    "y": -356.4499816894531
+                },
+                {
+                    "x": -2.4099998474121094,
+                    "y": -355.4499816894531
+                },
+                {
+                    "x": -1.7300000190734863,
+                    "y": -355.03997802734375
+                },
+                {
+                    "x": -1.869999885559082,
+                    "y": -353.1999816894531
+                },
+                {
+                    "x": 8.649999618530273,
+                    "y": -353.1999816894531
+                },
+                {
+                    "x": 8.649999618530273,
+                    "y": -362.3999938964844
+                }
+            ]
+        },
+        {
             "id": "ridge-motel:court",
             "role": "terrace-court",
             "points": [
@@ -130683,10 +130737,29 @@
             }
         },
         {
+            "id": "ravine-house",
+            "kind": "RavineHouse",
+            "label": "Обрушенный дом",
+            "referenceNumber": 32,
+            "position": {
+                "x": 6.710000038146973,
+                "y": 39.970001220703125,
+                "z": -354.1499938964844
+            },
+            "hasFootprint": true,
+            "footprint": {
+                "serializedVersion": "2",
+                "x": -4.139999866485596,
+                "y": -362.3999938964844,
+                "width": 12.789999008178711,
+                "height": 9.20001220703125
+            }
+        },
+        {
             "id": "ridge-motel",
             "kind": "RidgeMotel",
             "label": "Мотель",
-            "referenceNumber": 32,
+            "referenceNumber": 33,
             "position": {
                 "x": 54.0,
                 "y": 40.10000228881836,
@@ -130705,7 +130778,7 @@
             "id": "ridge-garages",
             "kind": "RidgeGarage",
             "label": "Гаражи на Гребне",
-            "referenceNumber": 33,
+            "referenceNumber": 34,
             "position": {
                 "x": -107.72000122070313,
                 "y": 25.39788055419922,
@@ -130724,7 +130797,7 @@
             "id": "ridge-garages-roof",
             "kind": "RidgeGarageRoof",
             "label": "Проход по крыше гаражей",
-            "referenceNumber": 34,
+            "referenceNumber": 35,
             "position": {
                 "x": -117.5,
                 "y": 28.39788055419922,
@@ -130743,7 +130816,7 @@
             "id": "ridge-cobbler",
             "kind": "Cobbler",
             "label": "Сапожная мастерская",
-            "referenceNumber": 35,
+            "referenceNumber": 36,
             "position": {
                 "x": 65.68205261230469,
                 "y": 31.492918014526367,
@@ -130762,7 +130835,7 @@
             "id": "workshop-loading-walk",
             "kind": "WorkshopWalk",
             "label": "Площадка металлоцеха",
-            "referenceNumber": 36,
+            "referenceNumber": 37,
             "position": {
                 "x": -91.90999603271484,
                 "y": 7.518974781036377,
@@ -130781,7 +130854,7 @@
             "id": "culvert-service-walk",
             "kind": "CulvertWalk",
             "label": "Полка у водовыпуска",
-            "referenceNumber": 37,
+            "referenceNumber": 38,
             "position": {
                 "x": -164.65000915527344,
                 "y": 9.0,
@@ -130800,7 +130873,7 @@
             "id": "east-gable-court",
             "kind": "GableWalk",
             "label": "Лестница у торца",
-            "referenceNumber": 38,
+            "referenceNumber": 39,
             "position": {
                 "x": 106.64999389648438,
                 "y": 27.66998291015625,

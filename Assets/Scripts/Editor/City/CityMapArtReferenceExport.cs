@@ -299,6 +299,7 @@ namespace BarPromenade.Editor
             foreach (CityMapPointOfInterest place in controller.PointsOfInterest)
                 if (place.HasFootprint && place.Kind != CityMapPointOfInterestKind.Pawnshop &&
                     place.Kind != CityMapPointOfInterestKind.RidgeKiosk && place.Kind != CityMapPointOfInterestKind.GlassReturn &&
+                    place.Kind != CityMapPointOfInterestKind.RavineHouse &&
                     place.Kind != CityMapPointOfInterestKind.PigeonLoft)
                     Box("place:" + place.StableId, "public-ground", place.Footprint);
             var loft = CityPigeonLoftPlan.ForLayout(layout);
@@ -317,6 +318,8 @@ namespace BarPromenade.Editor
                 var fence = new List<Vector2>(glass.YardFootprint) { glass.YardFootprint[0] };
                 Line("glass-return:fence", "fence", .15f, fence);
             }
+            if (RidgeRavinePlan.ForLayout(layout) is { } ruin)
+                Poly("ravine-house:surviving-floor", "building", ruin.Outline);
             if (RidgeMotelPlan.ForLayout(layout) is { } motel)
             {
                 Box("ridge-motel:court", "terrace-court", motel.Court);

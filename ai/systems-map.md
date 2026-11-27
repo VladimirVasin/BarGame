@@ -149,7 +149,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Shops | 3 kiosks, Ridge talk. Shop shelves show offer prices; shared browser/3D receipt. | `RidgeKiosk*`, `IWorldShelfMenu`, `SupermarketShelfShop*` | Current |
 | Kiosk courts | Ridge talks; Residential seats/cleanup; Industrial bottle return. | `RidgeKioskCourt*`, `DistrictKioskCourt*` | Current |
 | Pawnshop | Secure counter buys finds at contact. Gap:Buy stub. | `CityPawnshop*`, `PawnshopInterior*`, `PawnshopTradeController` | Partial |
-| Ridge sites | Cobbler 11–20:30, glass 08–23, garages, motel court life. | `CityCobbler*`, `CityGlassReturn*`, `RidgeGarage*`, `RidgeMotel*` | Current |
+| Ridge sites | Cobbler 11–20:30, glass 08–23, garages, motel, ravine rooms. | `CityCobbler*`, `CityGlassReturn*`, `Ridge{Garage,Motel,Ravine}*` | Current |
 
 | Supermarket cashier | Wall checkout/decor snacks;anchored palms/light;ordinary cashier,bulging 3D face/shared rig. | `SupermarketCashier{Provider,AssetRegistry,Factory,Presentation,Actor,SurveillanceState,BlinkState,Interaction}` | Current |
 | Supermarket CCTV corner cameras | Four authored corner cameras follow the hero without gameplay surveillance. | `SupermarketInteriorAssetRegistry`, `SupermarketSecurityCamera{,WorldBuilder}` | Current |

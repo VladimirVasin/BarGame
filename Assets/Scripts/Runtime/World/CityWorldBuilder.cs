@@ -544,6 +544,7 @@ namespace BarPromenade
             List<CityRailRestSpot> railRests)
         {
             CityHillsideSiteDetails.Build(parent, layout);
+            RidgeRavineWorld.Build(parent, layout, rainShelters);
             CityHillsideFurnitureWorld.Build(parent, layout);
             Transform loft = CityPigeonLoftWorld.Build(parent, layout);
             var cobbler = CityCobblerSitePlan.ForLayout(layout);

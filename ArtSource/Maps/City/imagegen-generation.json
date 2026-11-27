@@ -1,18 +1,18 @@
 {
   "tool": "built-in image_gen",
-  "intent": "Upper Street motel and current surveyed City paths, roofs and parking.",
-  "prompt": "imagegen-ridge-motel-prompt.txt",
+  "intent": "The summit ravine apartment footprint east of the upper bridge.",
+  "prompt": "imagegen-ravine-house-prompt.txt",
   "references": [
     "CityMapImage.reference.png",
     "map-reference.png"
   ],
   "geography": "CityMapImage.accepted-geography.json",
   "image": "CityMapImage.generated.png",
-  "image_sha256": "270fbe5e46b7b67741133754d80ab20085273b9f94f2a2a3c5ead031ca2438da",
-  "runtime_image_sha256": "270fbe5e46b7b67741133754d80ab20085273b9f94f2a2a3c5ead031ca2438da",
-  "previous_image_sha256": "8c57424633e78b4f01533644de47dc32e8b6d6da43ea5241f98fc1aba8b95f80",
+  "image_sha256": "801398b9fd8bf884230ba0ce7880270e934f6e7aecd540d62fe3c9222dc2995d",
+  "runtime_image_sha256": "c341736fbeb9b7f895c067e4679496b70aa87df15e83f8bf3af2069f41d85193",
+  "previous_image_sha256": "270fbe5e46b7b67741133754d80ab20085273b9f94f2a2a3c5ead031ca2438da",
   "registration": {
-    "description": "North-up City sheet. The motel roof lies south of Upper Street, with a short eastern reception wing and a court facing north.",
+    "description": "Local survey registration of the generated cutaway roof glyph. Outside the footprint the previous accepted atlas is retained.",
     "source_size": [
       1172,
       1342
@@ -20,9 +20,23 @@
     "survey_size": [
       1792,
       2048
-    ]
+    ],
+    "source_pixel_bounds": [
+      607,
+      1159,
+      657,
+      1193
+    ],
+    "target_pixel_bounds": [
+      598,
+      1244,
+      627,
+      1265
+    ],
+    "clip_polygon": "ravine-house:surviving-floor",
+    "filter": "Lanczos"
   },
-  "fingerprint": "b4bbd3d02c7685f18d22fba4d359eb4122a15666189f5c0e8475c45e7ebccc0d",
+  "fingerprint": "d40e889f54559e526d08c4474dc496b3ef4a5b2fcc962e31b3e1bf4967e00b6a",
   "schemaVersion": 2,
   "width": 1172,
   "height": 1342,

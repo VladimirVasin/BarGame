@@ -288,6 +288,14 @@ namespace BarPromenade
                         foreach (Vector2 point in polygon) Point(writer, point);
                     Point(writer, glass.Origin); Point(writer, glass.YardOrigin); Point(writer, glass.Approach);
                 }
+                if (RidgeRavinePlan.ForLayout(layout) is { } ruin)
+                {
+                    writer.Write("ravine-house");
+                    foreach (Vector2 point in ruin.Outline) Point(writer, point);
+                    foreach (var solid in ruin.Solids)
+                        foreach (Vector2 point in solid) Point(writer, point);
+                    Point(writer, ruin.Arrival);
+                }
                 if (RidgeMotelPlan.ForLayout(layout) is { } motel)
                 {
                     writer.Write(RidgeMotelPlan.Id);

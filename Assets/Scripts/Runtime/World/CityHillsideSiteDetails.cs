@@ -66,6 +66,7 @@ namespace BarPromenade
             var stairs = CityHillsideAccessPlan.ForLayout(layout);
             var banks = CityHillsideGroundGrid.ForLayout(layout);
             var reserved = new List<Rect>();
+            if (RidgeRavinePlan.ForLayout(layout) is { } ruin) reserved.Add(ruin.Bounds);
             if (RidgeMotelPlan.ForLayout(layout) is { } motel) reserved.Add(motel.Court);
             if (layout.HasSummitHome) reserved.Add(CityGlassReturnSitePlan.LandReservation);
             foreach (var house in housing.AllBuildings)

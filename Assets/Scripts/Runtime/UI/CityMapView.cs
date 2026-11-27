@@ -1834,6 +1834,9 @@ namespace BarPromenade
                 DrawGroundQuad(glass.Footprint, ResidentialBuilding);
                 DrawGroundQuad(glass.YardFootprint, PublicPlaceLand);
             }
+            if (RidgeRavinePlan.ForLayout(controller.Layout) is { } ruin)
+                for (int i = 0; i < ruin.Outline.Length; i++)
+                    DrawLine(Project(ruin.Outline[i]), Project(ruin.Outline[(i + 1) % ruin.Outline.Length]), 1.5f, ResidentialBuilding);
             if (RidgeMotelPlan.ForLayout(controller.Layout) is { } motel)
             {
                 DrawSolidRect(ProjectWorldRect(projection, motel.Court), PublicPlaceLand);
@@ -2731,6 +2734,7 @@ namespace BarPromenade
                     pointOfInterest.Kind != CityMapPointOfInterestKind.RidgeKiosk &&
                     pointOfInterest.Kind != CityMapPointOfInterestKind.Pawnshop &&
                     pointOfInterest.Kind != CityMapPointOfInterestKind.PigeonLoft &&
+                    pointOfInterest.Kind != CityMapPointOfInterestKind.RavineHouse &&
                     pointOfInterest.Kind != CityMapPointOfInterestKind.RidgeMotel &&
                     pointOfInterest.Kind != CityMapPointOfInterestKind.GlassReturn &&
                     pointOfInterest.Kind != CityMapPointOfInterestKind.Cobbler &&
@@ -3913,6 +3917,7 @@ namespace BarPromenade
                 case CityMapPointOfInterestKind.Pawnshop:
                 case CityMapPointOfInterestKind.PigeonLoft:
                 case CityMapPointOfInterestKind.GlassReturn:
+                case CityMapPointOfInterestKind.RavineHouse:
                 case CityMapPointOfInterestKind.RidgeMotel:
                 case CityMapPointOfInterestKind.RidgeGarage:
                 case CityMapPointOfInterestKind.RidgeGarageRoof:

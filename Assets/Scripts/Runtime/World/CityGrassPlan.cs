@@ -216,6 +216,7 @@ namespace BarPromenade
                 ReserveRect(dogYard.Footprint);
                 ReserveRect(dogYard.ApproachBounds);
             }
+            if (RidgeRavinePlan.ForLayout(city) is { } ruin) ReserveRect(ruin.Bounds);
             if (RidgeMotelPlan.ForLayout(city) is { } motel) ReserveRect(motel.Court);
             if (RidgeGaragePlan.ForLayout(city) is { } garage) ReserveRect(garage.Bounds);
             if (RidgeParkingPlan.ForLayout(city) is { } parking) ReserveRect(parking.SurfaceBounds);

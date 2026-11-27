@@ -5,9 +5,8 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-27
 
-City buses and sedans read curves and build brake force ahead of occupied
-lanes. The bus timetable shares the curve limits. Friction tracks motion,
-and a timed hub press gives each horn cue.
+Buses and sedans brake before occupied lanes. Timetables use curve limits;
+tyre friction follows motion, horns follow hub contact.
 `CurvatureTimetable_UsesRoadShapeAcrossJunctionLinks`,
 `ObstacleBraking_BeginsBeyondTheEmergencyDistance` and
 `ObstructedHorn_ContactsOncePerIntervalAndCancelsBeforeContact` verified
@@ -38,22 +37,16 @@ verified imported bounds/grips. `LiveCity_DumpsterFindReachesPawnshopAndPaysOnce
 verified the weighted range, City pickup, model grips, quote cancellation and
 one debit/credit. Reviewed the watch face and transfer through the grille.
 
-The dumpster camera hides hero/contact shadows as the rig lifts the lid,
-then advances inside the rim. The find rises into the fixed view; the lens
-retreats on close. `LiveCity_DumpsterSearchKeepsTheFindAndCreditsOneSip`
-verified framing through inspection, cancel/take restoration and empty
-result. Reviewed day/night search and inspection.
+The bin camera hides hero/contact shadows, enters the rim, frames the rising find and retreats on close. `LiveCity_DumpsterSearchKeepsTheFindAndCreditsOneSip` verified cancel/take/empty framing. Reviewed day/night inspection.
 
 The Ridge motel meets both banks at street level. Blender checked the decks,
 furniture and hatch. `RidgeMotelCourtAndGalleries` checked gallery access,
 map arrival, flicker, luggage, uncapping, lip contact, speech and nightly
 seating and cleanup. Reviewed both tables from the yard.
 
-Infill bins use grid frontage and gaps between Ridge houses. Ridge docks
-keep IDs as they move inward, with wall alignment where a crosswise bin
-would block the passage. `LiveCity_InfillDumpstersKeepPublicApproaches`
-verified the facade, side clearance, approaches and search. Reviewed the
-wall placement from the sidewalk.
+Infill bins use frontage and Ridge gaps. Docks retain IDs; bins turn along walls in tight passages. `LiveCity_InfillDumpstersKeepPublicApproaches` verified facade, clearance, approach and search. Reviewed from the sidewalk.
+
+`SummitRavineRoomsAndShoring` covers the bridge, switchbacks to both upper flats, return, furnishing sightlines and map. Blender exports stepped slab edges and the stair opening with the shell. West shoring faces the kitchen; the bath, cabinet and door lie below. Roof art follows the survey.
 
 ## 2026-11-26
 

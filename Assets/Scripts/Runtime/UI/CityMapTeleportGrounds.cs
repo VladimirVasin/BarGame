@@ -22,6 +22,7 @@ namespace BarPromenade
         private readonly CityLayout layout;
         private readonly CityTerraceDistrictPlan terraces;
         private readonly CityHillsideQuarterPlan quarter;
+        private readonly RidgeRavinePlan ruin;
         private readonly RidgeMotelPlan motel;
         private readonly RidgeGaragePlan garage;
         private readonly List<Rect> obstacleFootprints;
@@ -35,6 +36,8 @@ namespace BarPromenade
                           throw new ArgumentNullException(nameof(layout));
             terraces = CityTerraceDistrictPlan.ForLayout(layout);
             quarter = CityHillsideQuarterPlan.ForLayout(layout);
+            ruin = RidgeRavinePlan.ForLayout(layout);
+            if (ruin != null) polygonBuildingObstacles.AddRange(ruin.Solids);
             motel = RidgeMotelPlan.ForLayout(layout);
             garage = RidgeGaragePlan.ForLayout(layout);
             var courtyardCells = new HashSet<Vector2Int>();
@@ -96,6 +99,8 @@ namespace BarPromenade
             float radius = CityGroundTraversalPlanner.MaximumAgentRadius;
             // A chart click in the cut must never borrow the height of the
             // buried rock or silently snap to a road on the other bank.
+            if (ruin?.ContainsFloor(worldXZ) == true)
+                return TryRavineStanding(worldXZ, null, out standingPosition);
             if (quarter.IsExposedRavine(worldXZ, radius)) return false;
             var probe = new Vector3(worldXZ.x, 0f, worldXZ.y);
             RoadWalkableArea mask = EnsureWalkableArea();
@@ -141,6 +146,8 @@ namespace BarPromenade
             if (!CityTerracePilotPlan.Finite(arrival)) return false;
             var requested = new Vector2(arrival.x, arrival.z);
             if (quarter.IsExposedRavine(requested, CityGroundTraversalPlanner.MaximumAgentRadius)) return false;
+            if (ruin?.ContainsFloor(requested) == true)
+                return TryRavineStanding(requested, arrival.y, out destination);
             if (motel != null && motel.Court.Contains(requested))
                 return TryMotelStanding(requested, arrival.y, out destination);
             if (garage != null && (garage.Shell.Contains(requested) || garage.Stair.Contains(requested)))
@@ -196,6 +203,16 @@ namespace BarPromenade
             return found;
         }
 
+        private bool TryRavineStanding(Vector2 point, float? rootY, out Vector3 destination)
+        {
+            destination = default;
+            float radius = CityGroundTraversalPlanner.MaximumAgentRadius;
+            if (quarter.IsExposedRavine(point, radius) || IsInsideObstacle(point) ||
+                !ruin.TryArrivalTop(point, rootY, radius, out float top)) return false;
+            destination = new Vector3(point.x, top + PlayerFactory.GroundedRootOffset, point.y);
+            return EnsureWalkableArea().Contains(destination, radius);
+        }
+
         private bool TryMotelStanding(Vector2 point, float? rootY, out Vector3 destination)
         {
             destination = default;
@@ -221,6 +238,8 @@ namespace BarPromenade
         /// </summary>
         private bool TryResolveSurfaceTop(Vector2 worldXZ, out float top)
         {
+            if (ruin?.ContainsFloor(worldXZ) == true)
+                return ruin.TryArrivalTop(worldXZ, null, CityGroundTraversalPlanner.MaximumAgentRadius, out top);
             if (RidgeParkingPlan.ForLayout(layout) is { } parking && parking.SurfaceBounds.Contains(worldXZ))
             { top = parking.SurfaceTop(worldXZ.y - parking.Origin.z); return true; }
             foreach (DistrictParkingPlan site in DistrictParkingPlan.ForLayout(layout))

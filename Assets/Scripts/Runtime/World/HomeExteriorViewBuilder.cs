@@ -131,6 +131,7 @@ namespace BarPromenade
                     CityHillsideHousePresentation.BuildApron(frame, paving, house);
             }
             CityTerracePilotWorld.BuildHillsideShortcuts(frame, CityHillsideAccessPlan.ForLayout(context.Layout), window);
+            RidgeRavineWorld.Build(frame, context.Layout, window: window);
             CityHillsideSiteDetails.Build(frame, context.Layout, window);
             CityRidgeVegetationPlan.ForLayout(context.Layout).Build(frame, window);
             CityHillsideFurnitureWorld.Build(frame, context.Layout, window);

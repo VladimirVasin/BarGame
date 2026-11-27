@@ -249,6 +249,7 @@ namespace BarPromenade
                     foreach(var area in stair.WalkableBounds) if(Expanded(area,.3f).Overlaps(footprint))return false;
                 if(RidgeKioskSitePlan.TryCreate(layout,out var kiosk) &&
                     (kiosk.ReservedBounds.Overlaps(footprint) || (kiosk.Court?.Overlaps(footprint) ?? false)))return false;
+                if (RidgeRavinePlan.ForLayout(layout)?.Bounds.Overlaps(footprint) == true) return false;
                 if (RidgeMotelPlan.ForLayout(layout)?.Court.Overlaps(footprint) == true) return false;
                 if(CityGlassReturnSitePlan.LandReservation.Overlaps(footprint))return false;
                 var loft=CityPigeonLoftPlan.ForLayout(layout);

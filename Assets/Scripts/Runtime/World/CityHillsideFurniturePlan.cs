@@ -131,6 +131,7 @@ namespace BarPromenade
                 if (!onCourt && !ground.TrySampleTop(point, out top))
                 { if (candidate.Id == HomeBenchId) homeFailure = "no ground at " + point; continue; }
                 bool clear = !(RidgeParkingPlan.ForLayout(layout)?.SurfaceBounds.Overlaps(candidate.AccessBounds) ?? false);
+                if (RidgeRavinePlan.ForLayout(layout)?.Bounds.Overlaps(candidate.AccessBounds) == true) clear = false;
                 // The public phone has a narrow graded connection all the way
                 // to the footway. Its whole strip must survive final reservations.
                 Rect reservedAccess = candidate.Id == LoftPhoneId ? raw.LoftPhoneApproach : candidate.AccessBounds;
@@ -243,6 +244,7 @@ namespace BarPromenade
                 foreach (var stair in CityHillsideAccessPlan.ForLayout(layout).AllStairs)
                     foreach (Rect bounds in stair.WalkableBounds) reserved.Add(Expand(bounds, .55f));
                 if (RidgeParkingPlan.ForLayout(layout) is { } parking) reserved.Add(parking.SurfaceBounds);
+                if (RidgeRavinePlan.ForLayout(layout) is { } ruin) reserved.Add(ruin.Bounds);
                 if (RidgeMotelPlan.ForLayout(layout) is { } motel) reserved.Add(motel.Court);
                 if (RidgeGaragePlan.ForLayout(layout) is { } garage) reserved.Add(garage.Bounds);
                 if (kiosk != null)
@@ -584,6 +586,7 @@ namespace BarPromenade
                 quarter = CityHillsideQuarterPlan.ForLayout(layout);
                 housing = CityHillsideNeighborhoodPlan.ForLayout(layout);
                 if (quarter.Links.Count == 0) return;
+                if (RidgeRavinePlan.ForLayout(layout) is { } ruin) reserved.Add(ruin.Bounds);
                 if (RidgeMotelPlan.ForLayout(layout) is { } motel) reserved.Add(motel.Court);
                 if (RidgeGaragePlan.ForLayout(layout) is { } garage) reserved.Add(garage.Bounds);
                 foreach (var house in housing.AllBuildings)

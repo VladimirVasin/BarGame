@@ -620,10 +620,9 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   helmet-lamp pedestrian `1`, the yard `1` and the drying yard's night-only
   pole floodlight `1`. Fixed site lights (cemetery/ten church-garden uplights)
   remain separately owned;
-  the scene Directional and transient lightning Directional are counted
-  separately. City streets and the Home balcony share Exp2 `.030`, a radial 96 m cutoff and a 16–56 m Gaussian band. Night dims sky, haze,
+  scene and lightning Directionals count separately. City streets and the Home balcony share Exp2 `.030`, a radial 96 m cutoff and a 16–56 m Gaussian band. Night dims sky, haze,
   ambient and directional fill, leaving pools of light and their wet reflections visible.
-  Summit Home/balcony see roofs down-slope past the upper bridge/dry ravine.
+  Home sees bridge/roofs. West shoring; east stair serves three floors above bath, cabinet, door and rubble.
   Saturation `-24` day→`-30` night follows
   clock; authored grade/Home interior unchanged. The
   Windows player retains the runtime-only Exp2 shader variant;
