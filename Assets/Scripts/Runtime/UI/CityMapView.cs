@@ -1834,6 +1834,13 @@ namespace BarPromenade
                 DrawGroundQuad(glass.Footprint, ResidentialBuilding);
                 DrawGroundQuad(glass.YardFootprint, PublicPlaceLand);
             }
+            if (RidgeMotelPlan.ForLayout(controller.Layout) is { } motel)
+            {
+                DrawSolidRect(ProjectWorldRect(projection, motel.Court), PublicPlaceLand);
+                DrawSolidRect(ProjectWorldRect(projection, motel.Shell), ResidentialBuilding);
+                DrawSolidRect(ProjectWorldRect(projection, motel.Office), ResidentialBuilding);
+                DrawSolidRect(ProjectWorldRect(projection, motel.Stair), PublicPlaceLand);
+            }
             if (RidgeGaragePlan.ForLayout(controller.Layout) is { } garage)
             {
                 DrawSolidRect(ProjectWorldRect(projection, garage.Apron), PublicPlaceLand);
@@ -2724,6 +2731,7 @@ namespace BarPromenade
                     pointOfInterest.Kind != CityMapPointOfInterestKind.RidgeKiosk &&
                     pointOfInterest.Kind != CityMapPointOfInterestKind.Pawnshop &&
                     pointOfInterest.Kind != CityMapPointOfInterestKind.PigeonLoft &&
+                    pointOfInterest.Kind != CityMapPointOfInterestKind.RidgeMotel &&
                     pointOfInterest.Kind != CityMapPointOfInterestKind.GlassReturn &&
                     pointOfInterest.Kind != CityMapPointOfInterestKind.Cobbler &&
                     pointOfInterest.Kind != CityMapPointOfInterestKind.Parking &&
@@ -3905,6 +3913,7 @@ namespace BarPromenade
                 case CityMapPointOfInterestKind.Pawnshop:
                 case CityMapPointOfInterestKind.PigeonLoft:
                 case CityMapPointOfInterestKind.GlassReturn:
+                case CityMapPointOfInterestKind.RidgeMotel:
                 case CityMapPointOfInterestKind.RidgeGarage:
                 case CityMapPointOfInterestKind.RidgeGarageRoof:
                 case CityMapPointOfInterestKind.Cobbler:

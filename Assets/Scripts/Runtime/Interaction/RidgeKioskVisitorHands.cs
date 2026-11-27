@@ -6,9 +6,9 @@ namespace BarPromenade
 {
     internal sealed class RidgeKioskVisitorHands
     {
-        private readonly CityPedestrianActor actor;
+        private readonly Transform bodyRoot;
         private readonly CityPedestrianPresentation presentation;
-        private readonly Transform shoulder, upper, lower, hand, socket, leftShoulder, leftUpper, leftLower, leftSocket;
+        private readonly Transform shoulder, upper, lower, hand, socket, leftShoulder, leftUpper, leftLower, leftSocket, leftWrist;
         private readonly Transform spine, chest, head, mouth;
         private readonly NpcHandPose fingers;
         private readonly NpcHeroUpperBodyPose.Binding upperBody;
@@ -16,10 +16,12 @@ namespace BarPromenade
         private AnimatorCullingMode previousCulling;
         private bool ownsContactCulling;
 
-        internal RidgeKioskVisitorHands(CityPedestrianActor actor)
+        internal RidgeKioskVisitorHands(CityPedestrianActor actor) : this(actor.Presentation, actor.transform) { }
+
+        internal RidgeKioskVisitorHands(CityPedestrianPresentation presentation, Transform bodyRoot)
         {
-            this.actor = actor;
-            presentation = actor.Presentation;
+            this.presentation = presentation;
+            this.bodyRoot = bodyRoot;
             animator = presentation.Registry.Animator;
             Transform model = presentation.Registry.ModelRoot;
             shoulder = Find(BarPatronWorldBuilder.RightClavicleBoneName);
@@ -30,6 +32,7 @@ namespace BarPromenade
             leftShoulder = Find(BarPatronWorldBuilder.LeftClavicleBoneName);
             leftUpper = Find(BarPatronWorldBuilder.LeftUpperArmBoneName);
             leftLower = Find(BarPatronWorldBuilder.LeftForearmBoneName);
+            leftWrist = Find("hand.L");
             leftSocket = Find(BarPatronWorldBuilder.LeftHandSocketName);
             spine = Find(BarPatronWorldBuilder.SpineBoneName);
             chest = Find(BarPatronWorldBuilder.ChestBoneName);
@@ -58,7 +61,7 @@ namespace BarPromenade
             Vector3 support = top + outward * edge - right * .20f;
             var pose = presentation.GetComponent<BarPatronDrinkingArmPose>();
             if (!pose) pose = presentation.gameObject.AddComponent<BarPatronDrinkingArmPose>();
-            pose.InitializeTable(timeline, presentation, actor.transform,
+            pose.InitializeTable(timeline, presentation, bodyRoot,
                 shoulder, upper, lower, hand, socket, leftShoulder, leftUpper, leftLower, leftSocket,
                 spine, chest, head, mouth, drink.Root, drink.Mouth, drink.GripToLipDistance,
                 drink.GripToBaseDistance, vesselBase, support, isSeatedTable: seated,
@@ -109,7 +112,7 @@ namespace BarPromenade
             bool touching = carry > 0f || errorSquared <= .035f * .035f;
             if (pickedUp && touching) PlaceInHand(drink, anatomy, rotation);
             if (pickedUp && !touching)
-                GameLog.Info("kiosk", "gift_contact_missed", GameLog.Field("actor", actor.name),
+                GameLog.Info("kiosk", "gift_contact_missed", GameLog.Field("actor", bodyRoot.name),
                     GameLog.Field("item", drink.Root.name),
                     GameLog.Field("error_m", Mathf.Sqrt(errorSquared)));
             upperBody.IncludeContactCorrections();
@@ -118,15 +121,15 @@ namespace BarPromenade
 
         private Vector3 ResolveCarryGrip()
         {
-            Transform body = actor.transform;
+            Transform body = bodyRoot;
             return upper.position - body.up * .29f + body.forward * .22f + body.right * .055f;
         }
 
-        private Quaternion CarryRotation() => Quaternion.LookRotation(actor.transform.right, actor.transform.up);
+        private Quaternion CarryRotation() => Quaternion.LookRotation(bodyRoot.right, bodyRoot.up);
 
         private void SolveGrip(BarPatronDrinkProp drink, AnatomicalHandFrame anatomy, Quaternion rotation, Vector3 grip, float weight)
         {
-            Transform body = actor.transform;
+            Transform body = bodyRoot;
             Pose wrist = ResolveWrist(drink, anatomy, rotation, grip);
             Vector3 elbow = upper.position - body.up * .26f + body.right * .13f;
             LimbTwoBoneIk.Solve(upper, lower, hand, wrist.position, wrist.rotation, elbow, weight, .98f, true);
@@ -144,6 +147,18 @@ namespace BarPromenade
         {
             AttachToHand(drink);
             drink.Root.SetPositionAndRotation(drink.RootPositionAtGrip(GripCentre(anatomy), rotation), rotation);
+        }
+
+        internal Vector3 ReachFor(Vector3 point, float weight, bool left = false)
+        {
+            Transform wrist = left ? leftWrist : hand;
+            Transform arm = left ? leftUpper : upper, elbow = left ? leftLower : lower;
+            var frame = fingers.GetAnatomicalFrame(left);
+            Vector3 offset = wrist.rotation * frame.CylinderCentreInHand;
+            Vector3 bend = arm.position - bodyRoot.up * .25f + bodyRoot.right * (left ? -.13f : .13f);
+            LimbTwoBoneIk.Solve(arm, elbow, wrist, point - offset, wrist.rotation, bend, weight, .99f, true);
+            fingers.SetGrip(left, weight * .7f);
+            return wrist.position + wrist.rotation * frame.CylinderCentreInHand;
         }
 
         private void AttachToHand(BarPatronDrinkProp drink)

@@ -38,15 +38,16 @@ verified imported bounds/grips. `LiveCity_DumpsterFindReachesPawnshopAndPaysOnce
 verified the weighted range, City pickup, model grips, quote cancellation and
 one debit/credit. Reviewed the watch face and transfer through the grille.
 
-The dumpster camera borrows hero and contact-shadow visibility while the
-same rig moves the lid and find. `LiveCity_DumpsterSearchKeepsTheFindAndCreditsOneSip`
-verified concealment, cancel/take restoration and the empty result. Reviewed
-day and night search and item inspection frames.
-Reveal now lifts the find into the fixed bin view. The same PlayMode check
-asserts camera position and rotation through the reveal and inspection.
-The lens now advances inside the near rim after the lid clears, then
-retreats during closing. The bin PlayMode asserts inward placement and
-fixed framing. Reviewed day and night views.
+The dumpster camera hides hero/contact shadows as the rig lifts the lid,
+then advances inside the rim. The find rises into the fixed view; the lens
+retreats on close. `LiveCity_DumpsterSearchKeepsTheFindAndCreditsOneSip`
+verified framing through inspection, cancel/take restoration and empty
+result. Reviewed day/night search and inspection.
+
+The Ridge motel meets both banks at street level. Blender checked the decks,
+furniture and hatch. `RidgeMotelCourtAndGalleries` checked gallery access,
+map arrival, flicker, luggage, uncapping, lip contact, speech and nightly
+seating and cleanup. Reviewed both tables from the yard.
 
 Infill bins use grid frontage and gaps between Ridge houses. Ridge docks
 keep IDs as they move inward, with wall alignment where a crosswise bin

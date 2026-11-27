@@ -47,7 +47,7 @@ namespace BarPromenade
         Parking = 28,
         RidgeGarage = 29,
         RidgeGarageRoof = 30,
-        WorkshopWalk = 31, CulvertWalk = 32, GableWalk = 33
+        WorkshopWalk = 31, CulvertWalk = 32, GableWalk = 33, RidgeMotel = 34
     }
 
     public readonly struct CityMapPointOfInterest
@@ -993,6 +993,8 @@ namespace BarPromenade
                 case CityMapPointOfInterestKind.PawnshopDescent:
                     key = "map.poi.pawnshop_descent";
                     return true;
+                case CityMapPointOfInterestKind.RidgeMotel:
+                    key = "map.poi.ridge_motel"; return true;
                 case CityMapPointOfInterestKind.RidgeGarage:
                     key = "map.poi.ridge_garage"; return true;
                 case CityMapPointOfInterestKind.WorkshopWalk: key = "map.poi.workshop_walk"; return true;
@@ -1626,6 +1628,9 @@ namespace BarPromenade
             if (glass.IsEnabled)
                 pointsOfInterest.Add(new CityMapPointOfInterest(CityGlassReturnSitePlan.StableId, CityMapPointOfInterestKind.GlassReturn,
                     CityDistrictKind.Residential, glass.Approach + Vector3.up * rootOffset, glass.Bounds, true));
+            if (RidgeMotelPlan.ForLayout(Layout) is { } motel)
+                pointsOfInterest.Add(new CityMapPointOfInterest(RidgeMotelPlan.Id, CityMapPointOfInterestKind.RidgeMotel,
+                    CityDistrictKind.Residential, motel.Arrival + Vector3.up * rootOffset, motel.Court, true));
             if (RidgeGaragePlan.ForLayout(Layout) is { } garage)
             {
                 pointsOfInterest.Add(new CityMapPointOfInterest(RidgeGaragePlan.StableId, CityMapPointOfInterestKind.RidgeGarage,

@@ -750,6 +750,12 @@ namespace BarPromenade
                     if (ridgeKiosk.StreetLampFootprint is { } pole) area.Exclude(pole);
                 }
             }
+            if (RidgeMotelPlan.ForLayout(layout) is { } motel)
+            {
+                area.Add(motel.Court);
+                area.Exclude(motel.Shell);
+                area.Exclude(motel.Office);
+            }
             if (RidgeParkingPlan.ForLayout(layout) is { } parking)
             {
                 area.Add(parking.SurfaceBounds);

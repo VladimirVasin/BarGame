@@ -133,7 +133,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Park chess-set quarrel | The two men hate each other on the only grounds available: one plays chess and despises draughts, the other the reverse. | `CityParkQuarrelController`, `ParkQuarrelTimeline` | Current |
 | City world builder | One validated plan feeds shared staged/synchronous construction; temporary scene, input and audio ownership is explicit. | `CityWorldBuilder`, `CityTerrainSurfaceWorldBuilder` | Current |
 | City surfaces | Nine areas/Home, bar UV0+1, road lots, curb/flags, shop brick. | `CitySurfaceLibrary`, `CityGroundSurfaceSystem` | Current |
-| Central Park surfaces | The divided park uses shared gravel, paths and bridge geometry from its pure surface plan. | `CityParkSurfaceAppearance`, `CityWorldBuilder` | Current |
+| Central Park surfaces | Shared gravel, paths and bridge follow the divided park plan. | `CityParkSurfaceAppearance`, `CityWorldBuilder` | Current |
 | Pedestrian personal space | Above alcohol `60`: guarding palm; above `80`: close shove. | `CityPedestrianPersonalSpace{Rules,Controller}`, `PlayerMotor` | Current |
 | City street gestures | Walking waves every 30–60 s; cap/collar on a gust. | `CityStreetGreetings`, `CityStreetGusts`, `CityStreetArmPose` | Current |
 | Pedestrian street insults | Proximity/facing gates. Twenty lines per shuffle, retained on reload. | `CityPedestrianInsult{Rules,Lines,Walk,SessionState,Controller}`, `CityPedestrianPersonalSpaceController` | Current |
@@ -149,7 +149,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Shops | 3 kiosks, Ridge talk. Shop shelves show offer prices; shared browser/3D receipt. | `RidgeKiosk*`, `IWorldShelfMenu`, `SupermarketShelfShop*` | Current |
 | Kiosk courts | Ridge talks; Residential seats/cleanup; Industrial bottle return. | `RidgeKioskCourt*`, `DistrictKioskCourt*` | Current |
 | Pawnshop | Secure counter buys finds at contact. Gap:Buy stub. | `CityPawnshop*`, `PawnshopInterior*`, `PawnshopTradeController` | Partial |
-| Ridge workshops | Cobbler11–20:30, glass08–23, garage roof/repair bay. | `CityCobbler*`,`CityGlassReturn*`,`RidgeGarage*` | Current |
+| Ridge sites | Cobbler 11–20:30, glass 08–23, garages, motel court life. | `CityCobbler*`, `CityGlassReturn*`, `RidgeGarage*`, `RidgeMotel*` | Current |
 
 | Supermarket cashier | Wall checkout/decor snacks;anchored palms/light;ordinary cashier,bulging 3D face/shared rig. | `SupermarketCashier{Provider,AssetRegistry,Factory,Presentation,Actor,SurveillanceState,BlinkState,Interaction}` | Current |
 | Supermarket CCTV corner cameras | Four authored corner cameras follow the hero without gameplay surveillance. | `SupermarketInteriorAssetRegistry`, `SupermarketSecurityCamera{,WorldBuilder}` | Current |

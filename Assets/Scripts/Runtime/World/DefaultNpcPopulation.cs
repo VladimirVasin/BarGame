@@ -43,6 +43,8 @@ namespace BarPromenade
         public const string CityIndustrialKioskSeller = "city.kiosk.industrial.seller";
         public const string CityPigeonKeeper = "city.ridge.pigeon-keeper";
         public const string CityGlassReturnWorker = "city.ridge.glass-return.worker";
+        internal static string MotelGuestId(int slot) => "zzzzzzzzz.city.motel.guest." + slot;
+        internal const string MotelHousekeeper = "zzzzzzzzz.city.motel.housekeeper";
         public const string CourtDoorResident = "zzzzzzzz.city.passage-court.resident";
         public const string CourtDoorNeighbour = "zzzzzzzz.city.passage-court.neighbour";
         public const string CityCobbler = "city.ridge.cobbler";
@@ -535,6 +537,9 @@ namespace BarPromenade
                 new SlotConstraint("outfit", "outfit.biboveralls")));
             roster.Add(new CharacterDefinition(CourtDoorResident, model, WorkerStreetClothes));
             roster.Add(new CharacterDefinition(CourtDoorNeighbour, DefaultNpcCatalog.OrdinaryWoman, WomanStreetClothes));
+            for (int slot = 0; slot < 4; slot++)
+                roster.Add(new CharacterDefinition(MotelGuestId(slot), model, WorkerStreetClothes));
+            roster.Add(new CharacterDefinition(MotelHousekeeper, DefaultNpcCatalog.OrdinaryWoman, WomanStreetClothes));
             return roster.ToArray();
 
             void RegisterCafeMan(MountainRoadCafeCastRole role, string coat, string hat, string apron) =>

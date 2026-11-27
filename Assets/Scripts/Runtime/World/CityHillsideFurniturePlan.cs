@@ -243,6 +243,7 @@ namespace BarPromenade
                 foreach (var stair in CityHillsideAccessPlan.ForLayout(layout).AllStairs)
                     foreach (Rect bounds in stair.WalkableBounds) reserved.Add(Expand(bounds, .55f));
                 if (RidgeParkingPlan.ForLayout(layout) is { } parking) reserved.Add(parking.SurfaceBounds);
+                if (RidgeMotelPlan.ForLayout(layout) is { } motel) reserved.Add(motel.Court);
                 if (RidgeGaragePlan.ForLayout(layout) is { } garage) reserved.Add(garage.Bounds);
                 if (kiosk != null)
                 {
@@ -583,6 +584,7 @@ namespace BarPromenade
                 quarter = CityHillsideQuarterPlan.ForLayout(layout);
                 housing = CityHillsideNeighborhoodPlan.ForLayout(layout);
                 if (quarter.Links.Count == 0) return;
+                if (RidgeMotelPlan.ForLayout(layout) is { } motel) reserved.Add(motel.Court);
                 if (RidgeGaragePlan.ForLayout(layout) is { } garage) reserved.Add(garage.Bounds);
                 foreach (var house in housing.AllBuildings)
                 { reserved.Add(Expand(house.FoundationBounds, .65f)); reserved.Add(Expand(house.ApproachBounds, .45f));

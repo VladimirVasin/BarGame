@@ -1,18 +1,18 @@
 {
   "tool": "built-in image_gen",
-  "intent": "Final municipal boat station and shore approach on the surveyed City sheet.",
-  "prompt": "imagegen-boat-rental-prompt.txt",
+  "intent": "Upper Street motel and current surveyed City paths, roofs and parking.",
+  "prompt": "imagegen-ridge-motel-prompt.txt",
   "references": [
     "CityMapImage.reference.png",
     "map-reference.png"
   ],
   "geography": "CityMapImage.accepted-geography.json",
   "image": "CityMapImage.generated.png",
-  "image_sha256": "8c57424633e78b4f01533644de47dc32e8b6d6da43ea5241f98fc1aba8b95f80",
-  "runtime_image_sha256": "8c57424633e78b4f01533644de47dc32e8b6d6da43ea5241f98fc1aba8b95f80",
-  "previous_image_sha256": "c920b7fee4263023220907a54cf6c60dfbe84143be7abb569327f425d0731632",
+  "image_sha256": "270fbe5e46b7b67741133754d80ab20085273b9f94f2a2a3c5ead031ca2438da",
+  "runtime_image_sha256": "270fbe5e46b7b67741133754d80ab20085273b9f94f2a2a3c5ead031ca2438da",
+  "previous_image_sha256": "8c57424633e78b4f01533644de47dc32e8b6d6da43ea5241f98fc1aba8b95f80",
   "registration": {
-    "description": "North-up City sheet. Rental pier and stored hulls east of the river mouth. Roads, Ridge and live overlays share the surveyed rectangle.",
+    "description": "North-up City sheet. The motel roof lies south of Upper Street, with a short eastern reception wing and a court facing north.",
     "source_size": [
       1172,
       1342
@@ -22,7 +22,7 @@
       2048
     ]
   },
-  "fingerprint": "e97db4ba3794f153bc59390e5f24d35657e571322bd1a6485ba31eee7182ba49",
+  "fingerprint": "b4bbd3d02c7685f18d22fba4d359eb4122a15666189f5c0e8475c45e7ebccc0d",
   "schemaVersion": 2,
   "width": 1172,
   "height": 1342,

@@ -441,10 +441,11 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   Pigeon/plinth1.98m,rear;side beds;solid/nav clear.
   East return08–23:E empties $2/glass,$1/can;switch→window/grille;sign/flood fixed.
   Raised yard grass-free/map outside;spill.12/day≥⅔/Soft/opaque.
-  Paved path from east footway; asphalt at window and staff exit follows grade.
+  Graded window/exit asphalt and paved footway.
   Ridge plinths meet banks/court, rails behind footway. Home: soil/wet asphalt/turf/gravel/stone,
   W drains/E kerbs/scrapers; soffit lamp/timber above deck, east (21,-7) clears walk.
-  West garages: roof/bay arrivals. Opal ceiling light fills the bay. Bench, engine and entry lights follow City time.
+  Motel map court/3 bays/shut rooms/2 lit galleries/one flicker. Linen/boot by day, two beer tables by night.
+  West garages: roof/bay arrivals; opal bay, bench/engine/entry lights on City time.
   West `(-23,-7)`: «Хвост и Чешуя», two floods. Poles→stairs/bridge footways;
   covered lamps below;rock/gravel under bridge bearings.
   Kiosk lens/two soft spots→seller/shelves/street; Ridge three canopy spots.

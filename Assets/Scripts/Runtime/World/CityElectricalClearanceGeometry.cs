@@ -289,6 +289,13 @@ namespace BarPromenade
                 Box("pawnshop", f, new(-4f,0f,-4.5f), new(4f,3.65f,4.5f));
                 Box("pawnshop parapet", f, new(-4.10f,3.64f,-4.60f), new(4.10f,4.05f,4.60f));
             }
+            if (RidgeMotelPlan.ForLayout(layout) is { } motel)
+            {
+                var f = Frame(motel.Origin, Quaternion.identity);
+                Box("motel rooms", f, new(-13f, 0f, -5.59f), new(15f, 9.16f, -.21f));
+                Box("motel roof", f, new(-13.23f, 9.13f, -5.71f), new(15.23f, 9.39f, 2.16f));
+                Box("motel reception", f, new(9f, 0f, 2.32f), new(15f, 3.15f, 10.52f));
+            }
             var glass = CityGlassReturnSitePlan.ForLayout(layout);
             if (glass.IsEnabled)
             {

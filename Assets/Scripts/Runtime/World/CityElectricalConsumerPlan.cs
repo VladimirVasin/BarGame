@@ -84,6 +84,14 @@ namespace BarPromenade
                 result.Add(Pavilion("pawnshop", pawn.Origin, pawn.Rotation, pawn.Footprint, CityPawnshopPlan.Height,
                     CityPawnshopPlan.Width * .5f, CityPawnshopPlan.Depth * .5f, 3.42f, 1.5f));
 
+            if (RidgeMotelPlan.ForLayout(layout) is { } motel)
+            {
+                var frame = new FacadeFrame(motel.Origin, Quaternion.identity);
+                result.Add(new CityElectricalConsumer(RidgeMotelPlan.Id, CityRoadPolygon.Rectangle(motel.Shell),
+                    motel.Origin.y, 9.4f, new[] {
+                        frame.Pin(-13f, 7.65f, -2.6f, Vector3.left), frame.Pin(15f, 7.65f, -2.6f, Vector3.right),
+                        frame.Pin(-10f, 7.65f, -5.59f, Vector3.back), frame.Pin(12f, 7.65f, -5.59f, Vector3.back) }));
+            }
             var glass = CityGlassReturnSitePlan.ForLayout(layout);
             if (glass.IsEnabled)
                 result.Add(Pavilion(CityGlassReturnSitePlan.StableId, glass.Origin, glass.Rotation,

@@ -317,6 +317,14 @@ namespace BarPromenade.Editor
                 var fence = new List<Vector2>(glass.YardFootprint) { glass.YardFootprint[0] };
                 Line("glass-return:fence", "fence", .15f, fence);
             }
+            if (RidgeMotelPlan.ForLayout(layout) is { } motel)
+            {
+                Box("ridge-motel:court", "terrace-court", motel.Court);
+                Box("ridge-motel:rooms", "building", motel.Shell);
+                Box("ridge-motel:reception", "building", motel.Office);
+                Box("ridge-motel:gallery", "terrace-landing", motel.Gallery);
+                Box("ridge-motel:stairs", "terrace-landing", motel.Stair);
+            }
             if (RidgeGaragePlan.ForLayout(layout) is { } garage)
             {
                 Poly("ridge-garages:forecourt", "terrace-court", CityRoadPolygon.Rectangle(garage.Apron));

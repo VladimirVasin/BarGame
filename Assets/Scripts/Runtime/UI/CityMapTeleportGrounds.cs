@@ -22,6 +22,7 @@ namespace BarPromenade
         private readonly CityLayout layout;
         private readonly CityTerraceDistrictPlan terraces;
         private readonly CityHillsideQuarterPlan quarter;
+        private readonly RidgeMotelPlan motel;
         private readonly RidgeGaragePlan garage;
         private readonly List<Rect> obstacleFootprints;
         private readonly IReadOnlyList<CityKioskSitePlan> kiosks;
@@ -34,6 +35,7 @@ namespace BarPromenade
                           throw new ArgumentNullException(nameof(layout));
             terraces = CityTerraceDistrictPlan.ForLayout(layout);
             quarter = CityHillsideQuarterPlan.ForLayout(layout);
+            motel = RidgeMotelPlan.ForLayout(layout);
             garage = RidgeGaragePlan.ForLayout(layout);
             var courtyardCells = new HashSet<Vector2Int>();
             foreach (CityCourtyardBlock block in layout.CourtyardBlocks)
@@ -99,6 +101,8 @@ namespace BarPromenade
             RoadWalkableArea mask = EnsureWalkableArea();
             // These supported courts replace their old ground. A rejected
             // edge or gap must never fall through to terrain below the slab.
+            if (motel != null && motel.Court.Contains(worldXZ))
+                return TryMotelStanding(worldXZ, null, out standingPosition);
             if (garage != null && (garage.Shell.Contains(worldXZ) || garage.Stair.Contains(worldXZ)))
                 return TryGarageStanding(worldXZ, null, out standingPosition);
             if (terraces.ContainsFootprint(worldXZ))
@@ -137,6 +141,8 @@ namespace BarPromenade
             if (!CityTerracePilotPlan.Finite(arrival)) return false;
             var requested = new Vector2(arrival.x, arrival.z);
             if (quarter.IsExposedRavine(requested, CityGroundTraversalPlanner.MaximumAgentRadius)) return false;
+            if (motel != null && motel.Court.Contains(requested))
+                return TryMotelStanding(requested, arrival.y, out destination);
             if (garage != null && (garage.Shell.Contains(requested) || garage.Stair.Contains(requested)))
                 return TryGarageStanding(requested, arrival.y, out destination);
             if (terraces.ContainsFootprint(requested))
@@ -188,6 +194,15 @@ namespace BarPromenade
             }
 
             return found;
+        }
+
+        private bool TryMotelStanding(Vector2 point, float? rootY, out Vector3 destination)
+        {
+            destination = default;
+            float radius = CityGroundTraversalPlanner.MaximumAgentRadius;
+            if (!motel.TryMapTop(point, rootY, radius, out float top) || IsInsideObstacle(point)) return false;
+            destination = new Vector3(point.x, top + PlayerFactory.GroundedRootOffset, point.y);
+            return EnsureWalkableArea().Contains(destination, radius);
         }
 
         private bool TryGarageStanding(Vector2 point, float? elevation, out Vector3 destination)

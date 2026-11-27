@@ -288,6 +288,13 @@ namespace BarPromenade
                         foreach (Vector2 point in polygon) Point(writer, point);
                     Point(writer, glass.Origin); Point(writer, glass.YardOrigin); Point(writer, glass.Approach);
                 }
+                if (RidgeMotelPlan.ForLayout(layout) is { } motel)
+                {
+                    writer.Write(RidgeMotelPlan.Id);
+                    RectValue(writer, motel.Court); RectValue(writer, motel.Shell); RectValue(writer, motel.Office);
+                    RectValue(writer, motel.Gallery); RectValue(writer, motel.Stair);
+                    Point(writer, motel.Arrival); writer.Write(RidgeMotelPlan.Storey);
+                }
                 if (RidgeGaragePlan.ForLayout(layout) is { } garage)
                 {
                     writer.Write(RidgeGaragePlan.StableId);

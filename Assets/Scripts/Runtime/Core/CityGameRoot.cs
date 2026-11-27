@@ -1394,6 +1394,8 @@ namespace BarPromenade
 
         private void BindRidgeInteractions(GameObject region)
         {
+            foreach (var motel in region.GetComponentsInChildren<RidgeMotelCourtLife>(true))
+                motel.Bind(Player.GameObject.transform, Camera);
             foreach (var keeper in region.GetComponentsInChildren<CityPigeonKeeper>(true))
                 keeper.PresentationObserver = Player.GameObject.transform;
             foreach (var sorter in region.GetComponentsInChildren<CityGlassReturnWorker>(true))
