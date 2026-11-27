@@ -123,6 +123,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(menu.SelectedLocation, Is.EqualTo(location));
             Assert.That(menu.IsChoosingLocation, Is.True);
             Assert.That(GameSessionState.IsGameTimeRunning, Is.False);
+            Assert.That(GameSessionState.HasInventoryItem(InventoryItemId.ChestFlashlight), Is.False);
             // A preview cannot become a continuation of state dirtied while the menu was open.
             GameSessionState.UpdateNeeds(55, 30);
             GameSessionState.PrepareHomeArrival(HomeArrivalKind.OpeningSleep);
@@ -225,6 +226,32 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(offset.magnitude, Is.LessThan(.5f), "Home starts at its normal free-control arrival.");
                 Assert.That(home.Exit, Is.Not.Null, "The regular apartment exit remains installed.");
                 Assert.That(home.Exit.GetComponent<PlayerDoorActionTarget>(), Is.Not.Null);
+
+                var equipment = home.Player.GameObject.GetComponent<PlayerChestFlashlightController>();
+                Assert.That(equipment.Flashlight, Is.Null, "The debug starter lamp is off and still unallocated.");
+                bool capture = Environment.GetEnvironmentVariable("BARGAME_CAPTURE_DEBUG_FLASHLIGHT") == "1";
+                if (capture) AreaCaptureFixture.CaptureCurrentCamera(home.CameraFollow.Camera, "DebugFlashlight", "off");
+
+                Assert.That(home.Inventory.Open(), Is.True);
+                int lampIndex = 0;
+                while (GameSessionState.InventoryItems[lampIndex].ItemId != InventoryItemId.ChestFlashlight)
+                    lampIndex++;
+                Assert.That(home.Inventory.SelectItem(lampIndex), Is.True);
+                Assert.That(home.Inventory.UseSelected(), Is.True);
+                Assert.That(home.Inventory.Close(), Is.True);
+                yield return null;
+                CombatChestFlashlight lamp = equipment.Flashlight;
+                Assert.That(lamp, Is.Not.Null);
+                Assert.That(lamp.SpotLight.isActiveAndEnabled, Is.True);
+                Assert.That(lamp.SpotLight.range, Is.EqualTo(CombatChestFlashlight.Range));
+                if (capture) AreaCaptureFixture.CaptureCurrentCamera(home.CameraFollow.Camera, "DebugFlashlight", "on");
+
+                Assert.That(home.Inventory.Open(), Is.True);
+                Assert.That(home.Inventory.SelectedStack.ItemId, Is.EqualTo(InventoryItemId.ChestFlashlight));
+                Assert.That(home.Inventory.UseSelected(), Is.True);
+                Assert.That(home.Inventory.Close(), Is.True);
+                Assert.That(lamp.SpotLight.isActiveAndEnabled, Is.False);
+                Assert.That(GameSessionState.GetInventoryItemCount(InventoryItemId.ChestFlashlight), Is.EqualTo(1));
             }
         }
 
@@ -240,6 +267,9 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(GameSessionState.IntoxicationLevel, Is.Zero);
             Assert.That(GameSessionState.CashBalance, Is.EqualTo(GameSessionState.DefaultCash));
             Assert.That(GameSessionState.IsRidingAVehicle, Is.False);
+            Assert.That(GameSessionState.GetInventoryItemCount(InventoryItemId.ChestFlashlight), Is.EqualTo(1));
+            Assert.That(GameSessionState.IsInventoryItemEquipped(InventoryItemId.ChestFlashlight), Is.False);
+            Assert.That(GameSessionState.IsWorldItemCollected(StairwellLabyrinthPuzzles.FlashlightSourceId), Is.True);
         }
 
         private static IEnumerator CaptureStartMenuPages(StartMenuRoot menu,

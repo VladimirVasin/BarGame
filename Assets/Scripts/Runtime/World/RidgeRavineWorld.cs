@@ -16,6 +16,7 @@ namespace BarPromenade
             if (!window.HasValue || window.Value.Overlaps(site.Bounds))
             {
                 Place("RavineHouse", site.Origin, Quaternion.identity, Vector3.one);
+                site.Families.Place(root, site.Origin, shelters != null, CityHillsideQuarterPlan.ForLayout(layout).Bridges[1]);
                 if (shelters != null)
                 {
                     foreach (var volume in site.CoveredRooms())

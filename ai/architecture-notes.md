@@ -142,7 +142,7 @@
   Four lamps; clipped summit apron joins sidewalk; shared ramp/nav/map/Home.
 
 - **Accepted 2026-11-06,user — pawnshop:** west island/2zebras/2.4m path→door,face hero;
-  `PawnshopInterior`/secure room/silent clerk. `2026-11-27`: five bin finds
+  `PawnshopInterior`/secure room/silent clerk. `2026-11-27`: bin finds and fixed ravine heirlooms
   sold singly at tray contact; Buy stub. Shared DoorUse/dormant City/cleanup;
   shielded pair→even matte sign/halo0,6fixedtasks. Hall3HDRdiffusers/1shadow256;
   ambient/exposure/bloom kept;24FX/cleanup.

@@ -68,10 +68,9 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   DOF, outside the locked room. Fresh E starts prepared time and ordinary seated
   wake;3s recovery/6.8s return while seated, idle until fresh E Stand2.8s. Startup
   keeps initial appearance and plays no nightmare/corruption cue.
-  Debug time 07:40, then location (village first),
-  combat/lab/vocalizer/back. Back retains time; closed Bar rejects before mutation.
-  `NewGameStartService`: areas use AreaLoading, six interiors direct; no travel
-  illustration/door/prologue/ride/cabin/arrival.
+  Debug defaults to 07:40, then location (village first), combat/lab/vocalizer/back.
+  Back keeps the time. Closed Bar refuses before reset. Location starts carry
+  the stairwell lamp unequipped. Areas use AreaLoading, interiors load directly.
 - Village:lane foot/2m above stationthreshold→mother;Lodge:3m beforeentry→door.
   City/Ridge face the shop/home frontage pipes from their sidewalks. Docks/cannery: clear pedestrian arrivals.
   City-Bar-lodge arrival1x/laterspawns kept;day1 mother quest-mapmarker;
@@ -622,7 +621,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   remain separately owned;
   scene and lightning Directionals count separately. City streets and the Home balcony share Exp2 `.030`, a radial 96 m cutoff and a 16–56 m Gaussian band. Night dims sky, haze,
   ambient and directional fill, leaving pools of light and their wet reflections visible.
-  Home sees bridge/roofs. West shoring; east stair serves three floors above bath, cabinet, door and rubble.
+  Home overlooks shoring, ruins and debris. Three flats share the last and jacket lining. Bed mirror sees bridge.
   Saturation `-24` day→`-30` night follows
   clock; authored grade/Home interior unchanged. The
   Windows player retains the runtime-only Exp2 shader variant;
@@ -2096,7 +2095,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
 - `PawnshopInterior`:island pavilion8×9m at west turn(-54,-307),door faces the
   hero(-45.5,-301.3); two zebras, 2.4m paved entry. DoorUse retains City for return. Kit room7.4×8.4×3m:counter/grille/locked staff door,
   folded tray, radio/tools and appliance under glass;silent `city.pawnshop.clerk` stands in secure rear room.
-  E:Buy stub/Sell one bin find with shared preview and tray payout.
+  E:Buy stub/Sell bin finds or heirlooms at tray.
   Escape/disable/unload restore locks. Six pooled exterior tasks:shielded projectors/
   matte sign,entry/side/rear washes. Hall3visible HDRdiffusers/local24/24/18
   lights/one256shadow;ambient/exposure/bloom unchanged. Fitted finishes on tray, glazing, laminate and lino; finite bounce/bounded reflection;art§7.

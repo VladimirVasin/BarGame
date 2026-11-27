@@ -68,6 +68,10 @@ namespace BarPromenade
 
             ResetStatics();
             GameSessionState.BeginNewGame();
+            // Debug starts with the stairwell lamp already in the bag. Use its
+            // original source so the cabinet cannot offer a second copy.
+            GameSessionState.TryCollectWorldItem(
+                StairwellLabyrinthPuzzles.FlashlightSourceId, InventoryItemId.ChestFlashlight);
             PrepareInteriorContext(location, bar);
             GameSessionState.TryStartGameTimeAt(minuteOfDay);
 

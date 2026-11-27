@@ -3,6 +3,12 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
+## 2026-11-28
+
+Ravine households have linked belongings and individual pawn quotes. The child's bed sits along the wall, the camp bed folds against the rear wall, and the mirror grips the sill. Reviewed the pillow, clamp and apartment views. `RavineFamiliesFromRoomsToPawnshop` checks the reflected ray to the far railing, stairs, dismiss/take and credit at hand contact across sale pages. Blender round-trips the finds and their grips.
+
+Debug location starts carry the stairwell chest lamp unequipped. The Home case of `DebugWorldStart_SelectedLocationUsesItsNormalArrivalWithoutTheHomeOpening` verifies the starter item and toggling its combat beam through inventory.
+
 ## 2026-11-27
 
 Buses and sedans brake before occupied lanes. Timetables use curve limits;

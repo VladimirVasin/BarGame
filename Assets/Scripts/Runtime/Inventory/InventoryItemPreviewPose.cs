@@ -45,6 +45,15 @@ namespace BarPromenade
     {
         private static readonly InventoryItemPreviewPose[] Poses =
         {
+            new InventoryItemPreviewPose(InventoryItemId.ChildShoeLast, Quaternion.Euler(-38f, -18f, -5f), 1.05f),
+            new InventoryItemPreviewPose(InventoryItemId.SilverBuckleShoes, Quaternion.Euler(-39f, -18f, -5f), 1.00f),
+            new InventoryItemPreviewPose(InventoryItemId.MourningLocket, Quaternion.Euler(-66f, -18f, -5f), 1.28f),
+            new InventoryItemPreviewPose(InventoryItemId.BracedBoot, Quaternion.Euler(-20f, -18f, -5f), 0.96f),
+            new InventoryItemPreviewPose(InventoryItemId.ClampMirror, Quaternion.Euler(-15f, -18f, -5f), 0.97f),
+            new InventoryItemPreviewPose(InventoryItemId.BedsideBell, Quaternion.Euler(-42f, -18f, -5f), 1.10f),
+            new InventoryItemPreviewPose(InventoryItemId.TailorShears, Quaternion.Euler(-62f, -18f, -5f), 1.10f),
+            new InventoryItemPreviewPose(InventoryItemId.NotchedGauge, Quaternion.Euler(-62f, -18f, -5f), 1.12f),
+            new InventoryItemPreviewPose(InventoryItemId.CordedWeddingRings, Quaternion.Euler(-64f, -18f, -5f), 1.30f),
             new InventoryItemPreviewPose(InventoryItemId.FoldingScrewdriver, Quaternion.Euler(-58f, -22f, -8f), 1.25f),
             new InventoryItemPreviewPose(InventoryItemId.Caliper, Quaternion.Euler(-58f, -22f, -8f), 1.16f),
             new InventoryItemPreviewPose(InventoryItemId.PocketRadio, Quaternion.Euler(-58f, -22f, -8f), 1.32f),

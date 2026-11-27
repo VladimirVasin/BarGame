@@ -19,6 +19,7 @@ namespace BarPromenade
         private Func<PlayerInteractor, Transform, Action, bool> presentCollected;
         private Action cancelPresentation;
         private bool presentingCollected;
+        private bool requireClearSight;
 
         public WorldItemPickupPlan Plan { get; private set; }
         public Transform Model { get; private set; }
@@ -51,7 +52,7 @@ namespace BarPromenade
         /// </summary>
         public static WorldItemPickup Create(
             Transform parent,
-            WorldItemPickupPlan plan)
+            WorldItemPickupPlan plan, bool requireClearSight = false)
         {
             if (parent == null)
             {
@@ -69,6 +70,7 @@ namespace BarPromenade
             root.transform.localPosition = plan.Position;
             var pickup = root.AddComponent<WorldItemPickup>();
             pickup.Plan = plan;
+            pickup.requireClearSight = requireClearSight;
             pickup.Model = InventoryItemModelFactory.BuildWorldModel(
                 plan.ItemId,
                 root.transform,
@@ -92,7 +94,10 @@ namespace BarPromenade
                    (interactor.transform.position + Vector3.up * 0.8f -
                        InteractionPosition).sqrMagnitude <=
                    PlayerInteractor.InteractionRadius *
-                       PlayerInteractor.InteractionRadius;
+                       PlayerInteractor.InteractionRadius &&
+                   (!requireClearSight || !Physics.Linecast(interactor.transform.position + Vector3.up * 1.45f,
+                       InteractionPosition + Vector3.up * Mathf.Max(.035f, Plan.ModelSize.y*.6f),
+                       Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore));
         }
 
         public void Interact(PlayerInteractor interactor)

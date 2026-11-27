@@ -27,7 +27,17 @@ namespace BarPromenade
             new Offer(InventoryItemId.Caliper, 8, 8, RetroSfxId.BinFoundMetal),
             new Offer(InventoryItemId.PocketRadio, 6, 14, RetroSfxId.BinPaperRustle),
             new Offer(InventoryItemId.MechanicalWatch, 4, 22, RetroSfxId.PawnshopWatchTick),
-            new Offer(InventoryItemId.SilverRing, 2, 34, RetroSfxId.BinPaperRustle)
+            new Offer(InventoryItemId.SilverRing, 2, 34, RetroSfxId.BinPaperRustle),
+            // Apartment heirlooms have fixed sources and never enter the dumpster draw.
+            new Offer(InventoryItemId.ChildShoeLast, 0, 7, RetroSfxId.BinFoundMetal),
+            new Offer(InventoryItemId.SilverBuckleShoes, 0, 12, RetroSfxId.BinFoundMetal),
+            new Offer(InventoryItemId.MourningLocket, 0, 19, RetroSfxId.BinFoundMetal),
+            new Offer(InventoryItemId.BracedBoot, 0, 6, RetroSfxId.BinFoundMetal),
+            new Offer(InventoryItemId.ClampMirror, 0, 8, RetroSfxId.BinFoundMetal),
+            new Offer(InventoryItemId.BedsideBell, 0, 3, RetroSfxId.BinFoundMetal),
+            new Offer(InventoryItemId.TailorShears, 0, 9, RetroSfxId.BinFoundMetal),
+            new Offer(InventoryItemId.NotchedGauge, 0, 5, RetroSfxId.BinFoundMetal),
+            new Offer(InventoryItemId.CordedWeddingRings, 0, 48, RetroSfxId.BinFoundMetal)
         };
 
         // The first 40 rolls are the old waste range. Its unused tail stays empty.

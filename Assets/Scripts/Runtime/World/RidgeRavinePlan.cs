@@ -21,6 +21,7 @@ namespace BarPromenade
             public Well stairWell;
         }
         private readonly Survey survey;
+        internal readonly RavineFamilyRooms Families = RavineFamilyRooms.Load();
         private readonly Rect well;
         internal float Storey => survey.storey;
         internal readonly Vector3 Origin;
@@ -78,9 +79,8 @@ namespace BarPromenade
             Vector2 p = world - new Vector2(Origin.x, Origin.z);
             if (p.x >= well.xMin-radius-.05f && p.y >= well.yMin-radius-.05f &&
                 p.y <= well.yMax+radius+.05f) return false;
-            if (!rootY.HasValue) return true;
-            int floor = Mathf.RoundToInt((rootY.Value - PlayerFactory.GroundedRootOffset - top)/Storey);
-            if (floor < 0 || floor > 2) return false;
+            int floor = rootY.HasValue ? Mathf.RoundToInt((rootY.Value - PlayerFactory.GroundedRootOffset - top)/Storey) : 0;
+            if (floor < 0 || floor > 2 || Families.Occupied(p, floor, radius)) return false;
             if (floor == 0) return true;
             // The upper street-facing opening has a sill. The wardrobe and
             // its open door occupy the back corner of the third-floor flat.

@@ -42,7 +42,16 @@ namespace BarPromenade
         Caliper = 34,
         PocketRadio = 35,
         MechanicalWatch = 36,
-        SilverRing = 37
+        SilverRing = 37,
+        ChildShoeLast = 38,
+        SilverBuckleShoes = 39,
+        MourningLocket = 40,
+        BracedBoot = 41,
+        ClampMirror = 42,
+        BedsideBell = 43,
+        TailorShears = 44,
+        NotchedGauge = 45,
+        CordedWeddingRings = 46
     }
 
     public enum InventoryItemCategory
@@ -95,6 +104,24 @@ namespace BarPromenade
     {
         private static readonly InventoryItemDefinition[] Definitions =
         {
+            new InventoryItemDefinition(InventoryItemId.ChildShoeLast, InventoryItemCategory.Tool,
+                "inventory.item.child_shoe_last.name", "inventory.item.child_shoe_last.description", 1),
+            new InventoryItemDefinition(InventoryItemId.SilverBuckleShoes, InventoryItemCategory.Tool,
+                "inventory.item.silver_buckle_shoes.name", "inventory.item.silver_buckle_shoes.description", 1),
+            new InventoryItemDefinition(InventoryItemId.MourningLocket, InventoryItemCategory.Tool,
+                "inventory.item.mourning_locket.name", "inventory.item.mourning_locket.description", 1),
+            new InventoryItemDefinition(InventoryItemId.BracedBoot, InventoryItemCategory.Tool,
+                "inventory.item.braced_boot.name", "inventory.item.braced_boot.description", 1),
+            new InventoryItemDefinition(InventoryItemId.ClampMirror, InventoryItemCategory.Tool,
+                "inventory.item.clamp_mirror.name", "inventory.item.clamp_mirror.description", 1),
+            new InventoryItemDefinition(InventoryItemId.BedsideBell, InventoryItemCategory.Tool,
+                "inventory.item.bedside_bell.name", "inventory.item.bedside_bell.description", 1),
+            new InventoryItemDefinition(InventoryItemId.TailorShears, InventoryItemCategory.Tool,
+                "inventory.item.tailor_shears.name", "inventory.item.tailor_shears.description", 1),
+            new InventoryItemDefinition(InventoryItemId.NotchedGauge, InventoryItemCategory.Tool,
+                "inventory.item.notched_gauge.name", "inventory.item.notched_gauge.description", 1),
+            new InventoryItemDefinition(InventoryItemId.CordedWeddingRings, InventoryItemCategory.Tool,
+                "inventory.item.corded_wedding_rings.name", "inventory.item.corded_wedding_rings.description", 1),
             new InventoryItemDefinition(InventoryItemId.FoldingScrewdriver, InventoryItemCategory.Tool,
                 "inventory.item.folding_screwdriver.name", "inventory.item.folding_screwdriver.description", 9),
             new InventoryItemDefinition(InventoryItemId.Caliper, InventoryItemCategory.Tool,

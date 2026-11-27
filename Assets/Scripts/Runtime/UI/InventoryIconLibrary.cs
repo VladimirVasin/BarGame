@@ -91,6 +91,62 @@ namespace BarPromenade
                     painter.FillRect(14, 20, 2, 4, amber);
                     painter.FillRect(14, 24, 2, 1, metal);
                     break;
+                case InventoryItemId.ChildShoeLast:
+                    painter.Ellipse(15,16,23,9,amber);
+                    painter.FillRect(8,14,8,8,amber);
+                    painter.FillRect(11,19,4,2,metal);
+                    painter.FillRect(18,13,2,5,pale);
+                    break;
+                case InventoryItemId.SilverBuckleShoes:
+                    for (int shoe=0;shoe<2;shoe++)
+                    {
+                        int x=10+shoe*11;
+                        painter.Ellipse(x,15,9,19,metal);
+                        painter.Ellipse(x,19,5,6,ink);
+                        painter.OutlineRect(x-3,14,6,4,pale);
+                    }
+                    break;
+                case InventoryItemId.MourningLocket:
+                    painter.Ellipse(10,15,13,17,amber);
+                    painter.Ellipse(22,15,13,17,pale);
+                    painter.Ellipse(22,15,9,12,ink);
+                    painter.EllipseOutline(22,15,6,9,amber);
+                    break;
+                case InventoryItemId.BracedBoot:
+                    painter.FillRect(8,11,11,15,metal);
+                    painter.Ellipse(17,10,21,8,ink);
+                    painter.FillRect(10,8,2,18,pale);
+                    painter.FillRect(9,23,11,2,amber);
+                    break;
+                case InventoryItemId.ClampMirror:
+                    painter.FillRect(8,12,17,14,metal);
+                    painter.OutlineRect(8,12,17,14,pale);
+                    painter.FillRect(15,6,3,6,amber);
+                    painter.FillRect(10,5,11,3,metal);
+                    break;
+                case InventoryItemId.BedsideBell:
+                    painter.Ellipse(13,15,19,12,amber);
+                    painter.FillRect(4,9,20,3,ink);
+                    painter.FillRect(12,21,15,2,pale);
+                    break;
+                case InventoryItemId.TailorShears:
+                    painter.Ring(10,10,5,2,amber);
+                    painter.Ring(21,10,5,2,metal);
+                    for (int i=0;i<14;i++)
+                    {
+                        painter.FillRect(13+i/3,13+i,2,2,pale);
+                        painter.FillRect(18-i/3,13+i,2,2,metal);
+                    }
+                    break;
+                case InventoryItemId.NotchedGauge:
+                    painter.FillRect(3,12,26,8,amber);
+                    for (int i=0;i<7;i++) painter.FillRect(6+i*3,17+i%2,1,3,ink);
+                    break;
+                case InventoryItemId.CordedWeddingRings:
+                    painter.EllipseOutline(16,20,19,13,metal);
+                    painter.Ring(12,12,6,2,amber);
+                    painter.Ring(21,12,5,2,pale);
+                    break;
                 case InventoryItemId.FoldingScrewdriver:
                     painter.FillRect(4, 13, 16, 7, amber);
                     painter.OutlineRect(4, 13, 16, 7, ink);

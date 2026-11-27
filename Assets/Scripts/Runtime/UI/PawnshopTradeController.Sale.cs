@@ -178,16 +178,32 @@ namespace BarPromenade
 
         private void DrawSellList()
         {
-            for (int index = 0; index < sellableCount; index++)
+            const int rowsPerPage = 5;
+            int first = Mathf.Min(selectedFind, sellableCount - 1) / rowsPerPage * rowsPerPage;
+            int end = Mathf.Min(first + rowsPerPage, sellableCount);
+            for (int index = first; index < end; index++)
             {
                 var offer = sellable[index];
                 string name = LocalizationService.Get(InventoryItemCatalog.Get(offer.Item).NameLocalizationKey);
                 int count = GameSessionState.GetInventoryItemCount(offer.Item);
                 string label = string.Format(LocalizationService.Get("pawnshop.trade.sell_row"), name, count, offer.Price);
-                if (DrawRow(label, 120f + index * 24f, selectedFind == index))
+                if (DrawRow(label, 120f + (index-first) * 24f, selectedFind == index))
                     BeginQuote(index);
             }
-            if (DrawRow(LocalizationService.Get("pawnshop.trade.close"), 253f, selectedFind == sellableCount)) Close();
+            if (sellableCount <= rowsPerPage)
+            {
+                if (DrawRow(LocalizationService.Get("pawnshop.trade.close"), 253f, selectedFind == sellableCount)) Close();
+                return;
+            }
+            if (first > 0 && RetroUiInput.Button(new Rect(170,251,32,22), "‹", optionStyle))
+                selectedFind = first - rowsPerPage;
+            if (end < sellableCount && RetroUiInput.Button(new Rect(438,251,32,22), "›", optionStyle))
+                selectedFind = end;
+            GUI.Label(new Rect(208,251,53,22), $"{first/rowsPerPage+1}/{(sellableCount-1)/rowsPerPage+1}", textStyle);
+            var close = new Rect(266,251,164,22);
+            RetroUiTheme.DrawSelection(close, selectedFind == sellableCount);
+            if (RetroUiInput.Button(close, LocalizationService.Get("pawnshop.trade.close"),
+                selectedFind == sellableCount ? selectedStyle : optionStyle)) Close();
         }
 
         private bool DrawRow(string text, float y, bool selected)
