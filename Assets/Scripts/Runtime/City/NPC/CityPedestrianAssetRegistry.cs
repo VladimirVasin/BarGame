@@ -372,6 +372,8 @@ namespace BarPromenade
         private void Awake()
         {
             NpcSkinnedMeshCullingGuard.EnableDynamicBounds(modelRoot);
+            NpcGlareReaction.Install(transform, modelRoot, headAnchor);
+            if (headLamp != null) NpcGlareSource.Bind(headLamp, transform);
         }
 
         private void OnEnable()

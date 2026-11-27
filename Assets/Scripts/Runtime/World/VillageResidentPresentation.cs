@@ -584,6 +584,7 @@ namespace BarPromenade
             }
             GetComponent<DefaultNpcAppearance>()?.RestoreFace();
         }
+        private void Awake() => NpcGlareReaction.Install(transform, modelRoot, head);
         private void OnEnable() => ApplyAppearance();
         private void ReleaseGraph()
         {

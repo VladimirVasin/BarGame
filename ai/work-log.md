@@ -5,6 +5,8 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-28
 
+NPCs shield their eyes from unobstructed flashlight and headlight beams. Reviewed the open palm and turned face under the chest lamp. `DirectBeams_ShieldEyesWithOpenPalmAndReleaseBehindCover` verifies palm alignment, occupied hands, cover and pool release.
+
 Ravine households have linked belongings and individual pawn quotes. The child's bed sits along the wall, the camp bed folds against the rear wall, and the mirror grips the sill. Reviewed the pillow, clamp and apartment views. `RavineFamiliesFromRoomsToPawnshop` checks the reflected ray to the far railing, stairs, dismiss/take and credit at hand contact across sale pages. Blender round-trips the finds and their grips.
 
 Debug location starts carry the stairwell chest lamp unequipped. The Home case of `DebugWorldStart_SelectedLocationUsesItsNormalArrivalWithoutTheHomeOpening` verifies the starter item and toggling its combat beam through inventory.

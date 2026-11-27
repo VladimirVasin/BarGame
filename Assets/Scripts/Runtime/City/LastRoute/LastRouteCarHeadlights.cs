@@ -187,6 +187,8 @@ namespace BarPromenade
                 facing * Quaternion.Euler(BeamPitchDegrees, -BeamSpreadDegrees, 0f));
             rightBeam = CreateBeam(carrier, "Headlight Beam Right", right,
                 facing * Quaternion.Euler(BeamPitchDegrees, BeamSpreadDegrees, 0f));
+            NpcGlareSource.Bind(leftBeam, root);
+            NpcGlareSource.Bind(rightBeam, root);
             spill = CreateSpill(carrier, (left + right) * .5f,
                 facing * Quaternion.Euler(BeamPitchDegrees * 1.6f, 0f, 0f));
             leftHalo = leftFogHalo;

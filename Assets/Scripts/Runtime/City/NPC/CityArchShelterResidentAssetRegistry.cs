@@ -168,6 +168,7 @@ namespace BarPromenade
         private void Awake()
         {
             NpcSkinnedMeshCullingGuard.EnableDynamicBounds(modelRoot);
+            if (Role != CityArchShelterResidentRole.Sleeper) NpcGlareReaction.Install(transform, modelRoot, head);
         }
 
         private void OnEnable()

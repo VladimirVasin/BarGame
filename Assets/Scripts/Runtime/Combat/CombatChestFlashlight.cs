@@ -170,6 +170,7 @@ namespace BarPromenade
             SpotLight.shadowNearPlane = .025f;
             UniversalAdditionalLightData data = Lens.gameObject.AddComponent<UniversalAdditionalLightData>();
             data.additionalLightsShadowResolutionTier = UniversalAdditionalLightData.AdditionalLightsShadowResolutionTierMedium;
+            NpcGlareSource.Bind(SpotLight, exposureOwnerRoot);
             Glow = CombatFlashlightGlow.Create(Lens, SpotLight);
             // Include the source glow in the same visibility lease as the
             // physical lamp, so inspection and hero hiding cannot leave a halo.

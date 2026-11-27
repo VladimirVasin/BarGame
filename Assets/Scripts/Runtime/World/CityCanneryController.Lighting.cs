@@ -48,6 +48,7 @@ namespace BarPromenade
                 light.shadowNormalBias=.1f;
                 CityLightHalo halo=CityLightHalo.CreateNightRegistered(host.transform,Vector3.zero,
                     .22f,.75f,new Color(1,.8f,.5f,.1f),new Color(1,.7f,.4f,.025f));
+                NpcGlareSource.Bind(light, Truck);
                 CityNightSiteLightRegistry.Register(light,14f,halo);
             }
         }

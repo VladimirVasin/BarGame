@@ -216,6 +216,7 @@ namespace BarPromenade
                 beam.shadowNormalBias = .25f;
                 beam.shadowNearPlane = .05f;
                 beam.enabled = false;
+                NpcGlareSource.Bind(beam, root);
                 beams[i] = beam;
             }
             return beams;

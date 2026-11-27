@@ -1081,6 +1081,7 @@ namespace BarPromenade
         private void CreateRuntimeLights()
         {
             headlightLights = new[] { Headlight("L"), Headlight("R") };
+            foreach (Light beam in headlightLights) NpcGlareSource.Bind(beam, transform);
             Light Headlight(string side)
             {
                 Transform lens = CityPedestrianHandProps.FindSocket(registry.Body, "ANCHOR_Headlight." + side)
