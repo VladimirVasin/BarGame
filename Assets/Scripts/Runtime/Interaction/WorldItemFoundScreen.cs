@@ -58,6 +58,7 @@ namespace BarPromenade
         private int inputUnlockFrame;
         private string feedbackKey = string.Empty;
         private string actionKey, titleKey, descriptionKey, refusalKey;
+        private string formattedAction, formattedDescription;
         private bool alreadyReceived;
         private BarMinigameModalLock outerModalLock;
 
@@ -76,6 +77,9 @@ namespace BarPromenade
         public string ActionKey => alreadyReceived ? CloseActionKey : actionKey ?? TakeActionKey;
         public string TitleKey => titleKey ?? ActiveDefinition.NameLocalizationKey;
         public string DescriptionKey => descriptionKey ?? ActiveDefinition.DescriptionLocalizationKey;
+
+        internal string ActionLabel => formattedAction ?? LocalizationService.Get(ActionKey);
+        internal string DescriptionLabel => formattedDescription ?? LocalizationService.Get(DescriptionKey);
 
         public InventoryItemDefinition ActiveDefinition =>
             InventoryItemCatalog.Get(ActiveItemId);
@@ -194,6 +198,25 @@ namespace BarPromenade
         {
             return TryPresentCore(interactor, itemId, model, commitTake,
                 onFinished, null);
+        }
+
+        internal bool TryPresentWithin(BarMinigameModalLock outerModal, PlayerInteractor interactor,
+            InventoryItemId itemId, Transform model, Func<bool> commitTake, Action<bool> onFinished)
+        {
+            return outerModal != null && outerModal.IsLocked &&
+                TryPresentCore(interactor, itemId, model, commitTake, onFinished, outerModal);
+        }
+
+        internal bool TryPresentActionWithin(BarMinigameModalLock outerModal, PlayerInteractor interactor,
+            InventoryItemId itemId, Transform model, string title, string action, string description,
+            string refusal, Func<bool> confirm, Action<bool> finished)
+        {
+            if (!TryPresentWithin(outerModal, interactor, itemId, model, confirm, finished)) return false;
+            titleKey = title;
+            formattedAction = action;
+            formattedDescription = description;
+            refusalKey = refusal;
+            return true;
         }
 
         internal bool TryPresentAction(PlayerInteractor interactor, InventoryItemId itemId, Transform model,
@@ -478,6 +501,7 @@ namespace BarPromenade
             heldModel = null;
             alreadyReceived = false;
             actionKey = titleKey = descriptionKey = refusalKey = null;
+            formattedAction = formattedDescription = null;
             feedbackKey = string.Empty;
             ActiveItemId = InventoryItemId.None;
             if (restoreModal) modalLock.Restore();

@@ -21,6 +21,9 @@ namespace BarPromenade
         public Vector3 DoorPivot => new Vector3(-.7f, 0f, -4.2f);
         public Vector3 DoorHandle => new Vector3(.56f, 1.05f, -4.265f);
         public Vector3 DoorDock => new Vector3(.22f, PlayerFactory.GroundedRootOffset, -3.6f);
+        // Metre-space support inside PART_TransferTray, either side of the grille.
+        internal static readonly Vector3 SaleTrayEntry = new Vector3(0f, 1.055f, .18f);
+        internal static readonly Vector3 SaleTrayPickup = new Vector3(0f, 1.055f, .81f);
         public Vector3 ClerkPosition => new Vector3(0f, 0f, 2f);
         public Vector3 TradePosition => new Vector3(0f, 0f, -.45f);
         public Bounds CounterBounds => new Bounds(new Vector3(-.2f, .525f, .425f), new Vector3(5.12f, 1.05f, .84f));

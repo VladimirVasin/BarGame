@@ -75,6 +75,10 @@ namespace BarPromenade
             worker.BindWindowGrille(grille);
             worker.Initialize(shell);
             workLight.BindWorker(worker);
+            var counter = Box(shell, "Container return interaction", new Vector3(0f, 1.04f, 2.11f),
+                new Vector3(1.90f, 1.10f, .92f));
+            counter.isTrigger = true;
+            counter.gameObject.AddComponent<CityContainerReturnInteraction>().Initialize(worker, plan);
             return shell;
         }
 

@@ -30,7 +30,19 @@ namespace BarPromenade
         BeerCan = 22,
         WineBottle = 23,
         HawthornTincture = 24,
-        PotatoPirozhok = 25
+        PotatoPirozhok = 25,
+        EmptyWineBottle = 26,
+        EmptyBeerCan = 27,
+        WineBottleLastSip = 28,
+        BeerCanLastSip = 29,
+        BreadHeel = 30,
+        EmptyVodkaBottle = 31,
+        EmptyHawthornBottle = 32,
+        FoldingScrewdriver = 33,
+        Caliper = 34,
+        PocketRadio = 35,
+        MechanicalWatch = 36,
+        SilverRing = 37
     }
 
     public enum InventoryItemCategory
@@ -83,6 +95,30 @@ namespace BarPromenade
     {
         private static readonly InventoryItemDefinition[] Definitions =
         {
+            new InventoryItemDefinition(InventoryItemId.FoldingScrewdriver, InventoryItemCategory.Tool,
+                "inventory.item.folding_screwdriver.name", "inventory.item.folding_screwdriver.description", 9),
+            new InventoryItemDefinition(InventoryItemId.Caliper, InventoryItemCategory.Tool,
+                "inventory.item.caliper.name", "inventory.item.caliper.description", 9),
+            new InventoryItemDefinition(InventoryItemId.PocketRadio, InventoryItemCategory.Tool,
+                "inventory.item.pocket_radio.name", "inventory.item.pocket_radio.description", 9),
+            new InventoryItemDefinition(InventoryItemId.MechanicalWatch, InventoryItemCategory.Tool,
+                "inventory.item.mechanical_watch.name", "inventory.item.mechanical_watch.description", 9),
+            new InventoryItemDefinition(InventoryItemId.SilverRing, InventoryItemCategory.Tool,
+                "inventory.item.silver_ring.name", "inventory.item.silver_ring.description", 9),
+            new InventoryItemDefinition(InventoryItemId.EmptyVodkaBottle, InventoryItemCategory.Tool,
+                "inventory.item.empty_vodka_bottle.name", "inventory.item.empty_vodka_bottle.description", 9),
+            new InventoryItemDefinition(InventoryItemId.EmptyHawthornBottle, InventoryItemCategory.Tool,
+                "inventory.item.empty_hawthorn_bottle.name", "inventory.item.empty_hawthorn_bottle.description", 9),
+            new InventoryItemDefinition(InventoryItemId.EmptyWineBottle, InventoryItemCategory.Tool,
+                "inventory.item.empty_wine_bottle.name", "inventory.item.empty_wine_bottle.description", 9),
+            new InventoryItemDefinition(InventoryItemId.EmptyBeerCan, InventoryItemCategory.Tool,
+                "inventory.item.empty_beer_can.name", "inventory.item.empty_beer_can.description", 9),
+            new InventoryItemDefinition(InventoryItemId.WineBottleLastSip, InventoryItemCategory.Consumable,
+                "inventory.item.wine_bottle_last_sip.name", "inventory.item.wine_bottle_last_sip.description", 9),
+            new InventoryItemDefinition(InventoryItemId.BeerCanLastSip, InventoryItemCategory.Consumable,
+                "inventory.item.beer_can_last_sip.name", "inventory.item.beer_can_last_sip.description", 9),
+            new InventoryItemDefinition(InventoryItemId.BreadHeel, InventoryItemCategory.Consumable,
+                "inventory.item.bread_heel.name", "inventory.item.bread_heel.description", 9),
             new InventoryItemDefinition(InventoryItemId.PotatoPirozhok, InventoryItemCategory.Consumable,
                 "inventory.item.potato_pirozhok.name", "inventory.item.potato_pirozhok.description", 9),
             new InventoryItemDefinition(InventoryItemId.HawthornTincture, InventoryItemCategory.Consumable,

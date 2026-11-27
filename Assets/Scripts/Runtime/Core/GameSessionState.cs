@@ -586,6 +586,7 @@ namespace BarPromenade
             sessionGeneration = sessionGeneration == int.MaxValue
                 ? 1
                 : sessionGeneration + 1;
+            dumpsterRun = sessionGeneration;
             nextDrinkOrderSequence = 0L;
             vehicleActivity.Reset();
             villageHousehold.Reset();
@@ -634,6 +635,7 @@ namespace BarPromenade
             BalanceCheckSequence = 0;
             LastTeethBrushingDayIndex = -1;
             collectedWorldItems.Clear();
+            dumpsterSearches.Clear();
             inventory.ResetWithStarterItems();
             storyPistolState = null;
             warehouseFishAssembly.Reset();
@@ -1404,6 +1406,7 @@ namespace BarPromenade
             int previousStackCount = inventory.Items.Count;
             int previousCollectedCount = collectedWorldItems.Count;
             collectedWorldItems.Clear();
+            dumpsterSearches.Clear();
             inventory.ResetWithStarterItems();
             storyPistolState = null;
             warehouseFishAssembly.Reset();
@@ -1434,6 +1437,7 @@ namespace BarPromenade
 
             int previousSeed = CitySeed;
             CitySeed = seed;
+            dumpsterSearches.Clear();
             GameLog.SetCitySeed(seed);
             GameLog.Info(
                 "session",

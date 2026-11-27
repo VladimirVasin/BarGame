@@ -101,6 +101,7 @@ namespace BarPromenade
             trigger.size = new Vector3(1.4f, 1.6f, .45f);
             Trade = service.AddComponent<PawnshopTradeController>();
             Trade.Initialize(Player, CameraFollow, IntoxicationHud);
+            Trade.BindCounter(Clerk, World.Root);
         }
 
         private void BuildExit()
@@ -229,7 +230,7 @@ namespace BarPromenade
             }
             if (!IsInitialized || GameTimeScaleRuntime.IsPaused || SceneTransitionService.IsTransitioning) return;
             idleSeconds += Time.deltaTime;
-            if (idleSeconds < nextIdleSample || Clerk == null) return;
+            if (idleSeconds < nextIdleSample || Clerk == null || Trade.IsHandingOver) return;
             nextIdleSample = idleSeconds + .05f;
             Clerk.ApplyIdleVariation(idleSeconds, false, 0f);
         }

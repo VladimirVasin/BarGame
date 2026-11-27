@@ -36,7 +36,7 @@ ANCHORS = {
     "SignLightLeft": (-.82, 2.92, 2.83), "SignLightRight": (.82, 2.92, 2.83),
     "SignTargetLeft": (-.78, 2.64, 2.401), "SignTargetRight": (.78, 2.64, 2.401),
 }
-SIGN_LINES = ("ПУНКТ ПРИЁМА", "СТЕКЛОТАРЫ")
+SIGN_LINES = ("ПУНКТ ПРИЁМА", "ТАРЫ")
 GRILLE_ROWS, GRILLE_PITCH = 13, .085
 GRILLE_BOTTOM, GRILLE_PLANE, GRILLE_MOUTH = 1.022, 1.713, 2.167
 GLASS = {"GlassGreen": (.19,.31,.21,1), "GlassBrown": (.31,.19,.09,1),

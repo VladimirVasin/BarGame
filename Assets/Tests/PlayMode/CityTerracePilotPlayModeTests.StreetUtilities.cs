@@ -54,7 +54,7 @@ namespace BarPromenade.Tests.PlayMode
                 Debug.Log("Municipal survey: " + string.Join(", ",available.GroupBy(d=>d.Dock.Kind).Select(s=>s.Key+" "+s.Count())) +
                     "; Ridge sites " + ridge.UtilityDocks.Count);
                 bool capture = System.Environment.GetEnvironmentVariable("BARGAME_UTILITY_FRAMES")=="1";
-                foreach (var kind in new[] {CityStreetUtilityKind.PhoneBooth,CityStreetUtilityKind.Dumpster})
+                foreach (var kind in new[] {CityStreetUtilityKind.PhoneBooth})
                 {
                     var utility = available.Where(u => u.Dock.Kind==kind).OrderBy(u=>u.Dock.Id.Contains("-homeyard-"))
                         .ThenBy(u=>u.Dock.Id).First();
@@ -108,7 +108,6 @@ namespace BarPromenade.Tests.PlayMode
                         Assert.That(tipErrors.Max(),Is.LessThan(.018f),"Index pad on each moving key");
                         Assert.That(bends.Max(),Is.LessThan(43f),"Wrist aligned with forearm");
                     }
-                    else Assert.That(session.Use(),Is.True);
                     yield return Until(CityStreetUtilitySession.Step.Idle);
                     Assert.That(utility.Model.OpenAmount,Is.Zero);
                     Assert.That(motor.InputEnabled && city.Player.Interactor.InputEnabled,Is.True);
@@ -129,7 +128,7 @@ namespace BarPromenade.Tests.PlayMode
                         yield return null;
                     }
                 }
-                foreach (var cue in new[] { RetroSfxId.BinLidLift, RetroSfxId.BinLidShut, RetroSfxId.BoothUnlatch,
+                foreach (var cue in new[] { RetroSfxId.BoothUnlatch,
                     RetroSfxId.BoothLatch, RetroSfxId.HandsetLift, RetroSfxId.HandsetSeat, RetroSfxId.PayphoneKey })
                 {
                     Assert.That(Enumerable.Range(0,RetroSfxLibrary.GetDefinition(cue).VariantCount)

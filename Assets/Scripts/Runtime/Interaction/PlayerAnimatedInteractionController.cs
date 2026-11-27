@@ -373,6 +373,9 @@ namespace BarPromenade
             stationaryInput.Restore();
         }
 
+        internal BarMinigameModalLock StationaryModalFor(Action ownerCleanup) =>
+            stationaryCleanup != null && stationaryCleanup == ownerCleanup ? stationaryInput : null;
+
         // Positioned procedural interactions can walk through an opened door with the same
         // motor and modal ownership, then take neutral support at each authored contact.
         internal bool TryBeginGroundedSequence(PlayerCameraFollow camera, Action cleanup, bool holdNeutral = false)

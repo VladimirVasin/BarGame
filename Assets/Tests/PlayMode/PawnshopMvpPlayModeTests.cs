@@ -38,7 +38,7 @@ namespace BarPromenade.Tests.PlayMode
         private const float Timeout = 45f;
 
         [UnityTest]
-        public IEnumerator CityPawnshop_EnterOpenBothStubsAndReturn()
+        public IEnumerator CityPawnshop_EnterViewBuyAndEmptySaleAndReturn()
         {
             var input = new InputTestFixture();
             input.Setup();
@@ -303,7 +303,7 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(interior.Trade.SelectedBranch, Is.EqualTo(PawnshopTradeBranch.Sell));
                 Assert.That(interior.Trade.FeedbackKey, Is.Not.Empty);
                 AssertNoTransaction(cash, inventory);
-                if (capture) yield return CaptureGameView("06-sell-placeholder");
+                if (capture) yield return CaptureGameView("06-empty-sell");
                 Assert.That(interior.PauseMenu.Open(), Is.False,
                     "A full trade modal keeps one input owner.");
                 input.Press(keyboard.escapeKey, queueEventOnly: true);

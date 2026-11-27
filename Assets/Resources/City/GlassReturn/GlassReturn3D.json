@@ -3,7 +3,7 @@
   "coordinate_system": "Unity metres; +Z counter; Y=0 floor",
   "sign_lines": [
     "\u041f\u0423\u041d\u041a\u0422 \u041f\u0420\u0418\u0401\u041c\u0410",
-    "\u0421\u0422\u0415\u041a\u041b\u041e\u0422\u0410\u0420\u042b"
+    "\u0422\u0410\u0420\u042b"
   ],
   "grille_rows": 13,
   "grille_pitch": 0.085,
@@ -224,8 +224,8 @@
           ]
         }
       ],
-      "triangles": 10064,
-      "geometry_signature": "c7d4a4342f50ce379656bde6261226d9679da8a68dfc8405b87689ca076f4a9b",
+      "triangles": 9576,
+      "geometry_signature": "0eb0356d312fc4a70120bc778acd0266503349bde101c809f07236e68937f589",
       "renderer_count": 29
     },
     {

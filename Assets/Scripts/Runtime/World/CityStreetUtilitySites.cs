@@ -7,6 +7,11 @@ namespace BarPromenade
     /// terrain planning stay upstream so surveying a doorstep cannot recursively reroute a bus.</summary>
     internal static class CityStreetUtilitySites
     {
+        private const float BoothSpacing = 85f;
+        private const float DumpsterSpacing = 57f;
+        private const float InfillDumpsterSpacing = 30f;
+        internal const int MaximumInfillDumpsters = 16;
+
         private readonly struct Site
         {
             internal readonly bool Phone;
@@ -22,6 +27,7 @@ namespace BarPromenade
             var kept = new List<CityDecorationDescriptor>(provisional.Count);
             var occupied = new List<Rect>();
             var sites = new List<Site>();
+            var dumpsterGaps = new List<(BuildingLot Lot, RoadEdge Road)>();
             var shapes = new List<Rect>();
             var boxes = new List<Bounds>();
             foreach (var d in provisional.Descriptors)
@@ -52,74 +58,91 @@ namespace BarPromenade
                 foreach (var kiosk in kiosks.Sites)
                     if (!kiosk.IsRidge && (lot.Center-kiosk.Origin).sqrMagnitude < 36f*36f) publicUse = true;
                 if ((lot.Center-layout.Supermarket.Center).sqrMagnitude < 36f*36f) publicUse = true;
-                if (publicUse) Place(true);
-                if (lot.District == CityDistrictKind.Residential || lot.District == CityDistrictKind.Industrial) Place(false);
-
-                void Place(bool phone)
-                {
-                    if (kept.Count >= CityDecorationPlan.MaximumDescriptorCount) return;
-                    var path = layout.RoadGeometry.Get(road);
-                    var frontage = path.Project(XZ(lot.Center));
-                    float sign = Mathf.Sign(frontage.SignedLateral);
-                    for (int attempt = 0; attempt < 4; attempt++)
-                    {
-                        float side = (attempt%2==0 ? 1f : -1f)*(phone ? -1f : 1f);
-                        float offset = side * (attempt<2 ? 4.1f : 6.8f);
-                        float station = Mathf.Clamp(frontage.DistanceAlong+offset,2f,path.Length-2f);
-                        var sample = path.SampleDistance(station);
-                        Vector2 outward = sign*sample.Right;
-                        float kerb = layout.RoadWidth*.5f-CityStreetSurfacePlanner.SidewalkWidth;
-                        float width = CityStreetSurfacePlanner.GetPublicSidewalkWidth(layout,road,(int)sign);
-                        Vector2 curb = sample.Position + outward*(kerb+.35f);
-                        Vector2 center = sample.Position + outward*(kerb+width+1.08f);
-                        Vector3 front = new(-outward.x,0f,-outward.y);
-                        Vector3 axis = Anchor(road,new Vector3(center.x,0f,center.y));
-                        bool crowded = false;
-                        foreach (var other in sites)
-                            if (other.Phone == phone && (other.Anchor-axis).sqrMagnitude < (phone?85f*85f:57f*57f) &&
-                                CityTravelDistance.BetweenAnchors(layout,road,axis,other.Road,other.Anchor) < (phone?85f:57f))
-                            { crowded = true; break; }
-                        if (crowded) return;
-                        float half = phone ? .77f : 1.04f;
-                        Rect envelope = Strip(center + outward*.64f,curb,half);
-                        if (occupied.Exists(rect => rect.Overlaps(envelope)) ||
-                            CityBuildingEntrancePlan.IntersectsReservedApproach(layout,envelope) ||
-                            !fixedClearance.IsFixedFootprintClear(envelope) || !fixedClearance.IsStreetLampClear(envelope)) continue;
-                        if (!Height(center,out float top)) continue;
-                        Vector3 position = new(center.x,top,center.y);
-                        if (CityTerraceSurfaceCuts.Reserves(layout,position,1.5f) ||
-                            CityDecorationValidator.IsProtectedGroundAnchor(position,half,fence,night)) continue;
-                        bool clear = true;
-                        for (int row = -1; row <= 1 && clear; row++)
-                        {
-                            Vector2 lateral = sample.Tangent*(row*half*.9f);
-                            if (!Height(center+lateral+outward*.51f,out float baseY) || Mathf.Abs(baseY-top)>.12f)
-                            { clear = false; break; }
-                            Vector2 end = center+lateral;
-                            Vector2 start = curb+lateral;
-                            float last = top;
-                            int steps = Mathf.CeilToInt(Vector2.Distance(start,end)/.28f);
-                            for (int i = 0; i<=steps; i++)
-                            {
-                                Vector2 p = Vector2.Lerp(end,start,(float)i/steps);
-                                if (!Height(p,out float y) || Mathf.Abs(y-last) > (phone?.22f:.14f) ||
-                                    !walk.Contains(new Vector3(p.x,y,p.y),.32f)) { clear=false; break; }
-                                last=y;
-                            }
-                        }
-                        if (!clear) continue;
-                        var kind = phone ? CityDecorationKind.RoadsidePhoneBooth : CityDecorationKind.RoadsideDumpsterAndUtility;
-                        kept.Add(new CityDecorationDescriptor($"utility-{layout.Seed}-{lot.Cell.x}-{lot.Cell.y}-{(phone?"phone":"bin")}",
-                            kind,CityDecorationAnchorKind.Roadside,lot.District,CityDecorationDescriptor.NoLot,position,front,
-                            0,CityDecorationPalette.StreetUtility,CityDecorationVisibilityTier.MidRange,CityDecorationCollisionTier.Blocking,
-                            fixedSupportPlane:true, publicApproach:new Vector3(curb.x,lastHeight(curb),curb.y)));
-                        occupied.Add(envelope);
-                        sites.Add(new Site(phone,road,axis));
-                        return;
-                    }
-                }
+                if (publicUse) Place(lot, road, phone: true, spacing: BoothSpacing);
+                if ((lot.District == CityDistrictKind.Residential || lot.District == CityDistrictKind.Industrial) &&
+                    !Place(lot, road, phone: false, spacing: DumpsterSpacing))
+                    dumpsterGaps.Add((lot, road));
             }
-            return new CityDecorationPlan(layout.Seed,kept);
+
+            // Keep the original service points, then fill gaps that have a second clear approach.
+            int infillCount = 0;
+            foreach (var gap in dumpsterGaps)
+            {
+                if (infillCount >= MaximumInfillDumpsters || kept.Count >= CityDecorationPlan.MaximumDescriptorCount) break;
+                if (Place(gap.Lot, gap.Road, phone: false, spacing: InfillDumpsterSpacing, infill: true)) infillCount++;
+            }
+            return new CityDecorationPlan(layout.Seed, kept);
+
+            bool Place(BuildingLot lot, RoadEdge road, bool phone, float spacing, bool infill = false)
+            {
+                if (kept.Count >= CityDecorationPlan.MaximumDescriptorCount) return false;
+                var path = layout.RoadGeometry.Get(road);
+                var frontage = path.Project(XZ(lot.Center));
+                float sign = Mathf.Sign(frontage.SignedLateral);
+                for (int attempt = 0; attempt < 4; attempt++)
+                {
+                    float side = (attempt%2==0 ? 1f : -1f)*(phone ? -1f : 1f);
+                    float offset = side * (attempt<2 ? 4.1f : 6.8f);
+                    float station = Mathf.Clamp(frontage.DistanceAlong+offset,2f,path.Length-2f);
+                    var sample = path.SampleDistance(station);
+                    Vector2 outward = sign*sample.Right;
+                    float kerb = layout.RoadWidth*.5f-CityStreetSurfacePlanner.SidewalkWidth;
+                    float width = CityStreetSurfacePlanner.GetPublicSidewalkWidth(layout,road,(int)sign);
+                    Vector2 curb = sample.Position + outward*(kerb+.35f);
+                    Vector2 center = sample.Position + outward*(kerb+width+1.08f);
+                    Vector3 front = new(-outward.x,0f,-outward.y);
+                    Vector3 axis = Anchor(road,new Vector3(center.x,0f,center.y));
+                    bool crowded = false;
+                    foreach (var other in sites)
+                        if (other.Phone == phone && (other.Anchor-axis).sqrMagnitude < spacing*spacing &&
+                            CityTravelDistance.BetweenAnchors(layout,road,axis,other.Road,other.Anchor) < spacing)
+                        { crowded = true; break; }
+                    if (crowded)
+                    {
+                        if (!infill) return false;
+                        continue;
+                    }
+                    float half = phone ? .77f : 1.04f;
+                    Rect envelope = Strip(center + outward*.64f,curb,half);
+                    if (occupied.Exists(rect => rect.Overlaps(envelope)) ||
+                        CityBuildingEntrancePlan.IntersectsReservedApproach(layout,envelope) ||
+                        !fixedClearance.IsFixedFootprintClear(envelope) || !fixedClearance.IsStreetLampClear(envelope)) continue;
+                    if (!Height(center,out float top)) continue;
+                    Vector3 position = new(center.x,top,center.y);
+                    if (CityTerraceSurfaceCuts.Reserves(layout,position,1.5f) ||
+                        CityDecorationValidator.IsProtectedGroundAnchor(position,half,fence,night)) continue;
+                    bool clear = true;
+                    for (int row = -1; row <= 1 && clear; row++)
+                    {
+                        Vector2 lateral = sample.Tangent*(row*half*.9f);
+                        if (!Height(center+lateral+outward*.51f,out float baseY) || Mathf.Abs(baseY-top)>.12f)
+                        { clear = false; break; }
+                        Vector2 end = center+lateral;
+                        Vector2 start = curb+lateral;
+                        float last = top;
+                        int steps = Mathf.CeilToInt(Vector2.Distance(start,end)/.28f);
+                        for (int i = 0; i<=steps; i++)
+                        {
+                            Vector2 p = Vector2.Lerp(end,start,(float)i/steps);
+                            if (!Height(p,out float y) || Mathf.Abs(y-last) > (phone?.22f:.14f) ||
+                                !walk.Contains(new Vector3(p.x,y,p.y),.32f)) { clear=false; break; }
+                            last=y;
+                        }
+                    }
+                    if (!clear) continue;
+                    var kind = phone ? CityDecorationKind.RoadsidePhoneBooth : CityDecorationKind.RoadsideDumpsterAndUtility;
+                    string id = $"utility-{layout.Seed}-{lot.Cell.x}-{lot.Cell.y}-{(phone ? "phone" : "bin")}";
+                    if (infill) id += "-infill";
+                    kept.Add(new CityDecorationDescriptor(id,
+                        kind,CityDecorationAnchorKind.Roadside,lot.District,CityDecorationDescriptor.NoLot,position,front,
+                        0,CityDecorationPalette.StreetUtility,CityDecorationVisibilityTier.MidRange,CityDecorationCollisionTier.Blocking,
+                        fixedSupportPlane:true, publicApproach:new Vector3(curb.x,lastHeight(curb),curb.y)));
+                    occupied.Add(envelope);
+                    sites.Add(new Site(phone,road,axis));
+                    return true;
+                }
+                return false;
+            }
 
             bool Height(Vector2 p,out float y) => paving.TrySampleTop(p,out y,out _) ||
                 CityTerrainSurfacePlan.TrySampleGroundTop(layout,p,out y,out _);

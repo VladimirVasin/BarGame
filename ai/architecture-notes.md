@@ -126,9 +126,9 @@
   No methods/romantic death/crime/water/Cat/exposition;ordinary0–5;§16/art9;
   [24FX](city-multilevel-plan.md).
 
-- **Accepted 2026-11-08,user — glass return:** one press→only interior/window
-  off+grille shut,morning on/open.Flood/sign fixed/day≥⅔;§6/20.
-  Pavers→footway, asphalt→window/door on partitioned bank mesh.
+- **Accepted 2026-11-08,user — container return:** Switch→window/grille;
+  fixed sign/flood (§6/20). Footway links ledge. `2026-11-27`: batch credits
+  at contact. Last sip stores below100 or refuses full stack; at100 throws.
 
 - **Accepted 2026-11-07,user — illuminated bus platforms:** City/Home share
   recessed neutral perimeter diffuser;4rail Spots→bench/back/waiting,pole→boarding,
@@ -143,8 +143,8 @@
   Four lamps; clipped summit apron joins sidewalk; shared ramp/nav/map/Home.
 
 - **Accepted 2026-11-06,user — pawnshop:** west island/2zebras/2.4m path→door,face hero;
-  `PawnshopInterior`/secure grille room/permanent silent clerk. Buy/Sell stubs,
-  no cash/item mutation. Shared DoorUse/dormant City/modal cleanup;
+  `PawnshopInterior`/secure room/silent clerk. `2026-11-27`: five bin finds
+  sold singly at tray contact; Buy stub. Shared DoorUse/dormant City/cleanup;
   shielded pair→even matte sign/halo0,6fixedtasks. Hall3HDRdiffusers/1shadow256;
   ambient/exposure/bloom kept;24FX/cleanup.
   unmeasured;ordinary0–5. Art§7.
@@ -6493,10 +6493,11 @@
   watched is always a full unbroken cycle. Both are Unity-free and covered
   by EditMode tests; the presentation only renders their outputs, restoring
   the imported rest pose every frame like the bus driver.
-- **Accepted — Cashier talk stub:** A separate trigger object in front of
-  the register carries the booth/dumpster placeholder contract
-  (`interaction.talk_cashier` / `supermarket.cashier.placeholder`); the
-  passive prefab itself stays collider-free.
+- **Accepted — Cashier talk stub:** External trigger owns
+  `interaction.talk_cashier` / `supermarket.cashier.placeholder`. Prefab has no colliders.
+- **2026-11-27 — Bins:** Dock/day/run fixed; checkpointed.
+  Ridge moves keep IDs and passage. Close shot hides hero per user; rig drives props.
+  Finish queues one rig sip; empty joins its stack.
 - **Accepted — Bathroom scene skeleton and standard exceptions:** The
   full-body clip set is closed (adding clips regenerates the production
   hero FBX), so the three bathroom scenes run on one shared skeleton

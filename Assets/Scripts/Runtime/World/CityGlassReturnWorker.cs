@@ -36,6 +36,8 @@ namespace BarPromenade
         private CharacterController heroBody;
         private CapsuleCollider workerBody;
         private Camera viewCamera;
+        private bool receiving;
+        private Vector3 sortingBottleAtHandoff;
 
         internal void Initialize(Transform pavilion)
         {
@@ -110,7 +112,7 @@ namespace BarPromenade
             }
             double delta = double.IsNaN(last) ? 0d : Math.Max(0d, seconds - last);
             if (seconds < last || delta > .5d) ResetCommute();
-            if (!dormant && IsWorking && distanceSq < 15f * 15f && seconds > last && delta < .5d &&
+            if (!receiving && !dormant && IsWorking && distanceSq < 15f * 15f && seconds > last && delta < .5d &&
                 Math.Floor((SortingElapsed(seconds) - SetDown) / SortingCycleSeconds) >
                 Math.Floor((SortingElapsed(last) - SetDown) / SortingCycleSeconds))
             {
@@ -148,8 +150,32 @@ namespace BarPromenade
             return Math.Clamp(elapsed, 0d, Math.Floor(duration / SortingCycleSeconds) * SortingCycleSeconds);
         }
 
+        internal void BeginReceiving()
+        {
+            receiving = true;
+            sortingBottleAtHandoff = Bottle.position;
+        }
+
+        internal void PoseReceiving(float elapsed, Vector3? glassGrip, Vector3? canGrip, float weight)
+        {
+            Bottle.position = Vector3.Lerp(sortingBottleAtHandoff, rest.position, Ease(elapsed, 0f, .24f));
+            Worker.Apply(VillageResidentAction.Idle, elapsed, glassGrip ?? canGrip);
+            spine.rotation = Quaternion.AngleAxis(23f * weight, transform.right) * spine.rotation;
+            Worker.ApplyHandContacts(canGrip, glassGrip, weight);
+            hands.SetGrip(false, canGrip.HasValue ? .88f * weight : 0f);
+            hands.SetGrip(true, glassGrip.HasValue ? .88f * weight : 0f);
+            CapturePose();
+        }
+
+        internal void EndReceiving()
+        {
+            receiving = false;
+            nextFarSample = 0d;
+        }
+
         private void PoseAt(double seconds)
         {
+            if (receiving) return;
             float phase = (float)(SortingElapsed(seconds) % SortingCycleSeconds);
             bool back = phase >= ReturnAt;
             float t = back ? phase - ReturnAt : phase;
@@ -200,6 +226,7 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            receiving = false;
             if (clink) clink.Stop();
             if (Bottle) Bottle.SetPositionAndRotation(bottleRest.position, bottleRest.rotation);
             if (Worker) Worker.ReleaseAnimation();

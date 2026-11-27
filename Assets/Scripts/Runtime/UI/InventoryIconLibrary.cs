@@ -91,6 +91,34 @@ namespace BarPromenade
                     painter.FillRect(14, 20, 2, 4, amber);
                     painter.FillRect(14, 24, 2, 1, metal);
                     break;
+                case InventoryItemId.FoldingScrewdriver:
+                    painter.FillRect(4, 13, 16, 7, amber);
+                    painter.OutlineRect(4, 13, 16, 7, ink);
+                    painter.FillRect(18, 15, 10, 3, metal);
+                    break;
+                case InventoryItemId.Caliper:
+                    painter.FillRect(4, 12, 24, 4, metal);
+                    painter.FillRect(5, 15, 3, 8, pale);
+                    painter.FillRect(14, 15, 3, 7, pale);
+                    painter.OutlineRect(12, 10, 7, 7, ink);
+                    break;
+                case InventoryItemId.PocketRadio:
+                    painter.FillRect(6, 7, 20, 18, metal);
+                    painter.OutlineRect(6, 7, 20, 18, ink);
+                    painter.FillRect(18, 10, 5, 12, pale);
+                    for (int i = 10; i < 23; i += 3) painter.FillRect(8, i, 8, 1, ink);
+                    break;
+                case InventoryItemId.MechanicalWatch:
+                    painter.FillRect(13, 5, 6, 23, amber);
+                    painter.Ellipse(16, 17, 13, 13, pale);
+                    painter.EllipseOutline(16, 17, 13, 13, ink);
+                    painter.FillRect(15, 13, 2, 6, ink);
+                    painter.FillRect(15, 17, 5, 1, ink);
+                    break;
+                case InventoryItemId.SilverRing:
+                    painter.Ring(16, 16, 9, 4, metal);
+                    painter.FillRect(10, 22, 5, 1, pale);
+                    break;
                 case InventoryItemId.FirewoodLog:
                     Color32 bark = new Color32(111, 76, 49, 255);
                     Color32 grain = new Color32(183, 148, 95, 255);
@@ -128,6 +156,8 @@ namespace BarPromenade
                     painter.FillRect(8, 20, 17, 1, ink);
                     painter.FillRect(7, 19, 3, 3, metal);
                     break;
+                case InventoryItemId.EmptyBeerCan:
+                case InventoryItemId.BeerCanLastSip:
                 case InventoryItemId.BeerCan:
                     painter.FillRect(10, 6, 13, 21, metal);
                     painter.OutlineRect(9, 5, 15, 23, ink);
@@ -135,6 +165,7 @@ namespace BarPromenade
                     painter.FillRect(11, 25, 11, 2, pale);
                     painter.OutlineRect(14, 25, 5, 2, ink);
                     break;
+                case InventoryItemId.EmptyHawthornBottle:
                 case InventoryItemId.HawthornTincture:
                     painter.FillRect(10, 7, 12, 15, new Color32(99, 63, 39, 255));
                     painter.OutlineRect(9, 6, 14, 17, ink);
@@ -144,7 +175,10 @@ namespace BarPromenade
                     painter.FillRect(12, 16, 8, 1, ink);
                     painter.FillRect(12, 13, 6, 1, ink);
                     break;
+                case InventoryItemId.EmptyWineBottle:
+                case InventoryItemId.WineBottleLastSip:
                 case InventoryItemId.WineBottle:
+                case InventoryItemId.EmptyVodkaBottle:
                 case InventoryItemId.VodkaBottle:
                     painter.FillRect(13, 22, 6, 5, metal);
                     painter.FillRect(11, 9, 10, 14, pale);
@@ -188,6 +222,7 @@ namespace BarPromenade
                     painter.FillRect(10, 11, 3, 1, metal);
                     painter.FillRect(18, 19, 5, 1, ink);
                     break;
+                case InventoryItemId.BreadHeel:
                 case InventoryItemId.DayOldLoaf:
                     painter.FillRect(6, 9, 20, 14, amber);
                     painter.FillRect(8, 22, 16, 3, pale);

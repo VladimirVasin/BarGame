@@ -56,7 +56,7 @@ namespace BarPromenade
 
         public static VodkaBottleView Create(Transform parent, InventoryItemId itemId)
         {
-            Transform root = SupermarketProductModelResources.Instantiate(itemId,
+            Transform root = SupermarketProductModelResources.Instantiate(DrinkContainerCatalog.ModelItem(itemId),
                 parent, new Vector3(.5f, .5f, .5f), "Carried");
             return Bind(root);
         }

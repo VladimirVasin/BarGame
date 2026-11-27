@@ -64,6 +64,17 @@ namespace BarPromenade
                 ? IsHawthornUseOwned(useOwner) && hawthornUseStarted && ReferenceEquals(hawthornUseRecipient, recipient) && recipient.CanHeal
                 : EquippedDrinkItem == item && IntoxicationLevel < IntoxicationStageRules.MaximumLevel);
 
+        internal static bool NeedsRoomForEmptyDrink(InventoryItemId item, int expectedId)
+        {
+            var empty = EmptyFromLastSip(item, expectedId);
+            return empty != InventoryItemId.None && !inventory.CanAdd(empty);
+        }
+
+        private static InventoryItemId EmptyFromLastSip(InventoryItemId item, int id) =>
+            inventory.TryPreviewFinalDrinkDose(item, id, out int dose) &&
+            IntoxicationLevel + dose < IntoxicationStageRules.MaximumLevel
+                ? DrinkContainerCatalog.EmptyItem(item) : InventoryItemId.None;
+
         /// <summary>The item, container and fill identify one swallow, rejecting switched or repeated commits.</summary>
         public static bool TryDrinkVodkaSip(int expectedBottleId, int expectedRemainingMl, out VodkaBottleSipResult result) =>
             TryDrinkContainerSip(InventoryItemId.VodkaBottle, expectedBottleId, expectedRemainingMl, out result);
@@ -72,11 +83,20 @@ namespace BarPromenade
             MeleeCombatant recipient = null, object useOwner = null)
         {
             result = default;
-            if (!CanDrinkContainerSip(item, recipient, useOwner) || DrinkRemainingMl(item) != expectedMl ||
-                !inventory.TryDrinkContainerSip(item, expectedId, out result,
+            if (!CanDrinkContainerSip(item, recipient, useOwner) || DrinkRemainingMl(item) != expectedMl)
+                return false;
+            var empty = EmptyFromLastSip(item, expectedId);
+            if (empty != InventoryItemId.None && !inventory.CanAdd(empty)) return false;
+            if (!inventory.TryDrinkContainerSip(item, expectedId, out result,
                     ownedMedicineUse: item == InventoryItemId.HawthornTincture)) return false;
-            // No callbacks run between the inventory debit and the health receipt.
-            // Ordinary drinks retain their existing contract; medicine needs a live wounded recipient.
+
+            // The fill, empty item and dose are committed before any observers are notified.
+            if (empty != InventoryItemId.None)
+            {
+                if (!inventory.TryAdd(empty))
+                    throw new InvalidOperationException("Reserved empty container capacity was lost.");
+                result = result.WithStoredEmpty();
+            }
             if (item == InventoryItemId.HawthornTincture)
             {
                 ClearHawthornUse();
@@ -87,6 +107,7 @@ namespace BarPromenade
                 InventoryConsumableCatalog.Get(item).DrinkId, (int)Math.Min(int.MaxValue, (long)DrinksConsumed + result.Servings),
                 result.StressRelief, result.AlcoholDose);
             if (result.Emptied) InventoryEquipmentChanged?.Invoke();
+            if (result.StoredEmpty) WorldItemsChanged?.Invoke();
             GameLog.Info("inventory", "drink_container_sip_committed",
                 GameLog.Field("item", item.ToString()), GameLog.Field("bottle_id", result.BottleId),
                 GameLog.Field("remaining_ml", result.RemainingMl));

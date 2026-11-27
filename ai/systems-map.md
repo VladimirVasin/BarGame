@@ -70,7 +70,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | World time and pause ownership | Intoxication/debug factors compose; pauses freeze world/calendar. Debug speed preserves the physics step. | `GameTimeScale{State,Runtime}`, `PauseMenuController` | Current |
 | Session day/time displays | Calendar HUD and H wristwatch. Final7 alarm clock can lie. | `HomeAlarmClock`, `InventoryView`, `PlayerWatchController` | Current |
 | Pause / cutscene debug | Pause/replay/timecode;safe hoist→pistol∞reserve/reload→Crane rises/attacks. | `PauseMenu*`,`Cutscene*`,`WarehouseDoorAmbush*` | Current |
-| Hero inventory | HP, equip/fill, sips/stow. Eat pie → close, three bites, wipe and burp. | `Inventory*`, `GameSessionState`, `PlayerVodkaBottleController`, `PlayerPieEatingController` | Current |
+| Hero inventory | Equip/sip/eat, daily finds, return empties. | `Inventory*`, `GameSessionState`, `CityStreetUtilitySession`, `PlayerVodkaBottleController`, `PlayerPieEatingController` | Current |
 | World item pickup and its found screen | Shared lit 3D turn/owned focus;one take;isolated lights;layers restored. | `WorldItem{PickupPlan,Pickup,PickupModel,FoundScreen,FoundView,InspectionPresenter}` | Current |
 | Hunger, stress, fatigue and consumption | Needs follow the pause-aware calendar; consumption/rest commit relief once. Gap: needs apply no gameplay debuff. | `PlayerNeedsProgressionState`, `PlayerNeedsRules` | Partial |
 | Inventory-backed target interactions | Shared item-backed target menus commit consumption once and refund failed startup. | `InventoryItemRequirement`, `InventoryTargetInteraction{Definition,Model,Controller}` | Current |
@@ -148,7 +148,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Road-edge fences | Planned fences leave road and waterside openings clear. | `RoadFence{Planner,Plan,WorldBuilder}`, `CitySurfaceDescriptor` | Current |
 | Shops | 3 kiosks, Ridge talk. Shop shelves show offer prices; shared browser/3D receipt. | `RidgeKiosk*`, `IWorldShelfMenu`, `SupermarketShelfShop*` | Current |
 | Kiosk courts | Ridge talks; Residential seats/cleanup; Industrial bottle return. | `RidgeKioskCourt*`, `DistrictKioskCourt*` | Current |
-| Pawnshop | Island pavilion/secure clerk. Gap:trade stubs have no transactions. | `CityPawnshop*`, `PawnshopInterior*`, `PawnshopTradeController` | Partial |
+| Pawnshop | Secure counter buys finds at contact. Gap:Buy stub. | `CityPawnshop*`, `PawnshopInterior*`, `PawnshopTradeController` | Partial |
 | Ridge workshops | Cobbler11–20:30, glass08–23, garage roof/repair bay. | `CityCobbler*`,`CityGlassReturn*`,`RidgeGarage*` | Current |
 
 | Supermarket cashier | Wall checkout/decor snacks;anchored palms/light;ordinary cashier,bulging 3D face/shared rig. | `SupermarketCashier{Provider,AssetRegistry,Factory,Presentation,Actor,SurveillanceState,BlinkState,Interaction}` | Current |

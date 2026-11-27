@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace BarPromenade
@@ -41,6 +42,8 @@ namespace BarPromenade
             internal readonly int? WarehouseStorySeed;
             internal readonly bool WarehouseDoorAmbushPlayed;
             internal readonly InventoryState.Checkpoint Inventory;
+            internal readonly int DumpsterRun;
+            internal readonly Dictionary<string, (int Day, DumpsterSearchState State)> DumpsterSearches;
             internal readonly KioskTableProgress[] KioskTables;
             internal readonly QuestLogEntry[] Quests;
             internal readonly GameTimeState.Checkpoint Time;
@@ -88,6 +91,8 @@ namespace BarPromenade
                 WarehouseStorySeed = GameSessionState.WarehouseStorySeed;
                 WarehouseDoorAmbushPlayed = GameSessionState.WarehouseDoorAmbushPlayed;
                 Inventory = inventory.CaptureCheckpoint();
+                DumpsterRun = dumpsterRun;
+                DumpsterSearches = new Dictionary<string, (int Day, DumpsterSearchState State)>(dumpsterSearches, dumpsterSearches.Comparer);
                 KioskTables = (KioskTableProgress[])kioskTableProgress.Clone();
                 Quests = questLog.CaptureCheckpoint();
                 Time = gameTime.CaptureCheckpoint();
@@ -160,6 +165,9 @@ namespace BarPromenade
             WarehouseStorySeed = saved.WarehouseStorySeed;
             WarehouseDoorAmbushPlayed = saved.WarehouseDoorAmbushPlayed;
             inventory.RestoreCheckpoint(saved.Inventory);
+            dumpsterRun = saved.DumpsterRun;
+            dumpsterSearches.Clear();
+            foreach (var visit in saved.DumpsterSearches) dumpsterSearches.Add(visit.Key, visit.Value);
             saved.KioskTables.CopyTo(kioskTableProgress, 0);
             questLog.RestoreCheckpoint(saved.Quests);
             gameTime.RestoreCheckpoint(saved.Time);

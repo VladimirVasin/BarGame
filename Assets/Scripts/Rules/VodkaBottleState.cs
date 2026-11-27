@@ -5,10 +5,11 @@ namespace BarPromenade
     public readonly struct VodkaBottleSipResult
     {
         public VodkaBottleSipResult(int bottleId, int beforeMl, int remainingMl,
-            int alcoholDose, int stressRelief, int servings)
+            int alcoholDose, int stressRelief, int servings, bool storedEmpty = false)
         {
             BottleId = bottleId; BeforeMl = beforeMl; RemainingMl = remainingMl;
             AlcoholDose = alcoholDose; StressRelief = stressRelief; Servings = servings;
+            StoredEmpty = storedEmpty;
         }
 
         public int BottleId { get; }
@@ -18,6 +19,10 @@ namespace BarPromenade
         public int AlcoholDose { get; }
         public int StressRelief { get; }
         public int Servings { get; }
+        public bool StoredEmpty { get; }
+
+        public VodkaBottleSipResult WithStoredEmpty() =>
+            new VodkaBottleSipResult(BottleId, BeforeMl, RemainingMl, AlcoholDose, StressRelief, Servings, true);
     }
 
     /// <summary>Finite bottle identities and exact cumulative dose accounting; no scene or presentation state.</summary>
@@ -118,14 +123,17 @@ namespace BarPromenade
             // IDs are not reused on an inventory reset: stale prepared swallows remain invalid.
         }
 
-        public bool TryAdd(int count, int initialMl = -1)
+        public bool TryAdd(int count, int initialMl = -1, bool initiallyOpened = false)
         {
             if (initialMl == -1) initialMl = fullMl;
             if (count <= 0 || count > Capacity - Count || initialMl <= 0 || initialMl > fullMl) return false;
             for (int i = 0; i < count; i++)
             {
                 nextId = nextId == int.MaxValue ? 1 : nextId + 1;
-                ids[Count] = nextId; remaining[Count] = initialMl; sipPhases[Count++] = 0;
+                ids[Count] = nextId;
+                remaining[Count] = initialMl;
+                opened[Count] = initiallyOpened;
+                sipPhases[Count++] = 0;
             }
             return true;
         }
@@ -150,6 +158,22 @@ namespace BarPromenade
             return true;
         }
 
+        public bool TryPreviewFinalDose(int expectedBottleId, int fullAlcoholDose, out int dose)
+        {
+            dose = 0;
+            int index = Find(expectedBottleId);
+            if (index < 0 || expectedBottleId != activeId || remaining[index] > NominalSipVolume(index))
+                return false;
+            dose = (int)((alcoholRemainder + (long)remaining[index] * fullAlcoholDose) / fullMl);
+            return true;
+        }
+
+        private int NominalSipVolume(int index)
+        {
+            int phase = sipPhases[index];
+            return (phase + 1) * fullMl / sipCount - phase * fullMl / sipCount;
+        }
+
         public bool TrySip(int expectedBottleId, int fullAlcoholDose, int fullStressRelief, int fullServings,
             out VodkaBottleSipResult result)
         {
@@ -161,15 +185,13 @@ namespace BarPromenade
             // Consecutive integer boundaries give 33, 33, 34 ml: fifteen sips
             // finish 500 ml exactly, and a 100 ml source finishes in three.
             // Keep each bottle's phase through stow/switch rather than restarting its rounding.
-            int phase = sipPhases[index];
-            int nominalVolume = (phase + 1) * fullMl / sipCount - phase * fullMl / sipCount;
-            int volume = Math.Min(nominalVolume, before);
+            int volume = Math.Min(NominalSipVolume(index), before);
             int after = before - volume;
             int alcohol = TakeDose(ref alcoholRemainder, volume, fullAlcoholDose);
             int stress = TakeDose(ref stressRemainder, volume, fullStressRelief);
             int servings = TakeDose(ref servingRemainder, volume, fullServings);
             remaining[index] = after;
-            sipPhases[index] = phase + 1;
+            sipPhases[index]++;
             result = new VodkaBottleSipResult(expectedBottleId, before, after, alcohol, stress, servings);
             if (after == 0) RemoveAt(index);
             return true;

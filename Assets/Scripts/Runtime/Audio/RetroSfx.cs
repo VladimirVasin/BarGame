@@ -103,6 +103,11 @@ namespace BarPromenade
         PayphoneKey,
         PieBite,
         PieBurp,
+        BinPaperRustle,
+        BinFoundGlass,
+        BinFoundMetal,
+        BinLastSipSlosh,
+        PawnshopWatchTick,
         Count
     }
 
@@ -959,7 +964,17 @@ namespace BarPromenade
             new RetroSfxDefinition(RetroSfxId.PieBite, RetroSfxCategory.World,
                 .12f,.18f,.8f,1,.12f,1,4096,1900f,.045f,72,3),
             new RetroSfxDefinition(RetroSfxId.PieBurp, RetroSfxCategory.World,
-                .30f,.26f,.8f,1,.30f,1,4096,1700f,.025f,78)
+                .30f,.26f,.8f,1,.30f,1,4096,1700f,.025f,78),
+            new RetroSfxDefinition(RetroSfxId.BinPaperRustle, RetroSfxCategory.World,
+                .51f,.32f,1f,1,.11f,1,4096,2900f,.01f,87,3),
+            new RetroSfxDefinition(RetroSfxId.BinFoundGlass, RetroSfxCategory.World,
+                .19f,.33f,1f,1,.11f,1,4096,5400f,.02f,86),
+            new RetroSfxDefinition(RetroSfxId.BinFoundMetal, RetroSfxCategory.World,
+                .23f,.35f,1f,1,.11f,1,4096,4200f,.02f,86),
+            new RetroSfxDefinition(RetroSfxId.BinLastSipSlosh, RetroSfxCategory.World,
+                .24f,.30f,1f,1,.10f,1,4096,1500f,0f,86),
+            new RetroSfxDefinition(RetroSfxId.PawnshopWatchTick, RetroSfxCategory.World,
+                .42f,.22f,1f,1,.08f,1,4096,4300f,0f,85)
         };
 
         public static int Count => definitions.Length - 1;
@@ -1380,6 +1395,11 @@ namespace BarPromenade
                         time,
                         duration,
                         ref noiseState);
+                case RetroSfxId.PawnshopWatchTick:
+                case RetroSfxId.BinPaperRustle:
+                case RetroSfxId.BinFoundGlass:
+                case RetroSfxId.BinFoundMetal:
+                case RetroSfxId.BinLastSipSlosh:
                 case RetroSfxId.BinLidLift:
                 case RetroSfxId.BinLidShut:
                 case RetroSfxId.BoothUnlatch:
@@ -1661,6 +1681,21 @@ namespace BarPromenade
             }
             switch (id)
             {
+                case RetroSfxId.PawnshopWatchTick:
+                    return .30f * Strike(0f, 2320f, 210f, .34f) +
+                        .25f * Strike(.20f, 2650f, 230f, .37f) +
+                        .31f * Strike(.40f, 2320f, 210f, .34f);
+                case RetroSfxId.BinPaperRustle:
+                    float rub = .65f + .35f * Mathf.Sin((63f + detune * 12f) * t + 1.5f * Mathf.Sin(32f * t));
+                    return grain * rub * (.68f * Envelope(t, duration, .035f, 1.3f) +
+                        .35f * Envelope(t - .18f, .24f, .018f, 1.8f)) + .32f * Rub(110f, -90f);
+                case RetroSfxId.BinFoundGlass:
+                    return .78f * Strike(0f, 1835f, 36f, .16f) + .18f * Strike(.026f, 1310f, 68f, .21f);
+                case RetroSfxId.BinFoundMetal:
+                    return .41f * Strike(0f, 570f, 58f, .56f) + .36f * Strike(.034f, 1090f, 46f, .39f);
+                case RetroSfxId.BinLastSipSlosh:
+                    float ripple = Mathf.Sin(2f * Mathf.PI * (264f * t - 170f * t * t));
+                    return (.53f * grain + .21f * ripple) * Envelope(t, duration, .053f, 1.35f);
                 case RetroSfxId.BinLidLift:
                     return .35f*Strike(0f,385f,36f,.55f)+Rub(195f,375f);
                 case RetroSfxId.BinLidShut:

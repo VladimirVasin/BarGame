@@ -821,6 +821,8 @@ namespace BarPromenade.Tests.PlayMode
                 for (int sip = 2; sip <= VodkaBottleState.FullBottleSipCount; sip++)
                 {
                     int expected = sip;
+                    if (sip == VodkaBottleState.FullBottleSipCount)
+                        GameSessionState.UpdateDrinkingProgress(99, DrinkId.Vodka, GameSessionState.DrinksConsumed);
                     yield return Until(() => bottle.CompletedSips >= expected, "Held seated drinking stopped before sip " + expected);
                     Assert.That(bottle.CompletedSips, Is.EqualTo(expected));
                     Assert.That(GameSessionState.VodkaBottleRemainingMl,

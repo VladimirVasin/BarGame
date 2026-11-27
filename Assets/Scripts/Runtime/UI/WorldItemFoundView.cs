@@ -59,8 +59,7 @@ namespace BarPromenade
                 1f);
             RetroItemPanel.DrawFramedText(
                 RetroItemPanel.DescriptionRect,
-                LocalizationService.Get(
-                    screen.DescriptionKey),
+                screen.DescriptionLabel,
                 descriptionStyle,
                 10f,
                 4f);
@@ -77,8 +76,7 @@ namespace BarPromenade
             RetroUiTheme.DrawSelection(take, true);
             if (RetroUiInput.Button(
                     take,
-                    LocalizationService.Get(
-                        screen.ActionKey),
+                    screen.ActionLabel,
                     actionStyle))
             {
                 screen.Confirm();

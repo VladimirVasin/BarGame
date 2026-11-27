@@ -630,6 +630,8 @@ namespace BarPromenade.Tests.PlayMode
             for (int sip = 2; sip <= VodkaBottleState.FullBottleSipCount; sip++)
             {
                 int expected = sip;
+                if (sip == VodkaBottleState.FullBottleSipCount)
+                    GameSessionState.UpdateDrinkingProgress(99, DrinkId.Vodka, GameSessionState.DrinksConsumed);
                 if (sip <= 2) yield return Await(() => bottle.CompletedSips >= expected, "Held LMB did not advance to sip " + expected);
                 else yield return AwaitHeldSip(expected, allowRaise: sip == 3);
                 Assert.That(bottle.CompletedSips, Is.EqualTo(expected), "One cycle can commit only one sip.");
@@ -795,6 +797,7 @@ namespace BarPromenade.Tests.PlayMode
                 "The seated last sip did not raise the bottle.");
             AssertLastSipMaximum();
             AssertEquipmentLeavesSeatLegsAlone(seatController);
+            GameSessionState.UpdateDrinkingProgress(99, DrinkId.Vodka, GameSessionState.DrinksConsumed);
             yield return Await(() => bottle.CompletedSips == previousSips + 1, "The seated final sip did not commit.");
             Capture("seated-final-sip", false, seatGround + Vector3.up * .8f);
             yield return ObserveEmptyCheck("seated", seatController, plan.ActionHipPosition, seatGround + Vector3.up * .8f);

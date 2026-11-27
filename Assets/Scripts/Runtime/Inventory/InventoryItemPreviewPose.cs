@@ -45,6 +45,18 @@ namespace BarPromenade
     {
         private static readonly InventoryItemPreviewPose[] Poses =
         {
+            new InventoryItemPreviewPose(InventoryItemId.FoldingScrewdriver, Quaternion.Euler(-58f, -22f, -8f), 1.25f),
+            new InventoryItemPreviewPose(InventoryItemId.Caliper, Quaternion.Euler(-58f, -22f, -8f), 1.16f),
+            new InventoryItemPreviewPose(InventoryItemId.PocketRadio, Quaternion.Euler(-58f, -22f, -8f), 1.32f),
+            new InventoryItemPreviewPose(InventoryItemId.MechanicalWatch, Quaternion.Euler(-58f, -22f, -8f), 1.36f),
+            new InventoryItemPreviewPose(InventoryItemId.SilverRing, Quaternion.Euler(-58f, -22f, -8f), 1.65f),
+            new InventoryItemPreviewPose(InventoryItemId.EmptyVodkaBottle, Quaternion.Euler(8f, -18f, 0f), 1.30f),
+            new InventoryItemPreviewPose(InventoryItemId.EmptyHawthornBottle, Quaternion.Euler(10f, -18f, 0f), 1.65f),
+            new InventoryItemPreviewPose(InventoryItemId.EmptyWineBottle, Quaternion.Euler(8f, -18f, 0f), 1.30f),
+            new InventoryItemPreviewPose(InventoryItemId.WineBottleLastSip, Quaternion.Euler(8f, -18f, 0f), 1.30f),
+            new InventoryItemPreviewPose(InventoryItemId.EmptyBeerCan, Quaternion.Euler(20f, -18f, 0f), 1.45f),
+            new InventoryItemPreviewPose(InventoryItemId.BeerCanLastSip, Quaternion.Euler(20f, -18f, 0f), 1.45f),
+            new InventoryItemPreviewPose(InventoryItemId.BreadHeel, Quaternion.Euler(22f, -28f, -5f), 1.30f),
             new InventoryItemPreviewPose(InventoryItemId.PotatoPirozhok, Quaternion.Euler(22f, -28f, -5f), 1.30f),
             new InventoryItemPreviewPose(InventoryItemId.HawthornTincture, Quaternion.Euler(0f, 0f, 0f), 1.65f),
             new InventoryItemPreviewPose(InventoryItemId.BeerCan, Quaternion.Euler(12f, -18f, 0f), 1.45f),

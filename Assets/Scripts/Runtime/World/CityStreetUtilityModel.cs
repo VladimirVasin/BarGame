@@ -11,12 +11,15 @@ namespace BarPromenade
         internal const float Inside = .27f;
         internal const float BinStand = .83f;
         private Transform hinge, handle, receiver, key, firstCord, secondCord;
+        private Transform cardboard, cardboardGrip;
+        private Quaternion restCardboardRotation;
         private Transform[] dialKeys;
         private Vector3[] restKeys;
         private Quaternion closedRotation, receiverRotation;
         private Vector3 receiverRest;
         internal string SiteId { get; private set; }
         internal Vector3 Handle => handle.position;
+        internal Vector3 CardboardGrip => cardboardGrip.position;
         internal Vector3 Receiver => receiver.position;
         internal Vector3 Key => key.position;
         internal Vector3 DialKey(int index) => transform.TransformPoint(restKeys[index]);
@@ -73,7 +76,14 @@ namespace BarPromenade
                     door.SetParent(model.hinge, true);
                 }
             }
-            else if (physical) Box("Steel bin", new Vector3(0,.57f,0), new Vector3(1.78f,1.13f,.96f));
+            else
+            {
+                model.cardboard = nodes["Cardboard"];
+                model.cardboardGrip = nodes["CardboardGrip"];
+                model.cardboardGrip.SetParent(model.cardboard, true);
+                model.restCardboardRotation = model.cardboard.localRotation;
+                if (physical) Box("Steel bin", new Vector3(0,.57f,0), new Vector3(1.78f,1.13f,.96f));
+            }
             return model;
 
             Transform Box(string label, Vector3 center, Vector3 size)
@@ -114,6 +124,12 @@ namespace BarPromenade
             SetOpen(1f);
             while (InDoorway(hero)) yield return null;
             SetOpen(0f);
+        }
+
+        internal void SetCardboard(float lift, float direction)
+        {
+            cardboard.rotation = transform.rotation * Quaternion.Euler(-31f * lift, 13f * lift * direction, 0f) *
+                Quaternion.Inverse(transform.rotation) * cardboard.parent.rotation * restCardboardRotation;
         }
 
         internal void SetOpen(float amount)

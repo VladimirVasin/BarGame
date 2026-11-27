@@ -25,7 +25,7 @@ FINISHES = {
 }
 
 
-def atlas():
+def atlas(filename="StreetUtilityWear.png"):
     tile = 128
     rgba = np.empty((tile * 2, tile * 4, 4), dtype=np.uint8)
     y, x = np.mgrid[0:tile, 0:tile] / tile
@@ -54,7 +54,7 @@ def atlas():
     def chunk(tag, data):
         return struct.pack(">I", len(data))+tag+data+struct.pack(">I", zlib.crc32(tag+data))
     data = b"".join(b"\0"+row.tobytes() for row in rgba)
-    (OUT/"StreetUtilityWear.png").write_bytes(b"\x89PNG\r\n\x1a\n"+chunk(b"IHDR",struct.pack(">IIBBBBB",4*tile,2*tile,8,6,0,0,0))+chunk(b"IDAT",zlib.compress(data,9))+chunk(b"IEND",b""))
+    (OUT/filename).write_bytes(b"\x89PNG\r\n\x1a\n"+chunk(b"IHDR",struct.pack(">IIBBBBB",4*tile,2*tile,8,6,0,0,0))+chunk(b"IDAT",zlib.compress(data,9))+chunk(b"IEND",b""))
 
 
 class Model:
@@ -77,7 +77,7 @@ class Model:
         q = Vector((0,1,0)).rotation_difference(delta)
         self.add(group,finish,([tuple((Vector(a)+Vector(b))*.5+q@Vector(p)) for p in v],f))
 
-    def export(self, name):
+    def export(self, name, materials=None):
         bpy.ops.wm.read_factory_settings(use_empty=True)
         root = bpy.data.objects.new(name+"Root", None)
         bpy.context.collection.objects.link(root)
@@ -111,6 +111,8 @@ class Model:
                         uv.append(((col+.025+.95*u)/4,(1-row+.025+.95*v)/2))
             mesh = bpy.data.meshes.new(key+"Mesh")
             slot = "UtilityGlass" if key in ("Glass","DoorGlass") else "UtilityLamp" if key == "Lamp" else "UtilityWear"
+            if materials is not None:
+                slot = materials.get(key, materials["default"])
             mesh.materials.append(bpy.data.materials.get(slot) or bpy.data.materials.new(slot))
             mesh.from_pydata(vertices,[],faces)
             mesh.update()
@@ -243,8 +245,14 @@ def dumpster():
     for x in (-.63,-.31,0,.31,.63):
         box("Body","paint",(x,.67,.483),(.054,.55,.034))
     for i in range(12):
-        sheet = wet_cardboard(i, floor_top + i*.012, side_x-wall_x/2, side_z-wall_z/2)
-        m.add("Body","paper",sheet)
+        sheet = wet_cardboard(i, floor_top + i*.033, side_x-wall_x/2, side_z-wall_z/2)
+        if i == 11:
+            m.anchors["Cardboard"] = (0, .72, .16)
+            front = max(sheet[0][:8], key=lambda point: point[2])
+            m.anchors["CardboardGrip"] = front
+            m.add("Cardboard", "paper", sheet)
+        else:
+            m.add("Body", "paper", sheet)
     box("Lid","paint",(0,1.101,-.004),(1.83,.068,1.005),.016)
     for x in (-.72,-.36,0,.36,.72):
         box("Lid","paint",(x,1.147,-.015),(.047,.034,.78))
@@ -252,6 +260,30 @@ def dumpster():
         m.rod("Body","iron",(x-.08,1.08,-.46),(x+.08,1.08,-.46),.042)
     m.rod("Lid","edge",(-.17,1.147,.464),(.17,1.147,.464),.022)
     return m
+
+
+def bread_heel():
+    model = Model()
+    # Angular crust wraps an uneven exposed break. The wrapper folds under the crumb.
+    ring = ((-.039,.010),(.035,.010),(.047,.022),(.043,.043),
+            (.019,.061),(-.020,.065),(-.044,.050),(-.049,.027))
+    def wedge(sections):
+        vertices = [(x*scale, y*scale + .009, z + (i%3 - 1)*jag)
+                    for z, scale, jag in sections for i,(x,y) in enumerate(ring)]
+        n = len(ring)
+        faces = [tuple(reversed(range(n)))]
+        for offset in range(0, len(vertices)-n, n):
+            for i in range(n):
+                j = (i+1)%n
+                faces.append((offset+i, offset+j, offset+n+j, offset+n+i))
+        faces.append(tuple(range(len(vertices)-n, len(vertices))))
+        return vertices, faces
+
+    model.add("Bread", "paper", wedge(((-.039,.80,.001),(-.020,1,.003),(.023,.91,.006))))
+    model.add("Bread", "enamel", wedge(((.015,.80,.003),(.027,.77,.006))))
+    model.box("Bread", "inside", (0,.010,0), (.143,.006,.111), .002, tilt=12)
+    model.box("Bread", "paper", (-.053,.020,.003), (.031,.012,.081), .002, tilt=-11)
+    return model
 
 
 def imported_surface(model, name):
@@ -292,9 +324,17 @@ def check_exports():
         if actual != strokes:
             raise ValueError(f"Unreadable key at row {row+1}, column {column+1}: {actual}")
 
+    print("FBX check passed: caller reads 123 / 456 / 789 / 0")
+
+
+def check_dumpster():
     mesh, points, body, finishes = imported_surface("Dumpster","Body")
     paper = [points[i] for face,finish in zip(mesh.polygons,finishes)
              if finish=="paper" for i in face.vertices]
+    _, moving_points, _, moving_finishes = imported_surface("Dumpster", "Cardboard")
+    if set(moving_finishes) != {"paper"}:
+        raise ValueError("The hinged cardboard must retain its paper finish")
+    paper.extend(moving_points)
     if not paper:
         raise ValueError("No cardboard in the exported dumpster")
     clearance = float("inf")
@@ -305,13 +345,24 @@ def check_exports():
         clearance = min(clearance, distance-max(point.dot(Vector(axis)) for point in paper))
     if clearance < .0249:
         raise ValueError(f"Insufficient cardboard clearance: {clearance:.4f} m")
-    print(f"FBX check passed: caller reads 123 / 456 / 789 / 0; minimum cardboard clearance {clearance:.3f} m")
+    print(f"FBX check passed: minimum cardboard clearance {clearance:.3f} m")
 
 
 if __name__ == "__main__":
+    if "--model-dir" in sys.argv:
+        OUT = Path(sys.argv[sys.argv.index("--model-dir")+1])
+    dumpster_only = "--dumpster-only" in sys.argv
     if "--validate-only" not in sys.argv:
         OUT.mkdir(parents=True,exist_ok=True)
-        atlas()
-        booth().export("PhoneBooth")
+        if not dumpster_only:
+            atlas()
+            booth().export("PhoneBooth")
         dumpster().export("Dumpster")
-    check_exports()
+        bread_heel().export("BreadHeel")
+    if not dumpster_only:
+        check_exports()
+    check_dumpster()
+    _, bread_points, _, _ = imported_surface("BreadHeel", "Bread")
+    bounds = [max(p[i] for p in bread_points)-min(p[i] for p in bread_points) for i in range(3)]
+    if not all(.04 < size < .20 for size in bounds):
+        raise ValueError(f"Bread heel has invalid hand-scale bounds: {bounds}")

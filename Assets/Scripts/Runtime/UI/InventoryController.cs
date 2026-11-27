@@ -88,7 +88,9 @@ namespace BarPromenade
 
         public bool CanUseSelected =>
             HasSelectedUseAction &&
-            (SelectedStack.ItemId == InventoryItemId.HawthornTincture
+            (DrinkContainerCatalog.IsLastSip(SelectedStack.ItemId)
+                ? drinkController != null && drinkController.CanQueueLastSip(SelectedStack.ItemId)
+                : SelectedStack.ItemId == InventoryItemId.HawthornTincture
                 ? drinkController != null && drinkController.CanQueueMedicineUse
                 : (SelectedStack.ItemId != InventoryItemId.PotatoPirozhok || pieEating != null && pieEating.CanPrepare) &&
                     (SelectedIsEquippable || SelectedUseEvaluation.Succeeded));
@@ -99,6 +101,8 @@ namespace BarPromenade
             {
                 if (HasSelection && SelectedStack.ItemId == InventoryItemId.HawthornTincture)
                     return LocalizationService.Get("inventory.action.use");
+                if (HasSelection && DrinkContainerCatalog.IsLastSip(SelectedStack.ItemId))
+                    return LocalizationService.Get("inventory.action.bottle.finish");
                 if (SelectedIsEquippable)
                 {
                     if (DrinkContainerCatalog.IsDrink(SelectedStack.ItemId))
@@ -201,6 +205,7 @@ namespace BarPromenade
             }
 
             timePause = GameTimeScaleRuntime.AcquirePause();
+            drinkController?.CancelQueuedLastSip();
             ownsTimeState = true;
             activeController = this;
             if (healthActor == null) healthActor = player.GameObject.GetComponent<CombatActor>();
@@ -292,9 +297,11 @@ namespace BarPromenade
                 RetroAudio.Play(began ? RetroSfxId.UiConfirm : RetroSfxId.UiCancel);
                 return began;
             }
-            if (itemId == InventoryItemId.HawthornTincture)
+            bool lastSip = DrinkContainerCatalog.IsLastSip(itemId);
+            if (lastSip || itemId == InventoryItemId.HawthornTincture)
             {
-                bool queued = drinkController != null && drinkController.TryQueueMedicineUse(this);
+                bool queued = drinkController != null && (lastSip
+                    ? drinkController.TryQueueLastSip(itemId) : drinkController.TryQueueMedicineUse(this));
                 ClearUseFeedback();
                 UseFeedbackSucceeded = queued;
                 RetroAudio.Play(queued ? RetroSfxId.UiConfirm : RetroSfxId.UiCancel);

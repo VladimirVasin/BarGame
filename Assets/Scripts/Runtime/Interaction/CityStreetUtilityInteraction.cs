@@ -8,7 +8,8 @@ namespace BarPromenade
         public const string PhoneBoothPromptKey = "interaction.enter_phone_booth";
         public const string DumpsterPromptKey = "interaction.search_dumpster";
         public const string PhoneBoothPlaceholderKey = "city.phone_booth.placeholder";
-        public const string DumpsterPlaceholderKey = "city.dumpster.placeholder";
+        public const string DumpsterEmptyKey = "city.dumpster.placeholder";
+        public const string DumpsterDepletedKey = "city.dumpster.searched";
         private CityGameRoot city;
         internal CityStreetUtilityModel Model { get; private set; }
         public CityStreetUtilityDock Dock { get; private set; }
@@ -39,6 +40,13 @@ namespace BarPromenade
         public void Interact(PlayerInteractor interactor)
         {
             if (!CanInteract(interactor)) return;
+            if (Dock.Kind == CityStreetUtilityKind.Dumpster &&
+                GameSessionState.GetDumpsterSearchState(Dock.Id, GameSessionState.GameDayIndex) ==
+                    GameSessionState.DumpsterSearchState.Depleted)
+            {
+                interactor.ShowFeedback(DumpsterDepletedKey, 1.6f);
+                return;
+            }
             var session = interactor.GetComponent<CityStreetUtilitySession>();
             if (!session) session = interactor.gameObject.AddComponent<CityStreetUtilitySession>();
             session.Begin(city, this);

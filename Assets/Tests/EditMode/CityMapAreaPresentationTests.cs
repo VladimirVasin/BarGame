@@ -1069,7 +1069,7 @@ namespace BarPromenade.Tests.EditMode
                 foreach (var lot in DistrictParkingPlan.ForLayout(layout))
                     namedArrivals.Add(lot.Id, ("Автостоянки", lot.PedestrianArrival));
                 namedArrivals.Add("ridge-pigeon-loft", ("Голубятня", loft.Approach));
-                namedArrivals.Add(CityGlassReturnSitePlan.StableId, ("Приём стеклотары", glass.Approach));
+                namedArrivals.Add(CityGlassReturnSitePlan.StableId, ("Приём тары", glass.Approach));
                 namedArrivals.Add(CityCobblerSitePlan.StableId, ("Сапожная мастерская", cobbler.Approach));
                 var upper = CityHillsideQuarterPlan.ForLayout(layout);
                 foreach (var bridge in upper.Bridges)

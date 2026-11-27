@@ -85,8 +85,15 @@ namespace BarPromenade
                     "Available model size must be positive and finite.");
             }
 
+            if (PawnshopFindCatalog.TryGet(itemId, out _))
+                return PawnshopFindCatalog.BuildModel(itemId, parent);
+
             switch (itemId)
             {
+                case InventoryItemId.BreadHeel:
+                    var bread = Resources.Load<GameObject>("City/StreetUtilities/BreadHeel");
+                    if (!bread) throw new InvalidOperationException("Missing authored bread heel.");
+                    return UnityEngine.Object.Instantiate(bread, parent, false).transform;
                 case InventoryItemId.PotatoPirozhok:
                     var pastry = Resources.Load<GameObject>(PotatoPieResourcePath);
                     if (pastry == null) throw new InvalidOperationException("Missing authored " + PotatoPieResourcePath);
@@ -113,6 +120,17 @@ namespace BarPromenade
                     return BuildApartmentKeys(parent, rootPrefix);
                 case InventoryItemId.Lighter:
                     return BuildLighter(parent, rootPrefix);
+                case InventoryItemId.EmptyBeerCan:
+                case InventoryItemId.EmptyWineBottle:
+                case InventoryItemId.EmptyVodkaBottle:
+                case InventoryItemId.EmptyHawthornBottle:
+                case InventoryItemId.BeerCanLastSip:
+                case InventoryItemId.WineBottleLastSip:
+                    var foundDrink = VodkaBottleView.Create(parent, itemId);
+                    DrinkContainerProfile profile = DrinkContainerCatalog.Get(itemId);
+                    foundDrink.SetOpened(true);
+                    foundDrink.SetRemaining(DrinkContainerCatalog.IsLastSip(itemId) ? 1f / profile.SipCount : 0f);
+                    return foundDrink.transform;
                 case InventoryItemId.BeerCan:
                 case InventoryItemId.WineBottle:
                 case InventoryItemId.HawthornTincture:

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
@@ -51,6 +52,7 @@ namespace BarPromenade
         public const string LoftPhoneId = "ridge-West-RoadsidePhoneBooth-09";
         public const float BenchSpacing = 52f, DumpsterSpacing = 58f, PhoneBoothSpacing = 82f;
         public const int MaximumPlacements = 96;
+        internal const int InfillDumpstersPerBank = 3;
         private static readonly ConditionalWeakTable<CityLayout, RawPlan> RawPlans = new();
         private static readonly ConditionalWeakTable<CityLayout, CityHillsideFurniturePlan> Plans = new();
         public IReadOnlyList<CityHillsideFurniturePlacement> Placements { get; }
@@ -75,6 +77,7 @@ namespace BarPromenade
             var docks = new List<CityStreetUtilityDock>();
             var solids = new List<Rect>();
             var polygons = new List<Vector2[]>();
+            var dockHeights = new Dictionary<string, float>();
             var ground = CityHillsideGroundPlan.ForLayout(layout);
             // Service routing samples the finished terrain; it must remain downstream of raw
             // pad construction. Reject its exact published reservations only at this stage.
@@ -181,9 +184,21 @@ namespace BarPromenade
                     new Vector3(point.x, top, point.y), forward, target,body,access,candidate.Variant);
                 placements.Add(placed);
                 solids.Add(placed.Bounds);
-                Vector2 half = placed.Kind == CityMiscKind.ParkBench ? new Vector2(1.15f, .36f)
-                    : placed.Kind == CityMiscKind.RoadsidePhoneBooth ? new Vector2(.74f, .57f) : new Vector2(1.98f, .60f);
+            }
+            FillRoadsideGaps();
+            foreach (var placed in placements) Register(placed);
+            if (layout.HasSummitHome && !seats.Exists(s => s.Id == HomeBenchId))
+                throw new InvalidOperationException("The Ridge home viewpoint needs a supported, unobstructed bench: " + homeFailure);
+            if (layout.HasSummitHome && !placements.Exists(p => p.Id == LoftPhoneId))
+                throw new InvalidOperationException("The pigeon courtyard phone needs its supported public landing.");
+            Placements = placements.AsReadOnly(); Seats = seats.AsReadOnly();
+            UtilityDocks = docks.AsReadOnly(); SolidFootprints = solids.AsReadOnly(); SolidPolygons = polygons.AsReadOnly();
+
+            void Register(CityHillsideFurniturePlacement placed)
+            {
+                Vector2 point = new(placed.Position.x, placed.Position.z);
                 bool phone = placed.Kind == CityMiscKind.RoadsidePhoneBooth;
+                bool bench = placed.Kind == CityMiscKind.ParkBench;
                 if (phone)
                 {
                     Vector2 side = new(placed.Forward.z, -placed.Forward.x);
@@ -192,24 +207,354 @@ namespace BarPromenade
                     polygons.Add(Rectangle(point - new Vector2(placed.Forward.x, placed.Forward.z)*.53f,
                         placed.Forward, new Vector2(.67f,.033f)));
                 }
-                else polygons.Add(Rectangle(point, placed.Forward, placed.Kind == CityMiscKind.ParkBench ? half : new Vector2(.89f,.48f)));
-                if (placed.Kind == CityMiscKind.ParkBench)
+                else polygons.Add(Rectangle(point, placed.Forward, bench ? new Vector2(1.15f, .36f) : new Vector2(.89f, .48f)));
+                if (bench)
                     seats.Add(new CityBenchSeat(placed.Id, placed.Position + Vector3.up * CityBenchSitPlan.ParkSeatTopHeight,
-                        CityBenchSitPlan.ParkSeatWidth, CityBenchSitPlan.ParkSeatDepth, top, placed.Forward));
+                        CityBenchSitPlan.ParkSeatWidth, CityBenchSitPlan.ParkSeatDepth, placed.Position.y, placed.Forward));
                 else
                 {
-                    Vector3 approach = onCourt ? court.Point(-2.55f,-2.43f) :
+                    Vector3 approach = placed.Id == courtPhone ? court.Point(-2.55f,-2.43f) :
                         phone ? new Vector3(placed.Position.x,placed.ViewTarget.y,raw.LoftPhoneApproach.yMax+.32f) : placed.ViewTarget;
-                    docks.Add(CityStreetUtilityDock.At(placed.Id,phone,placed.Position,placed.Forward,approach));
+                    var dock = CityStreetUtilityDock.At(placed.Id, phone, placed.Position, placed.Forward, approach);
+                    if (dockHeights.TryGetValue(placed.Id, out float height))
+                    {
+                        Vector3 stand = dock.StandPosition;
+                        stand.y = height;
+                        dock = new CityStreetUtilityDock(dock.Id, dock.DecorationId, dock.Kind, stand, dock.Facing, approach);
+                    }
+                    docks.Add(dock);
                 }
             }
-            if (layout.HasSummitHome && !seats.Exists(s => s.Id == HomeBenchId))
-                throw new InvalidOperationException("The Ridge home viewpoint needs a supported, unobstructed bench: " + homeFailure);
-            if (layout.HasSummitHome && !placements.Exists(p => p.Id == LoftPhoneId))
-                throw new InvalidOperationException("The pigeon courtyard phone needs its supported public landing.");
-            Placements = placements.AsReadOnly(); Seats = seats.AsReadOnly();
-            UtilityDocks = docks.AsReadOnly(); SolidFootprints = solids.AsReadOnly(); SolidPolygons = polygons.AsReadOnly();
+
+            void FillRoadsideGaps()
+            {
+                const CityMiscKind dumpster = CityMiscKind.RoadsideDumpsterAndUtility;
+                var roads = CityHillsideStreetPlan.ForLayout(layout).Routes;
+                if (roads.Count == 0) return;
+                var reserved = new List<Rect>(busReservations);
+                foreach (var placement in placements) reserved.Add(placement.AccessBounds);
+                foreach (var house in housing.AllBuildings)
+                {
+                    reserved.Add(house.FoundationBounds);
+                    reserved.Add(house.ApproachBounds);
+                    reserved.Add(house.CourtBounds);
+                }
+                foreach (var detail in CityHillsideSiteDetails.ForLayout(layout)) reserved.Add(detail.Bounds);
+                foreach (var stair in CityHillsideAccessPlan.ForLayout(layout).AllStairs)
+                    foreach (Rect bounds in stair.WalkableBounds) reserved.Add(Expand(bounds, .55f));
+                if (RidgeParkingPlan.ForLayout(layout) is { } parking) reserved.Add(parking.SurfaceBounds);
+                if (RidgeGaragePlan.ForLayout(layout) is { } garage) reserved.Add(garage.Bounds);
+                if (kiosk != null)
+                {
+                    reserved.Add(kiosk.Bounds);
+                    reserved.Add(kiosk.Apron);
+                }
+
+                // Survey the existing verges of the intermediate straight streets. The end
+                // streets serve the coast and summit destinations, and the bends carry queues.
+                foreach (var road in roads)
+                {
+                    int count = 0;
+                    foreach (int lane in new[] { 1, 3, 5, 2, 4 })
+                    {
+                        if (count == InfillDumpstersPerBank || placements.Count == MaximumPlacements) break;
+                        if (TryFillLane(road, lane)) count++;
+                    }
+                }
+
+                FillHouseGaps(useFootwayEdge: false);
+                FillHouseGaps(useFootwayEdge: true);
+                MoveToHouseLines();
+
+                void MoveToHouseLines()
+                {
+                    foreach (var (left, right) in HouseNeighbours(housing))
+                    {
+                        int index = placements.FindIndex(item => item.Kind == dumpster && IsBetweenHouses(item, left, right));
+                        if (index < 0) continue;
+                        var bin = placements[index];
+                        float side = -bin.Forward.z;
+                        var house = MatchesStreet(left) ? left : right;
+                        var other = house == left ? right : left;
+                        float facadeZ = HouseLineZ(house);
+                        if (MatchesStreet(other) && Mathf.Abs(other.PavementEdgeZ - house.PavementEdgeZ) < .1f)
+                            facadeZ = side * Mathf.Max(side * facadeZ, side * HouseLineZ(other));
+                        float gapMin = left.FoundationBounds.xMax;
+                        float gapMax = right.FoundationBounds.xMin;
+                        const float footingClearance = 1.12f;
+                        const float clearPassage = 1.05f;
+                        float min = gapMin + footingClearance;
+                        float max = gapMax - footingClearance;
+                        bool canFaceStreet = gapMax - gapMin >= footingClearance + 1.03f + clearPassage;
+                        float preferred = canFaceStreet ? Mathf.Clamp(bin.Position.x, min, max) : bin.Position.x;
+                        var offsets = new[] { preferred, min, max, Mathf.Lerp(min, max, .25f), Mathf.Lerp(min, max, .75f) };
+                        var road = roads.First(route => route.Bank == house.Bank);
+                        reserved.Remove(bin.AccessBounds);
+                        bool moved = false;
+                        // Try the facade before accepting a small correction for terrain.
+                        foreach (float depth in new[] { 0f, -.2f, .2f, -.4f })
+                        {
+                            moved = TryAcrossGap(facadeZ + side * depth);
+                            if (moved) break;
+                        }
+                        if (!moved)
+                        {
+                            float edge = house.PavementEdgeZ;
+                            float far = (facadeZ - edge) * side;
+                            float near = Mathf.Max(.08f, (bin.Position.z - edge) * side - .48f + .35f);
+                            if (far >= near)
+                            {
+                                int intervals = Mathf.Max(1, Mathf.CeilToInt((far - near) / .28f));
+                                for (int step = 0; step <= intervals; step++)
+                                {
+                                    float front = edge + side * Mathf.Lerp(far, near, (float)step / intervals);
+                                    moved = TryAlongWall(front) || TryAcrossGap(front);
+                                    if (moved) break;
+                                }
+                            }
+                        }
+                        if (!moved) reserved.Add(bin.AccessBounds);
+
+                        bool TryAcrossGap(float front)
+                        {
+                            if (!canFaceStreet) return false;
+                            foreach (float x in offsets)
+                                if (Mathf.Max(x - gapMin, gapMax - x) - 1.03f >= clearPassage &&
+                                    TryCommit(x, front + side * .48f, bin.Forward)) return true;
+                            return false;
+                        }
+
+                        bool TryAlongWall(float front)
+                        {
+                            // The footing reaches 62.5 cm behind the bin. The gap beside
+                            // the long wall stays clear of the hull and its open lid.
+                            const float wallOffset = .76f;
+                            if (gapMax - gapMin < wallOffset + .52f + clearPassage) return false;
+                            float z = front + side * .92f;
+                            bool nearLeft = bin.Position.x - gapMin <= gapMax - bin.Position.x;
+                            return nearLeft
+                                ? TryCommit(gapMin + wallOffset, z, Vector3.right) || TryCommit(gapMax - wallOffset, z, Vector3.left)
+                                : TryCommit(gapMax - wallOffset, z, Vector3.left) || TryCommit(gapMin + wallOffset, z, Vector3.right);
+                        }
+
+                        bool TryCommit(float x, float z, Vector3 facing)
+                        {
+                            if (!TryHouseLine(road, bin, x, z, facing, out var placement, out float standY)) return false;
+                            placements[index] = placement;
+                            solids[index] = placement.Bounds;
+                            dockHeights[bin.Id] = standY;
+                            reserved.Add(placement.AccessBounds);
+                            return true;
+                        }
+
+                        bool MatchesStreet(CityHillsideBuilding candidate)
+                        {
+                            float setback = (bin.Position.z - candidate.PavementEdgeZ) * side;
+                            return StreetSide(candidate) == side && setback > 0f && setback < 2.7f;
+                        }
+                    }
+                }
+
+                bool TryHouseLine(CityHillsideStreetRoute road, CityHillsideFurniturePlacement bin,
+                    float x, float z, Vector3 forward, out CityHillsideFurniturePlacement placement, out float standY)
+                {
+                    placement = default;
+                    standY = 0f;
+                    Vector2 center = new(x, z);
+                    Vector2 stand = center + new Vector2(forward.x, forward.z) * CityStreetUtilityModel.BinStand;
+                    Vector2 start = new(stand.x, bin.ViewTarget.z);
+                    Rect body = RotatedBounds(center, forward, new Vector2(.89f, .48f), Vector2.zero);
+                    var footing = RotatedBounds(center, forward, new Vector2(1.03f, .775f), new Vector2(0f, .15f));
+                    var lane = CityStreetUtilitySites.Strip(start, stand, .43f);
+                    var access = Rect.MinMaxRect(Mathf.Min(footing.xMin, lane.xMin), Mathf.Min(footing.yMin, lane.yMin),
+                        Mathf.Max(footing.xMax, lane.xMax), Mathf.Max(footing.yMax, lane.yMax));
+                    if (reserved.Exists(area => area.Overlaps(footing) || area.Overlaps(lane)) || court?.Overlaps(access) == true ||
+                        !road.TrySampleTop(start, out float curbY, out var surface) || surface != CityStreetSupportKind.Sidewalk ||
+                        !ground.TrySampleTop(stand, out standY)) return false;
+                    foreach (Vector2 corner in Corners(body))
+                        if (road.TrySampleTop(corner, out _, out _)) return false;
+
+                    float low = float.PositiveInfinity, high = float.NegativeInfinity;
+                    foreach (Vector2 corner in Corners(footing))
+                    {
+                        if (!road.TrySampleTop(corner, out float y, out _) &&
+                            !(ground.Contains(corner) && ground.TrySampleTop(corner, out y))) return false;
+                        low = Mathf.Min(low, y);
+                        high = Mathf.Max(high, y);
+                    }
+                    float top = Mathf.Min(low + .135f, standY + .09f);
+                    if (high - top > .175f || Mathf.Abs(standY - top) > .135f) return false;
+
+                    // Probe the existing pedestrian corridor across the paving seam on
+                    // both sides of the capsule, including the surface the player stands on.
+                    int steps = Mathf.Max(1, Mathf.CeilToInt(Vector2.Distance(start, stand) / .22f));
+                    for (int row = -1; row <= 1; row++)
+                    {
+                        float previous = curbY;
+                        for (int step = 0; step <= steps; step++)
+                        {
+                            Vector2 sample = Vector2.Lerp(start, stand, (float)step / steps) + Vector2.right * (row * .32f);
+                            if (!road.TrySampleTop(sample, out float y, out _) &&
+                                !(ground.Contains(sample) && ground.TrySampleTop(sample, out y))) return false;
+                            if (Mathf.Abs(y - previous) > .16f) return false;
+                            previous = y;
+                        }
+                    }
+                    placement = new CityHillsideFurniturePlacement(bin.Id, dumpster, new Vector3(x, top, z),
+                        forward, new Vector3(start.x, curbY, start.y), body, access, 0);
+                    return true;
+                }
+
+                void FillHouseGaps(bool useFootwayEdge)
+                {
+                    // A middle house can open onto the next street even when it
+                    // shares its parcel row with houses facing the lower street.
+                    foreach (var (left, right) in HouseNeighbours(housing))
+                    {
+                        if (placements.Count >= MaximumPlacements) break;
+                        float min = left.FoundationBounds.xMax + 1.13f;
+                        float max = right.FoundationBounds.xMin - 1.13f;
+                        if (min > max || placements.Exists(bin => bin.Kind == dumpster && IsBetweenHouses(bin, left, right))) continue;
+                        var road = roads.First(route => route.Bank == left.Bank);
+                        string id = $"ridge-house-gap-{left.Lot.Cell.x}-{left.Lot.Cell.y}-{right.Lot.Cell.x}-bin";
+                        float middle = (min + max) * .5f;
+                        int steps = Mathf.CeilToInt((max - min) * .5f);
+                        for (int step = 0; step <= steps * 2; step++)
+                        {
+                            float x = Mathf.Clamp(middle + ((step + 1) / 2) * (step % 2 == 0 ? -1f : 1f), min, max);
+                            if (TryHouseFrontage(road, left, id, x, useFootwayEdge) ||
+                                left.PavementEdgeZ != right.PavementEdgeZ && TryHouseFrontage(road, right, id, x, useFootwayEdge)) break;
+                        }
+                    }
+                }
+
+                bool TryHouseFrontage(CityHillsideStreetRoute road, CityHillsideBuilding house, string id, float x, bool useFootwayEdge)
+                {
+                    float side = Mathf.Sign(house.PavementEdgeZ - house.StreetContactWorld.z);
+                    float edge = house.PavementEdgeZ;
+                    // Recover the actual kerb on the widened ends of a shelf.
+                    float inner = -.85f, outer = 1.35f;
+                    if (!IsFootway(inner)) return false;
+                    for (int probe = 0; probe < 10; probe++)
+                    {
+                        float middle = (inner + outer) * .5f;
+                        if (IsFootway(middle)) inner = middle;
+                        else outer = middle;
+                    }
+                    float kerb = edge + outer * side;
+                    if (!useFootwayEdge) return TryPlaceBin(road, id, x, kerb, side);
+                    return TryPlaceBin(road, id, x, kerb, side, setback: .24f) ||
+                        TryPlaceBin(road, id, x, kerb, side, setback: .07f);
+
+                    bool IsFootway(float offset) => road.TrySampleTop(new Vector2(x, edge + offset * side),
+                        out _, out var material) && material == CityStreetSupportKind.Sidewalk;
+                }
+
+                bool TryFillLane(CityHillsideStreetRoute road, int lane)
+                {
+                    float z = road.GetLaneZ(lane);
+                    float preferred = (road.LaneMinX + road.LaneMaxX) * .5f + (lane % 3 - 1) * 14f;
+                    for (int attempt = 0; attempt < 15; attempt++)
+                    {
+                        float x = preferred + ((attempt + 1) / 2) * (attempt % 2 == 0 ? -5f : 5f);
+                        if (x < road.LaneMinX + 16f || x > road.LaneMaxX - 16f) continue;
+                        for (int side = -1; side <= 1; side += 2)
+                        {
+                            string id = $"ridge-{road.Bank}-lane-{lane}-bin-infill";
+                            float edge = z + side * CityHillsideStreetRoute.OuterHalfWidth;
+                            if (TryPlaceBin(road, id, x, edge, side, spaced: true)) return true;
+                        }
+                    }
+                    return false;
+                }
+
+                bool TryPlaceBin(CityHillsideStreetRoute road, string id, float x, float edge, float side,
+                    bool spaced = false, float setback = .54f)
+                {
+                    bool useFootwayEdge = setback < .48f;
+                    Vector2 point = new(x, edge + side * setback);
+                    Vector2 curb = new(x, edge - side * 1.25f);
+                    Vector2 standPoint = point - Vector2.up * (side * CityStreetUtilityModel.BinStand);
+                    Vector3 forward = Vector3.back * side;
+                    Rect body = RotatedBounds(point, forward, new Vector2(.89f, .48f), Vector2.zero);
+                    Rect footing = RotatedBounds(point, forward, new Vector2(1.03f, .775f), new Vector2(0f, .15f));
+                    Rect access = CityStreetUtilitySites.Strip(point + Vector2.up * side * .625f, curb, 1.13f);
+                    Rect approachLane = CityStreetUtilitySites.Strip(standPoint, curb - Vector2.up * side * .36f, .48f);
+                    if (reserved.Exists(rect => useFootwayEdge ? rect.Overlaps(footing) || rect.Overlaps(approachLane) : rect.Overlaps(access)) ||
+                        court?.Overlaps(access) == true ||
+                        !road.TrySampleTop(curb, out float curbY, out var surface) || surface != CityStreetSupportKind.Sidewalk ||
+                        !road.TrySampleTop(standPoint, out float standY, out var standSurface) || standSurface != CityStreetSupportKind.Sidewalk ||
+                        spaced && placements.Exists(p => p.Kind == dumpster && Mathf.Abs(p.Position.y - standY) < .8f &&
+                            Mathf.Abs(p.ViewTarget.z - curb.y) < 11f && Mathf.Abs(p.ViewTarget.x - x) < 30f)) return false;
+                    if (useFootwayEdge)
+                    {
+                        // Keep a 1.5 m through strip beside the hull. Verify the
+                        // width at both ends against the actual paved section.
+                        float innerEdge = edge - side * (1.5f + .48f - setback);
+                        foreach (float along in new[] { body.xMin, body.xMax })
+                            if (!road.TrySampleTop(new Vector2(along, innerEdge), out _, out var inner) ||
+                                inner != CityStreetSupportKind.Sidewalk) return false;
+                    }
+                    else if (!spaced)
+                        foreach (Vector2 corner in Corners(body))
+                            if (road.TrySampleTop(corner, out _, out _)) return false;
+
+                    // The model's concrete footing straddles the seam. Set the hull beyond
+                    // the footway and keep the interaction dock on the existing paving.
+                    float lowest = standY, highest = standY;
+                    foreach (Vector2 corner in Corners(footing))
+                    {
+                        if (!road.TrySampleTop(corner, out float level, out _) && !ground.TrySampleTop(corner, out level)) return false;
+                        lowest = Mathf.Min(lowest, level);
+                        highest = Mathf.Max(highest, level);
+                    }
+                    float top = Mathf.Min(lowest + .135f, standY);
+                    float maxRise = useFootwayEdge ? .205f : .155f;
+                    float maxSink = useFootwayEdge ? .135f : .105f;
+                    if (highest - top > maxRise || standY - top > maxSink) return false;
+
+                    placements.Add(new CityHillsideFurniturePlacement(id, dumpster, new Vector3(x, top, point.y), forward,
+                        new Vector3(x, curbY, curb.y), body, access, 0));
+                    solids.Add(body);
+                    dockHeights.Add(id, standY);
+                    reserved.Add(access);
+                    return true;
+                }
+            }
         }
+
+        internal static IEnumerable<(CityHillsideBuilding Left, CityHillsideBuilding Right)> HouseNeighbours(
+            CityHillsideNeighborhoodPlan housing)
+        {
+            foreach (var row in housing.Buildings.GroupBy(house => (house.Bank, house.Lot.Cell.y)))
+            {
+                CityHillsideBuilding previous = null;
+                foreach (var house in row.OrderBy(house => house.FoundationBounds.center.x))
+                {
+                    if (previous != null) yield return (previous, house);
+                    previous = house;
+                }
+            }
+        }
+
+        internal static bool IsBetweenHouses(CityHillsideFurniturePlacement bin, CityHillsideBuilding left, CityHillsideBuilding right)
+        {
+            return bin.Bounds.xMin >= left.FoundationBounds.xMax && bin.Bounds.xMax <= right.FoundationBounds.xMin &&
+                (AtFrontage(left) || AtFrontage(right));
+
+            bool AtFrontage(CityHillsideBuilding house)
+            {
+                float side = StreetSide(house);
+                float setback = (bin.Position.z - house.PavementEdgeZ) * side;
+                float approach = (house.PavementEdgeZ - bin.ViewTarget.z) * side;
+                float limit = Mathf.Max(2.7f, (HouseLineZ(house) - house.PavementEdgeZ) * side + 1.4f);
+                return approach > -.15f && approach < 2.7f && setback > 0f && setback < limit;
+            }
+        }
+
+        private static float StreetSide(CityHillsideBuilding house) => Mathf.Sign(house.PavementEdgeZ - house.StreetContactWorld.z);
+        internal static float HouseLineZ(CityHillsideBuilding house) => StreetSide(house) > 0f
+            ? house.FoundationBounds.yMin : house.FoundationBounds.yMax;
 
         private static IEnumerable<Vector2> Corners(Rect r)
         {

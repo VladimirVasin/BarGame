@@ -25,6 +25,7 @@ namespace BarPromenade
         private GUIStyle statusCaptionStyle;
         private GUIStyle statusValueStyle;
         private GUIStyle itemNameStyle;
+        private GUIStyle sipMarkStyle;
         private GUIStyle selectedItemStyle;
         private GUIStyle descriptionStyle;
         private GUIStyle commandStyle;
@@ -281,20 +282,26 @@ namespace BarPromenade
             const float slotHeight = 61f;
             const float horizontalGap = 6f;
             const float verticalGap = 7f;
-            for (int index = 0; index < items.Count; index++)
+            const int visibleSlots = InventoryController.GridColumns * 2;
+            float wheel = RetroUiInput.ScrollDelta.y;
+            if (items.Count > visibleSlots && ItemsPanel.Contains(logicalMouse) && wheel != 0f)
             {
-                int column = index % InventoryController.GridColumns;
-                int row = index / InventoryController.GridColumns;
+                controller.SelectItem(Mathf.Clamp(controller.SelectedItemIndex +
+                    (wheel > 0f ? visibleSlots : -visibleSlots), 0, items.Count - 1));
+                RetroUiInput.ConsumeScroll();
+            }
+            int first = Mathf.Clamp(controller.SelectedItemIndex, 0, items.Count - 1) / visibleSlots * visibleSlots;
+            int end = Mathf.Min(first + visibleSlots, items.Count);
+            for (int index = first; index < end; index++)
+            {
+                int offset = index - first;
+                int column = offset % InventoryController.GridColumns;
+                int row = offset / InventoryController.GridColumns;
                 Rect slot = new Rect(
                     184f + column * (slotWidth + horizontalGap),
                     42f + row * (slotHeight + verticalGap),
                     slotWidth,
                     slotHeight);
-                if (slot.yMax > ItemsPanel.yMax - 7f)
-                {
-                    break;
-                }
-
                 bool selected = index == controller.SelectedItemIndex;
                 bool hovered = slot.Contains(logicalMouse);
                 if (hovered && RetroUiInput.PointerMoved)
@@ -329,18 +336,26 @@ namespace BarPromenade
                         RetroUiTheme.FrameInner);
                 }
                 InventoryItemStack stack = items[index];
+                bool lastSip = DrinkContainerCatalog.IsLastSip(stack.ItemId);
+                float iconSize = lastSip ? 28f : 36f;
                 RetroUiTexture.DrawTexture(
-                    new Rect(slot.x + 22f, slot.y + 5f, 36f, 36f),
+                    new Rect(slot.center.x - iconSize * .5f, slot.y + 5f, iconSize, iconSize),
                     InventoryIconLibrary.GetIcon(stack.ItemId),
                     ScaleMode.ScaleToFit,
                     true);
+                if (lastSip)
+                {
+                    var mark = new Rect(slot.center.x - 22f, slot.y + 31f, 44f, 11f);
+                    RetroUiTheme.FillRect(mark, RetroUiTheme.PanelInset);
+                    GUI.Label(mark, LocalizationService.Get("inventory.bottle.one_sip"), sipMarkStyle);
+                }
                 string name = LocalizationService.Get(
                     InventoryItemCatalog.Get(stack.ItemId)
                         .NameLocalizationKey);
                 GUI.Label(
-                    new Rect(slot.x + 3f, slot.y + 42f, slot.width - 6f, 15f),
+                    new Rect(slot.x + 3f, slot.y + (lastSip ? 43f : 42f), slot.width - 6f, 15f),
                     name,
-                    selected ? selectedItemStyle : itemNameStyle);
+                    lastSip ? sipMarkStyle : selected ? selectedItemStyle : itemNameStyle);
                 if (stack.Count > 1)
                 {
                     GUI.Label(
@@ -593,6 +608,7 @@ namespace BarPromenade
                 TextAnchor.MiddleCenter,
                 RetroUiTheme.Muted,
                 false);
+            sipMarkStyle = RetroUiTheme.CreateLabelStyle(8, TextAnchor.MiddleCenter, RetroUiTheme.Text, false);
             selectedItemStyle = RetroUiTheme.CreateLabelStyle(
                 10,
                 TextAnchor.MiddleCenter,

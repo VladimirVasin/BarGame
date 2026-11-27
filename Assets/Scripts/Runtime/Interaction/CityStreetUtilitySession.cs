@@ -7,7 +7,7 @@ namespace BarPromenade
     [DefaultExecutionOrder(365)]
     public sealed class CityStreetUtilitySession : MonoBehaviour
     {
-        public enum Step { Idle, Approach, Opening, Entering, Inspect, Call, HangingUp, Leaving, Closing, Return }
+        public enum Step { Idle, Approach, Opening, Entering, Inspect, Call, HangingUp, Leaving, Closing, Return, Searching, Found }
         public Step Phase { get; private set; }
         private CityGameRoot city;
         private CityStreetUtilityInteraction source;
@@ -16,7 +16,7 @@ namespace BarPromenade
         private Player3DCharacterPresentation visual;
         private PlayerCameraFollow follow;
         private Camera lens;
-        private IDisposable cameraLoan;
+        private IDisposable cameraLoan, dumpsterVisibility;
         private Player3DHeadVisibility hiddenHead;
         private NpcHandPose fingers;
         private Transform leftEye, rightEye, spine;
@@ -36,6 +36,16 @@ namespace BarPromenade
         internal float WristBend => right.WristBend;
         internal int DepressedKey => activeKey;
         private Func<bool> use, leave;
+        internal const float DumpsterSearchSeconds = 3f;
+        private WorldItemFoundScreen findScreen;
+        private Transform findModel, findGrip;
+        private InventoryItemId findItem;
+        private int searchDay;
+        private bool revisiting, searchEndSampled, presentingFind;
+        private float cardboardDirection, cardboardAtClose;
+
+        private float SearchDuration => revisiting ? .80f : DumpsterSearchSeconds;
+        private float SearchProgress => Mathf.Clamp01(elapsed / SearchDuration);
 
         private readonly struct Arm
         {
@@ -56,6 +66,12 @@ namespace BarPromenade
                     upper.position + side*.24f + front*.16f - Vector3.up*.30f,
                     amount,LimbTwoBoneIk.DefaultReachFraction,true);
             }
+            internal Vector3 ResolveHeldPoint(Pose wrist, Vector3 target) =>
+                hand.position + hand.rotation * (Quaternion.Inverse(wrist.rotation) * (target - wrist.position));
+
+            internal Pose GripPose(Vector3 target, Vector3 axis, Vector3 front) =>
+                frame.ResolveCylinderPose(target, axis, front);
+
             internal Vector3 Tip(Vector3 offset) => hand.position + hand.rotation * offset;
             internal float WristBend => Vector3.Angle(hand.position-lower.position,hand.rotation*frame.FingerDirectionInHand);
 
@@ -130,6 +146,16 @@ namespace BarPromenade
                 exit = entry;
                 facing = Quaternion.LookRotation(source.Dock.Facing);
                 yaw = pitch = 0f;
+                cardboardAtClose = 0f;
+                if (!model.Phone)
+                {
+                    searchDay = GameSessionState.GameDayIndex;
+                    findItem = GameSessionState.DumpsterLoot(source.Dock.Id, searchDay);
+                    revisiting = GameSessionState.GetDumpsterSearchState(source.Dock.Id, searchDay) ==
+                        GameSessionState.DumpsterSearchState.Found;
+                    cardboardDirection = (source.Dock.Id[0] + (int)findItem + searchDay) % 2 == 0 ? 1f : -1f;
+                    searchEndSampled = false;
+                }
                 use ??= Use;
                 leave ??= RequestBoothExit;
                 enabled = true;
@@ -162,6 +188,14 @@ namespace BarPromenade
             exitKeyHeld = held;
             if (leavePressed &&
                 RequestBoothExit() && (Phase == Step.Idle || firstFrame == Time.frameCount)) return;
+            if (!model.Phone && Phase != Step.Found &&
+                GameInput.WasPressed(GameInputAction.Cancel, GameInputContext.Contextual))
+            {
+                if (Phase == Step.Approach) controller.CancelActiveInteraction();
+                else if (Phase == Step.Opening) exitRequested = true;
+                else if (Phase == Step.Searching) CloseDumpster();
+                return;
+            }
             float previous = elapsed;
             elapsed += Time.deltaTime;
             switch (Phase)
@@ -183,7 +217,15 @@ namespace BarPromenade
                     if (elapsed >= 1.16f)
                     {
                         model.SetOpen(1f);
-                        Change(exitRequested ? Step.Closing : model.Phone ? Step.Entering : Step.Inspect);
+                        Change(exitRequested ? Step.Closing : model.Phone ? Step.Entering : Step.Searching);
+                    }
+                    break;
+                case Step.Searching:
+                    try { AdvanceDumpsterSearch(previous / SearchDuration); }
+                    catch
+                    {
+                        controller.CancelActiveInteraction();
+                        throw;
                     }
                     break;
                 case Step.Entering:
@@ -229,6 +271,87 @@ namespace BarPromenade
             }
         }
 
+        private void AdvanceDumpsterSearch(float before)
+        {
+            float progress = SearchProgress;
+            if (!revisiting && (Crossed(.17f) || Crossed(.39f) || Crossed(.61f)))
+                RetroAudio.PlayAt(RetroSfxId.BinPaperRustle, model.CardboardGrip);
+            if (Crossed(.72f) && findItem != InventoryItemId.None)
+            {
+                findModel = InventoryItemModelFactory.BuildWorldModel(findItem, model.transform, Vector3.one);
+                var vessel = findModel.GetComponent<VodkaBottleView>();
+                bool pawnshopFind = PawnshopFindCatalog.TryGet(findItem, out var offer);
+                findGrip = vessel ? vessel.Grip : pawnshopFind ? PawnshopFindCatalog.FindAnchor(findModel, "Grip") : null;
+                RetroAudio.PlayAt(pawnshopFind ? offer.Sound : findItem switch
+                {
+                    InventoryItemId.EmptyWineBottle or InventoryItemId.WineBottleLastSip => RetroSfxId.BinFoundGlass,
+                    InventoryItemId.EmptyBeerCan or InventoryItemId.BeerCanLastSip => RetroSfxId.BinFoundMetal,
+                    _ => RetroSfxId.BinPaperRustle
+                }, model.CardboardGrip);
+            }
+            if (Crossed(.89f) && DrinkContainerCatalog.IsLastSip(findItem))
+                RetroAudio.PlayAt(RetroSfxId.BinLastSipSlosh, findModel.position);
+            if (progress < 1f) return;
+            if (!searchEndSampled)
+            {
+                // Leave a rendered hold before the inspection presenter takes the model.
+                searchEndSampled = true;
+                return;
+            }
+            if (findItem == InventoryItemId.None)
+            {
+                GameSessionState.RevealDumpsterLoot(source.Dock.Id, searchDay);
+                city.Player.Interactor.ShowFeedback(CityStreetUtilityInteraction.DumpsterEmptyKey, 2f);
+                CloseDumpster();
+                return;
+            }
+            PresentDumpsterFind();
+
+            bool Crossed(float phase) => before < phase && progress >= phase;
+        }
+
+        private void PresentDumpsterFind()
+        {
+            GameSessionState.RevealDumpsterLoot(source.Dock.Id, searchDay);
+            Change(Step.Found);
+            var interactor = city.Player.Interactor;
+            findScreen = WorldItemFoundScreen.For(interactor);
+            var modal = controller.StationaryModalFor(Restore);
+            if (findScreen && findScreen.TryPresentWithin(modal, interactor, findItem, findModel,
+                TakeDumpsterFind, FinishDumpsterFind))
+            {
+                presentingFind = true;
+                GameCursor.Capture(this, CursorLockMode.None, true, 8);
+            }
+            else CloseDumpster();
+        }
+
+        private bool TakeDumpsterFind() =>
+            GameSessionState.TryTakeDumpsterLoot(source.Dock.Id, searchDay, findItem);
+
+        private void FinishDumpsterFind(bool taken)
+        {
+            if (!presentingFind) return;
+            presentingFind = false;
+            findScreen = null;
+            if (taken) DestroyDumpsterFind();
+            CloseDumpster();
+        }
+
+        private void CloseDumpster()
+        {
+            cardboardAtClose = Phase == Step.Searching ? CardboardLift(SearchProgress) :
+                Phase == Step.Found ? CardboardLift(1f) : 0f;
+            GameCursor.Capture(this, CursorLockMode.Locked, false, 8);
+            Change(Step.Closing);
+        }
+
+        private void DestroyDumpsterFind()
+        {
+            if (findModel) Destroy(findModel.gameObject);
+            findModel = findGrip = null;
+        }
+
         private bool Walk(Vector3 target, bool back = false)
         {
             var motor = city.Player.Motor;
@@ -238,8 +361,7 @@ namespace BarPromenade
         }
 
         // At the rear panel the phone is ahead. Turning toward the public opening offers exit.
-        private string InspectKey => !model.Phone ? "interaction.close_dumpster" :
-            Mathf.Abs(yaw) > 75f ? "interaction.leave_phone_booth" : "interaction.use_phone_booth";
+        private string InspectKey => Mathf.Abs(yaw) > 75f ? "interaction.leave_phone_booth" : "interaction.use_phone_booth";
 
         internal void Look(Vector2 delta)
         {
@@ -256,7 +378,7 @@ namespace BarPromenade
                 nextClick = 0;
                 Change(Step.Call);
             }
-            else Change(model.Phone ? Step.Leaving : Step.Closing);
+            else Change(Step.Leaving);
             return true;
         }
 
@@ -302,10 +424,19 @@ namespace BarPromenade
                 yaw = Mathf.MoveTowards(yaw,0f,speed);
                 pitch = Mathf.MoveTowards(pitch,0f,speed);
             }
+            if (!model.Phone && (Phase == Step.Searching || Phase == Step.Found))
+                PoseDumpsterSearch(Phase == Step.Found ? 1f : SearchProgress);
+            if (!model.Phone && Phase == Step.Closing)
+            {
+                model.SetCardboard(cardboardAtClose * (1f - Ease(0f, .32f)), cardboardDirection);
+                if (findModel && elapsed < .27f)
+                    PoseDumpsterFind(1f - Ease(0f, .27f), rotate: 0f);
+                else DestroyDumpsterFind();
+            }
             if (Phase == Step.Opening || Phase == Step.Closing)
             {
                 float reach = Phase == Step.Opening ? Ease(.18f,.42f)*(1f-Ease(.76f,1.1f)) :
-                    Ease(0f,.2f)*(1f-Ease(.73f,.93f));
+                    (model.Phone ? Ease(0f,.2f) : Ease(.26f,.38f))*(1f-Ease(.73f,.93f));
                 // The phone handle is to the approaching caller's left.
                 bool leftSide = model.Phone;
                 (leftSide ? left : right).Reach(model.Handle, leftSide ? Vector3.up : transform.right,
@@ -331,21 +462,93 @@ namespace BarPromenade
                 fingers.SetOwnedGrip(this,false,pointingWeight);
                 right.Point(pointTarget,indexPad,transform,pointingWeight);
             }
-            if (DebugFreeCamera.IsAnyActive) { ShowHead(); return; }
+            if (DebugFreeCamera.IsAnyActive)
+            {
+                ShowHead();
+                RestoreDumpsterVisibility();
+                return;
+            }
+            if (!model.Phone) dumpsterVisibility ??= city.Player.PresentationVisibility.AcquireHidden(this);
             Pose wide = Phase == Step.Return ? follow.ResolveFollowPose(exit) : initialCamera;
             Vector3 start = wide.position;
-            Vector3 shoulder = eyes + transform.right * (Vector3.Dot(start-eyes,transform.right) < 0f ? -.38f : .38f);
-            Vector3 position = Vector3.Lerp(Vector3.Lerp(start,shoulder,weight),Vector3.Lerp(shoulder,eyes,weight),weight);
-            Vector3 interest = model.Phone ? model.Key : model.transform.TransformPoint(new Vector3(0,.63f,.02f));
-            Vector3 sight = interest - eyes;
-            float angle = Mathf.Atan2(-sight.y, new Vector2(sight.x,sight.z).magnitude)*Mathf.Rad2Deg;
-            if (!model.Phone) angle = Mathf.Lerp(29f,angle,opening);
-            Quaternion look = facing * Quaternion.Euler(0,yaw,0) * Quaternion.Euler(angle+pitch,0f,0f);
+            Vector3 closeCamera = eyes;
+            if (!model.Phone)
+            {
+                Vector3 outsideRim = eyes - transform.forward * .23f + Vector3.up * .10f;
+                Vector3 insideRim = model.transform.TransformPoint(new Vector3(0f, 1.48f, .34f));
+                // Advance after the lid clears the lens path and retreat before it closes.
+                float advance = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(.64f, .97f, opening));
+                closeCamera = Vector3.Lerp(outsideRim, insideRim, advance);
+            }
+            Vector3 shoulder = closeCamera + transform.right * (Vector3.Dot(start-eyes,transform.right) < 0f ? -.38f : .38f);
+            Vector3 position = Vector3.Lerp(Vector3.Lerp(start,shoulder,weight),Vector3.Lerp(shoulder,closeCamera,weight),weight);
+            Quaternion look;
+            if (model.Phone)
+            {
+                Vector3 sight = model.Key - eyes;
+                float angle = Mathf.Atan2(-sight.y, new Vector2(sight.x,sight.z).magnitude)*Mathf.Rad2Deg;
+                look = facing * Quaternion.Euler(0,yaw,0) * Quaternion.Euler(angle+pitch,0f,0f);
+            }
+            else
+            {
+                Vector3 interest = model.transform.TransformPoint(new Vector3(0f, .83f, .15f));
+                look = Quaternion.LookRotation(interest - closeCamera, Vector3.up);
+            }
             lens.transform.SetPositionAndRotation(position,Quaternion.Slerp(wide.rotation,look,weight));
             lens.fieldOfView = Mathf.Lerp(initialLens,model.Phone ? 70f : 67f,weight);
             lens.nearClipPlane = Mathf.Lerp(initialNear,.032f,weight);
-            if (Vector3.Distance(position,eyes) < .28f) hiddenHead ??= Player3DHeadVisibility.Hide(visual.Registry);
+            if (model.Phone && Vector3.Distance(position,eyes) < .28f) hiddenHead ??= Player3DHeadVisibility.Hide(visual.Registry);
             else ShowHead();
+        }
+
+        private static float SearchEase(float start, float end, float progress) =>
+            Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(start, end, progress));
+
+        private float CardboardLift(float progress) =>
+            SearchEase(.14f, .39f, progress) * (1f - SearchEase(findModel ? .80f : .73f, .94f, progress));
+
+        private void PoseDumpsterSearch(float progress)
+        {
+            model.SetCardboard(CardboardLift(progress), cardboardDirection);
+            Vector3 front = transform.forward;
+            Vector3 side = transform.right;
+            left.Reach(model.transform.TransformPoint(new Vector3(.24f, 1.065f, .455f)),
+                side, front, -side, SearchEase(0f, .17f, progress));
+            fingers.SetOwnedGrip(this, true, .57f * SearchEase(0f, .17f, progress));
+            if (findModel)
+            {
+                if (Phase != Step.Found)
+                    PoseDumpsterFind(SearchEase(.72f, .97f, progress), SearchEase(.85f, .99f, progress));
+                else PoseDumpsterFind(1f, 1f, moveModel: false);
+                return;
+            }
+
+            Vector3 elbowRoom = side * (cardboardDirection * .115f * SearchEase(.40f, .64f, progress));
+            Vector3 target = model.CardboardGrip + elbowRoom - Vector3.up * (.055f * SearchEase(.44f, .62f, progress));
+            float reach = SearchEase(.04f, .16f, progress) * (1f - SearchEase(.80f, .97f, progress));
+            right.Reach(target, side, front, side, reach);
+            fingers.SetOwnedGrip(this, false, .63f * reach);
+        }
+
+        private void PoseDumpsterFind(float lift, float rotate, bool moveModel = true)
+        {
+            Vector3 front = transform.forward;
+            Vector3 side = transform.right;
+            Vector3 target = model.transform.TransformPoint(Vector3.Lerp(new Vector3(-.16f, .86f, .29f),
+                new Vector3(-.08f, 1.12f, .34f), lift));
+            Quaternion rotation = Quaternion.AngleAxis(17f * rotate, front) * facing;
+            if (PawnshopFindCatalog.TryGet(findItem, out _))
+            {
+                float reveal = findItem == InventoryItemId.SilverRing ? -80f + 360f * (1f - rotate) : -58f * rotate;
+                rotation *= Quaternion.Euler(reveal, 0f, 0f);
+            }
+            right.Reach(target, rotation * Vector3.up, front, side, 1f);
+            fingers.SetOwnedGrip(this, false, .82f);
+            if (!moveModel) return;
+            Pose wrist = right.GripPose(target, rotation * Vector3.up, front);
+            Vector3 localGrip = findGrip ? findModel.InverseTransformPoint(findGrip.position) : Vector3.up * .035f;
+            Vector3 contact = right.ResolveHeldPoint(wrist, target);
+            findModel.SetPositionAndRotation(contact - rotation * Vector3.Scale(localGrip, findModel.lossyScale), rotation);
         }
 
         private float Ease(float start,float end) => Mathf.SmoothStep(0f,1f,Mathf.InverseLerp(start,end,elapsed));
@@ -390,6 +593,13 @@ namespace BarPromenade
             receiverLift = receiverGrip = pointingWeight = 0f;
         }
         private void ShowHead() { hiddenHead?.Restore(); hiddenHead = null; }
+
+        private void RestoreDumpsterVisibility()
+        {
+            dumpsterVisibility?.Dispose();
+            dumpsterVisibility = null;
+        }
+
         private void ReleaseHands() { fingers.ReleaseGrip(this,true); fingers.ReleaseGrip(this,false); ownsHands = false; }
 
         internal void Release(CityStreetUtilityInteraction utility)
@@ -402,11 +612,17 @@ namespace BarPromenade
             if (model)
             {
                 if (model.Phone) { ReleaseKey(); model.SetReceiver(model.Receiver,0f); }
+                else model.SetCardboard(0f, cardboardDirection);
                 model.CloseWhenClear(transform);
             }
+            presentingFind = false;
+            if (findScreen && Phase == Step.Found) findScreen.Abandon();
+            findScreen = null;
+            DestroyDumpsterFind();
             if (ownsHands) ReleaseHands();
             if (visual) visual.SampleInteractionNeutralPose();
             ShowHead();
+            RestoreDumpsterVisibility();
             if (cameraLoan != null)
             {
                 if (lens) lens.nearClipPlane = initialNear;

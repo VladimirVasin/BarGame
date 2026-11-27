@@ -49,8 +49,30 @@ namespace BarPromenade
             InventoryItemId.WineBottle, 750, 15, .305f, .0385f, .232f, Vector3.up * .294f, new[]
             { new Vector4(.009f,.031f,0f,0f), new Vector4(.016f,.035f,0f,0f), new Vector4(.184f,.035f,0f,0f), new Vector4(.216f,.0125f,0f,0f),
               new Vector4(.249f,.0125f,0f,0f), new Vector4(.284f,.0125f,0f,0f), new Vector4(.292f,.0125f,0f,0f) }, false);
-        public static bool IsDrink(InventoryItemId item) => item is InventoryItemId.VodkaBottle or InventoryItemId.BeerCan or InventoryItemId.WineBottle or InventoryItemId.HawthornTincture;
-        public static DrinkContainerProfile Get(InventoryItemId item) => item switch
+        public static bool IsDrink(InventoryItemId item) => item is InventoryItemId.VodkaBottle or InventoryItemId.BeerCan or
+            InventoryItemId.WineBottle or InventoryItemId.HawthornTincture || IsLastSip(item);
+
+        internal static bool IsLastSip(InventoryItemId item) =>
+            item is InventoryItemId.BeerCanLastSip or InventoryItemId.WineBottleLastSip;
+
+        internal static InventoryItemId EmptyItem(InventoryItemId item) => ModelItem(item) switch
+        {
+            InventoryItemId.BeerCan => InventoryItemId.EmptyBeerCan,
+            InventoryItemId.WineBottle => InventoryItemId.EmptyWineBottle,
+            InventoryItemId.VodkaBottle => InventoryItemId.EmptyVodkaBottle,
+            InventoryItemId.HawthornTincture => InventoryItemId.EmptyHawthornBottle,
+            _ => InventoryItemId.None
+        };
+
+        internal static InventoryItemId ModelItem(InventoryItemId item) => item switch
+        {
+            InventoryItemId.BeerCanLastSip or InventoryItemId.EmptyBeerCan => InventoryItemId.BeerCan,
+            InventoryItemId.WineBottleLastSip or InventoryItemId.EmptyWineBottle => InventoryItemId.WineBottle,
+            InventoryItemId.EmptyVodkaBottle => InventoryItemId.VodkaBottle,
+            InventoryItemId.EmptyHawthornBottle => InventoryItemId.HawthornTincture,
+            _ => item
+        };
+        public static DrinkContainerProfile Get(InventoryItemId item) => ModelItem(item) switch
         {
             InventoryItemId.VodkaBottle => Vodka, InventoryItemId.BeerCan => Beer, InventoryItemId.WineBottle => Wine,
             InventoryItemId.HawthornTincture => Hawthorn,

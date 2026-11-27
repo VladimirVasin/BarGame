@@ -30,6 +30,7 @@ namespace BarPromenade
         private UnityEngine.Object contextualStowOwner;
         private float elapsed, displayedMl, beforeSipMl;
         private int bottleId, resumeAfterFrame;
+        private (InventoryItemId Item, int Id) queuedLastSip;
         private object medicineRequestOwner;
         private bool medicineReleased, medicineUseStarted, changingMedicineEquipment;
         private CombatTestRoot medicineCombatRoot;
@@ -66,7 +67,7 @@ namespace BarPromenade
         private Vector3 gripLocal, mouthLocal, capLocal;
         private Quaternion capRotation;
         private bool equipmentOverlay;
-        private bool stowRequested, pendingSeatHandoff, emptyBottle, terminalPresented;
+        private bool stowRequested, pendingSeatHandoff, emptyBottle, storedEmpty, terminalPresented;
         private float presentedProgress;
         private string activeActionClip;
         private static readonly float[] EmptyCheckStops = { PlayerVodkaActions.EmptyCheckInspectProgress,
@@ -93,6 +94,21 @@ namespace BarPromenade
         public bool IsAutomaticMedicineUse => medicineUseStarted;
         public bool HasPendingMedicineReturn => medicineReturnWeapon.HasValue || medicineReturnDrink != InventoryItemId.None;
         private Vector3 MedicineRecoilHeadAngles => Phase == BottlePhase.Recoiling ? RecoilHeadAngles(PhaseProgress) : Vector3.zero;
+        internal bool CanQueueLastSip(InventoryItemId item) => isActiveAndEnabled &&
+            DrinkContainerCatalog.IsLastSip(item) && GameSessionState.HasInventoryItem(item) &&
+            GameSessionState.IntoxicationLevel < IntoxicationStageRules.MaximumLevel && !SceneTransitionService.IsTransitioning;
+
+        internal bool TryQueueLastSip(InventoryItemId item)
+        {
+            if (!InventoryController.IsAnyOpen || !CanQueueLastSip(item)) return false;
+            CancelMedicineForHandSelection();
+            if (!GameSessionState.TrySetInventoryItemEquipped(item, true)) return false;
+            queuedLastSip = (item, GameSessionState.DrinkContainerId(item));
+            return true;
+        }
+
+        internal void CancelQueuedLastSip() => queuedLastSip = default;
+
         public bool CanQueueMedicineUse
         {
             get
@@ -136,8 +152,9 @@ namespace BarPromenade
             CancelMedicineUse();
         }
 
-        private void OnMedicineEquipmentChanged()
+        private void OnInventoryEquipmentChanged()
         {
+            CancelQueuedLastSip();
             if (!changingMedicineEquipment && !(IsMedicine && Phase == BottlePhase.Sipping && committed) &&
                 (medicineRequestOwner != null || HasPendingMedicineReturn)) CancelMedicineForHandSelection();
         }
@@ -280,6 +297,8 @@ namespace BarPromenade
         private void Update()
         {
             if (visual == null) return;
+            if (queuedLastSip.Id != 0 && (GameSessionState.EquippedDrinkItem != queuedLastSip.Item ||
+                GameSessionState.DrinkContainerId(queuedLastSip.Item) != queuedLastSip.Id)) CancelQueuedLastSip();
             if (HasPendingMedicineReturn && MedicineReturnContextInvalid) ClearMedicineReturn();
             if (medicineRequestOwner != null &&
                 (medicineRequestOwner is Object source && source == null ||
@@ -304,6 +323,7 @@ namespace BarPromenade
             if (!CanPresent)
             {
                 // Higher-priority actions own this same rig. Never refund a swallowed dose.
+                CancelQueuedLastSip();
                 Suspend(); return;
             }
             RestoreMedicineHandIfReady();
@@ -315,7 +335,7 @@ namespace BarPromenade
                     !equipmentOverlay && !visual.CanAcquireClip(this)) return;
                 if (combat == null) combat = GetComponent<CombatActor>();
                 if (combat != null && (combat.HasWeaponInHand || combat.IsSwitchingWeapon)) return;
-                if (!Prepare()) { Suspend(); return; }
+                if (!Prepare()) { CancelQueuedLastSip(); Suspend(); return; }
                 StartPhase(BottlePhase.Drawing, PlayerVodkaActions.DrawClip);
                 freshClick = true;
             }
@@ -333,6 +353,11 @@ namespace BarPromenade
                 if (IsMedicine && medicineUseStarted && CanRead)
                 {
                     if (!TrySip()) CancelMedicineUse();
+                }
+                else if (queuedLastSip == (itemId, bottleId) && CanRead)
+                {
+                    CancelQueuedLastSip();
+                    TrySip(allowRepeat: false);
                 }
                 else if (!freshClick && CanRead && GameInput.WasPressed(GameInputAction.VodkaSip, GameInputContext.Gameplay))
                     TrySip();
@@ -365,7 +390,8 @@ namespace BarPromenade
                 committed = true;
                 if (GameSessionState.TryDrinkContainerSip(itemId, bottleId, Mathf.RoundToInt(beforeSipMl), out var result, combat?.State, this))
                 {
-                    CompletedSips++; displayedMl = result.RemainingMl; emptyBottle = result.Emptied; gulpPending = true;
+                    CompletedSips++; displayedMl = result.RemainingMl; emptyBottle = result.Emptied;
+                    storedEmpty = result.StoredEmpty; gulpPending = true;
                     if (itemId == InventoryItemId.HawthornTincture)
                     {
                         Rendering.HawthornHealingPulse.Trigger(viewCamera);
@@ -375,6 +401,7 @@ namespace BarPromenade
                 else
                 {
                     displayedMl = GameSessionState.DrinkRemainingMl(itemId); repeatWhileHeld = false;
+                    WarnIfEmptyStackFull();
                     if (IsMedicine) CancelMedicineUse();
                 }
             }
@@ -401,7 +428,7 @@ namespace BarPromenade
                     else BeginSip();
                     break;
                 case BottlePhase.Sipping:
-                    if (!IsMedicine && !emptyBottle && !stowRequested && !pendingSeatHandoff && repeatWhileHeld && held && CanRead && GameSessionState.CanDrinkContainerSip(itemId, combat?.State))
+                    if (!IsMedicine && !emptyBottle && !stowRequested && !pendingSeatHandoff && repeatWhileHeld && held && CanRead && GameSessionState.CanDrinkContainerSip(itemId, combat?.State) && !WarnIfEmptyStackFull())
                         BeginSip();
                     else StartPhase(BottlePhase.Lowering, PlayerVodkaActions.LowerClip);
                     break;
@@ -421,7 +448,8 @@ namespace BarPromenade
                     break;
                 case BottlePhase.CheckingEmpty:
                 case BottlePhase.Recoiling:
-                    StartPhase(BottlePhase.Throwing, PlayerVodkaActions.ThrowClip);
+                    StartPhase(storedEmpty ? BottlePhase.Stowing : BottlePhase.Throwing,
+                        storedEmpty ? PlayerVodkaActions.StowClip : PlayerVodkaActions.ThrowClip);
                     break;
                 case BottlePhase.Stowing:
                 case BottlePhase.Throwing:
@@ -445,7 +473,7 @@ namespace BarPromenade
 
         private void BeginCloseOrStow()
         {
-            bool close = Bottle.IsOpened && !Profile.IsCan;
+            bool close = Bottle.IsOpened && !Profile.IsCan && !DrinkContainerCatalog.IsLastSip(itemId);
             StartPhase(close ? BottlePhase.Closing : BottlePhase.Stowing,
                 close ? PlayerVodkaActions.CloseClip : PlayerVodkaActions.StowClip);
         }
@@ -482,7 +510,7 @@ namespace BarPromenade
                 visual.Registry.gameObject.AddComponent<PlayerEquipmentContacts>();
             equipmentContacts.Register(this, new[] { coatDock }, Bottle.gameObject);
             bottleId = GameSessionState.DrinkContainerId(itemId);
-            emptyBottle = stowRequested = pendingSeatHandoff = false;
+            storedEmpty = emptyBottle = stowRequested = pendingSeatHandoff = false;
             displayedMl = GameSessionState.DrinkRemainingMl(itemId);
             gripLocal = Bottle.transform.InverseTransformPoint(Bottle.Grip.position);
             mouthLocal = Bottle.transform.InverseTransformPoint(Bottle.Mouth.position);
@@ -494,19 +522,30 @@ namespace BarPromenade
             return rightCaptured;
         }
 
-        public bool TrySip()
+        public bool TrySip() => TrySip(allowRepeat: true);
+
+        private bool TrySip(bool allowRepeat)
         {
             if (Phase != BottlePhase.Carrying || !CanRead || !GameSessionState.CanDrinkContainerSip(itemId, combat?.State, this)) return false;
+            if (WarnIfEmptyStackFull()) return false;
             beforeSipMl = displayedMl; committed = false;
-            repeatWhileHeld = !IsMedicine && GameInput.IsHeld(GameInputAction.VodkaSip, GameInputContext.Menu);
+            repeatWhileHeld = allowRepeat && !IsMedicine && GameInput.IsHeld(GameInputAction.VodkaSip, GameInputContext.Menu);
             mouthAccess ??= PlayerScarfController.RequireMouthAccess(player, this);
             Phase = BottlePhase.MouthAccess;
+            return true;
+        }
+
+        private bool WarnIfEmptyStackFull()
+        {
+            if (!GameSessionState.NeedsRoomForEmptyDrink(itemId, bottleId)) return false;
+            player.Interactor?.ShowFeedback("container_return.empty_stack_full", 1.7f);
             return true;
         }
 
         public bool TryPrepareInteraction(IInteractable target)
         {
             if (target == null) return false;
+            CancelQueuedLastSip();
             if (medicineRequestOwner != null) CancelMedicineUse();
             if (!OccupiesHand) return false;
             if (pendingInteraction != null) return true;
@@ -536,6 +575,7 @@ namespace BarPromenade
         internal bool TryHoldContextualStow(UnityEngine.Object owner)
         {
             if (!owner || contextualStowOwner && contextualStowOwner != owner) return false;
+            CancelQueuedLastSip();
             contextualStowOwner = owner;
             RequestContextualStow();
             return true;
@@ -962,14 +1002,15 @@ namespace BarPromenade
             equipmentContacts?.Unregister(this);
             Bottle = null; bottleRenderers = null; originalForcedOff = null; IsBottleConcealed = false;
             Phase = BottlePhase.Hidden; freshClick = true;
-            repeatWhileHeld = gulpPending = stowRequested = emptyBottle = terminalPresented = false;
+            repeatWhileHeld = gulpPending = stowRequested = emptyBottle = storedEmpty = terminalPresented = false;
             CancelPendingInteraction();
         }
         private void OnDisable()
         {
             contextualStowOwner = null;
+            CancelQueuedLastSip();
             ClearMedicineReturn();
-            GameSessionState.InventoryEquipmentChanged -= OnMedicineEquipmentChanged;
+            GameSessionState.InventoryEquipmentChanged -= OnInventoryEquipmentChanged;
             Rendering.HawthornHealingPulse.Clear(viewCamera);
             HawthornHealingAudio.Clear(viewCamera);
             if (visual != null) Suspend();
@@ -981,6 +1022,6 @@ namespace BarPromenade
             if (coatDock != null) Destroy(coatDock.gameObject);
         }
 
-        private void OnEnable() => GameSessionState.InventoryEquipmentChanged += OnMedicineEquipmentChanged;
+        private void OnEnable() => GameSessionState.InventoryEquipmentChanged += OnInventoryEquipmentChanged;
     }
 }

@@ -3,6 +3,46 @@
 Newest outcomes/checks first. Archive whole dates at budget: [policy](README.md).
 Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-2026-08.md).
 
+## 2026-11-27
+
+City bins search on the grounded rig. Dock/day/run fixes the result, including
+declined finds and checkpoint rollback. A marked last-sip stack offers Finish
+and credits the matching empty stack at the swallow.
+`StreetUtilities` Blender round-trip verified paper clearance and bread bounds.
+`LiveCity_DumpsterSearchKeepsTheFindAndCreditsOneSip` verified pickup, inventory
+use, empty-stack merge and checkpoint restore. The Game view showed a title
+wrap into the sip mark. The slot now uses a clipped single line. Day/night
+views led to a closer bin aim.
+
+Container return at the Ridge uses the shared quote, counter handoff and one
+cash credit. A last sip stores its empty below100, with capacity checked
+before the swallow. `LiveCity_StoresBelowMaximumAndReturnsAMixedBatchOnce`
+verified storage, maximum throw, mixed return, cancel and closing. Read the
+renamed sign in day and night frames and reviewed the handoff. Blender
+`GLASS RETURN ART CONTRACT OK` verified the pavilion export.
+
+Five bin finds replace part of the old waste range. The counter previews one
+item and credits on the clerk's contact. `PAWNSHOP FINDS FBX CONTACTS OK`
+verified imported bounds/grips. `LiveCity_DumpsterFindReachesPawnshopAndPaysOnce`
+verified the weighted range, City pickup, model grips, quote cancellation and
+one debit/credit. Reviewed the watch face and transfer through the grille.
+
+The dumpster camera borrows hero and contact-shadow visibility while the
+same rig moves the lid and find. `LiveCity_DumpsterSearchKeepsTheFindAndCreditsOneSip`
+verified concealment, cancel/take restoration and the empty result. Reviewed
+day and night search and item inspection frames.
+Reveal now lifts the find into the fixed bin view. The same PlayMode check
+asserts camera position and rotation through the reveal and inspection.
+The lens now advances inside the near rim after the lid clears, then
+retreats during closing. The bin PlayMode asserts inward placement and
+fixed framing. Reviewed day and night views.
+
+Infill bins use grid frontage and gaps between Ridge houses. Ridge docks
+keep IDs as they move inward, with wall alignment where a crosswise bin
+would block the passage. `LiveCity_InfillDumpstersKeepPublicApproaches`
+verified the facade, side clearance, approaches and search. Reviewed the
+wall placement from the sidewalk.
+
 ## 2026-11-26
 
 Walking greetings, gusts, swept leaves, elbow-held doors, bus looks and wet treads. `CityStreetGreetings_WalkersWaveInTurnWithoutBreakingStride`, `CityStreetGusts_HatAndCollarFollowWalkingBodiesOnSeparateCrests`, `JanitorRecoversLeafOnSlopingPavement`, `DoorCourtesy_ElbowHoldsForNeighbourAndCloserWaits`, `LiveCity_WetShoesMarkTheShelterAndWaitersNoticeTheirOwnBus`. `LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement` checks queue access and 01-05 yielding to residents and the hero.

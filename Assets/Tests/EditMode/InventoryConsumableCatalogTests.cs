@@ -20,6 +20,9 @@ namespace BarPromenade.Tests.EditMode
                 4d,
                 48
             },
+            new object[] { InventoryItemId.BeerCanLastSip, InventoryConsumableKind.Alcohol, 0, DrinkId.LightBeer, 1d, 6 },
+            new object[] { InventoryItemId.WineBottleLastSip, InventoryConsumableKind.Alcohol, 0, DrinkId.RedWine, 3d, 36 },
+            new object[] { InventoryItemId.BreadHeel, InventoryConsumableKind.Food, 4, DrinkId.None, 0d, 0 },
             new object[]
             {
                 InventoryItemId.ChickenEgg,

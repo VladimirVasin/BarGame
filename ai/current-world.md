@@ -425,9 +425,11 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   Two raised houses/two OpenGround,144 IDs. House11,8 sits3.84m below street,
   roof12.883 below upper eye15.073. Sheltered3m alley under4.8×2.4m bridge,
   guarded3×2.4m east exit atX126.4. Hero/NPC/map use distinct floors.
-  Two seven-tier climbs link coast, Lower Court and homes. Ridge/lowland share hero/buses/map.
-  Shielded lamps rake the workshop/outfall steps, gable court and repaired Lower Court. Bevelled tier cuts; soil meets curbs, paths/loft grass-free.
-  Home bench→truss/ravine/roofs. Bins clang. Loft/kiosk booths: index dials, Esc/Q exits mid-call.
+  Twin seven-tier climbs: coast/Court/homes; shared hero/bus/map.
+  Shielded steps/court lamps; bevelled cuts/curbs, clear paths/loft.
+  Home bench→truss/ravine/roofs. Ridge bins sit deeper in gaps or along their walls.
+  E:3s/fixed view hides hero/dock per day/30% pawnshop. Esc leaves it. Last sip: Finish.
+  Loft/kiosk booths: finger dial, Esc/Q exits.
   West Lane6: (-24,-8)/4fl/X-99.2; (-25,-8)/3fl/X-84.
   `CityHillsideBenchPocketPlan`:pawnshop≤45mXZ;origins fixed;West11/13 face+Z/new docks.
   Plaza/stone1.6m по грунту с мягким краем→footways;West landing:AsphaltRoad/Concrete.
@@ -437,7 +439,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   Clipped summit apron; shared ramp/nav/map/Home.
   Outer+4descent lamps:RidgeBench37.5/r11/soft256/fixed/dayfloor.
   Pigeon/plinth1.98m,rear;side beds;solid/nav clear.
-  E glass return08–23;switch→cabin light/grille;sign/flood fixed.
+  East return08–23:E empties $2/glass,$1/can;switch→window/grille;sign/flood fixed.
   Raised yard grass-free/map outside;spill.12/day≥⅔/Soft/opaque.
   Paved path from east footway; asphalt at window and staff exit follows grade.
   Ridge plinths meet banks/court, rails behind footway. Home: soil/wet asphalt/turf/gravel/stone,
@@ -2094,8 +2096,8 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
 - `PawnshopInterior`:island pavilion8×9m at west turn(-54,-307),door faces the
   hero(-45.5,-301.3); two zebras, 2.4m paved entry. DoorUse retains City for return. Kit room7.4×8.4×3m:counter/grille/locked staff door,
   folded tray, radio/tools and appliance under glass;silent `city.pawnshop.clerk` stands in secure rear room.
-  E opens shared-style Buy/Sell stubs;Escape/disable/unload restore input/cursor,
-  no cash/item mutation. Six pooled exterior tasks:paired shielded projectors/
+  E:Buy stub/Sell one bin find with shared preview and tray payout.
+  Escape/disable/unload restore locks. Six pooled exterior tasks:shielded projectors/
   matte sign,entry/side/rear washes. Hall3visible HDRdiffusers/local24/24/18
   lights/one256shadow;ambient/exposure/bloom unchanged. Fitted finishes on tray, glazing, laminate and lino; finite bounce/bounded reflection;art§7.
 - `supermarket_product_pack_v1`:eight generic text/brand-free bottom-pivot models,
@@ -2238,8 +2240,8 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   source import scale once. Inventory/sips:stable loop,no child/modal;
   child waits visible stow,other contexts stow;car/cableway unsupported.
   Draining smoothly raises bottle/neck/head;last≤34ml reaches maximum before commit.
-  Same lips/grip;held seams/lower keep continuity. Last swallow debits1;
-  inspect opening→strict world-down for exactly2shakes→resentful toss.
+  Lips/grip/held seams stay aligned. Last sip swaps drink for empty below100
+  (full stack refuses); inspect→two down-shakes→stow, or toss at100.
   Surface/normal impact decides breakage;bus throw inherits motion,finite cabin/
   door colliders. Finite glass debris pauses/clears. Consumables/equipment only;
   temporarily blocked actions disabled;
