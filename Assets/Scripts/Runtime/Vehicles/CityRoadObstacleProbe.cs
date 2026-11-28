@@ -74,7 +74,8 @@ namespace BarPromenade
         internal Collider Overlap(Transform owner, Bounds bounds, Vector3 position, Quaternion rotation,
             float lengthPadding = 0f, bool ignoreRoadUsers = false)
         {
-            // Keep the box above wheel contact to exclude the surveyed road.
+            // Clear small wheel-level details. The road itself can intersect the
+            // body probe at a grade break and is identified by its builder below.
             float bottom = Mathf.Max(.4f, bounds.min.y);
             float halfHeight = Mathf.Max(.1f, (bounds.max.y - bottom) * .5f);
             Vector3 centre = position + rotation * new Vector3(bounds.center.x, bottom + halfHeight, bounds.center.z);
@@ -96,6 +97,7 @@ namespace BarPromenade
                 var hit = hits[i];
                 if (hit == null || hit.transform.IsChildOf(owner) || hit.bounds.max.y <= position.y + .4f)
                     continue;
+                if (hit is MeshCollider && hit.TryGetComponent<CityTrafficRoadSurface>(out _)) continue;
                 if (ignoreRoadUsers && IsTrackedRoadUser(hit)) continue;
                 blocker = hit;
                 break;

@@ -254,6 +254,71 @@ namespace BarPromenade.Tests.PlayMode
                 ", route 02 " + turning.Actor.Position + ", route 03 " + through.Actor.Position);
         }
 
+        [UnityTest]
+        public IEnumerator LiveCity_TrafficClearsRecordedRoadContacts()
+        {
+            yield return LoadProductionCity();
+            Time.timeScale = 0f;
+            var cases = new[] {
+                (line: 1, link: "bus:road:3:11:2:11:route-01:56", along: 5.1742f),
+                (line: 3, link: "bus:junction:13:2:left:12:2:13:3:route-02:9", along: 5.8576f),
+                (line: 3, link: "bus:junction:13:4:left:13:3:12:4:route-02:13", along: 2.6284f)
+            };
+            var barrier = new GameObject("Test lane barrier").AddComponent<BoxCollider>();
+            barrier.size = new Vector3(.5f, 1.5f, .5f);
+            foreach (var site in cases)
+            {
+                var line = city.Bus.GetVehicle(site.line);
+                PlaceBus(line, site.link, site.along);
+                var bus = line.Actor;
+                if (!bus.IsSpawned) bus.BindPresentation(line.GetOrCreatePresentation());
+                Vector3 start = bus.Position;
+                bus.SampleAhead(.6f, out var near, out var forward);
+                barrier.transform.position = near + Quaternion.LookRotation(forward) * bus.LocalVisualBounds.center;
+                barrier.enabled = true;
+                Physics.SyncTransforms();
+                var blocked = CityBusObstacleState.Clear;
+                bus.AccumulateRoadObstacle(4f, ref blocked);
+                Assert.That(blocked.RoadCollider, Is.SameAs(barrier), site.link);
+                Assert.That(blocked.ForwardClearance, Is.Zero, site.link + " must stop for a solid in the lane.");
+                for (int tick = 0; tick < 160; tick++)
+                {
+                    blocked = CityBusObstacleState.Clear;
+                    bus.AccumulateRoadObstacle(4f, ref blocked);
+                    bus.Advance(.05f, blocked, 0f);
+                }
+                Assert.That(bus.Position, Is.EqualTo(start), site.link);
+                barrier.enabled = false;
+                if (site.line == 1)
+                {
+                    // Force a sedan probe through the real carriageway, as at a sharp
+                    // change of grade. Prove it intersects the active drivable mesh.
+                    var sedan = city.AmbientTraffic.GetCar(0);
+                    var road = Physics.RaycastAll(near + Vector3.up * 2f, Vector3.down, 4f)
+                        .First(hit => hit.collider.TryGetComponent<CityTrafficRoadSurface>(out _));
+                    Vector3 sunken = road.point - Vector3.up * .8f;
+                    Quaternion rotation = Quaternion.LookRotation(forward);
+                    Assert.That(sedan.ObstacleProbe.Overlap(sedan.Driver.transform, sedan.Bounds, sunken,
+                        rotation, ignoreRoadUsers: true), Is.Null, "Wheel support inside the sedan sensor.");
+                    barrier.transform.position = road.point + Vector3.up * .6f;
+                    barrier.enabled = true;
+                    Physics.SyncTransforms();
+                    Assert.That(sedan.ObstacleProbe.Overlap(sedan.Driver.transform, sedan.Bounds, sunken,
+                        rotation, ignoreRoadUsers: true), Is.SameAs(barrier), "A solid sharing the road contact.");
+                    barrier.enabled = false;
+                }
+                var obstacle = CityBusObstacleState.Clear;
+                for (int tick = 0; tick < 160 && Vector3.Distance(start, bus.Position) < 8f; tick++)
+                {
+                    obstacle = CityBusObstacleState.Clear;
+                    bus.AccumulateRoadObstacle(4f, ref obstacle);
+                    bus.Advance(.05f, obstacle, 0f);
+                }
+                Assert.That(Vector3.Distance(start, bus.Position), Is.GreaterThanOrEqualTo(8f),
+                    site.link + " at " + bus.Position + " blocked by " + obstacle.RoadCollider?.name);
+            }
+        }
+
         private static void PlaceBus(CityBusDirector bus, string linkId, float along, float approach = 0f)
         {
             int index = Enumerable.Range(0, bus.Plan.Links.Count).Single(i => bus.Plan.Links[i].Id == linkId);

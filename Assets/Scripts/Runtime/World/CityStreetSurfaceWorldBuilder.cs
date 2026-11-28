@@ -244,7 +244,7 @@ namespace BarPromenade
             CityExteriorAppearance.ApplySidewalkSurface(renderer, 1);
             CityParkSurfaceAppearance.ApplyCombined(renderer, CityParkSurfaceKind.Path, CityExteriorAppearance.ParkPath, 2);
             CityGroundSurfaceSystem.Register(renderer, new[] {
-                new CityGroundSurfaceRegion(FootstepGroundKind.Concrete, 20),
+                new CityGroundSurfaceRegion(FootstepGroundKind.Concrete, 20, carriageway: true),
                 new CityGroundSurfaceRegion(FootstepGroundKind.Stone, 30),
                 new CityGroundSurfaceRegion(FootstepGroundKind.Soil, 20) });
             // The compositor creates the sole physical surface. Avoid cooking

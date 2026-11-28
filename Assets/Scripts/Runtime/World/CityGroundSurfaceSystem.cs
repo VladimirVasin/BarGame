@@ -13,10 +13,11 @@ namespace BarPromenade
     /// <summary>The physical material and coating precedence of one source submesh.</summary>
     internal readonly struct CityGroundSurfaceRegion
     {
-        internal CityGroundSurfaceRegion(FootstepGroundKind kind, int priority)
-        { Kind = kind; Priority = priority; }
+        internal CityGroundSurfaceRegion(FootstepGroundKind kind, int priority, bool carriageway = false)
+        { Kind = kind; Priority = priority; Carriageway = carriageway; }
         internal FootstepGroundKind Kind { get; }
         internal int Priority { get; }
+        internal bool Carriageway { get; }
     }
 
     /// <summary>One owner for the City's ground coatings. Builders supply their
@@ -39,7 +40,7 @@ namespace BarPromenade
         private readonly List<Rect> supportBounds = new List<Rect>();
         private readonly List<SupportPlane> supportPlanes = new List<SupportPlane>();
         private readonly List<GroundSurfacePartitioner.Footprint> supportContours = new List<GroundSurfacePartitioner.Footprint>();
-        private readonly Dictionary<(int, FootstepGroundKind), int> projectedStyles = new Dictionary<(int, FootstepGroundKind), int>();
+        private readonly Dictionary<(int, FootstepGroundKind, bool), int> projectedStyles = new();
         private bool buildCollision;
         private CityLayout talusLayout;
         private bool sealedSurface;
@@ -491,7 +492,8 @@ namespace BarPromenade
                 var block = new MaterialPropertyBlock();
                 source.Renderer.GetPropertyBlock(block, slot);
                 if (block.isEmpty) source.Renderer.GetPropertyBlock(block);
-                int style = FindStyle(new Style(source.Renderer, slot, materials[Mathf.Min(slot, materials.Length - 1)], block, regionKind, priority));
+                bool carriageway = source.Regions != null && source.Regions[slot].Carriageway;
+                int style = FindStyle(new Style(source.Renderer, slot, materials[Mathf.Min(slot, materials.Length - 1)], block, regionKind, priority, carriageway));
                 int[] indices = mesh.GetTriangles(slot);
                 for (int index = 0; index < indices.Length; index += 3)
                 {
@@ -616,7 +618,9 @@ namespace BarPromenade
                             float y = plane.Height(centre);
                             if (Mathf.Abs(y - centre.y) > MaximumPaintProjectionDistance) continue;
                             FootstepGroundKind paintKind = styles[part.Surface].Kind;
-                            int style = ProjectedStyle(part.Surface, paintKind == FootstepGroundKind.None ? styles[support.Surface].Kind : paintKind);
+                            Style substrate = styles[support.Surface];
+                            int style = ProjectedStyle(part.Surface, paintKind == FootstepGroundKind.None ? substrate.Kind : paintKind,
+                                substrate.Carriageway);
                             projected.Add(new Triangle(plane.Project(part.A, source.PaintDepth), plane.Project(part.B, source.PaintDepth),
                                 plane.Project(part.C, source.PaintDepth), style));
                         }
@@ -674,12 +678,12 @@ namespace BarPromenade
             }
         }
 
-        private int ProjectedStyle(int paint, FootstepGroundKind kind)
+        private int ProjectedStyle(int paint, FootstepGroundKind kind, bool carriageway)
         {
-            var key = (paint, kind);
+            var key = (paint, kind, carriageway);
             if (!projectedStyles.TryGetValue(key, out int index))
             {
-                index = FindStyle(new Style(styles[paint], kind));
+                index = FindStyle(new Style(styles[paint], kind, carriageway));
                 projectedStyles.Add(key, index);
             }
             return index;
@@ -709,18 +713,23 @@ namespace BarPromenade
         private IEnumerator BuildSectorSteps(Transform parent, IReadOnlyList<Triangle> triangles, bool collision,
             bool incremental)
         {
-            var groups = new Dictionary<Vector2Int, List<Triangle>>();
+            // An overlap identifies a collider, not the triangle it touched. Keep
+            // road tops, their seams and their paint apart from neighbouring solids.
+            var groups = new Dictionary<(Vector2Int sector, bool road), List<Triangle>>();
             foreach (Triangle triangle in triangles)
             {
                 Vector3 centre = (triangle.A.Position + triangle.B.Position + triangle.C.Position) / 3f;
-                var key = new Vector2Int(Mathf.FloorToInt(centre.x / SectorSize), Mathf.FloorToInt(centre.z / SectorSize));
+                var sector = new Vector2Int(Mathf.FloorToInt(centre.x / SectorSize), Mathf.FloorToInt(centre.z / SectorSize));
+                var key = (sector, collision && styles[triangle.Surface].Carriageway);
                 if (!groups.TryGetValue(key, out List<Triangle> group)) groups.Add(key, group = new List<Triangle>());
                 group.Add(triangle);
             }
             SectorCount = groups.Count;
-            foreach (KeyValuePair<Vector2Int, List<Triangle>> entry in groups)
+            foreach (var entry in groups)
             {
-                BuildMesh("Ground sector " + entry.Key, parent, entry.Value, collision, staticJointField);
+                string name = "Ground sector " + entry.Key.sector + (entry.Key.road ? " roadway" : "");
+                var sector = BuildMesh(name, parent, entry.Value, collision, staticJointField);
+                if (entry.Key.road) sector.AddComponent<CityTrafficRoadSurface>();
                 if (incremental) yield return new CompositionStep("ground_sector", .99f);
             }
         }
@@ -921,9 +930,9 @@ namespace BarPromenade
             private readonly PropertyLayout propertyLayout;
             private readonly PropertyValue[] propertyValues;
 
-            internal Style(Renderer source, int slot, Material material, MaterialPropertyBlock properties, FootstepGroundKind kind, int priority)
+            internal Style(Renderer source, int slot, Material material, MaterialPropertyBlock properties, FootstepGroundKind kind, int priority, bool carriageway)
             {
-                Material = material; Properties = properties; Kind = kind; Priority = priority;
+                Material = material; Properties = properties; Kind = kind; Priority = priority; Carriageway = carriageway;
                 HasWeather = CityWetSurfaceRegistry.TryReadRegistration(source, slot, out CityWetSurfaceKind wetKind, out Color dryTint) ||
                     CityWetSurfaceRegistry.TryReadRegistration(source, -1, out wetKind, out dryTint);
                 WetKind = wetKind; DryTint = dryTint;
@@ -932,9 +941,9 @@ namespace BarPromenade
                 for (int p = 0; p < propertyValues.Length; p++)
                     propertyValues[p] = new PropertyValue(properties, propertyLayout.Ids[p], propertyLayout.Types[p]);
             }
-            internal Style(Style source, FootstepGroundKind kind)
+            internal Style(Style source, FootstepGroundKind kind, bool carriageway)
             {
-                Material = source.Material; Properties = source.Properties; Kind = kind;
+                Material = source.Material; Properties = source.Properties; Kind = kind; Carriageway = carriageway;
                 Priority = source.Priority;
                 HasWeather = source.HasWeather; WetKind = source.WetKind; DryTint = source.DryTint;
                 propertyLayout = source.propertyLayout; propertyValues = source.propertyValues;
@@ -956,11 +965,13 @@ namespace BarPromenade
             internal readonly Material Material;
             internal readonly MaterialPropertyBlock Properties; internal readonly FootstepGroundKind Kind;
             internal readonly int Priority;
+            internal readonly bool Carriageway;
             internal readonly bool HasWeather; internal readonly CityWetSurfaceKind WetKind; internal readonly Color DryTint;
 
             internal bool Equivalent(Style other, bool includePriority = true)
             {
-                if ((includePriority && Priority != other.Priority) || Material != other.Material || Kind != other.Kind || HasWeather != other.HasWeather ||
+                if ((includePriority && Priority != other.Priority) || Carriageway != other.Carriageway ||
+                    Material != other.Material || Kind != other.Kind || HasWeather != other.HasWeather ||
                     (HasWeather && (WetKind != other.WetKind || DryTint != other.DryTint))) return false;
                 if (!ReferenceEquals(propertyLayout, other.propertyLayout)) return false;
                 // Capture native shader/MPB state once. Comparisons happen for

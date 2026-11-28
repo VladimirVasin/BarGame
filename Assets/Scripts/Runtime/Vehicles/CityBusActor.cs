@@ -114,6 +114,7 @@ namespace BarPromenade
         private Rigidbody rigidBody;
         private CityBusAudio audioPresentation;
         private Bounds localVisualBounds;
+        private Bounds roadObstacleBounds;
         private CityBusDimensions dimensions;
         private int currentLinkIndex = -1;
         private int loopBoundaryLinkIndex = -1;
@@ -217,6 +218,8 @@ namespace BarPromenade
                 dimensions.Width,
                 dimensions.Height,
                 dimensions.Length);
+            // Low roadside walls can clear the chassis while sitting below a mirror.
+            roadObstacleBounds = new Bounds(bodyCollider.center, bodyCollider.size);
 
             rigidBody = GetComponent<Rigidbody>();
             rigidBody.isKinematic = true;
@@ -703,10 +706,10 @@ namespace BarPromenade
         internal void AccumulateRoadObstacle(float lookAhead, ref CityBusObstacleState nearest)
         {
             if (!IsSpawned) return;
-            var hit = roadObstacleProbe.Find(sampleRoadAhead, transform, localVisualBounds,
+            var hit = roadObstacleProbe.Find(sampleRoadAhead, transform, roadObstacleBounds,
                 Mathf.Min(lookAhead, nearest.ForwardClearance), out float clearance);
             if (hit != null && clearance < nearest.ForwardClearance)
-                nearest = new CityBusObstacleState(true, clearance, CityBusBlockerKind.RoadObstacle, hit.bounds.center);
+                nearest = new CityBusObstacleState(true, clearance, CityBusBlockerKind.RoadObstacle, hit.bounds.center, collider: hit);
         }
 
         public bool TryGetPathObstacleClearance(

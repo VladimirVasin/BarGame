@@ -5,6 +5,8 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-28
 
+Bus probes use the physical body at stair walls and fences. Bus and sedan probes skip the carriageway and its paint. `LiveCity_TrafficClearsRecordedRoadContacts`.
+
 West cape clears the bend. `CityBeachHeadland` checks the walk, compacted sand, cliff-foot blend and tip.
 
 Removed fringe lines and tails. `CityFringeWithoutDecorativePowerLines` checks the grid. West frame reviewed.
@@ -21,15 +23,15 @@ Ridge children share the ball. Reversed board, braced rim and hanging net face t
 
 Seed varies City/Ridge crown width and trunk height independently. Forks, leaves and collision fit. Speed drives leaf scatter and lift, wet leaves slide, muted toe-off works. `CityLeaves_GustLandingAndWalkingContacts`, `HomeBalconyLeaves_FallOutsideTheRoom` and `LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement` cover both districts.
 
-Ridge and lower City rebind one sound pool. Real roofs, wind, road wetness and gait drive local sound. Cold Ridge starts publish shared road polygons atomically. The lower district accepts the seated shelter resident's existing glare pose. `RidgeSound_FollowsShelterWalkingFeetAndDistrictStreaming` verified rain on canvas, a nearby ambient walker’s footfall and pool rebinding after unloading. Street/umbrella levels hold.
+Ridge and lower City share a sound pool. Roofs, wind, wetness and gait drive sound. Cold Ridge publishes road polygons atomically. Lower shelters accept seated glare. `RidgeSound_FollowsShelterWalkingFeetAndDistrictStreaming` checked canvas rain, passing footsteps, pool rebinding and street/umbrella levels.
 
 Port, cannery, laundry and keeper cues share structural filtering at their existing anchors. Step reflections stay fixed. `RidgeSound_MachineryFiltersThroughADeckAndClearsAtItsEdge` verified level and tone on both sides of a deck edge.
 
-NPCs shield their eyes from unobstructed flashlight and headlight beams. Reviewed the open palm and turned face under the chest lamp. `DirectBeams_ShieldEyesWithOpenPalmAndReleaseBehindCover` verifies palm alignment, occupied hands, cover and pool release.
+NPCs shield their eyes from direct flashlight and headlight beams. Reviewed palm and face under the chest lamp. `DirectBeams_ShieldEyesWithOpenPalmAndReleaseBehindCover` checks hand alignment, occupied hands, cover and pooling.
 
 Ravine belongings have linked histories and individual pawn quotes. Wall beds and a sill-mounted mirror fit the rooms. Reviewed the pillow, clamp and apartment views. `RavineFamiliesFromRoomsToPawnshop` checks the reflected ray to the far railing, stairs, dismiss/take and credit at hand contact across sale pages. Blender round-trips the finds and their grips.
 
-Debug starts carry the stairwell chest lamp unequipped. The Home case of `DebugWorldStart_SelectedLocationUsesItsNormalArrivalWithoutTheHomeOpening` checks the item and its combat beam toggle in inventory.
+Debug starts carry the chest lamp unequipped. `DebugWorldStart_SelectedLocationUsesItsNormalArrivalWithoutTheHomeOpening` checks the Home inventory and combat toggle.
 
 ## 2026-11-27
 

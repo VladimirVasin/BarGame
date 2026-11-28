@@ -16,7 +16,7 @@ namespace BarPromenade
             : this(mustStop, forwardClearance, CityBusBlockerKind.Unknown, default) { }
 
         internal CityBusObstacleState(bool mustStop, float forwardClearance, CityBusBlockerKind kind,
-            Vector3 point, string id = null, int index = -1, CityBusActor bus = null, bool queued = false)
+            Vector3 point, string id = null, int index = -1, CityBusActor bus = null, bool queued = false, Collider collider = null)
         {
             MustStop = mustStop;
             ForwardClearance = mustStop && !float.IsNaN(forwardClearance) && !float.IsInfinity(forwardClearance)
@@ -24,6 +24,7 @@ namespace BarPromenade
             Kind = kind;
             Point = point;
             Id = id;
+            RoadCollider = collider;
             Index = index;
             Queued = queued || bus != null && (bus.IsHeldByObstacle || bus.CurrentStopIndex >= 0);
             BusState = bus?.MotionState;
@@ -36,6 +37,7 @@ namespace BarPromenade
         internal CityBusBlockerKind Kind { get; }
         internal Vector3 Point { get; }
         internal string Id { get; }
+        internal Collider RoadCollider { get; }
         internal int Index { get; }
         internal CityBusMotionState? BusState { get; }
         internal long BusStallId { get; }
@@ -46,7 +48,7 @@ namespace BarPromenade
                 or CityBusBlockerKind.CanneryTruck or CityBusBlockerKind.AmbientCar or CityBusBlockerKind.RoadObstacle;
 
         internal bool SameSource(CityBusObstacleState other) =>
-            Kind == other.Kind && Index == other.Index && Id == other.Id;
+            Kind == other.Kind && Index == other.Index && Id == other.Id && RoadCollider == other.RoadCollider;
     }
 
     public sealed partial class CityBusActor
@@ -142,7 +144,8 @@ namespace BarPromenade
                     GameLog.Field("nearest_stop_m", closest == null ? -1f : Mathf.Sqrt(distanceSq)),
                     GameLog.Field("background", !IsSpawned), GameLog.Field("state", MotionState.ToString()),
                     GameLog.Field("blocker_kind", BlockerName(blocker)),
-                    GameLog.Field("blocker_id", blocker.Id), GameLog.Field("blocker_index", identified ? blocker.Index : -1),
+                    GameLog.Field("blocker_id", blocker.RoadCollider != null ? blocker.RoadCollider.name : blocker.Id),
+                    GameLog.Field("blocker_index", identified ? blocker.Index : -1),
                     GameLog.Field("blocker_bus_state", blocker.BusState?.ToString()),
                     GameLog.Field("blocker_stall_id", blocker.BusStallId), GameLog.Field("blocker_stop_index", blocker.BusStopIndex),
                     PointField("blocker_x", blocker.Point.x), PointField("blocker_y", blocker.Point.y), PointField("blocker_z", blocker.Point.z),

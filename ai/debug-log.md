@@ -27,7 +27,7 @@ Snapshot:hunger/stress/fatigue/intoxication/cash/drinking.
 | `combat` | movement_summary on exit/disable;min-scale requires has_request_sample |
 | `diagnostics` | snapshots/directory |
 | `unity` | warnings/assertions/errors/exceptions + stacks |
-| `bus` | yield_started→yield_blocker_changed/approach_stalled(2s)→approach_released. Order:seq. Join:stall_id;blocker_stall_id or blocker_id/index→route_id/vehicle_index;nearest_stop/XYZ. Last blocker on release. |
+| `bus` | yield_started→yield_blocker_changed/approach_stalled(2s)→approach_released(last blocker). seq/stall_id,nearest_stop/XYZ. blocker_stall_id or id/index→route/vehicle. road_obstacle.blocker_id=collider name. |
 | `pedestrian` | route_blocked, ambient_route_blocked (blocker_kind), XYZ, verbose 15s/actor |
 | `bar` | `patron_cleanup_phase/reach_retry/deferred`: anchor, phase, contact error, correction or blocker |
 

@@ -773,7 +773,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   After 35–55 s it seeks a clear hidden entry 40–66 m away with a
   lane passing within 20 m of the hero. It returns to the pool past 80 m when hidden.
   Fixed drivers, axle pitch, 40m forecasts. Buses/sedans read curvature, brake
-  with local sound, and press the hub to warn while blocked. Queues release
+  with local sound, and press the hub to warn while blocked. Their obstacle probes exclude the road surface and its paint. Queues release
   crossings. Sedan boarding/island/tunnel/exit absent. Two near beam pairs.
   Ridge:4 lit bays/silent sedan. Working/Residential:4 empty bays each,
   through aisles; shared grade/grass/nav/City map.
