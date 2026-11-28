@@ -45,7 +45,6 @@ namespace BarPromenade
         MooringRopeEnd = 9,
         WreathRibbon = 10,
         ServiceTarp = 11,
-        CableTail = 12,
         SlingRopeEnd = 13,
         BalconyWash = 14
     }
@@ -243,7 +242,7 @@ namespace BarPromenade
     /// </summary>
     public sealed class CityWindDressingPlan
     {
-        public const int MaximumClothCount = CityWindDressingRules.ResidentialClothLimit + 43;
+        public const int MaximumClothCount = CityWindDressingRules.ResidentialClothLimit + 39;
 
         /// <summary>
         /// At or under this width a piece reads as rope, not fabric,
@@ -368,7 +367,7 @@ namespace BarPromenade
                 case CityWindDressingZone.Cemetery:
                     return 2;
                 case CityWindDressingZone.FringeYards:
-                    return 6;
+                    return 2;
                 default:
                     return 0;
             }

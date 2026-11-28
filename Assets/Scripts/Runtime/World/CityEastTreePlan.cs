@@ -59,7 +59,7 @@ namespace BarPromenade
                 if (part.GroupId == "Post Foot Traces" || part.GroupId == "Service Yard Traces")
                     exclusions.Add(Expand(part.Footprint, .6f));
             foreach (CityFringeYardPartDescriptor part in CityFringeYardPlanner.CreateEastUtilityYard(exit.Layout).Parts)
-                if (part.BlocksMovement || part.Kind == CityFringeYardPartKind.UtilityPole)
+                if (part.BlocksMovement)
                     exclusions.Add(Expand(part.Footprint, .6f));
             CityEastLitterPlan litter = CityEastLitterPlan.Create(exit);
             foreach (CityEastLitterPart part in litter.Parts)

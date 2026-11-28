@@ -5,17 +5,19 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-28
 
+Removed fringe lines and wind tails. `CityFringeWithoutDecorativePowerLines` checks grid. West frame reviewed.
+
 Enhanced stereo/48 kHz for output changes. `UNITY AUDIO HANDOFF OK`.
 
 City Hall lamps reach steps, guards, latch, dial and shutter. `CityHall_BothStairsClockAndVestibuleReturnToUpperCourt`, `CityHallMarker_RendersOnBothCityMaps` and `CITY HALL MODEL CONTRACT OK`.
 
-Street entry requires the envelope. Pickup and inventory share the $548 bill. `HOME MAILBOX MODEL CONTRACT OK` checks the exports. `EnterAndExitHome_UsesStairwellAndReturnsToSameCity` exercised cancel, pickup, inventory and entry. Existing apartment music assertion failed.
+Entry requires the envelope. Pickup and inventory share the $548 bill. `HOME MAILBOX MODEL CONTRACT OK`. `EnterAndExitHome_UsesStairwellAndReturnsToSameCity` checked cancel, pickup, inventory and entry. Existing apartment music assertion failed.
 
 Ridge tiles meet bends and cellar parapet. `LiveCity_CellarCourtWalksBothEntrancesAndKeepsViewBench` checks ground and access. `LiveCity_CellarKeeperSortsByDayAndLampsReachWorkAndSteps` checks sorting and light.
 
 Ridge children share the ball. Reversed board, braced rim and hanging net face the yard. `RidgeBasketball_AlternatesAndOnlyScorerJumps` measures the horizontal rim in the built City and checks the make, miss, shooter’s jump and return to the sidewalk.
 
-City soil and Ridge earth carry seeded trees with independent crown spans and trunk heights. The crown forks, shedding heights and solid trunks follow the same form. Stride speed sets the swept area and lift. Wet leaves slide and the heel releases into toe-off even with muted audio. `CityLeaves_GustLandingAndWalkingContacts`, `HomeBalconyLeaves_FallOutsideTheRoom` and `LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement` cover both districts.
+Seeded City and Ridge trees vary independently in crown width and trunk height. Forks, leaf release and collision follow the model. Stride speed controls leaf scatter and lift. Wet leaves slide. Toe-off works with muted audio. `CityLeaves_GustLandingAndWalkingContacts`, `HomeBalconyLeaves_FallOutsideTheRoom` and `LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement` cover both districts.
 
 Ridge and lower City rebind one sound pool. Real roofs, wind, road wetness and gait drive local sound. Cold Ridge starts publish shared road polygons atomically. The lower district accepts the seated shelter resident's existing glare pose. `RidgeSound_FollowsShelterWalkingFeetAndDistrictStreaming` verified rain on canvas, a nearby ambient walker’s footfall and pool rebinding after unloading. Street/umbrella levels hold.
 
@@ -25,7 +27,7 @@ NPCs shield their eyes from unobstructed flashlight and headlight beams. Reviewe
 
 Ravine belongings have linked histories and individual pawn quotes. Wall beds and a sill-mounted mirror fit the rooms. Reviewed the pillow, clamp and apartment views. `RavineFamiliesFromRoomsToPawnshop` checks the reflected ray to the far railing, stairs, dismiss/take and credit at hand contact across sale pages. Blender round-trips the finds and their grips.
 
-Debug location starts carry the stairwell chest lamp unequipped. The Home case of `DebugWorldStart_SelectedLocationUsesItsNormalArrivalWithoutTheHomeOpening` verifies the starter item and toggling its combat beam through inventory.
+Debug starts carry the stairwell chest lamp unequipped. The Home case of `DebugWorldStart_SelectedLocationUsesItsNormalArrivalWithoutTheHomeOpening` checks the item and its combat beam toggle in inventory.
 
 ## 2026-11-27
 

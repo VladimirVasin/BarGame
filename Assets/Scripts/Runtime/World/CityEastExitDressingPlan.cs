@@ -155,10 +155,6 @@ namespace BarPromenade
                     new Vector3(1.8f / 6f, 1f, 1.4f / 3.46f),
                     new Vector3(6f, .02f, 3.46f), CityEastExitDressingFit.Ground);
             }
-            foreach (float poleZ in new[] { 0f, exit.YardBounds.yMax - 8f })
-                Trace("Pole Approach " + poleZ, "GravelPatch", "Service Yard Traces",
-                    new Vector2(serviceX, poleZ), new Vector2(exit.YardBounds.xMin + 26.7f, poleZ), .62f);
-
             // Every run, including its returns, receives an interrupted worn
             // toe. The old front trace covered only 32 m of a 192 m run.
             foreach (CityEastFenceLandscapeRun run in FenceRuns)

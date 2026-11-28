@@ -243,11 +243,6 @@ namespace BarPromenade
             IDictionary<BatchKey, List<RuntimeMeshPlacement>> batches,
             ISet<string> importedIds)
         {
-            TryAppendImportedUtilityPoles(
-                yard,
-                provider,
-                batches,
-                importedIds);
             TryAppendImportedSingleParts(
                 yard,
                 CityFringeYardPartKind.RepairStack,
@@ -282,64 +277,6 @@ namespace BarPromenade
                 provider,
                 batches,
                 importedIds);
-        }
-
-        private static void TryAppendImportedUtilityPoles(
-            CityFringeYardDescriptor yard,
-            CityMiscAssetProvider provider,
-            IDictionary<BatchKey, List<RuntimeMeshPlacement>> batches,
-            ISet<string> importedIds)
-        {
-            for (int index = 0; index < yard.Parts.Count; index++)
-            {
-                CityFringeYardPartDescriptor pole = yard.Parts[index];
-                if (pole.Kind != CityFringeYardPartKind.UtilityPole)
-                {
-                    continue;
-                }
-
-                string armId = pole.StableId.Replace(
-                    "-utility-pole-",
-                    "-utility-arm-");
-                CityFringeYardPartDescriptor arm = default;
-                bool found = false;
-                for (int armIndex = 0;
-                     armIndex < yard.Parts.Count;
-                     armIndex++)
-                {
-                    if (!string.Equals(
-                            yard.Parts[armIndex].StableId,
-                            armId,
-                            StringComparison.Ordinal))
-                    {
-                        continue;
-                    }
-
-                    arm = yard.Parts[armIndex];
-                    found = true;
-                    break;
-                }
-
-                if (!found)
-                {
-                    continue;
-                }
-
-                TryAppendAssembly(
-                    provider,
-                    CityMiscKind.FringeUtilityPole,
-                    0,
-                    new Vector3(
-                        pole.Center.x,
-                        pole.Center.y - pole.Size.y * 0.5f,
-                        pole.Center.z),
-                    arm.Rotation,
-                    CityFringeYardStyle.Iron,
-                    new[] { pole, arm },
-                    Vector3.one,
-                    batches,
-                    importedIds);
-            }
         }
 
         private static void TryAppendImportedSingleParts(
@@ -635,8 +572,6 @@ namespace BarPromenade
         {
             switch (kind)
             {
-                case CityMiscKind.FringeUtilityPole:
-                    return CityFringeYardStyle.Iron;
                 case CityMiscKind.FringeRepairStock:
                 case CityMiscKind.FringePipeStock:
                     return role == CityMiscMeshRole.Fixture

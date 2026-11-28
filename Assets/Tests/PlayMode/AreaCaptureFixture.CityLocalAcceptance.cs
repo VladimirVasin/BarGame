@@ -52,6 +52,11 @@ namespace BarPromenade.Tests.PlayMode
         public IEnumerator CityFringeApproaches() => CaptureCityLocalAcceptance(ReviewFringeApproaches);
 
         [UnityTest]
+        [Explicit("Checks the removal of the old fringe lines and renders the western service edge. Run alone.")]
+        public IEnumerator CityFringeWithoutDecorativePowerLines() =>
+            CaptureCityLocalAcceptance(ReviewFringeWithoutDecorativePowerLines);
+
+        [UnityTest]
         [Explicit("Three public City observers: 15 s each of autonomous physical stereo, music muted only. Listen to the unnormalized WAVs for district contrast. Run alone.")]
         [PrebuildSetup(typeof(ParkAssetsSetup))]
         public IEnumerator CityDistrictAcousticContrast()
@@ -982,6 +987,29 @@ namespace BarPromenade.Tests.PlayMode
                 if (v >= 0f && u + v <= 1f && distance > .03f && distance < reach - .05f) return true;
             }
             return false;
+        }
+
+        private static IEnumerator ReviewFringeWithoutDecorativePowerLines(CityGameRoot city)
+        {
+            CityFringeYardPlan fringe = city.World.FringeYardPlan;
+            Assert.That(fringe.IsEnabled, Is.True);
+            Assert.That(fringe.Yards.SelectMany(yard => yard.Parts).Any(part =>
+                part.StableId.Contains("-utility-pole-") || part.StableId.Contains("-utility-arm-") ||
+                part.StableId.Contains("-cable-")), Is.False, "A decorative fringe line returned.");
+            Assert.That(city.World.WindDressingPlan.Cloths.Any(cloth =>
+                cloth.StableId.StartsWith("wind-fringe-cable-tail-", StringComparison.Ordinal)),
+                Is.False, "A decorative cable tail returned.");
+
+            Transform network = city.World.Root.transform.Find(CityCoastalInfrastructureWorldBuilder.RootName);
+            Assert.That(network, Is.Not.Null);
+            Assert.That(network.Find("Coastal Electrical Conductors"), Is.Not.Null);
+
+            CityFringeYardDescriptor west = fringe.Yards.Single(yard => yard.Kind == CityFringeYardKind.WestStoneTerraces);
+            Vector3 outward = west.Access.OutwardNormal;
+            Vector3 street = LocalAcceptanceFloor(city, west.Access.Center - outward * 1.2f, "western fringe entrance");
+            Vector3 eye = street + Vector3.up * EyeHeight;
+            yield return LocalAcceptanceFrame(city, "fringe-west-without-decorative-power-lines",
+                eye, eye + outward * 12f + Vector3.back * 9f + Vector3.up * 2f);
         }
 
         private static IEnumerator ReviewFringeApproaches(CityGameRoot city)

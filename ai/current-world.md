@@ -483,9 +483,9 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   authored approaches remain open.
   The portal and fittings share the SouthTunnel stone, concrete and iron atlas;
 - The default-only `CityFringeYardPlan` fits five yards to their bounds, access
-  and terrain. West/south yards hold drains, retaining walls, poles, cables
-  and repair pockets. Dense boulder belts rise to the cliff, clear of routes and
-  utility sites. Static meshes share rock texture and collision. Compacted fill spans
+  and terrain. West/south yards hold drains, retaining walls and repair pockets.
+  Dense boulder belts rise to the cliff, clear of routes and utility sites.
+  Static meshes share rock texture and collision. Compacted fill spans
   the shoulder (`0–4 m`), three transverse traces and three or four
   seeded anchors (`4–14 m`, gaps ≤`40 m`), then paired traces or flood drainage
   and retaining works (`14–22 m`). No broad track overlays.
@@ -498,11 +498,10 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   Spot stays at its faulty second ceiling fixture, keeps the §20 day floor
   and shares the lens's sparse flicker. Four more emissive-only
   fixtures continue into the bend; the faulty ballast owns a positional
-  `5.6 m` buzz and crackles only on visible power dips. The east drain/pole/
-  shed/berm profile yields within the mainland-road clearance;
-  its old parallel service-road strip is removed. One grounded empty mason
+  `5.6 m` buzz and crackles only on visible power dips. The eastern drains, sheds
+  and berms leave the mainland-road clearance open. One grounded empty mason
   cart stands at the west terraces; no other fringe vignette. Large masses
-  are physical, small traces and cables visual only. Ridges overlap under
+  collide. Small traces follow the ground. Ridges overlap under
   the sampled terrain toe and carry its collider across the join; only the
   tunnel portal and low river mouth interrupt the rock, the bank ending against
   it. Every level-safe ring-road seam into the four mountain Yards is walkable,
@@ -1422,7 +1421,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   tarred mooring ends on the slipway chain (the pier head's fisherman
   composition stays clear), two dark wreath ribbons on cemetery enclosure
   posts (offering graves first), service tarps on the fringe repair gantry
-  and utility shed plus dead cable tails off the crossarms. Anchors are
+  and utility shed. Anchors are
   picked by stride across each district's full anchor list, and a
   street-level per-district floor is test-pinned so the dressing meets an
   ordinary walk instead of clustering once per city. Cloth panels and authored garments share the wind registry; rope-width

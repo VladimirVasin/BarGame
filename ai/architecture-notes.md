@@ -3726,7 +3726,7 @@
   `CityFringeYardPlan` derives deterministic geometry from those same bounds,
   accesses and terrain samples. Four west/south profiles share the grammar of
   an old municipal service belt: graded maintenance trace, drainage,
-  retaining work, sparse poles/cables, repair stock and restrained rockfall.
+  retaining work, repair stock and rockfall. The substation owns the overhead grid.
   The complete mountain-facing `OpenGround` skin is split from generic Yard
   ground and receives one quiet measured compacted-fill sheet on its sampled
   terrain mesh. Its depth is deliberately authored as road threshold `0-4 m`,
@@ -3767,11 +3767,10 @@
   mountain Yards opt out of single-gate navigation: every frontage interval
   already classified step-safe becomes a real connector, while unsafe height
   changes keep their rails. Custom layouts and the eastern Yard retain the
-  ordinary authored-access rule. The east profile uses
-  low service road, drain, poles, locked utility masses and broken spoil berm;
-  the `2026-09-13` mainland decision owns its new crossing and lamp. No east
-  ridge. Large masses
-  collide; tracks, drains, cables and small traces do not.
+  ordinary authored-access rule. The east yard has a dry drain, locked utility
+  sheds and a broken spoil berm. The `2026-09-13` mainland decision owns the
+  crossing and lamp. Large masses collide. Tracks, drains and traces follow
+  the ground without collision.
   Four west/south anchors each expose one small emissive practical to
   `CityNightGlowRegistry`; `CityNightAtmosphere` owns one permanent Light per
   supported anchor without a proximity gate. The tunnel fixture is the stronger

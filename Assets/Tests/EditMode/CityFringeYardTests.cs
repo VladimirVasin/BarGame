@@ -114,7 +114,6 @@ namespace BarPromenade.Tests.EditMode
                     right.Parts,
                     Is.EqualTo(left.Parts));
                 AssertForefieldCoverage(left);
-                AssertPoleSpacing(left);
                 CityFringeYardPartDescriptor[] lifeScenes = left.Parts
                     .Where(part =>
                         CityFringeYardLifeValidator.IsLifeKind(part.Kind))
@@ -986,7 +985,6 @@ namespace BarPromenade.Tests.EditMode
                 [CityFringeYardKind.WestIndustrialBelt] = new[]
                 {
                     CityFringeYardPartKind.RepairStack,
-                    CityFringeYardPartKind.UtilityPole,
                     CityFringeYardPartKind.RepairFrame,
                     CityFringeYardPartKind.PipeStock
                 },
@@ -1125,34 +1123,6 @@ namespace BarPromenade.Tests.EditMode
 
         private static string ForefieldRun(CityFringeYardPartDescriptor part) =>
             string.IsNullOrEmpty(part.SurfaceRunId) ? part.StableId : part.SurfaceRunId;
-
-        private static void AssertPoleSpacing(
-            CityFringeYardDescriptor yard)
-        {
-            if (!CityMountainBoundaryDefinition.IsMountainFacingAreaId(
-                    yard.AreaId))
-            {
-                return;
-            }
-
-            float maximum =
-                yard.Kind == CityFringeYardKind.WestStoneTerraces
-                    ? 40f
-                    : 34f;
-            float[] coordinates = yard.Parts.Where(part =>
-                    part.Kind == CityFringeYardPartKind.UtilityPole)
-                .Select(part => LongCoordinate(yard, part.Center))
-                .OrderBy(value => value)
-                .ToArray();
-            Assert.That(coordinates.Length, Is.GreaterThanOrEqualTo(2));
-            for (int index = 1; index < coordinates.Length; index++)
-            {
-                Assert.That(
-                    coordinates[index] - coordinates[index - 1],
-                    Is.LessThanOrEqualTo(maximum + 0.04f),
-                    $"{yard.AreaId} pole spacing {index - 1}->{index}");
-            }
-        }
 
         private static bool Contains(Rect outer, Rect inner)
         {

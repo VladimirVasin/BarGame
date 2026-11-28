@@ -337,23 +337,6 @@ namespace BarPromenade
                 traversal,
                 parts);
 
-            AddPoleAndCableLine(
-                layout,
-                surfaces,
-                bounds,
-                areaId,
-                tangent,
-                PointAtOuterInset(
-                    bounds,
-                    access.Center,
-                    outward,
-                    trackInset + 3.1f),
-                traversal,
-                kind == CityFringeYardKind.WestStoneTerraces
-                    ? 40f
-                    : 34f,
-                parts);
-
             if (kind == CityFringeYardKind.WestIndustrialBelt)
             {
                 AddRepairStockPocket(
@@ -487,16 +470,6 @@ namespace BarPromenade
                 2f,
                 2f,
                 null,
-                parts);
-            AddPoleAndCableLine(
-                layout,
-                surfaces,
-                bounds,
-                areaId,
-                tangent,
-                access.Center + outward * 27f,
-                traversal,
-                29f,
                 parts);
             AddEastUtilitySheds(
                 layout,
@@ -682,133 +655,6 @@ namespace BarPromenade
                         parts);
                 }
             }
-        }
-
-        private static void AddPoleAndCableLine(
-            CityLayout layout,
-            IReadOnlyList<CitySurfaceDescriptor> surfaces,
-            Rect bounds,
-            string areaId,
-            Vector3 axis,
-            Vector3 line,
-            Rect reserved,
-            float spacing,
-            ICollection<CityFringeYardPartDescriptor> parts)
-        {
-            GetLongRange(
-                bounds,
-                axis,
-                8f,
-                8f,
-                out float start,
-                out float end);
-            int count = ResolvePoleCount(areaId, end - start, spacing);
-            float pitch = (end - start) / (count - 1);
-            var tops = new List<Vector3>(count);
-            for (int index = 0; index < count; index++)
-            {
-                float coordinate = start + pitch * index;
-                Vector3 center = SetLongCoordinate(
-                    line,
-                    axis,
-                    coordinate);
-                center = MovePoleOutsideReserved(
-                    center,
-                    axis,
-                    start,
-                    end,
-                    reserved);
-                float ground = SampleAreaTop(
-                    layout,
-                    surfaces,
-                    ToXZ(center));
-                var poleSize = new Vector3(0.22f, 4.45f, 0.22f);
-                Rect footprint = Rect.MinMaxRect(
-                    center.x - 0.2f,
-                    center.z - 0.2f,
-                    center.x + 0.2f,
-                    center.z + 0.2f);
-                if (footprint.Overlaps(reserved))
-                {
-                    throw new InvalidOperationException(
-                        $"Unable to keep utility pole '{areaId}-{index:00}' " +
-                        "outside its reserved route.");
-                }
-
-                parts.Add(new CityFringeYardPartDescriptor(
-                    $"{areaId}-utility-pole-{index:00}",
-                    areaId,
-                    CityFringeYardPartKind.UtilityPole,
-                    CityFringeYardStyle.Iron,
-                    new Vector3(center.x, ground + poleSize.y * 0.5f, center.z),
-                    Quaternion.identity,
-                    poleSize,
-                    true));
-                Quaternion armRotation = Quaternion.LookRotation(
-                    axis,
-                    Vector3.up);
-                parts.Add(new CityFringeYardPartDescriptor(
-                    $"{areaId}-utility-arm-{index:00}",
-                    areaId,
-                    CityFringeYardPartKind.UtilityCrossarm,
-                    CityFringeYardStyle.Iron,
-                    new Vector3(center.x, ground + 4.22f, center.z),
-                    armRotation,
-                    new Vector3(1.45f, 0.12f, 0.14f),
-                    false));
-                tops.Add(new Vector3(center.x, ground + 4.08f, center.z));
-            }
-
-            for (int index = 1; index < tops.Count; index++)
-            {
-                AddCableSpan(
-                    areaId,
-                    index - 1,
-                    tops[index - 1],
-                    tops[index],
-                    parts);
-            }
-        }
-
-        private static void AddCableSpan(
-            string areaId,
-            int spanIndex,
-            Vector3 start,
-            Vector3 end,
-            ICollection<CityFringeYardPartDescriptor> parts)
-        {
-            Vector3 middle = (start + end) * 0.5f + Vector3.down * 0.34f;
-            AddSuspendedSegment(
-                areaId,
-                $"{areaId}-cable-{spanIndex:00}-a",
-                start,
-                middle,
-                parts);
-            AddSuspendedSegment(
-                areaId,
-                $"{areaId}-cable-{spanIndex:00}-b",
-                middle,
-                end,
-                parts);
-        }
-
-        private static void AddSuspendedSegment(
-            string areaId,
-            string stableId,
-            Vector3 start,
-            Vector3 end,
-            ICollection<CityFringeYardPartDescriptor> parts)
-        {
-            Vector3 delta = end - start;
-            parts.Add(new CityFringeYardPartDescriptor(
-                stableId,
-                areaId,
-                CityFringeYardPartKind.UtilityCable,
-                CityFringeYardStyle.Iron,
-                (start + end) * 0.5f,
-                Quaternion.LookRotation(delta.normalized, Vector3.up),
-                new Vector3(0.055f, 0.055f, delta.magnitude),
-                false));
         }
 
         private static void AddRepairStockPocket(

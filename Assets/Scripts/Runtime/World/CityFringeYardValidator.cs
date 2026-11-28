@@ -168,7 +168,6 @@ namespace BarPromenade
             bool hasTrack = false;
             bool hasDrain = false;
             bool hasRetaining = false;
-            bool hasPole = false;
             bool hasRepairStock = false;
             bool hasWheelRut = false;
             bool hasDrainCover = false;
@@ -188,7 +187,6 @@ namespace BarPromenade
             var forefieldAnchors = new List<float>(
                 CityFringeYardPlanner.MaximumForefieldAnchorCount);
             var anchorRuns = new Dictionary<string, float>(StringComparer.Ordinal);
-            var poleCoordinates = new List<float>();
             for (int index = 0; index < yard.Parts.Count; index++)
             {
                 CityFringeYardPartDescriptor part = yard.Parts[index];
@@ -208,7 +206,6 @@ namespace BarPromenade
                 hasDrain |= part.Kind == CityFringeYardPartKind.DrainChannel;
                 hasRetaining |=
                     part.Kind == CityFringeYardPartKind.RetainingSection;
-                hasPole |= part.Kind == CityFringeYardPartKind.UtilityPole;
                 hasRepairStock |=
                     part.Kind == CityFringeYardPartKind.RepairStack;
                 hasWheelRut |= part.Kind == CityFringeYardPartKind.WheelRut;
@@ -359,11 +356,6 @@ namespace BarPromenade
                         forefieldAnchors.Add(coordinate);
                     }
                 }
-
-                if (part.Kind == CityFringeYardPartKind.UtilityPole)
-                {
-                    poleCoordinates.Add(LongCoordinate(yard, part.Center));
-                }
             }
 
             bool expectsServiceTrack =
@@ -397,7 +389,6 @@ namespace BarPromenade
                     spurMaximumDepth,
                     trackMaximumDepth,
                     forefieldAnchors);
-                ValidatePoleSpacing(yard, poleCoordinates);
             }
             else if (hasRoadShoulder ||
                      hasServiceSpur ||
@@ -419,11 +410,11 @@ namespace BarPromenade
             switch (yard.Kind)
             {
                 case CityFringeYardKind.WestStoneTerraces:
-                    Require(hasRetaining && hasPole, yard, "stone terrace");
+                    Require(hasRetaining, yard, "stone terrace");
                     break;
                 case CityFringeYardKind.WestIndustrialBelt:
                     Require(
-                        hasRetaining && hasPole && hasRepairStock,
+                        hasRetaining && hasRepairStock,
                         yard,
                         "industrial service belt");
                     break;
@@ -443,11 +434,11 @@ namespace BarPromenade
                     }
                     break;
                 case CityFringeYardKind.SouthFloodWorks:
-                    Require(hasGabion && hasPole, yard, "flood works");
+                    Require(hasGabion, yard, "flood works");
                     break;
                 case CityFringeYardKind.EastUtilityEdge:
                     Require(
-                        hasPole && hasShed && hasBerm &&
+                        hasShed && hasBerm &&
                         !hasRetaining && !hasTunnelCheek,
                         yard,
                         "low eastern utility edge");
@@ -938,27 +929,6 @@ namespace BarPromenade
                 throw new InvalidOperationException(
                     $"Fringe Yard '{yard.AreaId}' leaves its final " +
                     "forefield interval empty.");
-            }
-        }
-
-        private static void ValidatePoleSpacing(
-            CityFringeYardDescriptor yard,
-            List<float> poleCoordinates)
-        {
-            float maximumSpacing =
-                yard.Kind == CityFringeYardKind.WestStoneTerraces
-                    ? 40f
-                    : 34f;
-            poleCoordinates.Sort();
-            for (int index = 1; index < poleCoordinates.Count; index++)
-            {
-                if (poleCoordinates[index] - poleCoordinates[index - 1] >
-                    maximumSpacing + GeometryTolerance)
-                {
-                    throw new InvalidOperationException(
-                        $"Fringe Yard '{yard.AreaId}' utility poles exceed " +
-                        $"their {maximumSpacing:0}-metre maximum spacing.");
-                }
             }
         }
 

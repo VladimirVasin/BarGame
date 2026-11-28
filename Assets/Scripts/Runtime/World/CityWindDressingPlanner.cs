@@ -24,7 +24,6 @@ namespace BarPromenade
         private const uint BannerSalt = 0x57444E4Cu;
         private const uint PierSalt = 0x57445052u;
         private const uint RibbonSalt = 0x57445242u;
-        private const uint TailSalt = 0x5744544Cu;
 
         /// <summary>
         /// New courtyard laundry keeps this far from the drying-yard
@@ -73,8 +72,6 @@ namespace BarPromenade
             new Color(0.280f, 0.070f, 0.080f, 1f);
         private static readonly Color ServiceCanvas =
             new Color(0.240f, 0.250f, 0.220f, 1f);
-        private static readonly Color DeadCable =
-            new Color(0.100f, 0.100f, 0.110f, 1f);
 
         public static CityWindDressingPlan Create(
             CityLayout layout,
@@ -1081,11 +1078,7 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// Fringe yards: a service tarp on the industrial belt's
-        /// repair gantry and on an east-edge utility shed, plus dead
-        /// cable tails off utility crossarms. The tunnel forecourt,
-        /// the flood works and the stone terraces hang nothing —
-        /// their vocabularies forbid it.
+        /// Service tarps on the industrial repair gantry and an east-edge utility shed.
         /// </summary>
         private static void AddFringeYards(
             ICollection<CityWindDressingClothDescriptor> cloths,
@@ -1097,21 +1090,8 @@ namespace BarPromenade
                 return;
             }
 
-            var crossarms = new List<CityFringeYardPartDescriptor>();
-            for (int yardIndex = 0;
-                 yardIndex < fringeYardPlan.Yards.Count;
-                 yardIndex++)
+            foreach (CityFringeYardDescriptor yard in fringeYardPlan.Yards)
             {
-                CityFringeYardDescriptor yard =
-                    fringeYardPlan.Yards[yardIndex];
-                if (yard.Kind ==
-                        CityFringeYardKind.SouthTunnelForecourt ||
-                    yard.Kind == CityFringeYardKind.SouthFloodWorks ||
-                    yard.Kind == CityFringeYardKind.WestStoneTerraces)
-                {
-                    continue;
-                }
-
                 if (yard.Kind == CityFringeYardKind.WestIndustrialBelt)
                 {
                     AddRepairFrameTarp(cloths, layout, yard);
@@ -1121,47 +1101,6 @@ namespace BarPromenade
                 {
                     AddShedTarp(cloths, layout, yard);
                 }
-
-                for (int partIndex = 0;
-                     partIndex < yard.Parts.Count;
-                     partIndex++)
-                {
-                    if (yard.Parts[partIndex].Kind ==
-                        CityFringeYardPartKind.UtilityCrossarm)
-                    {
-                        crossarms.Add(yard.Parts[partIndex]);
-                    }
-                }
-            }
-
-            int stride = Mathf.Max(1, crossarms.Count / 3);
-            int tailCount = 0;
-            for (int index = 0;
-                 index < crossarms.Count && tailCount < 3;
-                 index += stride)
-            {
-                CityFringeYardPartDescriptor arm = crossarms[index];
-                uint hash = HashAt(layout.Seed, arm.Center, TailSalt);
-                // The 1.45 arm length rides local X; the tail hangs
-                // off one end, under the arm.
-                Vector3 along = arm.Rotation * Vector3.right;
-                Vector3 face = arm.Rotation * Vector3.forward;
-                cloths.Add(new CityWindDressingClothDescriptor(
-                    $"wind-fringe-cable-tail-{tailCount:00}",
-                    CityWindDressingKind.CableTail,
-                    CityWindDressingZone.FringeYards,
-                    arm.Center +
-                    (along * (0.62f * ((hash & 1u) == 0u ? 1f : -1f))) +
-                    (Vector3.up * (-0.06f + PinSink)),
-                    YawFromForward(face),
-                    0.06f,
-                    0.8f,
-                    DeadCable,
-                    0,
-                    1,
-                    6,
-                    false));
-                tailCount++;
             }
         }
 
