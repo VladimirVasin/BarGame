@@ -157,6 +157,10 @@ namespace BarPromenade
             public readonly NpcStrideTracker Stride = new NpcStrideTracker();
             public NpcFootstepProfile Profile;
             public bool Silent;
+            public CityPedestrianPresentation Street;
+            public int PreviousPlant = -1;
+            public Vector3 PreviousRoot;
+            public bool HasRoot;
             public int LastSeenTick;
         }
 
@@ -170,20 +174,21 @@ namespace BarPromenade
         /// <summary>Steps whose ground was known, audio or not.</summary>
         public int StepsResolved { get; private set; }
         public FootstepGroundKind LastKind { get; private set; }
+        internal Transform LastAudibleWalker { get; private set; }
 
         public void Initialize(Transform heroRoot)
         {
             hero = heroRoot;
         }
 
-        private void Update()
+        private void LateUpdate()
         {
             Tick(Time.deltaTime);
         }
 
         internal void Tick(float deltaTime)
         {
-            if (hero == null || deltaTime <= 0f)
+            if (hero == null || deltaTime <= 0f || GameTimeScaleRuntime.IsPaused || AudioListener.pause)
             {
                 return;
             }
@@ -201,7 +206,6 @@ namespace BarPromenade
 
                 Vector3 position = root.position;
                 Vector3 offset = position - centre;
-                offset.y = 0f;
                 if (offset.sqrMagnitude > HearingRadius * HearingRadius)
                 {
                     walkers.Remove(root);
@@ -210,13 +214,23 @@ namespace BarPromenade
 
                 if (!walkers.TryGetValue(root, out Walker walker))
                 {
-                    walker = new Walker { Silent = IsSilent(root), Profile = root.GetComponent<NpcFootstepProfile>() };
+                    walker = new Walker
+                    {
+                        Silent = IsSilent(root),
+                        Profile = root.GetComponent<NpcFootstepProfile>(),
+                        Street = root.GetComponent<CityPedestrianPresentation>()
+                    };
                     walkers.Add(root, walker);
                 }
 
                 walker.LastSeenTick = tick;
-                bool contact = walker.Profile != null && walker.Profile.UsesAuthoredContacts
-                    ? walker.Profile.ConsumeFootfall() : walker.Stride.Advance(position, deltaTime, walker.Profile);
+                bool contact;
+                if (walker.Profile != null && walker.Profile.UsesAuthoredContacts)
+                    contact = walker.Profile.ConsumeFootfall();
+                else if (walker.Street && walker.Street.IsInitialized)
+                    contact = StreetPlant(walker, ref position);
+                else
+                    contact = walker.Stride.Advance(position, deltaTime, walker.Profile);
                 if (!contact ||
                     walker.Silent)
                 {
@@ -253,6 +267,29 @@ namespace BarPromenade
                    null;
         }
 
+        private static bool StreetPlant(Walker walker, ref Vector3 position)
+        {
+            var street = walker.Street;
+            Vector3 travel = position - walker.PreviousRoot;
+            walker.PreviousRoot = position;
+            bool continuous = walker.HasRoot && travel.sqrMagnitude < NpcStrideTracker.TeleportDistance * NpcStrideTracker.TeleportDistance;
+            walker.HasRoot = true;
+            if (!continuous || !street.IsMoving || street.IsInBus || street.Registry.PreservesAirborneMotion)
+            {
+                walker.PreviousPlant = -1;
+                return false;
+            }
+            // The rendered walk drives both normal adults and children at their own cadence.
+            int plant = Mathf.FloorToInt(street.WalkCycle * 2f);
+            bool landed = walker.PreviousPlant >= 0 && plant == walker.PreviousPlant + 1;
+            walker.PreviousPlant = plant;
+            if (!landed) return false;
+            var left = street.Registry.LeftFoot;
+            var right = street.Registry.RightFoot;
+            if (left && right) position = left.position.y <= right.position.y ? left.position : right.position;
+            return true;
+        }
+
         private void TryStep(Transform root, Vector3 feet, float volumeScale)
         {
             double now = AudioSettings.dspTime;
@@ -277,6 +314,7 @@ namespace BarPromenade
                     contact,
                     volumeScale))
             {
+                LastAudibleWalker = root;
                 nextStepDspTime = now + GlobalMinimumInterval;
             }
         }

@@ -108,6 +108,9 @@ namespace BarPromenade
         private Transform engineAnchor;
         private AudioSource exteriorEngineSource;
         private AudioSource interiorEngineSource;
+        private AudioSource tyres;
+        private AudioLowPassFilter exteriorTone, tyreTone;
+        private MovingSoundPath exteriorPath;
         private AudioSource frontDoorSource;
         private AudioSource rearDoorSource;
         private Transform frontDoorEntryAnchor;
@@ -143,7 +146,7 @@ namespace BarPromenade
                     -(dimensions.Length * 0.5f) + 0.72f));
             exteriorEngineSource = engineAnchor.gameObject.AddComponent<
                 AudioSource>();
-            interiorEngineSource = engineAnchor.gameObject.AddComponent<
+            interiorEngineSource = CreateAnchor("Bus cabin engine", engineAnchor.localPosition).gameObject.AddComponent<
                 AudioSource>();
 
             frontDoorSource = CreateAnchor(
@@ -169,6 +172,12 @@ namespace BarPromenade
                 CityBusAudioMix.InteriorMaximumDistance,
                 CityBusAudioMix.InteriorPriority,
                 0f);
+            exteriorTone = engineAnchor.gameObject.AddComponent<AudioLowPassFilter>();
+            var axle = CreateAnchor("Bus wet tyres", new Vector3(0f, .22f, -dimensions.Length * .26f));
+            tyres = axle.gameObject.AddComponent<AudioSource>();
+            ConfigureEngineSource(tyres, LastRouteCarAudio.GetLoopClip(LastRouteCarLoopKind.Tyres),
+                2f, 31f, CityBusAudioMix.ExteriorPriority + 12, 0f);
+            tyreTone = axle.gameObject.AddComponent<AudioLowPassFilter>();
             ConfigureDoorSource(frontDoorSource, 0.985f);
             ConfigureDoorSource(rearDoorSource, 1.035f);
             ResetDoorState();
@@ -241,11 +250,20 @@ namespace BarPromenade
                 CityBusActor.EngineIdleVolume,
                 CityBusActor.EngineMaximumVolume,
                 speed01);
-            exteriorEngineSource.volume = exteriorVolume * Mathf.Lerp(
+            var path = playerInside ? WorldSoundListener.Clear :
+                exteriorPath.Read(engineAnchor.position, CityBusAudioMix.ExteriorMaximumDistance, transform);
+            exteriorTone.cutoffFrequency = path.MaximumCutoffFrequency;
+            exteriorEngineSource.volume = exteriorVolume * path.VolumeMultiplier * Mathf.Lerp(
                 1f,
                 CityBusAudioMix.ExteriorCabinMultiplier,
                 cabinBlend);
 
+            tyres.volume = speed01 * (.10f + .19f * CityWetSurfaceRegistry.CurrentWetness) *
+                path.VolumeMultiplier * (1f - cabinBlend * .85f);
+            tyres.pitch = Mathf.Lerp(.70f, 1.08f, speed01);
+            tyreTone.cutoffFrequency = Mathf.Min(5400f, path.MaximumCutoffFrequency);
+            if (isRunning && speed01 > .015f) PlayLoop(tyres);
+            else if (tyres.isPlaying) tyres.Stop();
             interiorEngineSource.pitch = Mathf.Lerp(0.70f, 1.10f, speed01);
             interiorEngineSource.volume = Mathf.Lerp(
                     CityBusAudioMix.InteriorIdleVolume,
@@ -297,6 +315,7 @@ namespace BarPromenade
             isRunning = false;
             StopSource(exteriorEngineSource, false);
             StopSource(interiorEngineSource, false);
+            StopSource(tyres, false);
             StopSource(frontDoorSource, true);
             StopSource(rearDoorSource, true);
             cabinBlend = 0f;

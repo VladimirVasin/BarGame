@@ -6,7 +6,23 @@ namespace BarPromenade
     /// short room response. No listener-wide zone or extra ambience bed.</summary>
     public static class CityWorkAudio
     {
-        public static void Configure(AudioSource source, bool interior, float cutoff, float radius,
+        internal static void PlayContact(AudioSource source, AudioLowPassFilter tone, RetroSfxId material,
+            float gain, float openCutoff)
+        {
+            Mix(source, tone, gain, openCutoff,
+                WorldSoundListener.Sample(source.transform.position, source.maxDistance));
+            source.clip = RetroAudioService.EnsureInstalled().GetClip(material);
+            if (source.clip) source.Play();
+        }
+
+        internal static void Mix(AudioSource source, AudioLowPassFilter tone, float gain,
+            float openCutoff, CitySoundOcclusionSample path)
+        {
+            source.volume = gain * path.VolumeMultiplier;
+            tone.cutoffFrequency = Mathf.Min(openCutoff, path.MaximumCutoffFrequency);
+        }
+
+        public static AudioLowPassFilter Configure(AudioSource source, bool interior, float cutoff, float radius,
             bool sourceRoom = true)
         {
             source.spatialBlend = 1f;
@@ -23,7 +39,7 @@ namespace BarPromenade
             filter.cutoffFrequency = cutoff;
             filter.lowpassResonanceQ = 1f;
             // A scene mixer can own the whole room response once for its bus.
-            if (!sourceRoom) return;
+            if (!sourceRoom) return filter;
             var room = source.gameObject.AddComponent<AudioReverbFilter>();
             room.reverbPreset = AudioReverbPreset.User;
             room.dryLevel = 0f;
@@ -37,6 +53,37 @@ namespace BarPromenade
             room.reverbDelay = interior ? .026f : .018f;
             room.diffusion = interior ? 75f : 45f;
             room.density = interior ? 70f : 35f;
+            return filter;
+        }
+    }
+
+    // Playback, phase and dry gain belong to the existing machinery owner.
+    internal struct CityWorkSoundPath
+    {
+        private readonly AudioSource source;
+        private readonly AudioLowPassFilter tone;
+        private readonly float cutoff;
+        private MovingSoundPath path;
+
+        internal CityWorkSoundPath(AudioSource source, AudioLowPassFilter tone)
+        {
+            this.source = source;
+            this.tone = tone;
+            cutoff = tone.cutoffFrequency;
+            path = default;
+        }
+
+        internal void Apply(float gain, Transform emitter = null)
+        {
+            var sample = path.Read(source.transform.position, source.maxDistance, emitter);
+            CityWorkAudio.Mix(source, tone, gain, cutoff, sample);
+        }
+
+        internal void ApplyContact(float gain, Transform emitter = null)
+        {
+            // The same contact voice can move between a crate, a latch and a bench.
+            var sample = WorldSoundListener.Sample(source.transform.position, source.maxDistance, emitter);
+            CityWorkAudio.Mix(source, tone, gain, cutoff, sample);
         }
     }
 }

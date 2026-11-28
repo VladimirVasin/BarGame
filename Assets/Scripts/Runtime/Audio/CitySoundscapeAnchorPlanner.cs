@@ -13,7 +13,7 @@ namespace BarPromenade
     {
         public static CitySoundscapePlan Create(
             CityLayout layout,
-            CityDecorationPlan decorationPlan)
+            CityDecorationPlan decorationPlan, bool includeRidge = true)
         {
             if (layout == null)
             {
@@ -35,6 +35,21 @@ namespace BarPromenade
                     sources);
             }
 
+            if (includeRidge) AddRidge(layout, sources);
+            AddFountains(layout, decorationPlan, sources);
+            AddPlaygrounds(layout, decorationPlan, sources);
+            return CitySoundscapePlanner.Create(layout.Seed, sources);
+        }
+
+        internal static CitySoundscapePlan CreateRidge(CityLayout layout)
+        {
+            var sources = new List<CitySoundSourceDescriptor>();
+            AddRidge(layout, sources);
+            return CitySoundscapePlanner.Create(layout.Seed, sources);
+        }
+
+        private static void AddRidge(CityLayout layout, List<CitySoundSourceDescriptor> sources)
+        {
             foreach (var house in CityHillsideNeighborhoodPlan.ForLayout(layout).SharedCourtBuildings)
             {
                 if (house.OnSummitStreet && house.HasGlazedBay)
@@ -52,9 +67,6 @@ namespace BarPromenade
                         house.PegWorld, new Bounds(house.PegWorld - Vector3.up * .30f, new Vector3(.80f, .64f, .18f)),
                         8f, CitySourceSoundPlayback.Loop, CitySoundScheduleInterval.None));
             }
-            AddFountains(layout, decorationPlan, sources);
-            AddPlaygrounds(layout, decorationPlan, sources);
-            return CitySoundscapePlanner.Create(layout.Seed, sources);
         }
 
         private static void AddPointOfInterest(

@@ -16,6 +16,7 @@ namespace BarPromenade
         {
             private readonly AudioSource[] sources;
             private readonly Voice[] voices;
+            private readonly AudioLowPassFilter[] filters;
             private readonly object[] presentationOwners;
             private readonly bool[] previousIgnoreListenerPause;
             private readonly bool[] presentationPaused;
@@ -29,6 +30,7 @@ namespace BarPromenade
             {
                 sources = new AudioSource[sourceCount];
                 voices = new Voice[sourceCount];
+                filters = new AudioLowPassFilter[sourceCount];
                 presentationOwners = new object[sourceCount];
                 previousIgnoreListenerPause = new bool[sourceCount];
                 presentationPaused = new bool[sourceCount];
@@ -51,6 +53,11 @@ namespace BarPromenade
                         outputGroup == GameAudioGroup.Ui;
                     GameAudioMixer.Route(source, outputGroup);
                     sources[index] = source;
+                    if (outputGroup == GameAudioGroup.SfxWorld)
+                    {
+                        filters[index] = sourceObject.AddComponent<AudioLowPassFilter>();
+                        filters[index].lowpassResonanceQ = 1f;
+                    }
                 }
             }
 
@@ -127,6 +134,16 @@ namespace BarPromenade
                 source.pitch = pitch;
                 source.priority = definition.Priority;
                 source.spatialBlend = definition.SpatialBlend;
+                if (filters[targetIndex] && GameAudioMixer.CurrentProfile != GameAudioProfile.CombatWarehouse)
+                {
+                    var path = definition.SpatialBlend > 0f ? WorldSoundListener.Sample(position + Vector3.up * .08f, source.maxDistance)
+                        : WorldSoundListener.Clear;
+                    source.volume *= path.VolumeMultiplier;
+                    filters[targetIndex].cutoffFrequency = path.MaximumCutoffFrequency;
+                    if (RetroSfxLibrary.IsGroundStep(definition.Id) && !path.IsOccluded)
+                        WorldSoundListener.ReflectStep(clip, position, source.volume, pitch);
+                }
+                else if (filters[targetIndex]) filters[targetIndex].cutoffFrequency = 22000f;
                 source.Play();
 
                 voices[targetIndex] = new Voice

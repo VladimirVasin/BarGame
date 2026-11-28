@@ -5,6 +5,10 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-28
 
+Ridge and lower City rebind one sound pool. Real roofs, wind, road wetness and gait drive local sound. Cold Ridge starts publish shared road polygons atomically. The lower district accepts the seated shelter resident's existing glare pose. `RidgeSound_FollowsShelterWalkingFeetAndDistrictStreaming` verified rain on canvas, a nearby ambient walker’s footfall and pool rebinding after unloading. The street and umbrella stereo takes retain the same gain.
+
+Port, cannery, laundry and keeper cues share structural filtering at their existing anchors. The step reflection stays fixed while the listener moves. `RidgeSound_MachineryFiltersThroughADeckAndClearsAtItsEdge` verified level and tone on both sides of a deck edge.
+
 NPCs shield their eyes from unobstructed flashlight and headlight beams. Reviewed the open palm and turned face under the chest lamp. `DirectBeams_ShieldEyesWithOpenPalmAndReleaseBehindCover` verifies palm alignment, occupied hands, cover and pool release.
 
 Ravine households have linked belongings and individual pawn quotes. The child's bed sits along the wall, the camp bed folds against the rear wall, and the mirror grips the sill. Reviewed the pillow, clamp and apartment views. `RavineFamiliesFromRoomsToPawnshop` checks the reflected ray to the far railing, stairs, dismiss/take and credit at hand contact across sale pages. Blender round-trips the finds and their grips.

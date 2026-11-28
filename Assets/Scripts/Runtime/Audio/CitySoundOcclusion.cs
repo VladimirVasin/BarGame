@@ -34,7 +34,7 @@ namespace BarPromenade
         public const float MultipleBlockerCutoff = 900f;
 
         /// <summary>
-        /// One owner's immutable 2D building geometry. Storage is bounded by its
+        /// One owner's immutable building prisms. Storage is bounded by its
         /// finite lot list and authored collision polygons; it retains no world,
         /// listener or static cache. Moving endpoints require no geometry allocation.
         /// </summary>
@@ -44,7 +44,14 @@ namespace BarPromenade
             {
                 internal readonly Rect Bounds;
                 internal readonly Vector2[][] Polygons;
-                internal Footprint(Rect bounds, Vector2[][] polygons) { Bounds = bounds; Polygons = polygons; }
+                internal readonly float Floor, Roof;
+                internal Footprint(Rect bounds, Vector2[][] polygons, BuildingLot lot)
+                {
+                    Bounds = bounds;
+                    Polygons = polygons;
+                    Floor = lot.Center.y;
+                    Roof = Floor + lot.Height;
+                }
             }
 
             private readonly Footprint[] footprints;
@@ -93,7 +100,7 @@ namespace BarPromenade
                         Bounds world = lot.WorldBounds;
                         bounds = Rect.MinMaxRect(world.min.x, world.min.z, world.max.x, world.max.z);
                     }
-                    footprints[buildings++] = new Footprint(bounds, parts);
+                    footprints[buildings++] = new Footprint(bounds, parts, lot);
                 }
                 BuildingCount = buildings; PolygonCount = polygons; VertexCount = vertices;
             }
@@ -105,7 +112,7 @@ namespace BarPromenade
                 for (int index = 0; index < BuildingCount; index++)
                 {
                     Footprint footprint = footprints[index];
-                    if (Blocks(start, end, footprint.Bounds, footprint.Polygons) && ++blockers >= 2) break;
+                    if (BlocksPrism(start, end, source.y, listener.y, footprint.Floor, footprint.Roof, footprint.Bounds, footprint.Polygons) && ++blockers >= 2) break;
                 }
                 return Result(blockers);
             }
@@ -142,7 +149,7 @@ namespace BarPromenade
                     bounds.max.z);
                 IReadOnlyList<Vector2[]> polygons = lot.HasFacadeRotation || lot.BuildingVariant > 0
                     ? lot.CreateCollisionPolygons() : null;
-                if (!Blocks(start, end, rect, polygons))
+                if (!BlocksPrism(start, end, source.y, listener.y, bounds.min.y, bounds.max.y, rect, polygons))
                 {
                     continue;
                 }
@@ -169,21 +176,31 @@ namespace BarPromenade
                     OneBlockerCutoff)
                 : new CitySoundOcclusionSample(0, 1f, float.MaxValue);
 
-        private static bool Blocks(Vector2 start, Vector2 end, Rect rect, IReadOnlyList<Vector2[]> polygons)
+        private static bool BlocksPrism(Vector2 start, Vector2 end, float startY, float endY,
+            float floor, float roof, Rect rect, IReadOnlyList<Vector2[]> polygons)
         {
-            if (polygons != null)
+            if (!SegmentIntersectsRect(start, end, rect)) return false;
+            float enter = 0f, exit = 1f;
+            float dy = endY - startY;
+            if (!Clip(-dy, startY - floor, ref enter, ref exit) ||
+                !Clip(dy, roof - startY, ref enter, ref exit)) return false;
+            bool startInHeight = startY >= floor && startY <= roof;
+            bool endInHeight = endY >= floor && endY <= roof;
+            Vector2 delta = end - start;
+            Vector2 low = start + enter * delta, high = start + exit * delta;
+            if (polygons == null)
+                return !(startInHeight && rect.Contains(start) || endInHeight && rect.Contains(end)) &&
+                    SegmentIntersectsRect(low, high, rect);
+
+            bool crosses = false;
+            for (int i = 0; i < polygons.Count; i++)
             {
-                bool inside = false, intersects = false;
-                for (int index = 0; index < polygons.Count; index++)
-                {
-                    Vector2[] polygon = polygons[index];
-                    inside |= CityRoadPolygon.Contains(polygon, start) || CityRoadPolygon.Contains(polygon, end);
-                    intersects |= SegmentIntersectsPolygon(start, end, polygon);
-                }
-                if (inside || !intersects) return false;
+                var polygon = polygons[i];
+                if (startInHeight && CityRoadPolygon.Contains(polygon, start) ||
+                    endInHeight && CityRoadPolygon.Contains(polygon, end)) return false;
+                crosses |= SegmentIntersectsPolygon(low, high, polygon);
             }
-            else if (rect.Contains(start) || rect.Contains(end)) return false;
-            return SegmentIntersectsRect(start, end, rect);
+            return crosses;
         }
 
         public static bool SegmentIntersectsRect(

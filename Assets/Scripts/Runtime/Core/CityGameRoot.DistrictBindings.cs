@@ -213,22 +213,9 @@ namespace BarPromenade
                         Camera.transform,
                         world.SeacoastPlan,
                         Layout.BuildingMasses);
-                // The city sound layer is composed only after every moving
-                // physical owner exists. Its plan contains no anonymous fallback
-                // emitters: missing fixtures stay silent.
-                SoundscapePlan = CitySoundscapeAnchorPlanner.Create(
-                    Layout,
-                    world.DecorationPlan);
-                Soundscape = CitySoundscapeDirector.Create(
-                    owner,
-                    SoundscapePlan,
-                    Camera.transform,
-                    Layout,
-                    DryingYardBabushkas,
-                    WeighbridgeNeedle,
-                    world.PlaygroundSwings,
-                    () => Night.NightFactor);
             }
+            district.Sounds = district.Ridge ? CitySoundscapeAnchorPlanner.CreateRidge(Layout)
+                : CitySoundscapeAnchorPlanner.Create(Layout, world.DecorationPlan, districtPlan == null);
 
             World = before;
             yield return new CompositionStep("district_interactions", .92f);

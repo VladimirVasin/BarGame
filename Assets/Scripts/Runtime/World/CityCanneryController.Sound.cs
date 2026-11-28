@@ -6,8 +6,10 @@ namespace BarPromenade
     {
         private readonly AudioSource[] voices = new AudioSource[4];
         private readonly AudioClip[] soundClips = new AudioClip[4];
+        private readonly CityWorkSoundPath[] voicePaths = new CityWorkSoundPath[4];
         private Transform truckEngineAnchor, reverseAlarmAnchor;
         private AudioSource arrivalHorn;
+        private CityWorkSoundPath arrivalPath;
         private AudioClip arrivalHornClip;
         private bool hasHornSample, hornPaused;
         private double previousHornSeconds;
@@ -38,8 +40,9 @@ namespace BarPromenade
                 source.clip = soundClips[i];
                 source.volume = 0;
                 source.pitch = i == 0 ? .74f : i == 1 ? 1.08f : i == 2 ? .45f : 1f;
-                CityWorkAudio.Configure(source, i == 1 || i == 2, i == 2 ? 2800f : i == 1 ? 6500f : 4000f,
-                    i == 0 ? 32f : 24f);
+                var tone = CityWorkAudio.Configure(source, i == 1 || i == 2,
+                    i == 2 ? 2800f : i == 1 ? 6500f : 4000f, i == 0 ? 32f : 24f);
+                voicePaths[i] = new CityWorkSoundPath(source, tone);
                 voices[i] = source;
             }
             var hornHost = new GameObject("Delivery truck arrival horn");
@@ -49,7 +52,7 @@ namespace BarPromenade
             arrivalHorn.loop = false;
             arrivalHorn.clip = arrivalHornClip = CreateArrivalHorn();
             arrivalHorn.volume = .30f;
-            CityWorkAudio.Configure(arrivalHorn, false, 3400f, 64f);
+            arrivalPath = new CityWorkSoundPath(arrivalHorn, CityWorkAudio.Configure(arrivalHorn, false, 3400f, 64f));
             arrivalHorn.minDistance = 6f;
             CreateProcessSounds(seed);
         }
@@ -78,7 +81,9 @@ namespace BarPromenade
                     i == 3 ? IsReversing && !IsBlocked :
                     i == 1 ? Production.Stage == CityCanneryProductionStage.Seal && !IsBlocked :
                     Production.Stage == CityCanneryProductionStage.Heat && !IsBlocked);
-                source.volume = active ? (i == 0 ? .24f : i == 1 ? .32f : i == 2 ? .26f : .26f) : 0;
+                if (active)
+                    voicePaths[i].Apply(i == 0 ? .24f : i == 1 ? .32f : .26f, i == 0 || i == 3 ? Truck : null);
+                else source.volume = 0f;
                 if (active && !source.isPlaying) source.Play();
                 else if (!active && source.isPlaying) source.Stop();
             }
@@ -119,6 +124,7 @@ namespace BarPromenade
                 if (before.Batch == Snapshot.Batch && before.Stage == Snapshot.Stage &&
                     before.Seconds < trigger && Snapshot.Seconds >= trigger)
                 {
+                    arrivalPath.ApplyContact(.30f, Truck);
                     arrivalHorn.Play();
                     lastHornBatch = Snapshot.Batch;
                     ArrivalHornPairsPlayed++;

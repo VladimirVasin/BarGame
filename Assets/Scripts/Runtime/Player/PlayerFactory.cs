@@ -124,6 +124,7 @@ namespace BarPromenade
 
             // The steps of everyone else, heard from where he stands: on
             // the hero because he is the one object every scene builds.
+            player.AddComponent<WorldSoundListener>();
             player.AddComponent<NpcFootstepDirector>()
                 .Initialize(player.transform);
 

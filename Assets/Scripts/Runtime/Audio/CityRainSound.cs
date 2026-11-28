@@ -140,6 +140,14 @@ namespace BarPromenade
             }
         }
 
+        private float cover;
+        internal void SetCover(float value)
+        {
+            if (Mathf.Abs(value - cover) < .001f) return;
+            cover = Mathf.Clamp01(value);
+            ApplyLevel(Intensity);
+        }
+
         public void SetIntensity(float intensity)
         {
             float clamped = Mathf.Clamp01(intensity);
@@ -149,6 +157,11 @@ namespace BarPromenade
             }
 
             appliedIntensity = clamped;
+            ApplyLevel(clamped);
+        }
+
+        private void ApplyLevel(float clamped)
+        {
             if (Source == null)
             {
                 return;
@@ -161,11 +174,11 @@ namespace BarPromenade
             }
 
             Source.volume =
-                MaximumVolume * Mathf.Pow(clamped, 0.85f);
+                MaximumVolume * Mathf.Pow(clamped, 0.85f) * Mathf.Lerp(1f, .34f, cover);
             ToneFilter.cutoffFrequency = Mathf.Lerp(
                 QuietCutoffFrequency,
                 HeavyCutoffFrequency,
-                clamped);
+                clamped) * Mathf.Lerp(1f, .48f, cover);
         }
 
         private void OnDestroy()

@@ -1024,23 +1024,21 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   never replays interrupted one-shots;
 - separate scene-local procedural City, Bar, Home and Stairwell ambience beds,
   plus a nine-voice causal City runtime, an eight-source Home spatial soundscape
-  and a three-source Stairwell soundscape. City's former non-spatial electrical
-  content is gone: its bed is only a quiet diffuse air floor. Immutable
-  descriptors bind sound to visible waterworks, drying rack, carpet,
-  last-route speaker and park-fountain bounds. The director owns five loop,
-  three scheduled and one action voice, creates only deterministic quantized
-  mono `22050 Hz` clips, activates them inside their finite radii and applies
-  coarse building-mass occlusion. Carpet impacts fire on the authored contact
-  frame. `CityWorkAudio` routes anchored mono port/cannery sources to
-  `SfxWorld`, with full 3D, no pan/spread/Doppler and `0 dB` direct level.
+  and a three-source Stairwell soundscape. Lower City and Ridge share five loop,
+  three scheduled and one action voice. Loaded fixtures own deterministic 22050 Hz
+  mono cues over quiet air. Carpet and awl follow hand contacts. Street NPC soles
+  sound on the stamped surface. Walls and decks filter speech, steps and traffic.
+  A nearby wall returns a short reflection from a fixed point.
+  `CityWorkAudio` routes mono local work sounds to `SfxWorld` in 3D without Doppler.
+  The port, cannery and laundry share the listener's structural filtering.
   Source reverb is `.28 s` outside, `.95 s` inside; linear ranges `3–32/2–24 m`.
   Zone mix is zero; City's mixer return stays. Crane audio follows the hoist
   drive; retort stays in its body. Factory fan/contact cues share this route;
   an empty scale and unbound swing are silent.
   Surf is one fully spatial voice following the nearest point of the finite
   waterline and reuses the same building-mass attenuation; thunder is placed
-  at the deterministic lightning azimuth, and
-  rain alone stays diffuse because it is a field around the listener. Home
+  at the lightning azimuth. Roofs soften diffuse rain. Two pooled drops hit exposed
+  stone, sheet or canvas, and a real crown rustles with the wind. Home
   combines a calm room bed, synchronized co-located closed
   and open refrigerator loops, balcony night air and sparse soft wood,
   radiator, radio and bathroom details, plus a dedicated fluorescent crackle

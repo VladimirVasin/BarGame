@@ -38,6 +38,7 @@ namespace BarPromenade
         private Vector3 work, waypoint, canopy, restBasket, handoff;
         private Renderer[] dynamicRenderers;
         private AudioSource hum;
+        private CityWorkSoundPath humPath;
         private AudioClip humClip;
         private bool initialized, audioPaused;
 
@@ -92,7 +93,7 @@ namespace BarPromenade
             audio.SetParent(transform, false); audio.position = Part("ANCHOR_MachineAudio").position;
             hum = audio.gameObject.AddComponent<AudioSource>();
             hum.playOnAwake = false; hum.loop = true; hum.volume = .075f;
-            CityWorkAudio.Configure(hum, true, 1250f, 13f);
+            humPath = new CityWorkSoundPath(hum, CityWorkAudio.Configure(hum, true, 1250f, 13f));
             float[] samples = StairwellSoundscapeSynthesis.GenerateVentilationLoopSamples();
             humClip = AudioClip.Create("Laundry machine ventilation", samples.Length, 1,
                 StairwellSoundscapeSynthesis.SampleRate, false);
@@ -126,6 +127,7 @@ namespace BarPromenade
             }
             else if (audible)
             {
+                humPath.Apply(.075f);
                 if (audioPaused) hum.UnPause();
                 if (!hum.isPlaying)
                 {

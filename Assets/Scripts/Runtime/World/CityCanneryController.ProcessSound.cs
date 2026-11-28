@@ -5,10 +5,12 @@ namespace BarPromenade
     public sealed partial class CityCanneryController
     {
         private readonly AudioSource[] processVoices = new AudioSource[4];
+        private readonly CityWorkSoundPath[] processPaths = new CityWorkSoundPath[4];
         private readonly AudioClip[] processClips = new AudioClip[5];
         private readonly double[] lastProcessContact = { -1d, -1d, -1d, -1d };
         private readonly bool[] processVoicePaused = new bool[4];
         private AudioSource coldStoreFan;
+        private CityWorkSoundPath coldStorePath;
         private Transform coldStoreSoundAnchor;
         private double previousProcessSeconds;
         private bool hasProcessSample, coldStorePaused;
@@ -25,11 +27,11 @@ namespace BarPromenade
             for (int i = 0; i < processVoices.Length; i++)
             {
                 processClips[i] = CreateProcessContactClip(i, seed);
-                processVoices[i] = CreateFactoryVoice(names[i], false, i == 3 ? 3100f : 5500f, 15f);
+                processVoices[i] = CreateFactoryVoice(names[i], false, i == 3 ? 3100f : 5500f, 15f, out processPaths[i]);
                 processVoices[i].clip = processClips[i];
             }
             coldStoreSoundAnchor = Require(equipment, "ANCHOR_ColdStoreSound");
-            coldStoreFan = CreateFactoryVoice("Cannery cold-store fan", true, 1500f, 12f);
+            coldStoreFan = CreateFactoryVoice("Cannery cold-store fan", true, 1500f, 12f, out coldStorePath);
             float[] fan = StairwellSoundscapeSynthesis.GenerateVentilationLoopSamples();
             processClips[4] = AudioClip.Create("Cannery refrigeration", fan.Length, 1,
                 StairwellSoundscapeSynthesis.SampleRate, false);
@@ -38,14 +40,14 @@ namespace BarPromenade
             coldStoreFan.volume = .09f;
         }
 
-        private AudioSource CreateFactoryVoice(string label, bool loop, float cutoff, float radius)
+        private AudioSource CreateFactoryVoice(string label, bool loop, float cutoff, float radius, out CityWorkSoundPath path)
         {
             var host = new GameObject(label);
             host.transform.SetParent(factory, false);
             AudioSource source = host.AddComponent<AudioSource>();
             source.playOnAwake = false;
             source.loop = loop;
-            CityWorkAudio.Configure(source, true, cutoff, radius);
+            path = new CityWorkSoundPath(source, CityWorkAudio.Configure(source, true, cutoff, radius));
             return source;
         }
 
@@ -62,8 +64,12 @@ namespace BarPromenade
             {
                 if (coldStoreFan.isPlaying) { coldStoreFan.Pause(); coldStorePaused = true; }
             }
-            else if (coldStorePaused) { coldStoreFan.UnPause(); coldStorePaused = false; }
-            else if (!coldStoreFan.isPlaying) coldStoreFan.Play();
+            else
+            {
+                coldStorePath.Apply(.09f);
+                if (coldStorePaused) { coldStoreFan.UnPause(); coldStorePaused = false; }
+                else if (!coldStoreFan.isPlaying) coldStoreFan.Play();
+            }
 
             double elapsed = hasProcessSample ? WorkingSeconds - previousProcessSeconds : 0d;
             bool jumped = hasProcessSample && (elapsed < 0d || elapsed > .35d);
@@ -127,7 +133,7 @@ namespace BarPromenade
             AudioSource source = processVoices[voice];
             if (!continuous || previousProcessSeconds >= at || !ProcessAudible(source, point)) return;
             source.transform.position = point;
-            source.volume = gain;
+            processPaths[voice].ApplyContact(gain);
             source.Play();
             processVoicePaused[voice] = false;
             ProcessContactsPlayed++;

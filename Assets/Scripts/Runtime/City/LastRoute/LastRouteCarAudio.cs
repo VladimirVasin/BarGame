@@ -703,6 +703,7 @@ namespace BarPromenade
         private AudioSource engineSource;
         private AudioSource cabinSource;
         private AudioSource tyreSource;
+        private MovingSoundPath exteriorPath;
         private AudioSource deckSource;
         private AudioSource cueSource;
         private AudioSource radioTuningSource;
@@ -1153,9 +1154,11 @@ namespace BarPromenade
                       : 1f)
                 : 0f;
             engineSource.pitch = LastRouteCarAudioMix.EvaluateEnginePitch(rpm);
-            engineSource.volume = exterior;
+            var path = cabinBlend > .99f ? WorldSoundListener.Clear :
+                exteriorPath.Read(engineSource.transform.position, engineSource.maxDistance, transform);
+            engineSource.volume = exterior * path.VolumeMultiplier;
             engineTone.cutoffFrequency =
-                LastRouteCarAudioMix.EvaluateEngineCutoff(load);
+                Mathf.Min(LastRouteCarAudioMix.EvaluateEngineCutoff(load), path.MaximumCutoffFrequency);
             SyncLoop(engineSource, audible);
 
             cabinSource.pitch = LastRouteCarAudioMix.EvaluateCabinPitch(rpm);
@@ -1169,9 +1172,9 @@ namespace BarPromenade
                               speed,
                               surface) *
                           Mathf.Lerp(1f, 0.8f, cabinBlend);
-            tyreSource.volume = tyres;
+            tyreSource.volume = tyres * path.VolumeMultiplier;
             tyreTone.cutoffFrequency =
-                LastRouteCarAudioMix.EvaluateTyreCutoff(surface) *
+                Mathf.Min(LastRouteCarAudioMix.EvaluateTyreCutoff(surface), path.MaximumCutoffFrequency) *
                 Mathf.Lerp(1f, 0.6f, cabinBlend);
             SyncLoop(tyreSource, tyres > 0.001f);
         }
@@ -1337,7 +1340,7 @@ namespace BarPromenade
             GameAudioMixer.Route(source, GameAudioGroup.SfxWorld);
         }
 
-        private static AudioClip GetLoopClip(LastRouteCarLoopKind kind)
+        internal static AudioClip GetLoopClip(LastRouteCarLoopKind kind)
         {
             int index = (int)kind;
             if (LoopClips[index] == null)

@@ -83,6 +83,7 @@ namespace BarPromenade
         {
             public AudioSource Source;
             public AudioLowPassFilter Filter;
+            public CitySoundSourceDescriptor Descriptor;
             public double StartedAt = double.NegativeInfinity;
         }
 
@@ -385,23 +386,29 @@ namespace BarPromenade
         {
             for (int index = 0; index < sources.Count; index++)
             {
-                CitySoundSourceDescriptor descriptor = sources[index];
-                CitySourceSoundDefinition definition =
-                    CitySourceSoundSynthesis.GetDefinition(descriptor.Cue);
-                LoopVoice voice = loopVoices[index];
-                voice.Descriptor = descriptor;
-                voice.Definition = definition;
-                voice.Source.transform.position = descriptor.WorldPosition;
-                voice.Source.clip = GetRuntimeClip(
-                    descriptor,
-                    0u);
-                ConfigureSpatialDefinition(
-                    voice.Source,
-                    definition,
-                    descriptor.AudibleRadius);
-                voice.Filter.cutoffFrequency =
-                    definition.LowPassFrequency;
+                BindLoop(loopVoices[index], sources[index]);
             }
+        }
+
+        private void BindLoop(LoopVoice voice, CitySoundSourceDescriptor descriptor)
+        {
+            CitySourceSoundDefinition definition =
+                CitySourceSoundSynthesis.GetDefinition(descriptor.Cue);
+            voice.Descriptor = descriptor;
+            voice.Definition = definition;
+            voice.OcclusionBlockers = 0;
+            voice.OcclusionVolume = 1f;
+            voice.OcclusionCutoff = float.MaxValue;
+            voice.Source.transform.position = descriptor.WorldPosition;
+            voice.Source.clip = GetRuntimeClip(
+                descriptor,
+                0u);
+            ConfigureSpatialDefinition(
+                voice.Source,
+                definition,
+                descriptor.AudibleRadius);
+            voice.Filter.cutoffFrequency =
+                definition.LowPassFrequency;
         }
 
         private void StartSchedules(
@@ -472,6 +479,17 @@ namespace BarPromenade
             }
         }
 
+        private CitySoundOcclusionSample PathTo(Vector3 source, float radius)
+        {
+            var ear = WorldSoundListener.Active;
+            var buildings = occlusionGeometry.Evaluate(source, ear ? ear.Ear : listener.position);
+            if (!ear) return buildings;
+            var local = WorldSoundListener.Sample(source, radius);
+            return new CitySoundOcclusionSample(Mathf.Max(buildings.BlockerCount, local.BlockerCount),
+                Mathf.Min(buildings.VolumeMultiplier, local.VolumeMultiplier),
+                Mathf.Min(buildings.MaximumCutoffFrequency, local.MaximumCutoffFrequency));
+        }
+
         private void UpdateLoopVoices(
             float deltaTime,
             WindSample wind,
@@ -498,12 +516,10 @@ namespace BarPromenade
                 bool shouldPlay =
                     drive > 0.01f &&
                     distance <= descriptor.AudibleRadius + 1.5f;
-                if (refreshOcclusion)
+                if (refreshOcclusion && shouldPlay)
                 {
                     CitySoundOcclusionSample occlusion =
-                        occlusionGeometry.Evaluate(
-                            descriptor.WorldPosition,
-                            listener.position);
+                        PathTo(descriptor.WorldPosition, descriptor.AudibleRadius);
                     voice.OcclusionVolume = occlusion.VolumeMultiplier;
                     voice.OcclusionCutoff =
                         occlusion.MaximumCutoffFrequency;
@@ -776,9 +792,7 @@ namespace BarPromenade
             Vector3 worldPosition =
                 positionOverride ?? descriptor.WorldPosition;
             CitySoundOcclusionSample occlusion =
-                occlusionGeometry.Evaluate(
-                    worldPosition,
-                    listener.position);
+                PathTo(worldPosition, descriptor.AudibleRadius);
 
             voice.Source.Stop();
             voice.Source.transform.position = worldPosition;
@@ -929,7 +943,66 @@ namespace BarPromenade
                 GameSessionState.GameTimeOfDayMinutes;
         }
 
-        private void OnDestroy()
+        internal void SetLoadedDistricts(CitySoundscapePlan next,
+            IReadOnlyList<DryingYardBabushkaPresentation> babushkas, CityWeighbridgeNeedleController needle,
+            IReadOnlyList<CityPlaygroundSwing> swings)
+        {
+            if (next.LoopingSources.Count > LoopVoiceCount) throw new InvalidOperationException("City loop budget exceeded.");
+            UnbindActions();
+            weighbridgeNeedle = needle;
+            previousWeighbridgeDeflection = needle ? needle.Deflection01 : 0f;
+            SubscribeBabushkas(babushkas);
+            SubscribeSwings(swings);
+            // Retain the phase of still-loaded sources when the neighbour streams in.
+            var cursors = new Dictionary<string, CitySoundScheduleCursor>(scheduleCursors);
+            Plan = next;
+            scheduleCursors.Clear();
+            StartSchedules(next.ScheduledSources);
+            foreach (var pair in cursors)
+                if (scheduleCursors.ContainsKey(pair.Key)) scheduleCursors[pair.Key] = pair.Value;
+            foreach (LoopVoice voice in loopVoices)
+            {
+                bool keep = false;
+                foreach (var descriptor in next.LoopingSources)
+                    if (descriptor.StableId == voice.Descriptor?.StableId) { keep = true; break; }
+                if (keep) continue;
+                voice.Source.Stop();
+                voice.Source.clip = null;
+                voice.Source.volume = 0f;
+                voice.Descriptor = null;
+            }
+            for (int index = 0; index < next.LoopingSources.Count; index++)
+            {
+                var descriptor = next.LoopingSources[index];
+                int slot = index;
+                int free = -1;
+                for (; slot < loopVoices.Length; slot++)
+                {
+                    if (loopVoices[slot].Descriptor?.StableId == descriptor.StableId) break;
+                    if (free < 0 && loopVoices[slot].Descriptor == null) free = slot;
+                }
+                if (slot == loopVoices.Length)
+                {
+                    slot = free;
+                    BindLoop(loopVoices[slot], descriptor);
+                }
+                (loopVoices[index], loopVoices[slot]) = (loopVoices[slot], loopVoices[index]);
+            }
+            foreach (var voice in detailVoices)
+                if (voice.Descriptor != null && !HasSource(next, voice.Descriptor.StableId))
+                {
+                    voice.Source.Stop();
+                    voice.Descriptor = null;
+                }
+        }
+
+        private static bool HasSource(CitySoundscapePlan plan, string id)
+        {
+            foreach (var source in plan.Sources) if (source.StableId == id) return true;
+            return false;
+        }
+
+        private void UnbindActions()
         {
             for (int index = 0;
                  index < subscribedBabushkas.Count;
@@ -954,6 +1027,11 @@ namespace BarPromenade
             }
 
             subscribedSwings.Clear();
+        }
+
+        private void OnDestroy()
+        {
+            UnbindActions();
             for (int index = 0; index < loopVoices.Length; index++)
             {
                 loopVoices[index]?.Source?.Stop();

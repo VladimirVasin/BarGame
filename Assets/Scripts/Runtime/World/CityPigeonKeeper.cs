@@ -40,6 +40,7 @@ namespace BarPromenade
         private Pose waterRest, scoopRest, broomRest;
         private NpcHandPose fingers;
         private AudioSource tapSound;
+        private AudioLowPassFilter tapTone;
         private Renderer[] renderers;
         private bool[] visible;
         private bool present = true;
@@ -135,8 +136,7 @@ namespace BarPromenade
             InitializeStablePoseCache();
             tapSound = feeder.gameObject.AddComponent<AudioSource>();
             tapSound.playOnAwake = false;
-            tapSound.volume = .18f;
-            CityWorkAudio.Configure(tapSound, false, 4500f, 11f, false);
+            tapTone = CityWorkAudio.Configure(tapSound, false, 4500f, 11f, false);
             ApplyAt(Calendar());
         }
 
@@ -250,8 +250,7 @@ namespace BarPromenade
             if ((previous < 8.30f && phase >= 8.30f || previous < 9.18f && phase >= 9.18f) &&
                 phase < 10f && Application.isPlaying)
             {
-                if (tapSound.clip == null) tapSound.clip = RetroAudioService.EnsureInstalled().GetClip(RetroSfxId.Clink);
-                tapSound.Play();
+                CityWorkAudio.PlayContact(tapSound, tapTone, RetroSfxId.Clink, .18f, 4500f);
             }
         }
 

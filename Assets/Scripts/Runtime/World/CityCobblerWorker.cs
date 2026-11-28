@@ -36,6 +36,7 @@ namespace BarPromenade
         private bool hidden, retiredAtHome;
         private double previousClock = double.NaN, motionClock, nextPose, nextCamera;
         private Vector3 basePosition;
+        private double lastAwlSample = double.NaN;
 
         public void Configure(CityCobblerSitePlan plan, Transform shell)
         {
@@ -155,6 +156,12 @@ namespace BarPromenade
             body.height = Mathf.Lerp(1.7f, 1.18f, seat);
             body.center = Vector3.up * (body.height * .5f);
             SampleTool(seconds, grip);
+            // A pair of withdrawals returns the awl to the welt at .9 and 1.8 s.
+            if (!seek && !hidden && grip >= .99f && sqrDistance < 16f &&
+                seconds > lastAwlSample && seconds - lastAwlSample < .5d &&
+                AwlContacts(seconds) > AwlContacts(lastAwlSample))
+                RetroAudio.PlayAt(RetroSfxId.AwlInLeather, rightContact.position);
+            lastAwlSample = grip >= .99f ? seconds : double.NaN;
             if (!hidden)
             {
                 if (walking > 0f) Worker.ApplyLocomotion(walking, false, (float)(seconds % 1200d));
@@ -166,6 +173,9 @@ namespace BarPromenade
             else HandContactError = SoleContactError = 0f;
             return true;
         }
+
+        private static double AwlContacts(double time) => 2d * Math.Floor(time / 3.2d) +
+            Math.Min(2d, Math.Floor(time % 3.2d / .9d));
 
         private Vector3 SeatTurn(bool arriving, float towardSeat)
         {
@@ -214,6 +224,7 @@ namespace BarPromenade
         private void OnDisable()
         {
             held = false;
+            lastAwlSample = double.NaN;
             IsUsingLampSwitch = false;
             LampSwitchWeight = LampSwitchContactError = 0f;
             SetLampButton(0f);

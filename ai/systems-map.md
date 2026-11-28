@@ -161,11 +161,11 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | City vegetation | City/Home grass off paths, Ridge trees and shrubs. | `CityGrass{Plan,Surface,Field}`, `CityRidgeVegetationPlan` | Current |
 | Scene and place music | Lodge gate/radio suppression;warehouse pitch.8/loop. Gap: cemetery/church slots empty. | `MusicMix`, `SceneMusicPlayer`, `CombatWarehouseMusicPlayer` | Partial |
 | Common audio mix | Sharedmix;warehouse 3D clicks/whispers:.8/LP2800/World;dryUI;intoxication. | `GameAudioMixer`,`CombatWarehouseAmbiencePlayer` | Current |
-| Port and cannery audio | Local machinery/fan/contact; arrival horn ×2 with longer echo/reverb. Pause/distance/seek own playback. | `CityWorkAudio`, `CityPortSound`, `CityCanneryController.{Sound,ProcessSound}` | Current |
+| Local work audio | Walls filter active machinery and contacts. Arrival horn has a longer tail. | `CityWorkAudio`, `CityPortSound`, `CityCanneryController.{Sound,ProcessSound}`, `CityLaundryController` | Current |
 | Intoxication sound perception | Separate eased audio persists across scenes; speech/music→0.25× over VHS, caption scatter. Sober restores. | `IntoxicationPerceptionRules`, `NpcSpeechVoice`, `SceneMusicPlayer`, `IntoxicationAudioDriver` | Current |
 | Retro SFX and ambience | Cues/ambience share routing/cleanup; config invalidates native banks for bounded lazy recovery. | `RetroSfx`, `RetroAudioService` | Current |
-| Footstep surfaces | Collider triangles/stamps/overlays select hero/NPC cues; three variants each. | `FootstepGround`, `HeroFootstepGround`, `NpcFootstepDirector` | Current |
-| Causal City soundscape | Visible local sources own City sound; bounded schedules and shared routing control the mix. | `CitySound{SourceDescriptor,scapePlan,scapePlanner,SchedulePlanner,Occlusion}` | Current |
+| Footsteps | Gait, stamped soles and nearby walls shape hero/NPC steps. | `HeroFootstepGround`, `NpcFootstepDirector`, `WorldSoundListener` | Current |
+| City soundscape | Districts share one pool. Structures filter sound. Roofs and crowns voice weather. | `CitySoundscapeDirector`, `CityWeatherSoundscape`, `CitySoundOcclusion` | Current |
 | Home alarm clock | Prepared12:00/legacy05:59→06:00; final7 impossible readouts; actual time stays. | `HomeAlarmClock{Plan,Builder,Synthesis}`, `HomeAlarmClock` | Current |
 | Road, park and ground navigation | Masks follow physical bounds; exclusions retain corner overlap, safe eastern street margins stay open. | `RoadWalkableArea`, `CityGroundTraversalPlan{,ner}`, `CityRoadGroundBoundaryPlanner` | Current |
 | Player motor | Tank/aim walk;world-space air inertia/limited steering;ground/snow/context limits. | `PlayerMotor{,.TargetMovement,.Snow}`, `PlayerDirectionalInput` | Current |

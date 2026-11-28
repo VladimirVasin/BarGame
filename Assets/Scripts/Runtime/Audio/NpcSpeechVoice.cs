@@ -67,6 +67,7 @@ namespace BarPromenade
 
         private sealed class SpeechLine
         {
+            public MovingSoundPath Path;
             public uint Version;
             public string Text;
             public RussianVocalizerVoice Voice;
@@ -363,10 +364,11 @@ namespace BarPromenade
         {
             perception = GameTimeScaleRuntime.AudioPerception;
             SpeechLine line = lines[lease];
-            sources[lease].volume = line.BaseVolume * perception.SpeechGain;
+            var path = line.Path.Read(sources[lease].transform.position, sources[lease].maxDistance);
+            sources[lease].volume = line.BaseVolume * perception.SpeechGain * path.VolumeMultiplier;
             sources[lease].pitch = line.BasePitch * perception.PlaybackRate;
             filters[lease].cutoffFrequency = Mathf.Min(line.BaseLowPassFrequencyHz,
-                perception.SpeechLowPassFrequencyHz);
+                Mathf.Min(perception.SpeechLowPassFrequencyHz, path.MaximumCutoffFrequency));
         }
 
         private static void PauseLine(AudioSource source, SpeechLine line)
@@ -401,6 +403,7 @@ namespace BarPromenade
             line.BaseVolume = 0f;
             line.BaseLowPassFrequencyHz = LowPassFrequencyHz;
             line.BasePitch = 1f;
+            line.Path = default;
         }
 
         private void StartAvailableJobs()

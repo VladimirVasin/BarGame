@@ -206,6 +206,49 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
+        internal static IEnumerator RecordRidgeSound(CityGameRoot city, string folder, Vector3 street, Vector3 umbrella)
+        {
+            var mutes = new Dictionary<AudioSource, bool>();
+            float delta = Time.captureDeltaTime, volume = AudioListener.volume;
+            bool recording = false, paused = AudioListener.pause;
+            try
+            {
+                System.IO.Directory.CreateDirectory(folder);
+                Time.captureDeltaTime = .1f;
+                MuteLocalAcceptanceMusic(city, mutes);
+                AudioListener.pause = false;
+                recording = AudioRenderer.Start();
+                Assert.That(recording, Is.True);
+                int rate = AudioSettings.outputSampleRate;
+                Assert.That(AudioSettings.GetConfiguration().speakerMode, Is.EqualTo(AudioSpeakerMode.Stereo));
+                AudioListener.volume = 1f;
+                yield return PumpDistrictAcoustics(city, rate, null, null, 30, false);
+                AudioRenderer.Stop();
+                recording = false;
+                yield return null;
+                recording = AudioRenderer.Start();
+                Assert.That(recording, Is.True);
+                var pcm = new float[rate * 15 * 2];
+                foreach (var point in new[] { (street, "01-ridge-street"), (umbrella, "02-under-the-umbrella") })
+                {
+                    city.Player.Motor.Teleport(point.Item1);
+                    yield return PumpDistrictAcoustics(city, rate, null, null, 30, true);
+                    yield return PumpDistrictAcoustics(city, rate, pcm, null, 180, true);
+                    Assert.That(ProductionAudioRms(pcm), Is.GreaterThan(1e-7));
+                    WritePcmWave(System.IO.Path.Combine(folder, point.Item2 + ".wav"), pcm, rate, 2, 1f);
+                }
+            }
+            finally
+            {
+                AudioListener.volume = 0f;
+                if (recording) AudioRenderer.Stop();
+                foreach (var pair in mutes) if (pair.Key) pair.Key.mute = pair.Value;
+                AudioListener.volume = volume;
+                AudioListener.pause = paused;
+                Time.captureDeltaTime = delta;
+            }
+        }
+
         private static void MuteLocalAcceptanceMusic(CityGameRoot city, Dictionary<AudioSource, bool> original)
         {
             void Mute(SceneMusicPlayer music)

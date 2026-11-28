@@ -397,7 +397,6 @@ namespace BarPromenade
             }
             body.transform.SetPositionAndRotation(feet, Quaternion.LookRotation(facing));
             body.gameObject.SetActive(true);
-            NpcFootstepSources.Unregister(body.transform);
             body.ConfigureCycle(pace, phase);
             if (rest.HasValue)
             {

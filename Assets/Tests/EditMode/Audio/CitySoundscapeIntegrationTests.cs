@@ -147,7 +147,10 @@ namespace BarPromenade.Tests.EditMode
             {
                 CitySoundOcclusionSample expected = CitySoundOcclusion.Evaluate(source, listener, lots);
                 AssertSameOcclusion(geometry.Evaluate(source, listener), expected);
-                AssertSameOcclusion(geometry.Evaluate(source + Vector3.up * 20f, listener + Vector3.up * 100f), expected);
+                Vector3 aboveSource = source + Vector3.up * 20f;
+                Vector3 aboveListener = listener + Vector3.up * 100f;
+                Assert.That(geometry.Evaluate(aboveSource, aboveListener).BlockerCount, Is.Zero);
+                Assert.That(CitySoundOcclusion.Evaluate(aboveSource, aboveListener, lots).BlockerCount, Is.Zero);
             }
         }
 

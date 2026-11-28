@@ -76,10 +76,12 @@ namespace BarPromenade
                 ProbeDistance,
                 FootProbeSurface.ProbeMask,
                 QueryTriggerInteraction.Collide);
-            // A full buffer cannot establish which surface is topmost.
-            if (count >= Hits.Length)
+            var hits = Hits;
+            if (count == Hits.Length)
             {
-                return false;
+                hits = Physics.RaycastAll(feet + Vector3.up * ProbeStartHeight, Vector3.down,
+                    ProbeDistance, FootProbeSurface.ProbeMask, QueryTriggerInteraction.Collide);
+                count = hits.Length;
             }
 
             float closest = float.PositiveInfinity;
@@ -87,12 +89,12 @@ namespace BarPromenade
             int triangleIndex = -1;
             for (int index = 0; index < count; index++)
             {
-                RaycastHit hit = Hits[index];
+                RaycastHit hit = hits[index];
                 Collider collider = hit.collider;
                 // Triggers are asked for so a stair's tread collider
                 // counts as the floor; any other trigger - a door volume,
                 // the hero's own cloth - is not a floor.
-                if (collider == null ||
+                if (collider == null || collider is CharacterController ||
                     (collider.isTrigger &&
                      !FootProbeSurface.IsProbeSurface(collider)) ||
                     (hero != null &&

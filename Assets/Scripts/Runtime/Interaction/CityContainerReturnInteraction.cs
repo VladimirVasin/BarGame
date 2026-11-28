@@ -147,7 +147,7 @@ namespace BarPromenade
                     return;
                 }
                 committed = true;
-                if (glass) RetroAudio.PlayAt(RetroSfxId.BinFoundGlass, glass.position);
+                if (glass) RetroAudio.PlayAt(RetroSfxId.BottleInTray, glass.position);
                 if (can) RetroAudio.PlayAt(RetroSfxId.BinFoundMetal, can.position);
             }
             if (elapsed >= 1.13f && batch.gameObject.activeSelf) batch.gameObject.SetActive(false);

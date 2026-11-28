@@ -1235,6 +1235,7 @@ namespace BarPromenade
 
                 GameObject colliderObject =
                     new GameObject($"Tree Collider {index + 1}");
+                colliderObject.AddComponent<CitySoundTree>().Height = 2.1f;
                 colliderObject.transform.SetParent(colliders, false);
                 colliderObject.transform.position =
                     position + (Vector3.up * 1.15f);

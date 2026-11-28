@@ -651,6 +651,7 @@ namespace BarPromenade
                     (World.Cafe != null && World.Cafe.ContainsInterior(camera.transform.position)),
                 new CityEternalRainShaper(),
                 Night.FogField);
+            rainSoundObject.AddComponent<CityWeatherSoundscape>().Initialize(Rain, RainSound, Weather, Layout.Seed);
             GameLogPhases.Report("city", "soundscape_and_weather", stepTimer);
             stepTimer.Restart();
 

@@ -156,6 +156,8 @@ namespace BarPromenade
             var apron = Box("Visitor apron", new Vector3(0f, -.25f, (front + back) * .5f),
                 new Vector3(3f, .5f, front - back));
             FootstepGround.Stamp(apron.gameObject, FootstepGroundKind.Concrete);
+            roof.gameObject.AddComponent<CityRainSoundMaterial>().Contact = RetroSfxId.RainOnSheet;
+            hood.gameObject.AddComponent<CityRainSoundMaterial>().Contact = RetroSfxId.RainOnSheet;
             return new Collider[] { roof, hood };
         }
     }

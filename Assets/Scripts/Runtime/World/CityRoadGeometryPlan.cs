@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using UnityEngine;
@@ -221,8 +222,9 @@ namespace BarPromenade
     public sealed class CityRoadGeometryPlan
     {
         private readonly Dictionary<RoadEdge, CityRoadPath> paths;
-        private readonly Dictionary<RoadEdge, IReadOnlyList<Vector2[]>> corridors = new Dictionary<RoadEdge, IReadOnlyList<Vector2[]>>();
-        private readonly Dictionary<Vector2Int, IReadOnlyList<Vector2[]>> ground = new Dictionary<Vector2Int, IReadOnlyList<Vector2[]>>();
+        // Ridge composition and the menu's lower-city warmup can read the same layout.
+        private readonly ConcurrentDictionary<RoadEdge, IReadOnlyList<Vector2[]>> corridors = new();
+        private readonly ConcurrentDictionary<Vector2Int, IReadOnlyList<Vector2[]>> ground = new();
         private readonly HashSet<Vector2Int> affected = new HashSet<Vector2Int>();
         private readonly HashSet<Vector2Int> replanned = new HashSet<Vector2Int>();
         private readonly HashSet<Vector2Int> inlandGround = new HashSet<Vector2Int>();
@@ -516,9 +518,8 @@ namespace BarPromenade
         public CityRoadPath Get(RoadEdge edge) => paths[edge];
         public IReadOnlyList<Vector2[]> GetCorridor(RoadEdge edge)
         {
-            if (!corridors.TryGetValue(edge, out IReadOnlyList<Vector2[]> polygons))
-            { polygons = Get(edge).Ribbon(width); corridors.Add(edge, polygons); }
-            return polygons;
+            if (corridors.TryGetValue(edge, out var polygons)) return polygons;
+            return corridors.GetOrAdd(edge, Get(edge).Ribbon(width));
         }
         public bool ContainsRoad(RoadEdge edge, Vector2 point)
         {
@@ -615,7 +616,7 @@ namespace BarPromenade
                     else remaining.Add(piece);
                 pieces = remaining;
             }
-            cached = new ReadOnlyCollection<Vector2[]>(pieces); ground.Add(cell, cached); return cached;
+            return ground.GetOrAdd(cell, new ReadOnlyCollection<Vector2[]>(pieces));
         }
     }
 }

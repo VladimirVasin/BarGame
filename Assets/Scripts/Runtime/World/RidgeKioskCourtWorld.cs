@@ -77,6 +77,7 @@ namespace BarPromenade
                 shape.convex = true;
                 shape.isTrigger = true;
                 shape.sharedMesh = canopySurface.sharedMesh;
+                shape.gameObject.AddComponent<CityRainSoundMaterial>().Contact = RetroSfxId.RainOnCanvas;
                 rainShelters.Add(shape);
             }
             SetLens("RidgeKioskCourt_KioskCourtEdgeLamp_KioskLampGlass", EdgeLampGlow);

@@ -375,6 +375,7 @@ namespace BarPromenade
                     tree ? CityWindField.MaximumTreeTravel : CityWindField.MaximumShrubTravel);
             }
             if (!solid || !tree) return;
+            frame.gameObject.AddComponent<CitySoundTree>();
             var trunk = frame.gameObject.AddComponent<BoxCollider>();
             trunk.center = Vector3.up * 1.15f;
             trunk.size = new Vector3(2f * TrunkHalfWidth, 2.3f, 2f * TrunkHalfWidth);

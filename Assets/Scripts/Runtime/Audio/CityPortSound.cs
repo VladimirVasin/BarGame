@@ -21,7 +21,9 @@ namespace BarPromenade
         private readonly AudioClip[] clips = new AudioClip[5];
         private readonly bool[] started = new bool[5];
         private readonly float[] gain = new float[5];
+        private readonly CityWorkSoundPath[] loopPaths = new CityWorkSoundPath[5];
         private AudioSource contact, horn;
+        private CityWorkSoundPath contactPath, hornPath;
         private AudioClip hornClip, arrivalHornClip;
         private AudioEchoFilter hornEcho;
         private AudioReverbFilter hornReverb;
@@ -68,21 +70,21 @@ namespace BarPromenade
             {
                 sound.loops[i] = sound.CreateVoice(names[i], true,
                     i == 4 ? 1700f : i == 0 ? 4000f : i == 3 ? 4200f : 6500f,
+                    out sound.loopPaths[i],
                     i == 4, i == 4 ? 14f : i == 0 ? 48f : 32f);
                 int clipIndex = i == 4 ? 4 : i == 0 ? 0 : i == 3 ? 2 : 1;
                 sound.loops[i].clip = sound.clips[clipIndex];
                 sound.loops[i].pitch = i == 3 ? .62f : i == 2 ? .92f : 1f;
             }
-            sound.contact = sound.CreateVoice("Cargo Landing", false, 6500f);
+            sound.contact = sound.CreateVoice("Cargo Landing", false, 6500f, out sound.contactPath);
             sound.contact.clip = sound.clips[3];
             sound.contact.pitch = .72f;
             sound.contact.volume = .36f;
-            sound.horn = sound.CreateVoice("Trawler Arrival and Departure Horn", false, 1250f);
+            sound.horn = sound.CreateVoice("Trawler Arrival and Departure Horn", false, 1250f, out sound.hornPath, radius: 64f);
             float[] dryHorn = CityOffshoreBoatSynthesis.GenerateHornSamples(seed ^ 0x504F5254, 0);
             sound.hornClip = CreateHornClip("Trawler departure horn", dryHorn, HornTailSeconds);
             sound.arrivalHornClip = CreateHornClip("Trawler arrival horn", dryHorn, ArrivalHornTailSeconds);
             sound.horn.minDistance = 6f;
-            sound.horn.maxDistance = 64f;
             // The roof horn alone has long harbour reflections. The appended
             // zero-input region lets the real DSP ring out on this same local
             // voice, under its distance, pause and lifetime owner.
@@ -112,7 +114,7 @@ namespace BarPromenade
             // darker harbour response. Its own silence padding keeps the tail
             // on the same physical source through pause/distance/cleanup.
             horn.clip = arrival ? arrivalHornClip : hornClip;
-            horn.volume = arrival ? .64f : .32f;
+            hornPath.ApplyContact(arrival ? .64f : .32f, port.Vessel);
             hornEcho.delay = arrival ? 780f : 620f;
             hornEcho.decayRatio = arrival ? .58f : .42f;
             hornEcho.wetMix = arrival ? .45f : .30f;
@@ -162,6 +164,7 @@ namespace BarPromenade
                     now.SecondsInCargo >= CityPortCycle.LandedAtSeconds)
                 {
                     contact.transform.position = port.Cargo[now.CargoIndex].position;
+                    contactPath.ApplyContact(.36f, port.Cargo[now.CargoIndex]);
                     contact.Play();
                     ContactsPlayed++;
                 }
@@ -251,7 +254,9 @@ namespace BarPromenade
                 return;
             }
             gain[index] = Mathf.MoveTowards(gain[index], target, delta * .6f);
-            loops[index].volume = gain[index];
+            if (gain[index] > .0001f)
+                loopPaths[index].Apply(gain[index], index == 0 ? port.Vessel : null);
+            else loops[index].volume = 0f;
             if (gain[index] > .0001f && !started[index])
             {
                 loops[index].Play();
@@ -293,7 +298,8 @@ namespace BarPromenade
             }
         }
 
-        private AudioSource CreateVoice(string name, bool loop, float cutoff, bool interior = false, float radius = 32f)
+        private AudioSource CreateVoice(string name, bool loop, float cutoff, out CityWorkSoundPath path,
+            bool interior = false, float radius = 32f)
         {
             var host = new GameObject(name);
             host.transform.SetParent(transform, false);
@@ -301,7 +307,7 @@ namespace BarPromenade
             source.playOnAwake = false;
             source.loop = loop;
             source.volume = 0f;
-            CityWorkAudio.Configure(source, interior, cutoff, radius);
+            path = new CityWorkSoundPath(source, CityWorkAudio.Configure(source, interior, cutoff, radius));
             return source;
         }
 

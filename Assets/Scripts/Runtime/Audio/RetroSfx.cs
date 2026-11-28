@@ -108,6 +108,12 @@ namespace BarPromenade
         BinFoundMetal,
         BinLastSipSlosh,
         PawnshopWatchTick,
+        BottleOnWood,
+        BottleInTray,
+        AwlInLeather,
+        RainOnCanvas,
+        RainOnSheet,
+        RainOnStone,
         Count
     }
 
@@ -974,10 +980,26 @@ namespace BarPromenade
             new RetroSfxDefinition(RetroSfxId.BinLastSipSlosh, RetroSfxCategory.World,
                 .24f,.30f,1f,1,.10f,1,4096,1500f,0f,86),
             new RetroSfxDefinition(RetroSfxId.PawnshopWatchTick, RetroSfxCategory.World,
-                .42f,.22f,1f,1,.08f,1,4096,4300f,0f,85)
+                .42f,.22f,1f,1,.08f,1,4096,4300f,0f,85),
+            new RetroSfxDefinition(RetroSfxId.BottleOnWood, RetroSfxCategory.World,
+                .14f, .37f, 1f, 2, .06f, 1, 4096, 2600f, .025f, 86),
+            new RetroSfxDefinition(RetroSfxId.BottleInTray, RetroSfxCategory.World,
+                .21f, .43f, 1f, 2, .06f, 1, 4096, 5400f, .035f, 86),
+            new RetroSfxDefinition(RetroSfxId.AwlInLeather, RetroSfxCategory.World,
+                .13f, .22f, 1f, 1, .15f, 1, 4096, 2400f, .05f, 104, 2),
+            new RetroSfxDefinition(RetroSfxId.RainOnCanvas, RetroSfxCategory.World,
+                .10f, .25f, 1f, 2, .04f, 1, 4096, 2200f, .12f, 160, 3),
+            new RetroSfxDefinition(RetroSfxId.RainOnSheet, RetroSfxCategory.World,
+                .13f, .28f, 1f, 2, .04f, 1, 4096, 6000f, .12f, 160, 3),
+            new RetroSfxDefinition(RetroSfxId.RainOnStone, RetroSfxCategory.World,
+                .09f, .23f, 1f, 2, .04f, 1, 4096, 4000f, .13f, 160, 3)
         };
 
         public static int Count => definitions.Length - 1;
+
+        internal static bool IsGroundStep(RetroSfxId id) =>
+            id == RetroSfxId.Footstep || id == RetroSfxId.FootstepSnow || id == RetroSfxId.FootstepSoil ||
+            id == RetroSfxId.FootstepMetal || id >= RetroSfxId.FootstepConcrete && id <= RetroSfxId.FootstepPuddle;
 
         public static RetroSfxDefinition GetDefinition(RetroSfxId id)
         {
@@ -1395,6 +1417,12 @@ namespace BarPromenade
                         time,
                         duration,
                         ref noiseState);
+                case RetroSfxId.BottleOnWood:
+                case RetroSfxId.BottleInTray:
+                case RetroSfxId.AwlInLeather:
+                case RetroSfxId.RainOnCanvas:
+                case RetroSfxId.RainOnSheet:
+                case RetroSfxId.RainOnStone:
                 case RetroSfxId.PawnshopWatchTick:
                 case RetroSfxId.BinPaperRustle:
                 case RetroSfxId.BinFoundGlass:
@@ -1681,6 +1709,18 @@ namespace BarPromenade
             }
             switch (id)
             {
+                case RetroSfxId.BottleOnWood:
+                    return .70f * Strike(0f, 162f, 42f, .44f) + .10f * Strike(.004f, 1345f, 78f, .08f);
+                case RetroSfxId.BottleInTray:
+                    return .53f * Strike(0f, 1510f, 31f, .29f) + .39f * Strike(.008f, 577f, 25f, .36f);
+                case RetroSfxId.AwlInLeather:
+                    return .83f * Rub(142f, 380f) + .19f * Strike(.071f, 207f, 98f, .6f);
+                case RetroSfxId.RainOnCanvas:
+                    return .67f * Strike(0f, 243f, 77f, .46f);
+                case RetroSfxId.RainOnSheet:
+                    return .52f * Strike(0f, 1270f, 42f, .63f) + .21f * Strike(.002f, 2154f, 62f, .28f);
+                case RetroSfxId.RainOnStone:
+                    return .48f * Strike(0f, 713f, 110f, .87f);
                 case RetroSfxId.PawnshopWatchTick:
                     return .30f * Strike(0f, 2320f, 210f, .34f) +
                         .25f * Strike(.20f, 2650f, 230f, .37f) +

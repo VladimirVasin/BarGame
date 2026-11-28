@@ -310,6 +310,14 @@ namespace BarPromenade
             return surfaces.Trace(ray, limit, out hit) && hit.Kind != CityRainSurfaceKind.Cover;
         }
 
+        // Audio reads the last prepared spatial index. It never rebuilds render
+        // geometry or collects moving bodies because a raindrop is due.
+        internal bool ProbeSoundSurface(Ray ray, float distance, out CityRainSurfaceIndex.Contact hit)
+        {
+            hit = default;
+            return !dirty && hasFocus && TryHit(ray, distance, out hit);
+        }
+
         internal bool ProbeSurface(Ray ray, float distance, out CityRainSurfaceIndex.Contact hit)
         {
             if (dirty)

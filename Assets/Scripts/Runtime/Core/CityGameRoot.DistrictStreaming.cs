@@ -58,6 +58,7 @@ namespace BarPromenade
             internal CityBenchNpcRestController BenchRests;
             internal IReadOnlyList<CityStreetUtilityInteraction> StreetUtilities;
             internal IReadOnlyList<Collider> Shelters;
+            internal CitySoundscapePlan Sounds;
 
             internal CityDistrict(bool ridge, Transform root)
             {
@@ -225,8 +226,29 @@ namespace BarPromenade
             if (lowerDistrict?.Shelters != null) shelters.AddRange(lowerDistrict.Shelters);
             if (ridgeDistrict?.Shelters != null) shelters.AddRange(ridgeDistrict.Shelters);
             Rain.SetLocalShelters(shelters);
+            RefreshDistrictSounds();
             GameObject ridge = RidgeScope;
             Rain.Contacts?.BindDistrict(ridge != null ? ridge.transform : null, Cannery?.Truck);
+        }
+
+        private void RefreshDistrictSounds()
+        {
+            var low = lowerDistrict?.Sounds;
+            var high = ridgeDistrict?.Sounds;
+            if (low == null && high == null) return;
+            if (low != null && high != null)
+            {
+                var sources = new List<CitySoundSourceDescriptor>(low.Sources);
+                sources.AddRange(high.Sources);
+                SoundscapePlan = CitySoundscapePlanner.Create(Layout.Seed, sources);
+            }
+            else SoundscapePlan = low ?? high;
+            var swings = lowerDistrict?.World?.PlaygroundSwings;
+            if (Soundscape == null)
+                Soundscape = CitySoundscapeDirector.Create(transform, SoundscapePlan, Camera.transform, Layout,
+                    DryingYardBabushkas, WeighbridgeNeedle, swings, () => Night.NightFactor);
+            else
+                Soundscape.SetLoadedDistricts(SoundscapePlan, DryingYardBabushkas, WeighbridgeNeedle, swings);
         }
 
         private void ReleaseDistrict(CityDistrict district)
@@ -269,7 +291,6 @@ namespace BarPromenade
                 ParkQuarrel = null;
                 ChurchGardenPot = null;
                 SurfSound = null;
-                SoundscapePlan = null;
                 Cannery = null;
                 LastRouteCar = null;
                 LastRouteFerryman = null;
@@ -285,7 +306,6 @@ namespace BarPromenade
                 CafeMenu = null;
                 CafeSeatView = null;
                 CafeConversation = null;
-                Soundscape = null;
                 Destroy(district.Root.gameObject);
                 lowerDistrict = null;
             }

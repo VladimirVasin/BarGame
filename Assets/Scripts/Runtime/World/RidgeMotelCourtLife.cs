@@ -13,6 +13,7 @@ namespace BarPromenade
         private readonly Guest[] guests = new Guest[4];
         private readonly Vector3[] table = new Vector3[2];
         private readonly AudioSource[] glass = new AudioSource[2];
+        private readonly AudioLowPassFilter[] glassTone = new AudioLowPassFilter[2];
         private Transform observer, bag, opener;
         private Vector3 bagRest, openerRest;
         private Quaternion bagRotation, openerRotation;
@@ -51,6 +52,7 @@ namespace BarPromenade
                 glass[i].playOnAwake = false;
                 glass[i].volume = .22f;
                 CityWorkAudio.Configure(glass[i], false, 5600f, 12f, false);
+                glassTone[i] = glass[i].GetComponent<AudioLowPassFilter>();
             }
             for (int i = 0; i < guests.Length; i++)
             {
@@ -391,8 +393,7 @@ namespace BarPromenade
         {
             var source = glass[index];
             if ((observer.position - table[index]).sqrMagnitude >= source.maxDistance * source.maxDistance) return;
-            if (!source.clip) source.clip = RetroAudioService.EnsureInstalled().GetClip(RetroSfxId.Clink);
-            source.Play();
+            CityWorkAudio.PlayContact(source, glassTone[index], RetroSfxId.BottleOnWood, .22f, 5600f);
         }
 
         private void SetBottleBase(Guest g, Vector3 point)

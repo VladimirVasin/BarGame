@@ -418,7 +418,8 @@ namespace BarPromenade
             {
                 if (!(behaviours[index] is
                         CityArchShelterResidentAssetRegistry) &&
-                    !(behaviours[index] is CharacterJointDeformation))
+                    !(behaviours[index] is CharacterJointDeformation) &&
+                    !(role != CityArchShelterResidentRole.Sleeper && behaviours[index] is NpcGlareReaction))
                 {
                     DestroyResident(instance);
                     throw new InvalidOperationException(

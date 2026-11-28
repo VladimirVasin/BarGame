@@ -24,6 +24,7 @@ namespace BarPromenade
         private Transform rest, slot, spine, observer;
         private NpcHandPose hands;
         private AudioSource clink;
+        private AudioLowPassFilter clinkTone;
         private double last = double.NaN, nextFarSample, checkObserver;
         private bool dormant, forceSample, heldPoseValid;
         private Pose workRest, bottleRest;
@@ -68,6 +69,7 @@ namespace BarPromenade
             clink = Part("ANCHOR_Clink").gameObject.AddComponent<AudioSource>();
             clink.playOnAwake = false; clink.volume = .39f;
             CityWorkAudio.Configure(clink, false, 6500f, 15f, false);
+            clinkTone = clink.GetComponent<AudioLowPassFilter>();
             ApplyAt(Clock());
         }
 
@@ -116,8 +118,7 @@ namespace BarPromenade
                 Math.Floor((SortingElapsed(seconds) - SetDown) / SortingCycleSeconds) >
                 Math.Floor((SortingElapsed(last) - SetDown) / SortingCycleSeconds))
             {
-                if (!clink.clip) clink.clip = RetroAudioService.EnsureInstalled().GetClip(RetroSfxId.Clink);
-                clink.Play();
+                CityWorkAudio.PlayContact(clink, clinkTone, RetroSfxId.BottleInTray, .39f, 6500f);
             }
             // Placement and collision retain calendar authority even while the rig is culled.
             if (changed || double.IsNaN(last) || seconds < last || seconds >= nextFarSample)

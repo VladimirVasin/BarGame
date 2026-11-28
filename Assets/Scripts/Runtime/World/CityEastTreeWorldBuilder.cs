@@ -54,6 +54,7 @@ namespace BarPromenade
                 }
                 if (Mathf.Abs(bounds.size.y * tree.Scale - tree.Height) > .005f || Mathf.Abs(bounds.min.y) > .005f)
                     throw new InvalidOperationException("Imported eastern tree metre bounds changed: " + tree.Id);
+                placement.gameObject.AddComponent<CitySoundTree>();
                 BoxCollider trunk = placement.gameObject.AddComponent<BoxCollider>();
                 trunk.center = new Vector3(0f, 1.15f, 0f);
                 trunk.size = new Vector3(.68f, 2.3f, .68f);
