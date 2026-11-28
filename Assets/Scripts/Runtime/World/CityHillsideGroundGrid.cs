@@ -63,6 +63,8 @@ namespace BarPromenade
             Rect bounds = CityHillsideNeighborhoodPlan.TerrainBounds(road);
             var xs = new SortedSet<float>();
             var zs = new SortedSet<float>();
+            var cellars = road.Bank == CityTerraceTransportBank.East ? RidgeCellarPlan.ForLayout(layout) : null;
+            cellars?.AddGradeBreaks(xs, zs);
             var pads = CityHillsideFurniturePlan.GroundPads(layout);
             var ramps = CityHillsideFurniturePlan.GroundRamps(layout);
             var seams = CityHillsideGroundSeamPlan.ForLayout(layout);
@@ -131,6 +133,7 @@ namespace BarPromenade
                 ground = talus.ApplyHeight(p, ground);
                 ground = kioskCourt?.Grade(p, ground) ?? ground;
                 ground = parking?.Grade(p, ground) ?? ground;
+                ground = cellars?.Grade(p, ground) ?? ground;
                 heights[row * Columns + col] = garage?.Grade(p, ground) ?? ground;
                 if (col + 1 == Columns || row + 1 == Rows) continue;
                 var center = new Vector2((p.x + x[col + 1]) * .5f, (p.y + z[row + 1]) * .5f);

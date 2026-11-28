@@ -1,42 +1,41 @@
 {
   "tool": "built-in image_gen",
-  "intent": "The summit ravine apartment footprint east of the upper bridge.",
-  "prompt": "imagegen-ravine-house-prompt.txt",
+  "intent": "Five hillside cellars, their shared work court and the path along the outer bend of the eastern Ridge hairpin.",
+  "prompt": "imagegen-ridge-cellars-prompt.txt",
   "references": [
     "CityMapImage.reference.png",
-    "map-reference.png"
+    "map-reference.json"
   ],
   "geography": "CityMapImage.accepted-geography.json",
   "image": "CityMapImage.generated.png",
-  "image_sha256": "801398b9fd8bf884230ba0ce7880270e934f6e7aecd540d62fe3c9222dc2995d",
-  "runtime_image_sha256": "c341736fbeb9b7f895c067e4679496b70aa87df15e83f8bf3af2069f41d85193",
-  "previous_image_sha256": "270fbe5e46b7b67741133754d80ab20085273b9f94f2a2a3c5ead031ca2438da",
+  "image_sha256": "3deaac17d89eaacd1bd7f7df2d3ddd6763bf2fcbd41ea4775651fe0788344a30",
+  "runtime_image_sha256": "b76a46ed18913bc22687fcbfde3406972f87733a0c9c0e7ddf20b22211d0210b",
+  "previous_image_sha256": "c341736fbeb9b7f895c067e4679496b70aa87df15e83f8bf3af2069f41d85193",
   "registration": {
-    "description": "Local survey registration of the generated cutaway roof glyph. Outside the footprint the previous accepted atlas is retained.",
+    "description": "Two matching local guides from the prior atlas and final north-up survey. The generated tile is registered inside the projected cellar and walking polygons with a narrow antialiased ink edge. Outside these polygons the existing atlas is retained.",
     "source_size": [
+      1254,
+      1254
+    ],
+    "guide_size": [
+      768,
+      768
+    ],
+    "source_atlas_crop_xywh": [
+      901,
+      1140,
+      163,
+      163
+    ],
+    "target_atlas_size": [
       1172,
       1342
     ],
-    "survey_size": [
-      1792,
-      2048
-    ],
-    "source_pixel_bounds": [
-      607,
-      1159,
-      657,
-      1193
-    ],
-    "target_pixel_bounds": [
-      598,
-      1244,
-      627,
-      1265
-    ],
-    "clip_polygon": "ravine-house:surviving-floor",
-    "filter": "Lanczos"
+    "clip_polygon_prefix": "east-ridge-cellars:",
+    "mask_stroke_width_texels": 2.4,
+    "filter": "Lanczos3"
   },
-  "fingerprint": "d40e889f54559e526d08c4474dc496b3ef4a5b2fcc962e31b3e1bf4967e00b6a",
+  "fingerprint": "10f2e1f03db587dea0c347892f914b3b1144895ee6fa105350af4c7c0526e15a",
   "schemaVersion": 2,
   "width": 1172,
   "height": 1342,

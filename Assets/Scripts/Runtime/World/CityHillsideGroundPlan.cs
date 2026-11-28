@@ -34,6 +34,7 @@ namespace BarPromenade
             // These are only exclusions from earth. Existing authored stair and
             // covered passage surfaces retain their own level and movement owner.
             var solids = new List<Vector2[]>();
+            if (RidgeCellarPlan.ForLayout(layout) is { } cellars) solids.AddRange(cellars.Solids);
             if (RidgeMotelPlan.ForLayout(layout) is { } motel)
             {
                 solids.Add(CityRoadPolygon.Rectangle(motel.Shell));

@@ -48,6 +48,7 @@ namespace BarPromenade
             var network = CityCoastalInfrastructurePlan.ForLayout(layout);
             var occupied = new List<Rect>(network.SolidFootprints);
             var nearby = new List<CityStreetSupportPatch>();
+            var cellars = RidgeCellarPlan.ForLayout(layout);
             foreach (var house in houses)
             {
                 occupied.Add(house.Lot.IsPlayerHome ? Expanded(house.FoundationBounds, 3.5f) : house.FoundationBounds);
@@ -155,6 +156,7 @@ namespace BarPromenade
                     if (clearance.Overlaps(patch.Bounds)) return false;
 
                 float rootRadius = (tree ? .34f : .30f) * scale;
+                if (cellars?.BlocksPlant(point, tree ? rootRadius + .25f : radius) == true) return false;
                 float rootY = floor;
                 for (int sample = 0; sample < 4; sample++)
                 {

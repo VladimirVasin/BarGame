@@ -755,6 +755,8 @@ namespace BarPromenade
                 area.AddPolygons(ruin.Floors);
                 area.ExcludePolygons(ruin.Solids);
             }
+            if (RidgeCellarPlan.ForLayout(layout) is { } cellars)
+                area.ExcludePolygons(new[] { cellars.LaneLampBase });
             if (RidgeMotelPlan.ForLayout(layout) is { } motel)
             {
                 area.Add(motel.Court);

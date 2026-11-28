@@ -135,6 +135,8 @@ namespace BarPromenade
             CityHillsideSiteDetails.Build(frame, context.Layout, window);
             CityRidgeVegetationPlan.ForLayout(context.Layout).Build(frame, window);
             CityHillsideFurnitureWorld.Build(frame, context.Layout, window);
+            if (RidgeCellarPlan.ForLayout(context.Layout) is { } cellars && window.Overlaps(cellars.Bounds))
+                RidgeCellarWorld.Build(frame, context.Layout, cellars, false);
             if (RidgeGaragePlan.ForLayout(context.Layout) is { } garages && window.Overlaps(garages.Bounds))
                 RidgeGarageWorld.Build(frame, garages, false);
             if (RidgeMotelPlan.ForLayout(context.Layout) is { } motel && window.Overlaps(motel.Court))

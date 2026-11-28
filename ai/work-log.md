@@ -5,6 +5,8 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-28
 
+The east Ridge cellar lane meets the north pavement on a graded shoulder shared by collision and map arrivals. `LiveCity_CellarCourtWalksBothEntrancesAndKeepsViewBench` covers both gates and the bench. A resident walks from home to sort potatoes by day. `LiveCity_CellarKeeperSortsByDayAndLampsReachWorkAndSteps` checks hand-to-crate contact and the evening return. The work hood and step lamp light their task areas. Raised side light follows the closed doors, and a lamp picks out the outside of the cart bend.
+
 Ridge court children share a ball and alternate shots. The whole wall board is turned over. Its braced ring projects into the yard, and the net hangs below it. `RidgeBasketball_AlternatesAndOnlyScorerJumps` measures the horizontal rim in the built City and checks the make, miss, shooter’s jump and return to the sidewalk.
 
 Ridge and lower City rebind one sound pool. Real roofs, wind, road wetness and gait drive local sound. Cold Ridge starts publish shared road polygons atomically. The lower district accepts the seated shelter resident's existing glare pose. `RidgeSound_FollowsShelterWalkingFeetAndDistrictStreaming` verified rain on canvas, a nearby ambient walker’s footfall and pool rebinding after unloading. The street and umbrella stereo takes retain the same gain.

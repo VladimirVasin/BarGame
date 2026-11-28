@@ -70,6 +70,22 @@ namespace BarPromenade
         public static IReadOnlyList<CityHillsideGroundRamp> GroundRamps(CityLayout layout) =>
             RawPlans.GetValue(layout, l => new(l)).Ramps;
 
+        internal static CityHillsideFurniturePlacement NearestRawBench(CityLayout layout, Vector2 point)
+        {
+            var raw = RawPlans.GetValue(layout, l => new(l));
+            float nearest = float.PositiveInfinity;
+            CityHillsideFurniturePlacement selected = default;
+            foreach (var item in raw.Sites)
+            {
+                if (item.Kind != CityMiscKind.ParkBench) continue;
+                float distance = (new Vector2(item.Position.x, item.Position.z) - point).sqrMagnitude;
+                if (distance >= nearest) continue;
+                nearest = distance;
+                selected = item;
+            }
+            return selected;
+        }
+
         private CityHillsideFurniturePlan(CityLayout layout)
         {
             var placements = new List<CityHillsideFurniturePlacement>();

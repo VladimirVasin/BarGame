@@ -424,9 +424,8 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   Two raised houses/two OpenGround,144 IDs. House11,8 sits3.84m below street,
   roof12.883 below upper eye15.073. Sheltered3m alley under4.8×2.4m bridge,
   guarded3×2.4m east exit atX126.4. Hero/NPC/map use distinct floors.
-  Twin seven-tier climbs: coast/Court/homes; shared hero/bus/map.
-  Shielded steps/court lamps; bevelled cuts/curbs, clear paths/loft.
-  Home bench→truss/ravine/roofs. Ridge bins sit deeper in gaps or along their walls.
+  Twin 7-tier climbs: coast/Court/homes, hero/bus/map.
+  Shielded steps/court lamps, bevelled cuts/curbs, clear paths/loft. Home bench→truss/ravine/roofs. Ridge bins in recesses/along walls.
   E:3s/fixed view hides hero/dock per day/30% pawnshop. Esc leaves it. Last sip: Finish.
   Loft/kiosk booths: finger dial, Esc/Q exits.
   West Lane6: (-24,-8)/4fl/X-99.2; (-25,-8)/3fl/X-84.
@@ -438,15 +437,11 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   Clipped summit apron; shared ramp/nav/map/Home.
   Outer+4descent lamps:RidgeBench37.5/r11/soft256/fixed/dayfloor.
   Pigeon/plinth1.98m,rear;side beds;solid/nav clear.
-  East return08–23:E empties $2/glass,$1/can;switch→window/grille;sign/flood fixed.
-  Raised yard grass-free/map outside;spill.12/day≥⅔/Soft/opaque.
-  Graded window/exit asphalt and paved footway.
-  Ridge plinths meet banks/court, rails behind footway. Home: soil/wet asphalt/turf/gravel/stone,
-  W drains/E kerbs/scrapers; soffit lamp/timber above deck, east (21,-7) clears walk.
-  Motel map court/3 bays/shut rooms/2 lit galleries/one flicker. Linen/boot by day, two beer tables by night.
-  West garages: roof/bay arrivals; opal bay, bench/engine/entry lights on City time.
-  West `(-23,-7)`: «Хвост и Чешуя», two floods. Poles→stairs/bridge footways;
-  covered lamps below;rock/gravel under bridge bearings.
+  East return08–23:E $2/glass,$1/can, switch→window/grille, sign/flood fixed. Raised grass-free yard/map outside, spill.12/day≥⅔/Soft/opaque. Graded window/exit asphalt+paved footway.
+  Ridge plinths meet banks/court, rails behind paths. Home soil/wet asphalt/turf/gravel/stone. W drains/E kerbs/scrapers, soffit lamp/timber over deck, E(21,-7) clear.
+  Motel: mapped court/3 bays/locked rooms/2 lit galleries/1 flicker/day linen+boot/2 night beer tables.
+  W garage roof/bay arrivals, opal bay/bench/engine/entry on City time. E cellars: grates, warm hood→crates/scale, neutral steps, door sidelights, outer bend lamp. Home↔table 9–18 only.
+  W `(-23,-7)`: «Хвост и Чешуя», 2 floods. Poles→stairs/bridge walks, covered lamps below, rock/gravel under bearings.
   Kiosk lens/two soft spots→seller/shelves/street; Ridge three canopy spots.
   Cobbler68.8,-307/250°,home21,-6,11–20:30. Steps/.48 deck,
   shoe/awl,desk switch,sign fixed. Gravel/E seat/scraper/lilac/wheel pile/kerbs/wall cable.
@@ -454,8 +449,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   keep their collision/route, height `3.2 m` (`4.2 m` Industrial). City/Home share
   `CityCoveredPassagePlan/World`: independent occupied/vacant wall slots for matte graffiti, repairs and Blender utilities.
   Fixed municipal lamps keep the day floor. Ridge roads: alternating ~23m/.28m curb inset.
-  A seeded fault dips with lens/halo/spill. Clear routes; court loops join the graph;
-  neighbours connect only across continuous safe-grade ground without roads.
+  Seeded dips affect lens/halo/spill. Clear routes, court loops on graph. Neighbours connect over continuous safe grades clear of roads.
   Road/ground complements retain metre poses. Graded home/bar/shop fronts share
   sidewalks, embedded skirts and fixture tops in City/Home.
   Home/bar/fair/arch and service approaches retain owners;

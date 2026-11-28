@@ -1837,6 +1837,15 @@ namespace BarPromenade
             if (RidgeRavinePlan.ForLayout(controller.Layout) is { } ruin)
                 for (int i = 0; i < ruin.Outline.Length; i++)
                     DrawLine(Project(ruin.Outline[i]), Project(ruin.Outline[(i + 1) % ruin.Outline.Length]), 1.5f, ResidentialBuilding);
+            if (RidgeCellarPlan.ForLayout(controller.Layout) is { } cellars)
+            {
+                foreach (var surface in cellars.WalkSurfaces)
+                {
+                    if (surface.Length == 4) DrawGroundQuad(surface, PublicPlaceLand);
+                    else DrawBoundary(surface, PublicPlaceLand);
+                }
+                DrawBoundary(cellars.ShellOutline, ResidentialBuilding);
+            }
             if (RidgeMotelPlan.ForLayout(controller.Layout) is { } motel)
             {
                 DrawSolidRect(ProjectWorldRect(projection, motel.Court), PublicPlaceLand);
@@ -1913,6 +1922,11 @@ namespace BarPromenade
             }
 
             Vector2 Project(Vector2 xz) => projection.WorldToScreen(new Vector3(xz.x, 0f, xz.y));
+            void DrawBoundary(Vector2[] polygon, Color color)
+            {
+                for (int i = 0; i < polygon.Length; i++)
+                    DrawLine(Project(polygon[i]), Project(polygon[(i + 1) % polygon.Length]), 1f, color);
+            }
         }
 
         private void DrawTerraceCourts(MapProjection projection)
@@ -2735,6 +2749,7 @@ namespace BarPromenade
                     pointOfInterest.Kind != CityMapPointOfInterestKind.Pawnshop &&
                     pointOfInterest.Kind != CityMapPointOfInterestKind.PigeonLoft &&
                     pointOfInterest.Kind != CityMapPointOfInterestKind.RavineHouse &&
+                    pointOfInterest.Kind != CityMapPointOfInterestKind.RidgeCellars &&
                     pointOfInterest.Kind != CityMapPointOfInterestKind.RidgeMotel &&
                     pointOfInterest.Kind != CityMapPointOfInterestKind.GlassReturn &&
                     pointOfInterest.Kind != CityMapPointOfInterestKind.Cobbler &&
@@ -3918,6 +3933,7 @@ namespace BarPromenade
                 case CityMapPointOfInterestKind.PigeonLoft:
                 case CityMapPointOfInterestKind.GlassReturn:
                 case CityMapPointOfInterestKind.RavineHouse:
+                case CityMapPointOfInterestKind.RidgeCellars:
                 case CityMapPointOfInterestKind.RidgeMotel:
                 case CityMapPointOfInterestKind.RidgeGarage:
                 case CityMapPointOfInterestKind.RidgeGarageRoof:

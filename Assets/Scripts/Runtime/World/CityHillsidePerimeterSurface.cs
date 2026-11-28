@@ -21,6 +21,7 @@ namespace BarPromenade
             }
         }
         private static readonly ConditionalWeakTable<CityLayout, List<Plot>> Plots = new();
+        private static readonly ConditionalWeakTable<CityLayout, List<Plot>> CellarPlots = new();
         private static readonly ConditionalWeakTable<CityLayout, List<GroundSurfacePartitioner.Footprint>> Paving = new();
         internal static Color ResidentialSoil => CityExteriorAppearance.ResolveDistrictGroundTint(
             CityDistrictPresentationPlanner.GetProfile(CityDistrictKind.Residential).Wear);
@@ -86,6 +87,8 @@ namespace BarPromenade
                 cuts.Add(new GroundSurfacePartitioner.Footprint(link.Bounds));
 
             var result = new List<GroundSurfacePartitioner.Footprint>();
+            if (RidgeCellarPlan.ForLayout(layout) is { } cellars)
+                foreach (var piece in cellars.Paving) Add(piece);
             foreach (var pocket in CityHillsideBenchPocketPlan.ForLayout(layout).Pockets)
                 foreach (var polygon in pocket.SurfacePolygons) Add(polygon);
             if (CityPawnshopPlan.TryCreate(layout, out var pawnshop)) Add(pawnshop.ApproachFootprint);
@@ -171,6 +174,13 @@ namespace BarPromenade
             var plan = CityBuildingPerimeterPlan.ForLayout(layout);
             var plots = Plots.GetValue(layout, CreatePlots);
             var paving = Paving.GetValue(layout, CreatePaving);
+            var cellars = RidgeCellarPlan.ForLayout(layout);
+            var cellarPlots = CellarPlots.GetValue(layout, city => {
+                var local = new List<Plot>();
+                if (RidgeCellarPlan.ForLayout(city) is { } court)
+                    foreach (var part in court.Gravel) local.Add(new Plot(Finish.Gravel, part));
+                return local;
+            });
             float pavingTile = CityParkSurfaceAppearance.GetRecipe(CityParkSurfaceKind.Plaza).MetersPerTile;
             Rect pavingBounds = default;
             foreach (var shape in paving)
@@ -196,6 +206,8 @@ namespace BarPromenade
                         foreach (int candidate in candidates)
                             foreach (var band in plan.Bands(candidate)) Cover(band, Finish.Asphalt);
                         foreach (var plot in plots) Cover(plot.Shape, plot.Finish);
+                        if (cellars != null && cellars.Bounds.Overlaps(bounds))
+                            foreach (var plot in cellarPlots) Cover(plot.Shape, plot.Finish);
                     }
                     if (cut)
                         foreach (var part in remaining) Emit(part, unchanged, slot);

@@ -38,6 +38,11 @@ namespace BarPromenade
             quarter = CityHillsideQuarterPlan.ForLayout(layout);
             ruin = RidgeRavinePlan.ForLayout(layout);
             if (ruin != null) polygonBuildingObstacles.AddRange(ruin.Solids);
+            if (RidgeCellarPlan.ForLayout(layout) is { } cellars)
+            {
+                polygonBuildingObstacles.AddRange(cellars.Solids);
+                polygonBuildingObstacles.Add(cellars.LaneLampBase);
+            }
             motel = RidgeMotelPlan.ForLayout(layout);
             garage = RidgeGaragePlan.ForLayout(layout);
             var courtyardCells = new HashSet<Vector2Int>();

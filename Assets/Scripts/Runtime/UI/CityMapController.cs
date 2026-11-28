@@ -47,7 +47,8 @@ namespace BarPromenade
         Parking = 28,
         RidgeGarage = 29,
         RidgeGarageRoof = 30,
-        WorkshopWalk = 31, CulvertWalk = 32, GableWalk = 33, RidgeMotel = 34, RavineHouse = 35
+        WorkshopWalk = 31, CulvertWalk = 32, GableWalk = 33, RidgeMotel = 34, RavineHouse = 35,
+        RidgeCellars = 36
     }
 
     public readonly struct CityMapPointOfInterest
@@ -997,6 +998,8 @@ namespace BarPromenade
                     key = "map.poi.ravine_house"; return true;
                 case CityMapPointOfInterestKind.RidgeMotel:
                     key = "map.poi.ridge_motel"; return true;
+                case CityMapPointOfInterestKind.RidgeCellars:
+                    key = "map.poi.ridge_cellars"; return true;
                 case CityMapPointOfInterestKind.RidgeGarage:
                     key = "map.poi.ridge_garage"; return true;
                 case CityMapPointOfInterestKind.WorkshopWalk: key = "map.poi.workshop_walk"; return true;
@@ -1657,6 +1660,10 @@ namespace BarPromenade
             if (CityHillsideAccessPlan.ForLayout(Layout).GableCourt is { } gable)
                 pointsOfInterest.Add(new CityMapPointOfInterest(gable.Id, CityMapPointOfInterestKind.GableWalk,
                     CityDistrictKind.Residential, gable.Floors[gable.Floors.Count - 2].Center + Vector3.up * rootOffset));
+            if (RidgeCellarPlan.ForLayout(Layout) is { } cellars)
+                pointsOfInterest.Add(new CityMapPointOfInterest(RidgeCellarPlan.Id, CityMapPointOfInterestKind.RidgeCellars,
+                    CityDistrictKind.Residential, cellars.Arrival + Vector3.up * rootOffset,
+                    CityRoadPolygon.Bounds(cellars.ShellOutline), true));
         }
 
         private Vector3 ResolveNamedPlaceArrival(Vector3 approach)

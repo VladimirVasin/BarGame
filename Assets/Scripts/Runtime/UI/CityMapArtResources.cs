@@ -296,6 +296,19 @@ namespace BarPromenade
                         foreach (Vector2 point in solid) Point(writer, point);
                     Point(writer, ruin.Arrival);
                 }
+                if (RidgeCellarPlan.ForLayout(layout) is { } cellars)
+                {
+                    writer.Write(RidgeCellarPlan.Id);
+                    writer.Write(cellars.MapFootprints.Count);
+                    foreach (var polygon in cellars.MapFootprints)
+                    {
+                        writer.Write(polygon.Length);
+                        foreach (var point in polygon) Point(writer, point);
+                    }
+                    writer.Write(cellars.WalkRoute.Count);
+                    foreach (var point in cellars.WalkRoute) Point(writer, point);
+                    Point(writer, cellars.Arrival);
+                }
                 if (RidgeMotelPlan.ForLayout(layout) is { } motel)
                 {
                     writer.Write(RidgeMotelPlan.Id);

@@ -300,6 +300,7 @@ namespace BarPromenade.Editor
                 if (place.HasFootprint && place.Kind != CityMapPointOfInterestKind.Pawnshop &&
                     place.Kind != CityMapPointOfInterestKind.RidgeKiosk && place.Kind != CityMapPointOfInterestKind.GlassReturn &&
                     place.Kind != CityMapPointOfInterestKind.RavineHouse &&
+                    place.Kind != CityMapPointOfInterestKind.RidgeCellars &&
                     place.Kind != CityMapPointOfInterestKind.PigeonLoft)
                     Box("place:" + place.StableId, "public-ground", place.Footprint);
             var loft = CityPigeonLoftPlan.ForLayout(layout);
@@ -320,6 +321,13 @@ namespace BarPromenade.Editor
             }
             if (RidgeRavinePlan.ForLayout(layout) is { } ruin)
                 Poly("ravine-house:surviving-floor", "building", ruin.Outline);
+            if (RidgeCellarPlan.ForLayout(layout) is { } cellars)
+            {
+                int index = 0;
+                foreach (var ground in cellars.WalkSurfaces)
+                    Poly(RidgeCellarPlan.Id + ":ground:" + index++, "sidewalk", ground);
+                Poly(RidgeCellarPlan.Id + ":shell", "building", cellars.ShellOutline);
+            }
             if (RidgeMotelPlan.ForLayout(layout) is { } motel)
             {
                 Box("ridge-motel:court", "terrace-court", motel.Court);

@@ -572,6 +572,7 @@ namespace BarPromenade
             CityRailRestSpot.AddRidgePorches(layout, railRests);
             if (RidgeGaragePlan.ForLayout(layout) is { } garages)
                 rainShelters.Add(RidgeGarageWorld.Build(parent, garages, true, railRests));
+            if (RidgeCellarPlan.ForLayout(layout) is { } cellars) RidgeCellarWorld.Build(parent, layout, cellars, true);
             if (RidgeMotelPlan.ForLayout(layout) is { } motel) RidgeMotelWorld.Build(parent, motel, rainShelters);
             RidgeParkingWorld.Build(parent, layout, true);
             if (CityPawnshopPlan.TryCreate(layout, out var pawnshop))
