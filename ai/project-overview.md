@@ -9,7 +9,7 @@
   Editor Play reloads domain+scene (`m_EnterPlayModeOptions=0`).
 - 16:9/native/SMAA/savedFX/no4:3;City/balcony Soft,bar/church Neutral.
   4096px local shadow atlas cap; City/Home/bar UV0+1;house air/bar WC mirror.
-  City:8grass types/wind/contact/Home;crowns static. RoadRGB/pistol/fountain pilots.
+  City/Ridge soil grows trees. Home shares wind, shoes disturb leaves. RoadRGB/pistol/fountain pilots.
 - Fifteen scenes are enabled in `ProjectSettings/EditorBuildSettings.asset`:
 
 | Index | Scene | Role |

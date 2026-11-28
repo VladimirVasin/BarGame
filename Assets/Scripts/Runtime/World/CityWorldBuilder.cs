@@ -491,6 +491,7 @@ namespace BarPromenade
             walkableArea.ExcludePolygons(ridgeVegetation.Trunks);
             groundSurface.SetGrassContext(layout, seacoastPlan, decorations: decorationPlan);
             yield return groundSurface.FinalizeSurfaceSteps(partition != null);
+            groundSurface.BuildSoilTreesAndLeaves(lower: true, ridge: partition == null, cemetery: cemeteryPlan, walkable: walkableArea);
             completed(new CityWorldResult(
                 world.gameObject,
                 walkableArea,
@@ -1203,10 +1204,7 @@ namespace BarPromenade
                 int variant = index %
                     CityMiscAssetProvider.GetVariantCount(
                         CityMiscKind.ParkTree);
-                Quaternion rotation = Quaternion.Euler(
-                    0f,
-                    (index * 137.50776f) % 360f,
-                    0f);
+                var form = new CityTreeForm(layout.Seed, position, variant);
                 int treePartCount = CityMiscAssetProvider.GetPartCount(
                     CityMiscKind.ParkTree);
                 for (int partIndex = 0;
@@ -1217,17 +1215,14 @@ namespace BarPromenade
                         CityMiscKind.ParkTree,
                         variant,
                         partIndex);
-                    var placement = new RuntimeMeshPlacement(
-                        part.Mesh,
-                        position,
-                        rotation);
                     if (part.Role == CityMiscMeshRole.Bark)
                     {
-                        trunks.Add(placement);
+                        trunks.Add(new RuntimeMeshPlacement(part.Mesh, position, form.Rotation, form.Wood));
                     }
                     else if (part.Role == CityMiscMeshRole.Foliage)
                     {
-                        canopies.Add(placement);
+                        canopies.Add(new RuntimeMeshPlacement(part.Mesh, position + Vector3.up * form.CrownLift,
+                            form.Rotation, form.Crown));
                     }
                     else
                     {
@@ -1238,13 +1233,15 @@ namespace BarPromenade
 
                 GameObject colliderObject =
                     new GameObject($"Tree Collider {index + 1}");
-                colliderObject.AddComponent<CitySoundTree>().Height = 2.1f;
+                colliderObject.AddComponent<CitySoundTree>().Height = form.LeafHeight;
                 colliderObject.transform.SetParent(colliders, false);
                 colliderObject.transform.position =
-                    position + (Vector3.up * 1.15f);
+                    position;
+                colliderObject.transform.rotation = form.Rotation;
                 BoxCollider collider =
                     colliderObject.AddComponent<BoxCollider>();
-                collider.size = new Vector3(0.62f, 2.3f, 0.62f);
+                collider.size = Vector3.Scale(new Vector3(.62f, 2.3f, .62f), form.Wood);
+                collider.center = Vector3.up * (collider.size.y * .5f);
             }
 
             BuildParkSurfaceMeshesIfAny(
@@ -1946,26 +1943,8 @@ namespace BarPromenade
                 (direction * 1.05f) +
                 (tangent * 1.35f);
             if (apron == null || apron.IsGraded) mailboxBase.y = EntranceTop(mailboxBase);
-            RuntimePrimitiveFactory.CreateCylinder(
-                "Home Mailbox Post",
-                parent,
-                mailboxBase + (Vector3.up * 0.46f),
-                new Vector3(0.09f, 0.46f, 0.09f),
-                HomeTrim,
-                false);
-            RuntimePrimitiveFactory.CreateBox(
-                "Home Mailbox",
-                parent,
-                mailboxBase + (Vector3.up * 1.02f),
-                frontageIsX
-                    ? new Vector3(0.52f, 0.34f, 0.78f)
-                    : new Vector3(0.78f, 0.34f, 0.52f),
-                HomeDoor,
-                false);
-            CityStaticCollisionBuilder.AddHomeMailboxCollider(
-                parent,
-                mailboxBase,
-                frontageIsX);
+            HomeMailbox.Create(parent, mailboxBase, -tangent);
+            CityStaticCollisionBuilder.AddHomeMailboxCollider(parent, mailboxBase, -tangent);
             BuildHomeAnchor(
                 parent,
                 lot,

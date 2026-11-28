@@ -2024,7 +2024,7 @@ namespace BarPromenade
             float lateral)
         {
             uint hash = StableHash(seed, hashA, hashB, TreeSalt);
-            if (hash % 100u >= 62u)
+            if (hash % 100u >= 84u)
             {
                 return;
             }
@@ -2056,23 +2056,26 @@ namespace BarPromenade
                 lateral,
                 frame.GroundTopY);
             bool birch = (hash >> 8) % 100u < 55u;
+            float height = Mathf.Lerp(.78f, 1.32f, CityGrassPlan.Unit(hash >> 16));
+            float width = Mathf.Lerp(.71f, 1.02f, CityGrassPlan.Unit(hash));
+            var scale = new Vector3(width, height, width);
             if (birch)
             {
                 AddTreePart(
                     parts, treeIndex, "trunk",
                     CityCemeteryPartKind.TreeTrunk,
                     CityCemeteryStyle.TrunkBirch,
-                    ground, 0f, new Vector3(0.30f, 2.90f, 0.30f));
+                    ground, scale, 0f, new Vector3(0.30f, 2.90f, 0.30f));
                 AddTreePart(
                     parts, treeIndex, "crown-a",
                     CityCemeteryPartKind.TreeCrown,
                     CityCemeteryStyle.FoliageDark,
-                    ground, 2.5f, new Vector3(1.55f, 2.10f, 1.55f));
+                    ground, scale, 2.5f, new Vector3(1.55f, 2.10f, 1.55f));
                 AddTreePart(
                     parts, treeIndex, "crown-b",
                     CityCemeteryPartKind.TreeCrown,
                     CityCemeteryStyle.FoliageDark,
-                    ground, 4.1f, new Vector3(0.95f, 1.30f, 0.95f));
+                    ground, scale, 4.1f, new Vector3(0.95f, 1.30f, 0.95f));
             }
             else
             {
@@ -2080,22 +2083,22 @@ namespace BarPromenade
                     parts, treeIndex, "trunk",
                     CityCemeteryPartKind.TreeTrunk,
                     CityCemeteryStyle.TrunkDark,
-                    ground, 0f, new Vector3(0.34f, 1.10f, 0.34f));
+                    ground, scale, 0f, new Vector3(0.34f, 1.10f, 0.34f));
                 AddTreePart(
                     parts, treeIndex, "crown-a",
                     CityCemeteryPartKind.TreeCrown,
                     CityCemeteryStyle.FoliageDark,
-                    ground, 0.95f, new Vector3(2.05f, 1.50f, 2.05f));
+                    ground, scale, 0.95f, new Vector3(2.05f, 1.50f, 2.05f));
                 AddTreePart(
                     parts, treeIndex, "crown-b",
                     CityCemeteryPartKind.TreeCrown,
                     CityCemeteryStyle.FoliageDark,
-                    ground, 2.15f, new Vector3(1.45f, 1.40f, 1.45f));
+                    ground, scale, 2.15f, new Vector3(1.45f, 1.40f, 1.45f));
                 AddTreePart(
                     parts, treeIndex, "crown-c",
                     CityCemeteryPartKind.TreeCrown,
                     CityCemeteryStyle.FoliageDark,
-                    ground, 3.25f, new Vector3(0.85f, 1.30f, 0.85f));
+                    ground, scale, 3.25f, new Vector3(0.85f, 1.30f, 0.85f));
             }
 
             treeIndex++;
@@ -2108,16 +2111,18 @@ namespace BarPromenade
             CityCemeteryPartKind kind,
             CityCemeteryStyle style,
             Vector3 ground,
+            Vector3 scale,
             float bottomHeight,
             Vector3 size)
         {
+            size = Vector3.Scale(size, scale);
             parts.Add(new CityCemeteryPartDescriptor(
                 $"cemetery-tree-{treeIndex:D2}-{suffix}",
                 kind,
                 style,
                 new Vector3(
                     ground.x,
-                    ground.y + bottomHeight + size.y * 0.5f,
+                    ground.y + bottomHeight * scale.y + size.y * 0.5f,
                     ground.z),
                 Quaternion.identity,
                 size,

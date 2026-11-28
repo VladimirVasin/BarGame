@@ -70,7 +70,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | World time and pause ownership | Intoxication/debug factors compose; pauses freeze world/calendar. Debug speed preserves the physics step. | `GameTimeScale{State,Runtime}`, `PauseMenuController` | Current |
 | Session day/time displays | Calendar HUD and H wristwatch. Final7 alarm clock can lie. | `HomeAlarmClock`, `InventoryView`, `PlayerWatchController` | Current |
 | Pause / cutscene debug | Pause/replay/timecode;safe hoist→pistol∞reserve/reload→Crane rises/attacks. | `PauseMenu*`,`Cutscene*`,`WarehouseDoorAmbush*` | Current |
-| Hero inventory | Equip/sip/eat, daily finds, return empties. | `Inventory*`, `GameSessionState`, `CityStreetUtilitySession`, `PlayerVodkaBottleController`, `PlayerPieEatingController` | Current |
+| Hero inventory | Equip/sip/eat, finds, empties, mail total. | `Inventory*`, `GameSessionState` | Current |
 | World item pickup and its found screen | Shared lit 3D turn/owned focus;one take;isolated lights;layers restored. | `WorldItem{PickupPlan,Pickup,PickupModel,FoundScreen,FoundView,InspectionPresenter}` | Current |
 | Hunger, stress, fatigue and consumption | Needs follow the pause-aware calendar; consumption/rest commit relief once. Gap: needs apply no gameplay debuff. | `PlayerNeedsProgressionState`, `PlayerNeedsRules` | Partial |
 | Inventory-backed target interactions | Shared item-backed target menus commit consumption once and refund failed startup. | `InventoryItemRequirement`, `InventoryTargetInteraction{Definition,Model,Controller}` | Current |
@@ -157,7 +157,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | City day/night presentation | City streets and balcony share fog volumes and a 96 m radius. Night dims sky/fill. Ridge fixtures keep a day floor. | `City{FogField,NightAtmosphere,AltitudeVisibility,DayNightController}`, `HomeBalconyExteriorAtmosphere` | Current |
 | Exterior weather | Rain contacts, wet film, snow and audio follow the clock. Gap: weather-driven grade. | `GameWeatherRules`, `CityWeatherController`, `CityRainContactField` | Partial |
 | Runtime cloth rags | Visible cloth uses shared bounded wind response and explicit attachment constraints. | `ClothPanelFactory`, `CityClothWindRegistry` | Current |
-| City wind | One gust for City/Home, cloth, vegetation and fixed-end wires. | `CityWindField`, `CityWindDressing*`, `CityCoastalInfrastructureWorldBuilder` | Current |
+| City wind | City/Home share gusts. Soil trees shed into drifts that part underfoot. | `CityWindField`, `CityWindDressing*`, `CityLeafField`, `CitySoilTrees`, `CityRidgeVegetationPlan` | Current |
 | City vegetation | City/Home grass off paths, Ridge trees and shrubs. | `CityGrass{Plan,Surface,Field}`, `CityRidgeVegetationPlan` | Current |
 | Scene and place music | Lodge gate/radio suppression;warehouse pitch.8/loop. Gap: cemetery/church slots empty. | `MusicMix`, `SceneMusicPlayer`, `CombatWarehouseMusicPlayer` | Partial |
 | Common audio mix | Sharedmix;warehouse 3D clicks/whispers:.8/LP2800/World;dryUI;intoxication. | `GameAudioMixer`,`CombatWarehouseAmbiencePlayer` | Current |
@@ -220,6 +220,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Exterior ground response | Indexed MPBs share response maps/road masks/snow edges; ridge haze retained. | `GroundSurface{Appearance,Coordinates}`, `GroundSurfaceLit`, `*SurfaceAppearance` | Current |
 | Home/Stairwell surfaces | Original micro sheets/unique macro charts/shared variants; exact earlier-state restore. | `HomeSurfaceAppearance`, `HomeAuthoredVisualFactory`, `SurfaceDamageLibrary` | Current |
 | Stairwell cat | Ordinary talk/feed; statue: silent camera cut/hero hidden only close-up; quest stays. | `StairwellCat*`, `StairwellCatInteraction` | Current |
+| Mailbox | Take bills to enter. | `HomeMailbox`, `HomeEntrance` | Current |
 | Home exterior context | Same-seed64m city around Home, rear included; no collision. Balcony gates residents/atmosphere. | `HomeExteriorContext{Plan,Planner}`, `HomeExteriorViewBuilder`, `CityHomeGroundWorldBuilder` | Current |
 | Player home atmosphere | Clock drives six local lights; Balcony borrows/restores City. | `HomeInteriorAtmosphere`, `HomeDayNightController` | Current |
 | Mirror brushing | First-person X/Y brushing ends with a three-second close teeth inspection, then spit and faucet closure. | `HomeTeethBrushing*`, `HomeBrushingFirstPersonView`, `HomeSinkFaucet` | Current |

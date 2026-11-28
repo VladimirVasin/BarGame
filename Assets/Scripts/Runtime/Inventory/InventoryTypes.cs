@@ -51,7 +51,8 @@ namespace BarPromenade
         BedsideBell = 43,
         TailorShears = 44,
         NotchedGauge = 45,
-        CordedWeddingRings = 46
+        CordedWeddingRings = 46,
+        HomeBills = 47
     }
 
     public enum InventoryItemCategory
@@ -102,8 +103,15 @@ namespace BarPromenade
 
     public static class InventoryItemCatalog
     {
+        internal static string Describe(InventoryItemDefinition definition) =>
+            definition.Id == InventoryItemId.HomeBills
+                ? HomeBills.Description
+                : LocalizationService.Get(definition.DescriptionLocalizationKey);
+
         private static readonly InventoryItemDefinition[] Definitions =
         {
+            new InventoryItemDefinition(InventoryItemId.HomeBills, InventoryItemCategory.KeyItem,
+                "inventory.item.home_bills.name", "inventory.item.home_bills.description", 1),
             new InventoryItemDefinition(InventoryItemId.ChildShoeLast, InventoryItemCategory.Tool,
                 "inventory.item.child_shoe_last.name", "inventory.item.child_shoe_last.description", 1),
             new InventoryItemDefinition(InventoryItemId.SilverBuckleShoes, InventoryItemCategory.Tool,

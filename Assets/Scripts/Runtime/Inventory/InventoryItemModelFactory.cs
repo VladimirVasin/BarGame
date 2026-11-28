@@ -90,6 +90,14 @@ namespace BarPromenade
 
             switch (itemId)
             {
+                case InventoryItemId.HomeBills:
+                    // Keep the imported unit conversion on the child when the presenter moves the wrapper.
+                    const string billsPath = "City/HomeMailbox/HomeBills";
+                    GameObject bills = Resources.Load<GameObject>(billsPath);
+                    if (bills == null) throw new InvalidOperationException("Missing authored " + billsPath);
+                    Transform envelope = CreateRoot(rootPrefix + " Home Bills", parent);
+                    UnityEngine.Object.Instantiate(bills, envelope, false);
+                    return envelope;
                 case InventoryItemId.BreadHeel:
                     var bread = Resources.Load<GameObject>("City/StreetUtilities/BreadHeel");
                     if (!bread) throw new InvalidOperationException("Missing authored bread heel.");

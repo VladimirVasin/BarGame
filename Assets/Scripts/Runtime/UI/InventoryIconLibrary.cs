@@ -76,6 +76,15 @@ namespace BarPromenade
                     painter.Ellipse(16, 22, 5, 3, pale);
                     painter.EllipseOutline(16, 22, 5, 3, ink);
                     break;
+                case InventoryItemId.HomeBills:
+                    painter.FillRect(2, 7, 28, 18, pale);
+                    painter.OutlineRect(2, 7, 28, 18, ink);
+                    for (int offset = 0; offset <= 12; offset++)
+                    {
+                        painter.Set(3 + offset, 23 - offset / 2, metal);
+                        painter.Set(28 - offset, 23 - offset / 2, metal);
+                    }
+                    break;
                 case InventoryItemId.LodgeGroupPhotograph:
                     // The same small framed group silhouette as the authored prop.
                     painter.FillRect(3, 6, 26, 20, new Color32(102, 73, 48, 255));

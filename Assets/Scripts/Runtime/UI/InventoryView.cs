@@ -349,6 +349,12 @@ namespace BarPromenade
                     RetroUiTheme.FillRect(mark, RetroUiTheme.PanelInset);
                     GUI.Label(mark, LocalizationService.Get("inventory.bottle.one_sip"), sipMarkStyle);
                 }
+                if (stack.ItemId == InventoryItemId.HomeBills)
+                {
+                    var mark = new Rect(slot.center.x - 18f, slot.y + 29f, 36f, 11f);
+                    RetroUiTheme.FillRect(mark, RetroUiTheme.PanelInset);
+                    GUI.Label(mark, HomeBills.TotalLabel, sipMarkStyle);
+                }
                 string name = LocalizationService.Get(
                     InventoryItemCatalog.Get(stack.ItemId)
                         .NameLocalizationKey);
@@ -402,8 +408,7 @@ namespace BarPromenade
                         controller.UseFeedbackMessage)
                         ? (showsEquipment ? 45f : 67f)
                         : (showsEquipment ? 23f : 45f)),
-                LocalizationService.Get(
-                    definition.DescriptionLocalizationKey),
+                InventoryItemCatalog.Describe(definition),
                 descriptionStyle);
             DrawUseFeedback();
         }
@@ -473,9 +478,8 @@ namespace BarPromenade
                 examineTitleStyle);
             DrawPreview(new Rect(230f, 62f, 180f, 144f), false);
             GUI.Label(
-                new Rect(150f, 268f, 340f, 30f),
-                LocalizationService.Get(
-                    definition.DescriptionLocalizationKey),
+                RetroItemPanel.DescriptionBounds(definition.Id, new Rect(150f, 268f, 340f, 30f)),
+                InventoryItemCatalog.Describe(definition),
                 examineDescriptionStyle);
             if (controller.SelectedIsEquippable)
             {

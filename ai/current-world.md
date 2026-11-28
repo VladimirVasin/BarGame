@@ -1410,8 +1410,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   lot dimensions to meet
   `CityLayoutGenerator.MinimumDistrictPointLotDimension` (`18 m`); smaller
   custom blocks omit the district POIs safely;
-- `CityWindField` sends one smooth gust through City/Home. Cloth, grass, crowns, fixed-end wires,
-  rain and outdoor clothing share it. `CityWindDressing*` hangs up to 137 cloth/rope pieces on
+- City/Home gusts move grass, crowns, cloth, cables, rain, coats and leaves. Open City soil and Ridge earth carry seeded narrow, broad and double-height trees. Crowns shed in groups. Shoes sweep a fan on their tread, wider at a run. Wet drift edges slide. `CityWindDressing*` hangs up to 137 cloth/rope pieces on
   existing structures — awning rags on up to four Old Town market valances (two
   per stall), grey shrouds on up to three scaffoldings' outer guard rails,
   up to six courtyard lines, two Ridge racks and up to 16 balcony spans of 3–8 m to poles, rails
@@ -1497,16 +1496,14 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   gallery. The canonical deck projects `2.3 m` past the door plane, so visual
   bounds extend from local `-Z 6 m` to `+Z 8.3 m` while the lot, inset
   `0.08 m` foundation and renderer-free logical collider remain body-sized.
-  Forty-seven semantic meshes bind nine dedicated sheets through authored or
-  metre-scaled UVs; competing opaque layers keep at least `0.03 m` clearance.
-  Exactly the upper street window immediately left of the balcony is
-  emissive, and every other pane is dark. City aligns `exterior_door` to the
-  unchanged lot door and retains the walkway, mailbox, lamp, number `7`,
-  beacon, trigger and transition. Home reconstructs the same materials, exact
-  visible window positions, recessed entry and outward physical balcony, but
-  omits the narrow street-only front eave fascia that crossed its fixed camera
-  as a foreground beam; the pitched roof edge remains;
-  the old City misc shell remains compatibility-only;
+  Forty-seven meshes use nine sheets, authored or metre-scaled UVs and
+  `0.03 m` opaque clearance. Only the upper window left of the balcony
+  glows. City snaps `exterior_door` to the lot by the walk, lamp, `7` and
+  beacon. Taking the envelope from the hinged mailbox unlocks street entry.
+  Its $548 inventory tile opens an itemized bill. Home rebuilds the facade,
+  windows, recess and balcony, with the pitched roof edge and without the
+  street-only fascia in its fixed camera. City Misc retains the old shell
+  for compatibility;
 - deterministic ochre guard rails, batched into `48 m` spatial chunks, only
   where a street faces water, unmapped space or the active map boundary, plus
   terminal caps in legacy layouts. City connects the ends of its carriageways
@@ -2772,7 +2769,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
 - Weather beyond the implemented deterministic
   clear/light-rain/heavy-rain/thunderstorm schedule with its rain field, rain
   bed, lightning flashes, thunder, wet street film and puddles:
-  weather-driven ambient lighting or grading changes, wind-driven debris and
+  weather-driven ambient lighting, grading, other wind-driven debris and
   volumetric light shafts.
 - Driving, parking/overtaking, skating, fares, destination selection and live
   traffic map remain deferred. City buses carry ambient riders and the hero.

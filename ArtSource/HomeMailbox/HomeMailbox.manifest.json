@@ -1,0 +1,41 @@
+{
+  "metres": {
+    "hinge": [
+      0,
+      1.151,
+      -0.165
+    ],
+    "mail_rest": [
+      -0.046,
+      1.084,
+      0.156
+    ],
+    "slot_height": [
+      1.069,
+      1.117
+    ],
+    "lid_open_degrees": 99
+  },
+  "meshes": {
+    "HomeMailbox": {
+      "Cabinet": {
+        "vertices": 1632,
+        "triangles": 3196
+      },
+      "LidHinge": {
+        "vertices": 480,
+        "triangles": 940
+      }
+    },
+    "HomeBills": {
+      "FoldedBills": {
+        "vertices": 768,
+        "triangles": 1504
+      }
+    }
+  },
+  "maps": {
+    "HomeMailboxPigment.png": "49b8008d4205e4340cca61ed7c52a5edad4f5eb102d912b2abdebef5c83f0193",
+    "HomeMailboxFinish.png": "53f547515d96bcdee4f5fc56dc34d933226a4df83bf793d454e8d7426c95695a"
+  }
+}

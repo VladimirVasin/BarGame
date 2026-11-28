@@ -45,6 +45,12 @@ namespace BarPromenade
                 return;
             }
 
+            if (HomeMailbox.HasMail)
+            {
+                ShowMailReminder(interactor);
+                return;
+            }
+
             PlayerDoorActionTarget doorAction =
                 GetComponent<PlayerDoorActionTarget>();
             if (!doorAction.TryBegin(
@@ -57,6 +63,12 @@ namespace BarPromenade
 
         private void CompleteDoorAction(PlayerInteractor interactor)
         {
+            if (HomeMailbox.HasMail)
+            {
+                ShowMailReminder(interactor);
+                return;
+            }
+
             PlayerMotor motor = interactor == null
                 ? null
                 : interactor.GetComponent<PlayerMotor>();
@@ -80,6 +92,12 @@ namespace BarPromenade
                 accepted,
                 operationId,
                 accepted ? "accepted" : "transition_rejected");
+        }
+
+        private static void ShowMailReminder(PlayerInteractor interactor)
+        {
+            interactor?.ShowFeedback("interaction.home_mailbox.reminder", 2f);
+            LogResult(false, string.Empty, "mail_pending");
         }
 
         private static void LogResult(

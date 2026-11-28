@@ -106,7 +106,7 @@ namespace BarPromenade
             // buried rock or silently snap to a road on the other bank.
             if (ruin?.ContainsFloor(worldXZ) == true)
                 return TryRavineStanding(worldXZ, null, out standingPosition);
-            if (quarter.IsExposedRavine(worldXZ, radius)) return false;
+            if (quarter.IsExposedRavine(worldXZ, radius) || CitySoilTrees.BlocksArrival(layout, worldXZ, radius)) return false;
             var probe = new Vector3(worldXZ.x, 0f, worldXZ.y);
             RoadWalkableArea mask = EnsureWalkableArea();
             // These supported courts replace their old ground. A rejected
@@ -132,7 +132,7 @@ namespace BarPromenade
                 ? probe
                 : mask.ClosestPoint(probe, radius);
             var landing = new Vector2(candidate.x, candidate.z);
-            if (quarter.IsExposedRavine(landing, radius) || IsInsideObstacle(landing) ||
+            if (quarter.IsExposedRavine(landing, radius) || CitySoilTrees.BlocksArrival(layout, landing, radius) || IsInsideObstacle(landing) ||
                 !TryResolveSurfaceTop(landing, out float top))
             {
                 return false;

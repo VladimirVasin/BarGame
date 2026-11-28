@@ -21,6 +21,12 @@ namespace BarPromenade
         public static readonly Rect FeedbackRect =
             new Rect(148f, 304f, 344f, 13f);
 
+        // The bill's three lines and total fit between the held item and feedback.
+        internal static Rect DescriptionBounds(InventoryItemId itemId, Rect standardBounds) =>
+            itemId == InventoryItemId.HomeBills
+                ? new Rect(140f, 241f, 360f, 61f)
+                : standardBounds;
+
         private static readonly Rect[] ActionRects =
         {
             new Rect(185f, 322f, 82f, 22f),

@@ -79,7 +79,8 @@ namespace BarPromenade
         public string DescriptionKey => descriptionKey ?? ActiveDefinition.DescriptionLocalizationKey;
 
         internal string ActionLabel => formattedAction ?? LocalizationService.Get(ActionKey);
-        internal string DescriptionLabel => formattedDescription ?? LocalizationService.Get(DescriptionKey);
+        internal string DescriptionLabel => formattedDescription ??
+            (descriptionKey == null ? InventoryItemCatalog.Describe(ActiveDefinition) : LocalizationService.Get(descriptionKey));
 
         public InventoryItemDefinition ActiveDefinition =>
             InventoryItemCatalog.Get(ActiveItemId);

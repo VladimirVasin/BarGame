@@ -103,6 +103,12 @@ namespace BarPromenade
             return top;
         }
 
+        internal bool IsEarth(Vector2 point)
+        {
+            foreach (var bank in banks) if (bank.IsEarth(point)) return true;
+            return quarter.TryHeight(point, out _, earthOnly: true);
+        }
+
         internal static void AddPadBreaks(Rect bounds, IReadOnlyList<CityHillsideGroundPad> pads,
             SortedSet<float> xs, SortedSet<float> zs)
         {

@@ -100,6 +100,7 @@ namespace BarPromenade
                 CityPlaygroundSwingBuilder.BuildBalanceStation(root, site.Balance, context);
             ground.SetGrassContext(context.Layout, home: context);
             ground.FinalizeSurface();
+            ground.BuildSoilTreesAndLeaves(lower: !context.Layout.HasSummitHome, ridge: context.Layout.HasSummitHome);
             // The retained exterior is presentation only. Shared fixture
             // builders and imported kits may carry collision components;
             // this owner keeps the entire view passive.

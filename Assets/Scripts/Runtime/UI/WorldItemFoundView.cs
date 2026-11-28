@@ -58,7 +58,7 @@ namespace BarPromenade
                 8f,
                 1f);
             RetroItemPanel.DrawFramedText(
-                RetroItemPanel.DescriptionRect,
+                RetroItemPanel.DescriptionBounds(screen.ActiveItemId, RetroItemPanel.DescriptionRect),
                 screen.DescriptionLabel,
                 descriptionStyle,
                 10f,

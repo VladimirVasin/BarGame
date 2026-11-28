@@ -5,9 +5,13 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-28
 
-Both Ridge streets carry their sidewalk tiles onto the outside shoulders of the entry curves and hairpins. At the cellars they reach the parapet. `LiveCity_CellarCourtWalksBothEntrancesAndKeepsViewBench` checks the pavement finish and footfalls, both gates and the bench. The sorter walks from home by day. `LiveCity_CellarKeeperSortsByDayAndLampsReachWorkAndSteps` checks hand-to-crate contact and his return home. Lamps pick out the table, steps, doors and bend.
+Street entry requires the envelope. Pickup and inventory share the $548 bill. `HOME MAILBOX MODEL CONTRACT OK` checks the exports. `EnterAndExitHome_UsesStairwellAndReturnsToSameCity` exercised cancel, pickup, inventory and entry. Existing apartment music assertion failed.
+
+Ridge sidewalk tiles reach the shoulders of the bends and cellar parapet. `LiveCity_CellarCourtWalksBothEntrancesAndKeepsViewBench` checks paving, footfalls, gates and bench. `LiveCity_CellarKeeperSortsByDayAndLampsReachWorkAndSteps` checks sorting contact, return and task lighting.
 
 Ridge court children share a ball and alternate shots. The whole wall board is turned over. Its braced ring projects into the yard, and the net hangs below it. `RidgeBasketball_AlternatesAndOnlyScorerJumps` measures the horizontal rim in the built City and checks the make, miss, shooter’s jump and return to the sidewalk.
+
+City soil and Ridge earth carry seeded trees with independent crown spans and trunk heights. The crown forks, shedding heights and solid trunks follow the same form. Stride speed sets the swept area and lift. Wet leaves slide and the heel releases into toe-off even with muted audio. `CityLeaves_GustLandingAndWalkingContacts`, `HomeBalconyLeaves_FallOutsideTheRoom` and `LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement` cover both districts.
 
 Ridge and lower City rebind one sound pool. Real roofs, wind, road wetness and gait drive local sound. Cold Ridge starts publish shared road polygons atomically. The lower district accepts the seated shelter resident's existing glare pose. `RidgeSound_FollowsShelterWalkingFeetAndDistrictStreaming` verified rain on canvas, a nearby ambient walker’s footfall and pool rebinding after unloading. The street and umbrella stereo takes retain the same gain.
 

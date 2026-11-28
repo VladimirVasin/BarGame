@@ -1,9 +1,12 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.Controls;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
@@ -1730,7 +1733,7 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(expectedDrinkCount));
         }
 
-        [UnityTest]
+        [UnityTest, Timeout(240000)]
         public IEnumerator EnterAndExitHome_UsesStairwellAndReturnsToSameCity()
         {
             CityGameRoot firstCity = null;
@@ -1760,6 +1763,8 @@ namespace BarPromenade.Tests.PlayMode
                 expectedRoads[index] =
                     firstCity.Layout.RoadEdges[index];
             }
+
+            yield return CollectHomeMail(firstCity, entrance);
 
             GameSessionState.UpdateDrinkingProgress(
                 37,
@@ -2012,6 +2017,11 @@ namespace BarPromenade.Tests.PlayMode
                     !SceneTransitionService.IsTransitioning,
                 "Home return transition did not settle.");
 
+            Assert.That(HomeMailbox.HasMail, Is.False);
+            Assert.That(GameSessionState.GetInventoryItemCount(InventoryItemId.HomeBills), Is.EqualTo(1));
+            var emptyMailbox = returnedCity.World.PlayerHome.transform.parent.GetComponentInChildren<HomeMailbox>();
+            Assert.That(emptyMailbox.GetComponentsInChildren<MeshRenderer>().Length, Is.EqualTo(2));
+
             Assert.That(
                 returnedCity.Layout.Seed,
                 Is.EqualTo(expectedSeed));
@@ -2050,6 +2060,131 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 returnedFollow.FixedPoseActive,
                 Is.False);
+        }
+
+        private static IEnumerator CollectHomeMail(CityGameRoot city, HomeEntrance entrance)
+        {
+            var interactor = city.Player.Interactor;
+            var screen = WorldItemFoundScreen.For(interactor);
+            var mailbox = entrance.transform.parent.GetComponentInChildren<HomeMailbox>();
+            Assert.That(mailbox, Is.Not.Null);
+            var lid = mailbox.GetComponentsInChildren<Transform>().Single(part => part.name == "LidHinge");
+            Quaternion closed = lid.localRotation;
+            var envelope = mailbox.GetComponentsInChildren<MeshRenderer>().Single(part => part.name == "FoldedBills");
+            Bounds envelopeBounds = envelope.bounds;
+            Assert.That(envelopeBounds.size.x + envelopeBounds.size.z, Is.InRange(.29f, .40f));
+            var cabinet = mailbox.GetComponentsInChildren<MeshRenderer>().Single(part => part.name == "Cabinet");
+            Assert.That(cabinet.bounds.size.y, Is.EqualTo(1.184f).Within(.005f));
+
+            var input = new InputTestFixture();
+            input.Setup();
+            Keyboard keyboard = InputSystem.AddDevice<Keyboard>();
+            bool focused = GameCursor.ApplicationFocused;
+            bool capture = Environment.GetEnvironmentVariable("BP_CAPTURE_HOME_MAILBOX") == "1";
+            var follow = city.Camera.GetComponent<PlayerCameraFollow>();
+            GameCursor.SetApplicationFocused(true);
+            try
+            {
+                var door = entrance.GetComponent<PlayerDoorActionTarget>().Plan;
+                city.Player.Motor.Teleport(door.EntryRootPosition);
+                interactor.transform.rotation = door.EntryRotation;
+                Physics.SyncTransforms();
+                yield return WaitUntil(() => ReferenceEquals(interactor.ActiveInteractable, entrance),
+                    "The street door was not selectable before collection.");
+                yield return Tap(keyboard.eKey);
+                Assert.That(SceneTransitionService.IsTransitioning, Is.False);
+                Assert.That(interactor.PromptView.GetBottomPromptKeyAt(Time.unscaledTime),
+                    Is.EqualTo("interaction.home_mailbox.reminder"));
+
+                Vector3 front = mailbox.transform.TransformPoint(0f, 1.4f, .56f);
+                Assert.That(Physics.Raycast(front, Vector3.down, out RaycastHit ground, 2f,
+                    Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore), Is.True);
+                city.Player.Motor.Teleport(ground.point + Vector3.up * PlayerFactory.GroundedRootOffset);
+                interactor.transform.rotation = Quaternion.LookRotation(-mailbox.transform.forward);
+                Physics.SyncTransforms();
+                yield return WaitUntil(() => ReferenceEquals(interactor.ActiveInteractable, mailbox) &&
+                    !interactor.PromptView.IsFeedbackVisible, "The mailbox was not selectable from the walk.");
+
+                if (capture) FrameMailbox("01-mail-waiting");
+                yield return Tap(keyboard.eKey);
+                yield return WaitUntil(() => screen.IsShowing, "The mailbox did not open the item screen.");
+                Assert.That(Quaternion.Angle(closed, lid.localRotation), Is.EqualTo(99f).Within(1f));
+                Assert.That(GameSessionState.GetInventoryItemCount(InventoryItemId.HomeBills), Is.Zero);
+                Assert.That(screen.DescriptionLabel, Does.Contain("Квартплата — $320").And
+                    .Contain("Отопление — $146").And.Contain("Электричество — $82").And.Contain("Итого к оплате — $548"));
+                if (capture) yield return CaptureGameView("02-bills-pickup");
+                yield return Tap(keyboard.escapeKey);
+                yield return WaitUntil(() => !screen.IsPresenting && interactor.InputEnabled, "Cancellation did not close the lid.");
+                Assert.That(HomeMailbox.HasMail, Is.True);
+                Assert.That(envelope.gameObject.activeInHierarchy, Is.True);
+                Assert.That(Quaternion.Angle(closed, lid.localRotation), Is.LessThan(.1f));
+
+                yield return Tap(keyboard.eKey);
+                yield return WaitUntil(() => screen.IsShowing, "The envelope was not offered again.");
+                yield return Tap(keyboard.eKey);
+                yield return WaitUntil(() => !screen.IsPresenting && interactor.InputEnabled, "Taking the bills did not restore input.");
+                Assert.That(HomeMailbox.HasMail, Is.False);
+                Assert.That(GameSessionState.GetInventoryItemCount(InventoryItemId.HomeBills), Is.EqualTo(1));
+                Assert.That(envelope.gameObject.activeInHierarchy, Is.False);
+                Assert.That(mailbox.CanInteract(interactor), Is.False);
+                if (capture) FrameMailbox("03-empty");
+                Assert.That(city.Inventory.Open(), Is.True);
+                int index = Array.FindIndex(GameSessionState.InventoryItems.ToArray(),
+                    stack => stack.ItemId == InventoryItemId.HomeBills);
+                Assert.That(index, Is.GreaterThan(0));
+                Assert.That(HomeBills.TotalLabel, Is.EqualTo("$548"));
+                city.Inventory.SelectItem(index - 1);
+                if (capture) yield return CaptureGameView("04-inventory");
+                Assert.That(city.Inventory.SelectItem(index), Is.True);
+                Assert.That(city.Inventory.ExamineSelected(), Is.True);
+                if (capture) yield return CaptureGameView("05-bills-detail");
+                Assert.That(city.Inventory.Close(), Is.True);
+            }
+            finally
+            {
+                GameCursor.SetApplicationFocused(focused);
+                InputSystem.RemoveDevice(keyboard);
+                input.TearDown();
+            }
+
+            IEnumerator Tap(KeyControl key)
+            {
+                input.Press(key, queueEventOnly: true);
+                yield return null;
+                input.Release(key, queueEventOnly: true);
+                yield return null;
+            }
+
+            void FrameMailbox(string title)
+            {
+                Vector3 eye = mailbox.transform.TransformPoint(1.05f, 1.57f, 1.52f);
+                Vector3 look = mailbox.transform.TransformPoint(0f, .91f, .06f);
+                follow.SetFixedPose(eye, Quaternion.LookRotation(look - eye), 49f);
+                try
+                {
+                    AreaCaptureFixture.CaptureCurrentCamera(city.Camera, "HomeMailbox", title);
+                }
+                finally
+                {
+                    follow.ClearFixedPose();
+                }
+            }
+
+            IEnumerator CaptureGameView(string title)
+            {
+                yield return new WaitForEndOfFrame();
+                string folder = Path.Combine(Directory.GetCurrentDirectory(), "Captures", "HomeMailbox");
+                Directory.CreateDirectory(folder);
+                Texture2D frame = ScreenCapture.CaptureScreenshotAsTexture();
+                try
+                {
+                    File.WriteAllBytes(Path.Combine(folder, title + ".png"), frame.EncodeToPNG());
+                }
+                finally
+                {
+                    UnityEngine.Object.Destroy(frame);
+                }
+            }
         }
 
         [UnityTest]

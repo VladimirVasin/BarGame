@@ -124,7 +124,7 @@ namespace BarPromenade
                 top - lowest + CityHillsideGroundGrid.FoundationEmbedDepth);
         }
 
-        internal bool TryHeight(Vector2 point, out float top)
+        internal bool TryHeight(Vector2 point, out float top, bool earthOnly = false)
         {
             top = 0f;
             if (Rows < 2 || point.y < z[0] || point.y > z[Rows - 1]) return false;
@@ -139,22 +139,23 @@ namespace BarPromenade
                 int mid = (lo + hi) / 2;
                 if (point.x < X(mid)) hi = mid; else lo = mid;
             }
-            if (SampleCell(lo, row, point, out top)) return true;
+            if (SampleCell(lo, row, point, out top, earthOnly)) return true;
             // At a cut edge, the uncut neighbour still owns the shared edge.
             bool onLeft = lo > 0 && Mathf.Abs(point.x - X(lo)) < .0001f;
             bool onBottom = row > 0 && Mathf.Abs(point.y - z[row]) < .0001f;
-            if (onLeft && SampleCell(lo - 1, row, point, out top)) return true;
-            if (onBottom && SampleCell(lo, row - 1, point, out top)) return true;
-            if (onLeft && onBottom && SampleCell(lo - 1, row - 1, point, out top)) return true;
+            if (onLeft && SampleCell(lo - 1, row, point, out top, earthOnly)) return true;
+            if (onBottom && SampleCell(lo, row - 1, point, out top, earthOnly)) return true;
+            if (onLeft && onBottom && SampleCell(lo - 1, row - 1, point, out top, earthOnly)) return true;
             return false;
 
             float X(int col) => Mathf.Lerp(Vertex(col, row).x, Vertex(col, row + 1).x, along);
         }
 
-        private bool SampleCell(int col, int row, Vector2 point, out float top)
+        private bool SampleCell(int col, int row, Vector2 point, out float top, bool earthOnly)
         {
             top = 0f;
-            if (CellSurface(col, row) == Surface.Cut) return false;
+            var surface = CellSurface(col, row);
+            if (surface == Surface.Cut || earthOnly && surface != Surface.Earth) return false;
             Vector3 a = Vertex(col, row), b = Vertex(col, row + 1), c = Vertex(col + 1, row), d = Vertex(col + 1, row + 1);
             return TriangleHeight(a, b, c, point, out top) || TriangleHeight(c, b, d, point, out top);
         }

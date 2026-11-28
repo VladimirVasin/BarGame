@@ -187,6 +187,9 @@ namespace BarPromenade
             faces.Add(a + 1); faces.Add(b); faces.Add(b + 1);
         }
 
+        internal bool IsEarth(Vector2 point) => point.x >= x[0] && point.x <= x[Columns - 1] &&
+            point.y >= z[0] && point.y <= z[Rows - 1] && CellSurface(Cell(x, point.x), Cell(z, point.y)) == Surface.Earth;
+
         internal bool TryHeight(Vector2 point, out float top)
         {
             top = 0f;

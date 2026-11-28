@@ -398,6 +398,36 @@ namespace BarPromenade
             return true;
         }
 
+        internal bool LeafWater(Vector3 world)
+        {
+            var p = ToCity(world);
+            return layout.River.ContainsWater(p) ||
+                (coast != null && coast.Frame.SeaRowBounds.Contains(new Vector2(p.x, p.z)));
+        }
+
+        // The retained view has no physics. Read its indexed final surfaces in the same City frame as its trees.
+        internal bool TryLeafFloor(Vector3 world, out float y, out Vector3 normal, out FootstepGroundKind kind)
+        {
+            Vector3 city = ToCity(world);
+            var p = new Vector2(city.x, city.z);
+            kind = FootstepGroundKind.None;
+            y = 0f;
+            normal = Vector3.up;
+            if (!Sample(p, out Face face, out float top) || face.Normal.y < .65f) return false;
+            if (obstacles.TryGetValue(new Vector2Int(Bucket(p.x), Bucket(p.y)), out var blockers))
+                foreach (var block in blockers)
+                {
+                    // Walkway reservations are for rooted grass only. The tall plan-owned bodies
+                    // are the exterior wall footprints, including collisionless retained houses.
+                    if (block.Path == null && block.Bounds.size.y >= 999f &&
+                        block.Bounds.Contains(new Vector3(p.x, top, p.y))) return false;
+                }
+            y = FromCity(new Vector3(p.x, top, p.y)).y;
+            kind = face.Kind;
+            normal = FromCityRotation * face.Normal;
+            return true;
+        }
+
         private static bool NearPath(Vector2[] outline, Vector2 point, float clearance)
         {
             if (CityRoadPolygon.Contains(outline, point)) return true;

@@ -981,6 +981,20 @@ namespace BarPromenade
             }
 
             footstepDistance %= stride;
+            if (CityLeafField.HasContactListeners && presentation is Player3DCharacterPresentation rig && rig.Registry)
+            {
+                bool left = rig.LeftFootPlant == rig.RightFootPlant
+                    ? rig.Metrics.LeftFootWorldPosition.y <= rig.Metrics.RightFootWorldPosition.y
+                    : rig.LeftFootPlant > rig.RightFootPlant;
+                Transform foot = left ? rig.Registry.Anchors.LeftFoot : rig.Registry.Anchors.RightFoot;
+                if (foot)
+                {
+                    var sample = left ? rig.LeftFootGround : rig.RightFootGround;
+                    Vector3 sole = foot.position;
+                    sole.y = sample.HasSurface ? sample.HeelY : transform.position.y - PlayerFactory.GroundedRootOffset;
+                    CityLeafField.Footfall(foot, sole, PlanarVelocity);
+                }
+            }
             EmitFootstep(transform.position, runBlend);
         }
 

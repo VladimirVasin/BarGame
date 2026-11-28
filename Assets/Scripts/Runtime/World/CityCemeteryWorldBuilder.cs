@@ -507,7 +507,9 @@ namespace BarPromenade
                     trunk.Style,
                     group,
                     batches,
-                    importedIds);
+                    importedIds,
+                    new Vector3(trunk.Size.x / (variant == 0 ? .30f : .34f),
+                        trunk.Size.y / (variant == 0 ? 2.90f : 1.10f), trunk.Size.z / (variant == 0 ? .30f : .34f)));
             }
         }
 

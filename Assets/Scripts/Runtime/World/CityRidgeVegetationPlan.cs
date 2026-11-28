@@ -8,7 +8,7 @@ namespace BarPromenade
     internal sealed class CityRidgeVegetationPlan
     {
         internal const string RootName = "Ridge vegetation";
-        internal const int MaximumTrees = 18;
+        internal const int MaximumTrees = 106;
         internal const int MaximumShrubs = 54;
         private static readonly ConditionalWeakTable<CityLayout, CityRidgeVegetationPlan> Plans = new();
         private readonly List<Plant> plants = new(MaximumTrees + MaximumShrubs);
@@ -28,13 +28,15 @@ namespace BarPromenade
             internal readonly Rect Bounds;
             internal readonly float Scale;
             internal readonly int Variant;
+            internal readonly CityTreeForm? Form;
+            internal readonly bool OnOpenEarth;
             internal bool IsTree => Kind == CityMiscKind.ParkTree;
 
             internal Plant(CityMiscKind kind, CityTerraceTransportBank bank, Vector3 origin,
-                Quaternion rotation, Rect bounds, float scale, int variant)
+                Quaternion rotation, Rect bounds, float scale, int variant, CityTreeForm? form, bool onOpenEarth)
             {
                 Kind = kind; Bank = bank; Origin = origin; Rotation = rotation;
-                Bounds = bounds; Scale = scale; Variant = variant;
+                Bounds = bounds; Scale = scale; Variant = variant; Form = form; OnOpenEarth = onOpenEarth;
             }
         }
 
@@ -120,6 +122,24 @@ namespace BarPromenade
                 }
             }
 
+            // The established courtyard groups keep their shrub pockets. Scatter the remaining trees
+            // across actual earth cells on both banks and the ground between them.
+            foreach (var grid in CityHillsideGroundGrid.ForSurface(layout))
+                Scatter(CityHillsideNeighborhoodPlan.TerrainBounds(grid.Road), grid.Road.Bank);
+            Scatter(quarter.TerrainBounds, null);
+
+            void Scatter(Rect area, CityTerraceTransportBank? bank)
+            {
+                foreach (Vector2 point in CitySoilTrees.Candidates(area, layout.Seed))
+                {
+                    if (trunks.Count >= MaximumTrees) break;
+                    if (!ground.IsEarth(point)) continue;
+                    uint hash = CityGrassPlan.Hash(layout.Seed, Mathf.FloorToInt(point.x), Mathf.FloorToInt(point.y), 724);
+                    var side = bank ?? (point.x < area.center.x ? CityTerraceTransportBank.West : CityTerraceTransportBank.East);
+                    TryPlant(CityMiscKind.ParkTree, side, point, hash, true);
+                }
+            }
+
             bool AddGroup(CityHillsideBuilding house)
             {
                 Rect body = house.FoundationBounds;
@@ -136,14 +156,19 @@ namespace BarPromenade
                 return false;
             }
 
-            bool TryPlant(CityMiscKind kind, CityTerraceTransportBank bank, Vector2 point, uint variation)
+            bool TryPlant(CityMiscKind kind, CityTerraceTransportBank bank, Vector2 point, uint variation, bool openEarth = false)
             {
                 bool tree = kind == CityMiscKind.ParkTree;
                 bool broadShrub = kind == CityMiscKind.ChurchCourtyardShrub;
                 float scale = tree ? Mathf.Lerp(.79f, 1.04f, CityGrassPlan.Unit(variation)) :
                     Mathf.Lerp(broadShrub ? .90f : 1.06f, broadShrub ? 1.27f : 1.52f, CityGrassPlan.Unit(variation));
                 int variant = tree ? (int)(variation >> 18) % CityMiscAssetProvider.GetVariantCount(kind) : 0;
-                float radius = (tree ? 1.75f : .70f) * scale;
+                var form = tree ? new CityTreeForm(layout.Seed, new Vector3(point.x, 0f, point.y), variant) : (CityTreeForm?)null;
+                float radius = form?.Radius ?? .70f * scale;
+                float plantingClearance = form?.TrunkRadius + .25f ?? radius;
+                if (cellars?.BlocksPlant(point, plantingClearance) == true) return false;
+                foreach (var bend in bendSidewalks)
+                    if (bend.BlocksPlant(point, plantingClearance)) return false;
                 float sway = tree ? CityWindField.MaximumTreeTravel : CityWindField.MaximumShrubTravel;
                 Rect crown = new(point.x - radius, point.y - radius, radius * 2f, radius * 2f);
                 Rect clearance = Expanded(crown, sway + .25f);
@@ -156,33 +181,29 @@ namespace BarPromenade
                 foreach (var patch in nearby)
                     if (clearance.Overlaps(patch.Bounds)) return false;
 
-                float rootRadius = (tree ? .34f : .30f) * scale;
-                float plantingClearance = tree ? rootRadius + .25f : radius;
-                if (cellars?.BlocksPlant(point, plantingClearance) == true) return false;
-                foreach (var bend in bendSidewalks)
-                    if (bend.BlocksPlant(point, plantingClearance)) return false;
+                float rootRadius = form?.TrunkRadius ?? .30f * scale;
                 float rootY = floor;
                 for (int sample = 0; sample < 4; sample++)
                 {
                     float angle = sample * Mathf.PI * .5f;
                     Vector2 rootEdge = point + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * rootRadius;
-                    if (!ground.TrySampleTop(rootEdge, out float top) || Mathf.Abs(top - floor) > .30f) return false;
+                    if (openEarth && !ground.IsEarth(rootEdge) || !ground.TrySampleTop(rootEdge, out float top) || Mathf.Abs(top - floor) > .30f) return false;
                     rootY = Mathf.Min(rootY, top);
                 }
-                float height = scale * (tree ? 5.23f + variant * .24f : broadShrub ? .86f : .62f);
+                float height = form?.Height ?? scale * (broadShrub ? .86f : .62f);
                 foreach (var span in network.CableSpans)
                     if (TouchesCable(span, point, rootY + height, radius + sway)) return false;
 
                 var origin = new Vector3(point.x, rootY - .015f, point.y);
-                Quaternion rotation = Quaternion.Euler(0f, CityGrassPlan.Unit(variation >> 16) * 360f, 0f);
-                plants.Add(new Plant(kind, bank, origin, rotation, crown, scale, variant));
+                Quaternion rotation = form?.Rotation ?? Quaternion.Euler(0f, CityGrassPlan.Unit(variation >> 16) * 360f, 0f);
+                plants.Add(new Plant(kind, bank, origin, rotation, crown, tree ? 1f : scale, variant, form, openEarth));
                 occupied.Add(crown);
-                if (tree) trunks.Add(CityHillsideSiteDetails.TrunkFootprint(origin, rotation, scale));
+                if (tree) trunks.Add(CityHillsideSiteDetails.TrunkFootprint(origin, rotation, form.Value.Wood.x));
                 return true;
             }
         }
 
-        private static bool TouchesCable(CityCoastalCableSpan span, Vector2 root, float top, float radius)
+        internal static bool TouchesCable(CityCoastalCableSpan span, Vector2 root, float top, float radius)
         {
             Vector2 start = new(span.Start.x, span.Start.z);
             Vector2 delta = new(span.End.x - span.Start.x, span.End.z - span.Start.z);
@@ -212,7 +233,7 @@ namespace BarPromenade
                 instance.localPosition = plant.Origin;
                 instance.localRotation = plant.Rotation;
                 instance.localScale = Vector3.one * plant.Scale;
-                CityHillsideSiteDetails.BuildPlant(instance, plant.Kind, plant.Variant, !retained.HasValue);
+                CityHillsideSiteDetails.BuildPlant(instance, plant.Kind, plant.Variant, !retained.HasValue, plant.Form);
             }
         }
     }

@@ -49,6 +49,7 @@ namespace BarPromenade
 
             ground.SetGrassContext(layout);
             yield return ground.FinalizeSurfaceSteps(true);
+            ground.BuildSoilTreesAndLeaves(lower: false, ridge: true);
             completed(new CityWorldResult(root.gameObject, home, walkable, shelters, layout, mountain, mountainRoot, railRests));
             yield return new CompositionStep("ridge_complete", 1f);
         }

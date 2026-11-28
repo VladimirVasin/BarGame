@@ -355,7 +355,7 @@ namespace BarPromenade
             }
         }
 
-        internal static void BuildPlant(Transform frame, CityMiscKind kind, int variant, bool solid)
+        internal static void BuildPlant(Transform frame, CityMiscKind kind, int variant, bool solid, CityTreeForm? form = null)
         {
             var provider = CityMiscAssetProvider.LoadOrThrow();
             bool tree = kind == CityMiscKind.ParkTree;
@@ -365,6 +365,12 @@ namespace BarPromenade
                 var part = provider.GetPartOrThrow(kind, variant, i);
                 var branch = new GameObject(part.Component);
                 branch.transform.SetParent(frame, false);
+                if (form is CityTreeForm shape)
+                {
+                    bool crown = part.Role == CityMiscMeshRole.Foliage;
+                    branch.transform.localScale = crown ? shape.Crown : shape.Wood;
+                    if (crown) branch.transform.localPosition = Vector3.up * shape.CrownLift;
+                }
                 branch.AddComponent<MeshFilter>().sharedMesh = part.Mesh;
                 var renderer = branch.AddComponent<MeshRenderer>();
                 renderer.sharedMaterial = RuntimePrimitiveFactory.DefaultMaterial;
@@ -375,10 +381,10 @@ namespace BarPromenade
                     tree ? CityWindField.MaximumTreeTravel : CityWindField.MaximumShrubTravel);
             }
             if (!solid || !tree) return;
-            frame.gameObject.AddComponent<CitySoundTree>();
+            frame.gameObject.AddComponent<CitySoundTree>().Height = form?.LeafHeight ?? 3.1f;
             var trunk = frame.gameObject.AddComponent<BoxCollider>();
-            trunk.center = Vector3.up * 1.15f;
-            trunk.size = new Vector3(2f * TrunkHalfWidth, 2.3f, 2f * TrunkHalfWidth);
+            trunk.size = Vector3.Scale(new Vector3(2f * TrunkHalfWidth, 2.3f, 2f * TrunkHalfWidth), form?.Wood ?? Vector3.one);
+            trunk.center = Vector3.up * (trunk.size.y * .5f);
         }
 
         internal static Vector2[] TrunkFootprint(Vector3 origin, Quaternion rotation, float scale)

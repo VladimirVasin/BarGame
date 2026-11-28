@@ -76,6 +76,14 @@ namespace BarPromenade
         internal void SetGrassContext(CityLayout layout, CitySeacoastPlan coast = null, HomeExteriorContextPlan home = null,
             CityDecorationPlan decorations = null)
         { grassLayout = layout; grassCoast = coast; grassHome = home; grassDecorations = decorations; }
+        internal void BuildSoilTreesAndLeaves(bool lower, bool ridge, CityCemeteryPlan cemetery = null, RoadWalkableArea walkable = null)
+        {
+            if (grassSupport == null) return;
+            var sites = CityLeafSite.Build(grassLayout, lower, ridge, cemetery, grassHome);
+            if (lower) CitySoilTrees.BuildLower(transform, grassLayout, grassSupport, sites, walkable);
+            CityLeafField.Create(transform, grassSupport, GetComponent<CityWindField>(), sites);
+        }
+
         internal int SourceCount => sources.Count;
         internal int SurfaceTriangleCount { get; private set; }
         internal int SectorCount { get; private set; }

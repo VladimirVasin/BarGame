@@ -161,6 +161,7 @@ namespace BarPromenade
             public int PreviousPlant = -1;
             public Vector3 PreviousRoot;
             public bool HasRoot;
+            public CityPedestrianAssetRegistry Rig;
             public int LastSeenTick;
         }
 
@@ -188,7 +189,7 @@ namespace BarPromenade
 
         internal void Tick(float deltaTime)
         {
-            if (hero == null || deltaTime <= 0f || GameTimeScaleRuntime.IsPaused || AudioListener.pause)
+            if (hero == null || deltaTime <= 0f || GameTimeScaleRuntime.IsPaused || (AudioListener.pause && !CityLeafField.HasContactListeners))
             {
                 return;
             }
@@ -218,17 +219,23 @@ namespace BarPromenade
                     {
                         Silent = IsSilent(root),
                         Profile = root.GetComponent<NpcFootstepProfile>(),
-                        Street = root.GetComponent<CityPedestrianPresentation>()
+                        Street = root.GetComponent<CityPedestrianPresentation>(),
+                        Rig = root.GetComponent<CityPedestrianAssetRegistry>()
                     };
                     walkers.Add(root, walker);
                 }
 
                 walker.LastSeenTick = tick;
+                Vector3 travel = position - walker.PreviousRoot;
+                bool continuous = walker.HasRoot && travel.sqrMagnitude < NpcStrideTracker.TeleportDistance * NpcStrideTracker.TeleportDistance;
+                walker.PreviousRoot = position;
+                walker.HasRoot = true;
+                Transform planted = null;
                 bool contact;
                 if (walker.Profile != null && walker.Profile.UsesAuthoredContacts)
                     contact = walker.Profile.ConsumeFootfall();
                 else if (walker.Street && walker.Street.IsInitialized)
-                    contact = StreetPlant(walker, ref position);
+                    contact = StreetPlant(walker, continuous, out planted);
                 else
                     contact = walker.Stride.Advance(position, deltaTime, walker.Profile);
                 if (!contact ||
@@ -237,7 +244,12 @@ namespace BarPromenade
                     continue;
                 }
 
-                TryStep(root, position, walker.Profile != null ? walker.Profile.VolumeScale : VolumeScale);
+                if (!planted && walker.Rig && walker.Rig.LeftFoot && walker.Rig.RightFoot)
+                    planted = walker.Rig.LeftFoot.position.y <= walker.Rig.RightFoot.position.y
+                        ? walker.Rig.LeftFoot : walker.Rig.RightFoot;
+                if (planted) position = planted.position;
+                TryStep(root, planted ? planted : root, position, continuous ? travel / deltaTime : Vector3.zero,
+                    walker.Profile != null ? walker.Profile.VolumeScale : VolumeScale);
             }
 
             foreach (KeyValuePair<Transform, Walker> pair in walkers)
@@ -267,13 +279,10 @@ namespace BarPromenade
                    null;
         }
 
-        private static bool StreetPlant(Walker walker, ref Vector3 position)
+        private static bool StreetPlant(Walker walker, bool continuous, out Transform foot)
         {
             var street = walker.Street;
-            Vector3 travel = position - walker.PreviousRoot;
-            walker.PreviousRoot = position;
-            bool continuous = walker.HasRoot && travel.sqrMagnitude < NpcStrideTracker.TeleportDistance * NpcStrideTracker.TeleportDistance;
-            walker.HasRoot = true;
+            foot = null;
             if (!continuous || !street.IsMoving || street.IsInBus || street.Registry.PreservesAirborneMotion)
             {
                 walker.PreviousPlant = -1;
@@ -286,14 +295,15 @@ namespace BarPromenade
             if (!landed) return false;
             var left = street.Registry.LeftFoot;
             var right = street.Registry.RightFoot;
-            if (left && right) position = left.position.y <= right.position.y ? left.position : right.position;
+            if (left && right) foot = left.position.y <= right.position.y ? left : right;
             return true;
         }
 
-        private void TryStep(Transform root, Vector3 feet, float volumeScale)
+        private void TryStep(Transform root, Transform foot, Vector3 feet, Vector3 velocity, float volumeScale)
         {
             double now = AudioSettings.dspTime;
-            if (now < nextStepDspTime)
+            bool audible = !AudioListener.pause && now >= nextStepDspTime;
+            if (!audible && !CityLeafField.HasContactListeners)
             {
                 return;
             }
@@ -307,6 +317,8 @@ namespace BarPromenade
                 return;
             }
 
+            CityLeafField.Footfall(foot, contact, velocity);
+            if (!audible) return;
             StepsResolved++;
             LastKind = kind;
             if (RetroAudio.PlayAt(

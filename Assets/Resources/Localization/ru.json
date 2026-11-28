@@ -1,5 +1,9 @@
 {
   "entries": [
+    {"key":"interaction.home_mailbox.check","value":"E — проверить ящик"},
+    {"key":"interaction.home_mailbox.reminder","value":"В почтовом ящике остался конверт."},
+    {"key":"inventory.item.home_bills.name","value":"Счета"},
+    {"key":"inventory.item.home_bills.description","value":"Квартплата — ${0}\nОтопление — ${1}\nЭлектричество — ${2}\nИтого к оплате — ${3}"},
     {"key":"motel.court.opener.a","value":"Ты открывалку куда дел?"},
     {"key":"motel.court.opener.b","value":"Под локтем у тебя."},
     {"key":"motel.court.chair.a","value":"Этот стул опять шатается."},

@@ -136,6 +136,10 @@ namespace BarPromenade
                 Quaternion.Euler(20f, -30f, -12f),
                 .65f),
             new InventoryItemPreviewPose(
+                InventoryItemId.HomeBills,
+                Quaternion.Euler(-64f, -15f, 3f),
+                .82f),
+            new InventoryItemPreviewPose(
                 InventoryItemId.LodgeGroupPhotograph,
                 Quaternion.Euler(12f, 180f, 0f),
                 0.60f)

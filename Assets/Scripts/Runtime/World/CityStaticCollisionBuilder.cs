@@ -288,16 +288,18 @@ namespace BarPromenade
         internal static void AddHomeMailboxCollider(
             Transform parent,
             Vector3 localBase,
-            bool frontageIsX)
+            Vector3 forward)
         {
             Transform proxy = new GameObject("Home Mailbox Collider").transform;
             proxy.SetParent(parent, false);
-            proxy.localPosition = localBase;
-            BoxCollider collider = proxy.gameObject.AddComponent<BoxCollider>();
-            collider.center = new Vector3(0f, 0.60f, 0f);
-            collider.size = frontageIsX
-                ? new Vector3(0.62f, 1.20f, 0.82f)
-                : new Vector3(0.82f, 1.20f, 0.62f);
+            proxy.SetLocalPositionAndRotation(localBase, Quaternion.LookRotation(forward));
+
+            BoxCollider cabinet = proxy.gameObject.AddComponent<BoxCollider>();
+            cabinet.center = new Vector3(0f, 1.026f, -.008f);
+            cabinet.size = new Vector3(.519f, .307f, .390f);
+            BoxCollider post = proxy.gameObject.AddComponent<BoxCollider>();
+            post.center = new Vector3(0f, .44f, 0f);
+            post.size = new Vector3(.15f, .88f, .15f);
         }
 
         internal static Bounds CreateLowerPoleBounds(Vector3 localBase)
