@@ -137,6 +137,14 @@ namespace BarPromenade
 
             var sheets = new List<Rect>();
             CitySeacoastSeaLayout.CreateSheetRects(frame, sheets);
+            // Water behind and around the cape is scenery outside the shipping lanes.
+            if (layout.SpatialPlan.IsCompactCoastal)
+            {
+                Rect apron = CitySeacoastSeaLayout.WestCapeWater(frame);
+                float mid = apron.center.x;
+                sheets.Add(Rect.MinMaxRect(apron.xMin, apron.yMin, mid, apron.yMax));
+                sheets.Add(Rect.MinMaxRect(mid, apron.yMin, apron.xMax, apron.yMax));
+            }
             for (int index = 0; index < sheets.Count; index++)
             {
                 CityWaterSurfaceFactory.CreateSlopedSurface(
@@ -1123,6 +1131,10 @@ namespace BarPromenade
         /// limited anchor still has covered sea past its last rock.
         /// </summary>
         internal const float ApronReach = 23f;
+
+        internal static Rect WestCapeWater(in CitySeacoastFrame frame) => Rect.MinMaxRect(
+            frame.SeaRowBounds.xMin - 2f * MaximumSheetWidth, frame.WaterlineZ,
+            frame.SeaRowBounds.xMin, frame.SeaRowBounds.yMax + ApronReach);
 
         // The low shore wave envelope ends here; it no longer denotes
         // a geometric step in the sand.

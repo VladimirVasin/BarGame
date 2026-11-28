@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using NUnit.Framework;
@@ -26,6 +27,122 @@ namespace BarPromenade.Tests.PlayMode
         [Explicit("Physical ridge relief at the reported summit wall and along the original approaches. Run alone.")]
         [PrebuildSetup(typeof(CityRockfaceAssetsSetup))]
         public IEnumerator CityMountainRockfaces() => CaptureCityLocalAcceptance(ReviewMountainRockfaces);
+
+        [UnityTest]
+        [Explicit("Inspect the western beach edge, the joined rock and its submerged tip.")]
+        public IEnumerator CityBeachHeadland() => CaptureCityLocalAcceptance(ReviewBeachHeadland);
+
+        private static IEnumerator ReviewBeachHeadland(CityGameRoot city)
+        {
+            CitySeacoastFrame coast = city.World.SeacoastPlan.Frame;
+            var rock = city.World.MountainBoundaryRoot.transform.Find("Physical Ridges/mountain-west-north");
+            var colliders = rock.GetComponentsInChildren<MeshCollider>();
+            var ridge = city.World.MountainBoundaryPlan.Ridges.Single(r => r.StableId == rock.name);
+            var reported = new Vector3(-155.6f, 5.5f, 167.2f);
+            city.Player.Motor.Teleport(reported);
+            city.Visibility.Refresh(true);
+            Physics.SyncTransforms();
+
+            var verge = city.World.MountainBoundaryRoot.transform.Find("West Cape Verge").GetComponent<MeshCollider>();
+            Assert.That(verge.GetComponent<MeshFilter>().sharedMesh, Is.SameAs(verge.sharedMesh));
+            var streets = CityStreetSupportPlan.ForLayout(city.Layout);
+            for (float z = 150.13f; z <= 171.6f; z += .33f)
+            for (float x = -168.11f; x <= -149f; x += .33f)
+            {
+                var point = new Vector2(x, z);
+                var ray = new Ray(new Vector3(x, 40f, z), Vector3.down);
+                if (streets.TrySampleTop(point, out float paved, out _))
+                {
+                    Assert.That(RockHeight(point), Is.LessThan(paved), $"Rock crosses paving at {point}");
+                    if (verge.Raycast(ray, out var soil, 80f))
+                        Assert.That(soil.point.y, Is.LessThan(paved + .015f), $"Verge covers paving at {point}");
+                }
+                if (z >= 155.6f && x <= -155f)
+                {
+                    Assert.That(Physics.Raycast(ray, out var hit, 60f, Physics.DefaultRaycastLayers,
+                        QueryTriggerInteraction.Ignore), Is.True, $"Open ground seam at {point}");
+                    Assert.That(hit.point.y, Is.GreaterThan(coast.SeaTopY), $"Exposed underside at {point}");
+                }
+            }
+
+            var motor = city.Player.Motor;
+            Vector3 Road(float x, float z)
+            {
+                Assert.That(streets.TrySampleTop(new Vector2(x, z), out float top, out _), Is.True);
+                return new Vector3(x, top + PlayerFactory.GroundedRootOffset, z);
+            }
+            motor.Teleport(Road(-156f, 150f));
+            foreach (var target in new[] { Road(-156f, 156f), Road(-149f, 156f) })
+            {
+                bool reached = false;
+                for (int step = 0; step < 200 && !reached; step++)
+                    reached = motor.MoveTowardsApproachWaypoint(target, .12f, .05f);
+                Assert.That(reached, Is.True, $"Player blocked on the bend towards {target}");
+            }
+            var eye = Road(-155.9f, 155f) + Vector3.up * (EyeHeight - PlayerFactory.GroundedRootOffset);
+            yield return LocalAcceptanceFrame(city, "west-cape-road-corner", eye, new Vector3(-164f, eye.y - .6f, 162f));
+            yield return LocalAcceptanceFrame(city, "west-cape-road-reverse",
+                Road(-148f, 156f) + Vector3.up, new Vector3(-162f, eye.y - 1f, 161f));
+            var sandContact = new Vector3(-158.1f, 25f, 164.5f);
+            Assert.That(Physics.Raycast(sandContact, Vector3.down, out var blendHit, 40f,
+                Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore), Is.True);
+            var blendRenderer = blendHit.collider.GetComponent<MeshRenderer>();
+            var block = new MaterialPropertyBlock();
+            blendRenderer.GetPropertyBlock(block, CommonGroundSlot(blendHit));
+            Assert.That(CitySurfaceLibrary.TryGroundJointMaps(
+                CitySeacoastSurfaceAppearance.GetTexture(CitySeacoastSurfaceKind.Sand), out var sand, out var response), Is.True);
+            Assert.That(block.GetTexture("_GroundSubstrateMap"), Is.SameAs(sand));
+            Assert.That(block.GetTexture("_GroundSubstrateResponse"), Is.SameAs(response));
+            var mix = block.GetVector(GroundSurfaceAppearance.ShoulderMixId);
+            Assert.That(mix.w, Is.EqualTo(1f));
+            var mesh = ((MeshCollider)blendHit.collider).sharedMesh;
+            var distances = new List<Vector4>();
+            mesh.GetUVs(GroundSurfaceCoordinates.Channel, distances);
+            var indices = mesh.triangles;
+            int first = blendHit.triangleIndex * 3;
+            var weights = blendHit.barycentricCoordinate;
+            float distance = Vector3.Dot(weights, new Vector3(distances[indices[first]].x,
+                distances[indices[first + 1]].x, distances[indices[first + 2]].x));
+            Assert.That(distance / mix.y, Is.InRange(.25f, .75f), "Soil and sand both contribute here.");
+            var beach = city.Layout.Surfaces.Single(s => CityBeachSandPlan.BordersWestCape(city.Layout.SpatialPlan, s));
+            var grains = new CityBeachSandPlan.Field(city.Layout.ElevationPlan, beach);
+            var edge = new Vector2(beach.WorldBounds.xMin, sandContact.z);
+            Assert.That(grains.SampleLooseDepth(edge), Is.Zero, "The loose skin must not form a lip at the verge.");
+            Assert.That(grains.SampleLooseDepthGradient(edge), Is.EqualTo(Vector2.zero));
+            Vector2 halfway = edge + Vector2.right * .7f;
+            const float slopeStep = .01f;
+            float slope = (grains.SampleLooseDepth(halfway + Vector2.right * slopeStep) -
+                grains.SampleLooseDepth(halfway - Vector2.right * slopeStep)) / (2f * slopeStep);
+            Assert.That(grains.SampleLooseDepthGradient(halfway).x, Is.EqualTo(slope).Within(.001f));
+            yield return LocalAcceptanceFrame(city, "west-cape-sand-transition",
+                blendHit.point + new Vector3(4.4f, 1.55f, 2.2f), blendHit.point, 68f);
+            foreach (var point in new[] { new Vector2(-156.8f, 179f), new Vector2(-157f, coast.WaterlineZ) })
+                Assert.That(RockHeight(point), Is.GreaterThan(coast.SeaTopY));
+            var outerShoulder = ridge.Stations[ridge.Stations.Count - 4];
+            var tip = ridge.Stations.Last();
+            Vector3 crest = Vector3.Lerp(outerShoulder.Toe, outerShoulder.OuterFoot, .52f);
+            Assert.That(crest.z, Is.GreaterThan(coast.WaterlineZ + 12f));
+            Assert.That(RockHeight(new Vector2(crest.x, crest.z)), Is.GreaterThan(coast.SeaTopY + 2f));
+            Assert.That(tip.PeakY, Is.LessThan(coast.SeaTopY - CitySeaResources.WaveHeight));
+
+            yield return LocalAcceptanceFrame(city, "west-cape-beach-edge",
+                reported + new Vector3(1.1f, 1.6f, -.5f), new Vector3(-162f, 7f, 185f));
+            yield return LocalAcceptanceFrame(city, "west-cape-from-the-beach",
+                new Vector3(-132f, 6.7f, 171f), new Vector3(-158f, 6.5f, 189f));
+#if UNITY_EDITOR
+            if (Environment.GetEnvironmentVariable("BP_EXPORT_CAPE_SURVEY") == "1")
+                Type.GetType("BarPromenade.Editor.CityMapArtReferenceExport, BarPromenade.Editor", true)
+                    .GetMethod("ExportCurrent").Invoke(null, null);
+#endif
+            float RockHeight(Vector2 point)
+            {
+                var ray = new Ray(new Vector3(point.x, 60f, point.y), Vector3.down);
+                float top = float.NegativeInfinity;
+                foreach (var collider in colliders)
+                    if (collider.Raycast(ray, out var hit, 100f)) top = Mathf.Max(top, hit.point.y);
+                return top;
+            }
+        }
 
         [UnityTest]
         [Explicit("Render the reported City rim with a live local fog field.")]

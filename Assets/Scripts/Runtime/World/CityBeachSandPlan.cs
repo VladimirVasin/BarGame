@@ -19,6 +19,20 @@ namespace BarPromenade
         internal const float CollisionPitch = 1.0f;
         internal const float MaximumRelief = 0.15f;
         internal const float MaximumLooseDepth = 0.10f;
+        internal const float CapeBlendWidth = 4.2f;
+        internal const float CapeBlendInset = .27f;
+        private const float CapeCompactionWidth = 1.4f;
+
+        internal static bool BordersWestCape(CitySpatialPlan spatial, CitySurfaceDescriptor surface) =>
+            spatial.IsCompactCoastal && surface.Cell.x == 0 && surface.Kind == CitySurfaceKind.Beach &&
+            surface.Feature == CityAreaFeatureKind.NorthWaterfront;
+
+        internal static CitySurfaceDescriptor GetWestCapeBeach(CityLayout layout)
+        {
+            foreach (var beach in layout.Surfaces)
+                if (BordersWestCape(layout.SpatialPlan, beach)) return beach;
+            throw new System.InvalidOperationException("Missing beach at the western cape.");
+        }
 
         internal static float SampleRelief(
             CityElevationPlan elevation, CitySurfaceDescriptor surface, Vector2 point)
@@ -68,6 +82,8 @@ namespace BarPromenade
             private readonly bool applies;
             private readonly float street;
             private readonly float shoreZ;
+            private readonly bool meetsCape;
+            private readonly float westEdge;
 
             internal Field(CityElevationPlan elevation, CitySurfaceDescriptor surface)
             {
@@ -79,6 +95,8 @@ namespace BarPromenade
                       elevation.RoadWidth * 0.5f
                     : 0f;
                 shoreZ = surface.WorldBounds.yMax;
+                meetsCape = applies && BordersWestCape(elevation.SpatialPlan, surface);
+                westEdge = surface.WorldBounds.xMin;
             }
 
             internal float Envelope(Vector2 point, float shoreStart, float shoreFull)
@@ -96,6 +114,10 @@ namespace BarPromenade
                 // The surf band is already compacted and stays on the shared
                 // shore surface. The looser inland sand can hold a foot groove.
                 float envelope = Envelope(point, 4f, 6f);
+                // Loose grains thin out onto the compacted verge. The underlying
+                // beach grade and its collision stay continuous across the join.
+                if (meetsCape)
+                    envelope *= Mathf.SmoothStep(0f, 1f, (point.x - westEdge) / CapeCompactionWidth);
                 // The depth factor is a lerp between two positive constants, so
                 // a +0f envelope always yields exactly +0f here.
                 if (envelope == 0f && IsFinite(point))
@@ -109,8 +131,8 @@ namespace BarPromenade
             /// (dDepth/dx, dDepth/dz) of <see cref="SampleLooseDepth"/>,
             /// differentiated term by term:
             /// <list type="bullet">
-            /// <item>The envelope depends on z alone, so its x-derivative
-            /// is zero. Each factor is <c>Mathf.SmoothStep(0, 1, t)</c> =
+            /// <item>The shore and street ramps depend on z; the cape ramp depends
+            /// on x. Each factor is <c>Mathf.SmoothStep(0, 1, t)</c> =
             /// 3t² − 2t³ on a clamped t: its slope in t is 6t(1 − t) on the
             /// ramp and exactly zero on both clamp plateaus, so the product
             /// rule below is right across the clamp edges too (the field is
@@ -141,6 +163,15 @@ namespace BarPromenade
                 float shoreSlope = -SmoothStepSlope(shoreT) / shoreRun;
                 float envelope = inland * shore;
                 float envelopeSlopeZ = inlandSlope * shore + inland * shoreSlope;
+                float envelopeSlopeX = 0f;
+                if (meetsCape)
+                {
+                    float t = (point.x - westEdge) / CapeCompactionWidth;
+                    float cover = Mathf.SmoothStep(0f, 1f, t);
+                    envelopeSlopeX = envelope * SmoothStepSlope(t) / CapeCompactionWidth;
+                    envelope *= cover;
+                    envelopeSlopeZ *= cover;
+                }
 
                 float phaseA = point.x * 0.83f + point.y * 0.37f;
                 float phaseB = point.x * 1.31f - point.y * 0.69f;
@@ -153,7 +184,7 @@ namespace BarPromenade
                 const float depthPerGrain = MaximumLooseDepth - 0.025f;
                 float depthFactor = Mathf.Lerp(0.025f, MaximumLooseDepth, grain);
                 return new Vector2(
-                    envelope * depthPerGrain * grainSlopeX,
+                    envelopeSlopeX * depthFactor + envelope * depthPerGrain * grainSlopeX,
                     envelopeSlopeZ * depthFactor +
                     envelope * depthPerGrain * grainSlopeZ);
             }

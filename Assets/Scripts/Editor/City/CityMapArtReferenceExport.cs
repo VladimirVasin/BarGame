@@ -168,6 +168,8 @@ namespace BarPromenade.Editor
                 for (int i = 0; i < points.Length; i++) points[i] = source[i];
                 strokes.Add(new Stroke { id = id, role = role, width = thickness, points = points });
             }
+            if (layout.SpatialPlan.IsCompactCoastal && controller.SeacoastPlan != null)
+                Box("west-cape-water", "water", CitySeacoastSeaLayout.WestCapeWater(controller.SeacoastPlan.Frame));
             foreach (CitySurfaceDescriptor surface in layout.Surfaces)
             {
                 string role = surface.IsWater ? "water" : surface.Kind == CitySurfaceKind.ParkGround ? "park" :
@@ -247,6 +249,12 @@ namespace BarPromenade.Editor
             var talus = CityMountainTalusPlan.ForLayout(layout);
             foreach (CityMountainRidgeDescriptor ridge in mountain.Ridges)
             {
+                if (ridge.HeadlandVerge != null)
+                {
+                    var edge = new List<Vector2>(ridge.HeadlandVerge.Count);
+                    foreach (var point in ridge.HeadlandVerge) edge.Add(XZ(point));
+                    Poly("west-cape-verge", "ground", edge);
+                }
                 for (int i = 1; i < ridge.Stations.Count; i++)
                 {
                     CityMountainRidgeStation a = ridge.Stations[i - 1], b = ridge.Stations[i];

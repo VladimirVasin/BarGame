@@ -470,8 +470,8 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   The `72 m` shell then bends west to hide its end
   from the mouth. Navigation reaches `11 m`; crossing `8 m` shows the
   unavailable-travel thought and walks the ordinary rig back to `6.5 m`.
-  No tunnel transition handler or cave interaction. North remains sea;
-  east has the closed mainland road below. Only real western and southern rock
+  The dirt shoulder grades into compacted beach sand at the bend, with sediment on the lowest rock shelves. The west ridge curves offshore and submerges. The eastern mainland road is closed.
+  No tunnel transition handler or cave interaction. Only real western and southern rock
   appears within 96 m. Rock keeps depth and normals as it fades into haze at 78–95 m, with SSAO and a 0.10 contrast floor.
   The omitted `(-1,-1)` cell holds one textured natural-soil
   slope around `16.2°`, outside navigation behind the exact L-shaped road

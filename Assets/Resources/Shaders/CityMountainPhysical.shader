@@ -9,6 +9,12 @@ Shader "Bar Promenade/City Mountain Physical"
         _MountainTalusSoil("Soil in the cliff foot", Float) = 0
         _MountainTalusSoilMap("Local soil albedo", 2D) = "white" {}
         _MountainTalusSoilColor("Local soil tint", Color) = (1,1,1,1)
+        _CapeSedimentBounds("Cape edge X, inland Z, shore Z and blend width", Vector) = (0,0,0,0)
+        _CapeSedimentTiling("Soil and sand repeats per metre", Vector) = (0,0,0,0)
+        _CapeSandMap("Cape beach sand", 2D) = "white" {}
+        _CapeSoilMap("Cape verge soil", 2D) = "white" {}
+        _CapeSandTint("Cape beach sand tint", Color) = (1,1,1,1)
+        _CapeSoilTint("Cape verge soil tint", Color) = (1,1,1,1)
         _HazeColor("City Haze Color", Color) = (0.330, 0.380, 0.355, 1)
         _FogDensity("City Fog Density", Float) = 0.090
         _VisibilityFloor("Distant Visibility Floor", Range(0, 1)) = 0.10
@@ -60,6 +66,9 @@ Shader "Bar Promenade/City Mountain Physical"
             TEXTURE2D(_MountainTalusSoilMap);
             SAMPLER(sampler_MountainTalusSoilMap);
             half4 _MountainTalusSoilColor;
+            TEXTURE2D(_CapeSoilMap);
+            TEXTURE2D(_CapeSandMap);
+            float _CityGroundWetness;
 
             CBUFFER_START(UnityPerMaterial)
                 float4 _BaseMap_ST;
@@ -72,6 +81,10 @@ Shader "Bar Promenade/City Mountain Physical"
                 half _HandoffNear;
                 half _HandoffFar;
                 half _StableHazeHandoff;
+                float4 _CapeSedimentBounds;
+                float4 _CapeSedimentTiling;
+                half4 _CapeSoilTint;
+                half4 _CapeSandTint;
             CBUFFER_END
 
 
@@ -163,6 +176,27 @@ Shader "Bar Promenade/City Mountain Physical"
                     albedo = lerp(albedo, soil * _MountainTalusSoilColor.rgb, soilCover);
                 }
                 half3 normalWS = NormalizeNormalPerPixel(input.normalWS);
+                // Near the three-way contact, the same metre-registered grains
+                // lie on the lowest rock shelves and thin out across the facets.
+                float2 ground = input.positionWS.xz;
+                float2 dX = ddx(ground), dY = ddy(ground);
+                [branch] if (_CapeSedimentBounds.w > 0 && input.heightAboveToe < 2.4 &&
+                    ground.y > _CapeSedimentBounds.y && ground.y < _CapeSedimentBounds.z)
+                {
+                    float along = smoothstep(0, 3, ground.y - _CapeSedimentBounds.y) *
+                        smoothstep(0, 3, _CapeSedimentBounds.z - ground.y);
+                    float relief = saturate(.45 * response.g + .55 * response.b);
+                    float drift = 1.45 + .32 * sin(ground.y * .87 + ground.x * .34) + .45 * relief;
+                    half cover = along * (1.0 - smoothstep(.10, drift, input.heightAboveToe)) *
+                        lerp(.68h, .97h, relief);
+                    half sand = 1.0 - smoothstep(0, _CapeSedimentBounds.w, _CapeSedimentBounds.x - ground.x);
+                    half3 earth = SAMPLE_TEXTURE2D_GRAD(_CapeSoilMap, sampler_BaseMap, ground * _CapeSedimentTiling.x,
+                        dX * _CapeSedimentTiling.x, dY * _CapeSedimentTiling.x).rgb * _CapeSoilTint.rgb;
+                    half3 grains = SAMPLE_TEXTURE2D_GRAD(_CapeSandMap, sampler_BaseMap, ground * _CapeSedimentTiling.y,
+                        dX * _CapeSedimentTiling.y, dY * _CapeSedimentTiling.y).rgb * _CapeSandTint.rgb;
+                    albedo = lerp(albedo, lerp(earth, grains, sand) * lerp(1.0h, .88h, saturate(_CityGroundWetness)), cover);
+                    normalWS = normalize(lerp(normalWS, half3(0, .97h, .24h), cover * .55h));
+                }
                 Light mainLight = GetMainLight(input.shadowCoord);
                 half lambert = saturate(dot(
                     normalWS,

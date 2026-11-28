@@ -437,12 +437,98 @@ namespace BarPromenade
                     outwardNormal));
             }
 
+            int landStationCount = stations.Count;
+            List<Vector3> verge = taperNorthEnd && layout.SpatialPlan.IsCompactCoastal
+                ? AppendBeachHeadland(layout, stableId, stations, surfaces) : null;
+
             return new CityMountainRidgeDescriptor(
-                stableId,
-                sourceAreaId,
-                side,
-                stations,
-                false);
+                stableId, sourceAreaId, side, stations, false, landStationCount, verge);
+        }
+
+        private static List<Vector3> AppendBeachHeadland(CityLayout layout, string ridgeId,
+            List<CityMountainRidgeStation> stations, IReadOnlyList<CitySurfaceDescriptor> yardSurfaces)
+        {
+            // Follow the actual west sand and sea cells. The first two turns wrap
+            // the exposed yard and pavement corner before the rock meets the beach.
+            CitySurfaceDescriptor beach = default, sea = default;
+            foreach (var surface in layout.Surfaces)
+            {
+                if (surface.Feature != CityAreaFeatureKind.NorthWaterfront || surface.Cell.x != 0) continue;
+                if (surface.Kind == CitySurfaceKind.Beach) beach = surface;
+                if (surface.Kind == CitySurfaceKind.Water) sea = surface;
+            }
+            if (beach.Kind != CitySurfaceKind.Beach || sea.Kind != CitySurfaceKind.Water)
+                throw new InvalidOperationException("The western cape requires the adjoining shore cells.");
+
+            Rect sand = beach.WorldBounds;
+            float shore = sea.WorldBounds.yMin;
+            CityMountainRidgeStation root = stations[stations.Count - 1];
+            Vector3 road = layout.GetNodeWorldPosition(beach.Cell);
+            float halfRoad = layout.RoadWidth * .5f;
+            float sidewalk = CityStreetSurfacePlanner.GetPublicSidewalkOuterDistance(layout);
+            int rootIndex = stations.Count - 1;
+            Add(root.WorldXZ.x + .6f, road.z + sidewalk + .6f, root.BaseY - .35f, 10.6f, 22f, .30f);
+            Add(road.x - sidewalk - 3.6f, road.z + sidewalk + 4.5f, root.BaseY - .8f, 10.9f, 23f, .34f);
+            AddSand(.95f, Mathf.Lerp(sand.yMin, shore, .48f), 10.2f, 24f, .28f);
+            AddSand(.75f, Mathf.Lerp(sand.yMin, shore, .72f), 11f, 22f, .18f);
+            AddSand(1.6f, shore, 9.8f, 20f, .23f);
+
+            // A broad shoulder turns towards the bay. Both flanks narrow and
+            // the last entire section sits below the swell, hiding its end cap.
+            AddSea(3f, 7f, 6.3f, 17.5f, .34f);
+            AddSea(7.2f, 13f, 4.8f, 14f, .52f);
+            AddSea(12.6f, 17.8f, 2.3f, 9.4f, .63f);
+            AddSea(14.7f, 21.3f, .75f, 5.2f, .53f);
+            AddSea(16f, 23.5f, -1.35f, 2.4f, .46f);
+
+            // The street slab, yard and beach are tessellated separately. Bury each
+            // rim slightly inside its neighbour so even their coarse triangles meet.
+            const float overlap = .18f;
+            float roadY = road.y + CityStreetSurfacePlanner.RoadTop - .06f;
+            var verge = new List<Vector3> { new Vector3(road.x - halfRoad + overlap, roadY, road.z + halfRoad - overlap) };
+            List<Vector3> yardEdge = CreateBoundarySamples(layout, yardSurfaces,
+                new Vector2(road.x - halfRoad, root.WorldXZ.y), root.WorldXZ, true);
+            foreach (Vector3 edge in yardEdge)
+                verge.Add(edge + new Vector3(0f, -.035f, -overlap));
+            for (int i = rootIndex; i <= rootIndex + 3; i++)
+            {
+                var station = stations[i];
+                verge.Add(station.Toe + station.OutwardNormal * .85f);
+            }
+            float beachX = sand.xMin + overlap;
+            float firstSandZ = stations[rootIndex + 3].WorldXZ.y;
+            int intervals = Mathf.CeilToInt((firstSandZ - sand.yMin) / .5f);
+            for (int i = 0; i <= intervals; i++)
+            {
+                float z = Mathf.Lerp(firstSandZ, sand.yMin, i / (float)intervals);
+                var point = new Vector2(beachX, z);
+                float top = CityTerrainSurfacePlan.SampleTopWithoutMountainTalus(layout, beach, point);
+                verge.Add(new Vector3(beachX, top - .035f, z));
+            }
+            verge.Add(new Vector3(beachX, roadY, sand.yMin - overlap));
+            return verge;
+
+            void AddSand(float offsetX, float z, float height, float depth, float north)
+            {
+                float x = sand.xMin + offsetX;
+                float top = CityTerrainSurfacePlan.SampleTopWithoutMountainTalus(layout, beach, new Vector2(x, z));
+                Add(x, z, top - .33f, height, depth, north);
+            }
+
+            void AddSea(float offsetX, float distance, float crestAboveSea, float depth, float north)
+            {
+                var toe = new Vector2(sand.xMin + offsetX, shore + distance);
+                float bottom = CitySeacoastSeaLayout.SampleSeabedTop(layout, beach, toe) - .35f;
+                Add(toe.x, toe.y, bottom, sea.PhysicalTopY + crestAboveSea - bottom, depth, north);
+            }
+
+            void Add(float x, float z, float baseY, float height, float width, float north)
+            {
+                var point = new Vector2(x, z);
+                var outward = new Vector3(-Mathf.Sqrt(1f - north * north), 0f, north);
+                stations.Add(new CityMountainRidgeStation($"{ridgeId}-station-{stations.Count:00}",
+                    point, baseY, baseY + height, outward, width, unchecked((int)StableHash(layout.Seed, point, DepthSalt))));
+            }
         }
 
         private static CityMountainRidgeDescriptor CreateSouthWestJoin(

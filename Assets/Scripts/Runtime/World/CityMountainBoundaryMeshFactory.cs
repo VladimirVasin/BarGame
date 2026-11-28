@@ -90,19 +90,64 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(closure));
             }
 
-            HomeSurfaceRecipe recipe =
-                CityFringeYardSurfaceAppearance.GetRecipe(
-                    CityFringeYardSurfaceKind.ForefieldGround);
-            float tilesPerMeter = 1f / recipe.MetersPerTile;
-            var vertices = new List<Vector3>(closure.Vertices);
-            List<Vector2> uvs = CreateCornerClosureUvs(
-                closure,
-                tilesPerMeter);
+            return CreateCornerGround(parent, closure.StableId, new List<Vector3>(closure.Vertices),
+                new List<int>(closure.TriangleIndices));
+        }
 
-            var triangles = new List<int>(closure.TriangleIndices);
+        internal static void CreateHeadlandVerge(Transform parent, IReadOnlyList<Vector3> verge, CityLayout layout)
+        {
+            var vertices = new List<Vector3>(verge);
+            var triangles = new List<int>((vertices.Count - 2) * 3);
+            for (int i = 1; i + 1 < vertices.Count; i++)
+            {
+                triangles.Add(0);
+                triangles.Add(i);
+                triangles.Add(i + 1);
+            }
+            CreateCornerGround(parent, "West Cape Verge", vertices, triangles, FinishSandEdge);
+
+            void FinishSandEdge(Mesh mesh, MeshRenderer renderer)
+            {
+                var beach = CityBeachSandPlan.GetWestCapeBeach(layout);
+                // Reach pure sand before the buried overlap. Blend the lighting
+                // normal into the compacted beach slope along the same rim.
+                float edgeX = beach.WorldBounds.xMin;
+                var distances = new List<Vector4>(vertices.Count);
+                var normals = mesh.normals;
+                for (int i = 0; i < vertices.Count; i++)
+                {
+                    Vector3 point = vertices[i];
+                    float inland = edgeX - point.x;
+                    distances.Add(new Vector4(inland - CityBeachSandPlan.CapeBlendInset, 0f, 0f, 0f));
+                    float match = 1f - Mathf.SmoothStep(0f, 1f, inland / 2f);
+                    if (match <= 0f) continue;
+                    var rim = new Vector2(edgeX, Mathf.Clamp(point.z, beach.WorldBounds.yMin, beach.WorldBounds.yMax));
+                    normals[i] = Vector3.Lerp(normals[i], CityTerrainSurfacePlan.SampleNormal(layout, beach, rim), match).normalized;
+                }
+                mesh.SetUVs(GroundSurfaceCoordinates.Channel, distances);
+                mesh.SetNormals(normals);
+                const CitySeacoastSurfaceKind sand = CitySeacoastSurfaceKind.Sand;
+                HomeSurfaceRecipe recipe = CitySeacoastSurfaceAppearance.GetRecipe(sand);
+                if (!CitySurfaceLibrary.TryGroundJointMaps(CitySeacoastSurfaceAppearance.GetTexture(sand),
+                    out Texture2D pigment, out Texture2D response))
+                    throw new InvalidOperationException("Missing City beach sand maps for the cape verge.");
+                GroundSurfaceAppearance.BlendShoulders(renderer, CityBeachSandPlan.CapeBlendWidth, pigment,
+                    SurfaceAppearanceCore.CreateDisplayTint(CityExteriorAppearance.BeachSand, recipe.AlbedoCompensation),
+                    recipe, response: response, useContourDistance: true);
+            }
+        }
+
+        private static GameObject CreateCornerGround(Transform parent, string name, List<Vector3> vertices,
+            List<int> triangles, Action<Mesh, MeshRenderer> finish = null)
+        {
+            float metersPerTile = CityFringeYardSurfaceAppearance
+                .GetRecipe(CityFringeYardSurfaceKind.ForefieldGround).MetersPerTile;
+            var uvs = new List<Vector2>(vertices.Count);
+            foreach (Vector3 vertex in vertices)
+                uvs.Add(new Vector2(vertex.x, vertex.z) / metersPerTile);
             var mesh = new Mesh
             {
-                name = $"{closure.StableId} Mesh",
+                name = $"{name} Mesh",
                 hideFlags = HideFlags.HideAndDontSave,
                 indexFormat = vertices.Count > ushort.MaxValue
                     ? IndexFormat.UInt32
@@ -114,7 +159,7 @@ namespace BarPromenade
             mesh.RecalculateNormals();
             mesh.RecalculateBounds();
 
-            var result = new GameObject(closure.StableId);
+            var result = new GameObject(name);
             result.transform.SetParent(parent, false);
             result.AddComponent<MeshFilter>().sharedMesh = mesh;
             var renderer = result.AddComponent<MeshRenderer>();
@@ -126,26 +171,13 @@ namespace BarPromenade
                 renderer,
                 CityFringeYardSurfaceKind.ForefieldGround,
                 CityExteriorAppearance.YardGround);
+            finish?.Invoke(mesh, renderer);
             result.AddComponent<MeshCollider>().sharedMesh = mesh;
             result.AddComponent<RuntimeGeneratedMeshOwner>()
                 .Initialize(mesh);
             FootstepGround.Stamp(result, FootstepGroundKind.Soil);
             CityGroundSurfaceSystem.Register(result, 0);
             mesh.UploadMeshData(false);
-            return result;
-        }
-
-        private static List<Vector2> CreateCornerClosureUvs(
-            CityMountainCornerClosureDescriptor closure,
-            float tilesPerMeter)
-        {
-            var result = new List<Vector2>(closure.Vertices.Count);
-            for (int index = 0; index < closure.Vertices.Count; index++)
-            {
-                Vector3 vertex = closure.Vertices[index];
-                result.Add(new Vector2(vertex.x, vertex.z) * tilesPerMeter);
-            }
-
             return result;
         }
 
@@ -355,7 +387,9 @@ namespace BarPromenade
                 keepReadable: true);
             Mesh rockMesh = visible.GetComponent<MeshFilter>().sharedMesh;
             CityMountainTalusAppearance.BakeRidge(rockMesh, ridge.Stations, first, last);
-            CityMountainTalusAppearance.ApplyRidge(visible.GetComponent<Renderer>());
+            CityMountainTalusAppearance.ApplyRidge(visible.GetComponent<Renderer>(),
+                ridge.HeadlandVerge != null && last >= ridge.LandStationCount
+                    ? CityBeachSandPlan.GetWestCapeBeach(layout).WorldBounds : (Rect?)null);
             // The same facets that can approach the camera also stop the body.
             // A single shared mesh avoids a second copy of the rock surface.
             var collision = new GameObject($"{ridge.StableId} Toe Collider {chunkIndex + 1}");

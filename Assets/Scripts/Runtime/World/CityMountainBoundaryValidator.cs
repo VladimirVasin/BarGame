@@ -344,6 +344,7 @@ namespace BarPromenade
             int stationIndex,
             ISet<string> stationIds)
         {
+            bool headland = stationIndex >= ridge.LandStationCount;
             if (string.IsNullOrWhiteSpace(station.StableId) ||
                 !stationIds.Add(station.StableId) ||
                 !IsFinite(station.WorldXZ) ||
@@ -352,13 +353,13 @@ namespace BarPromenade
                 !IsFinite(station.OutwardNormal) ||
                 !IsFinite(station.Depth) ||
                 station.PeakY - station.BaseY <
-                CityMountainBoundaryDefinition.NorthTaperHeight -
+                (headland ? 1f : CityMountainBoundaryDefinition.NorthTaperHeight) -
                 Tolerance ||
                 station.Depth <
-                CityMountainBoundaryDefinition.RidgeMinimumDepth -
+                (headland ? 2f : CityMountainBoundaryDefinition.RidgeMinimumDepth) -
                 Tolerance ||
                 station.Depth >
-                CityMountainBoundaryDefinition.RidgeMaximumDepth +
+                (headland ? 24f : CityMountainBoundaryDefinition.RidgeMaximumDepth) +
                 Tolerance ||
                 Mathf.Abs(station.OutwardNormal.y) > Tolerance ||
                 Mathf.Abs(station.OutwardNormal.magnitude - 1f) > Tolerance)
@@ -389,7 +390,15 @@ namespace BarPromenade
                 Vector2 tangent = (before.normalized + after.normalized).normalized;
                 expectedOutward = new Vector3(tangent.y, 0f, -tangent.x);
             }
-            if (Vector3.Dot(
+            if (headland)
+            {
+                var previous = ridge.Stations[stationIndex - 1];
+                if (ridge.SourceAreaId != CityMountainBoundaryDefinition.WestNorthAreaId ||
+                    station.WorldXZ.y < previous.WorldXZ.y || station.OutwardNormal.x >= 0f ||
+                    station.OuterFoot.z < previous.OuterFoot.z)
+                    throw new InvalidOperationException("The western headland folds back across its shore.");
+            }
+            else if (Vector3.Dot(
                     station.OutwardNormal,
                     expectedOutward) < 0.995f)
             {
@@ -397,7 +406,7 @@ namespace BarPromenade
                     $"Mountain station '{station.StableId}' points inward.");
             }
 
-            if (!ridge.IsSouthWestJoin &&
+            if (!headland && !ridge.IsSouthWestJoin &&
                 (!TrySampleAreaTop(
                     layout,
                     ridge.SourceAreaId,

@@ -41,7 +41,7 @@ namespace BarPromenade
             var adjoining = new Dictionary<Vector2Int, int>();
             var serviceEnds = new HashSet<Vector2Int>();
             foreach (var ridge in rim.Ridges)
-            for (int i = 1; i < ridge.Stations.Count; i++)
+            for (int i = 1; i < ridge.LandStationCount; i++)
             {
                 var first = ridge.Stations[i - 1];
                 var last = ridge.Stations[i];

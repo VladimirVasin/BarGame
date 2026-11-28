@@ -5,7 +5,9 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-28
 
-Removed fringe lines and wind tails. `CityFringeWithoutDecorativePowerLines` checks grid. West frame reviewed.
+West cape clears the bend. `CityBeachHeadland` checks the walk, compacted sand, cliff-foot blend and tip.
+
+Removed fringe lines and tails. `CityFringeWithoutDecorativePowerLines` checks the grid. West frame reviewed.
 
 Enhanced stereo/48 kHz for output changes. `UNITY AUDIO HANDOFF OK`.
 
@@ -15,9 +17,9 @@ Entry requires the envelope. Pickup and inventory share the $548 bill. `HOME MAI
 
 Ridge tiles meet bends and cellar parapet. `LiveCity_CellarCourtWalksBothEntrancesAndKeepsViewBench` checks ground and access. `LiveCity_CellarKeeperSortsByDayAndLampsReachWorkAndSteps` checks sorting and light.
 
-Ridge children share the ball. Reversed board, braced rim and hanging net face the yard. `RidgeBasketball_AlternatesAndOnlyScorerJumps` measures the horizontal rim in the built City and checks the make, miss, shooter’s jump and return to the sidewalk.
+Ridge children share the ball. Reversed board, braced rim and hanging net face the yard. `RidgeBasketball_AlternatesAndOnlyScorerJumps` checks the built rim, makes, misses, jumps and sidewalk return.
 
-Seeded City and Ridge trees vary independently in crown width and trunk height. Forks, leaf release and collision follow the model. Stride speed controls leaf scatter and lift. Wet leaves slide. Toe-off works with muted audio. `CityLeaves_GustLandingAndWalkingContacts`, `HomeBalconyLeaves_FallOutsideTheRoom` and `LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement` cover both districts.
+Seed varies City/Ridge crown width and trunk height independently. Forks, leaves and collision fit. Speed drives leaf scatter and lift, wet leaves slide, muted toe-off works. `CityLeaves_GustLandingAndWalkingContacts`, `HomeBalconyLeaves_FallOutsideTheRoom` and `LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement` cover both districts.
 
 Ridge and lower City rebind one sound pool. Real roofs, wind, road wetness and gait drive local sound. Cold Ridge starts publish shared road polygons atomically. The lower district accepts the seated shelter resident's existing glare pose. `RidgeSound_FollowsShelterWalkingFeetAndDistrictStreaming` verified rain on canvas, a nearby ambient walker’s footfall and pool rebinding after unloading. Street/umbrella levels hold.
 

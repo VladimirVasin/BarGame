@@ -186,7 +186,8 @@ namespace BarPromenade
             string sourceAreaId,
             CityMountainBoundarySide side,
             IList<CityMountainRidgeStation> sourceStations,
-            bool isSouthWestJoin)
+            bool isSouthWestJoin,
+            int? landStationCount = null, List<Vector3> headlandVerge = null)
         {
             StableId = stableId ?? string.Empty;
             SourceAreaId = sourceAreaId ?? string.Empty;
@@ -194,6 +195,8 @@ namespace BarPromenade
             stations = new ReadOnlyCollection<CityMountainRidgeStation>(
                 new List<CityMountainRidgeStation>(sourceStations));
             IsSouthWestJoin = isSouthWestJoin;
+            LandStationCount = landStationCount ?? stations.Count;
+            HeadlandVerge = headlandVerge?.AsReadOnly();
             XZBounds = CalculateBounds(stations);
         }
 
@@ -208,6 +211,10 @@ namespace BarPromenade
         public CityMountainBoundarySide Side { get; }
         public IReadOnlyList<CityMountainRidgeStation> Stations => stations;
         public bool IsSouthWestJoin { get; }
+        // The western cape shares the final yard section, then meets sand and seabed.
+        public int LandStationCount { get; }
+        // Clockwise fan from the outer paved corner to the yard, rock toe and sand.
+        public IReadOnlyList<Vector3> HeadlandVerge { get; }
 
         /// <summary>
         /// Complete XZ envelope including every station's outer foot.

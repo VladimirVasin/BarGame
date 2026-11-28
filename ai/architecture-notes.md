@@ -3502,7 +3502,7 @@
   gaps, with full-width masks/existing boulders. Grid heights drive sampling/
   render/collision. Exclusions clear houses/courts/routes. Masks/buried Blender
   blocks join the wall. The dark `10 m` river mouth stops both promenades.
-  `(-1,-1)` closes diagonally, west tapers to beach, north is sea.
+  `(-1,-1)` closes diagonally. A soil verge joins yard, paved bend and sand inside the west cape.
   Pinned borders weld four Blender faces in render/collision chunks.
   Rear mass casts no distant shadow. Opaque `CityMountainPhysical`
   uses MPBs, `CityMountainRockAlbedo` and City SSAO. Rock uses 62% of City fog density and keeps its depth while its colour fades into haze at 78–95 m. Portal/lining retain

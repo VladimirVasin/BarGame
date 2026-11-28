@@ -488,6 +488,8 @@ namespace BarPromenade
                 writer.Write(coast != null);
                 if (coast != null)
                 {
+                    if (layout.SpatialPlan.IsCompactCoastal)
+                        RectValue(writer, CitySeacoastSeaLayout.WestCapeWater(coast.Frame));
                     writer.Write(coast.Parts.Count);
                     foreach (CitySeacoastPartDescriptor part in coast.Parts)
                     {
@@ -508,6 +510,10 @@ namespace BarPromenade
                         writer.Write(ridge.StableId); writer.Write(ridge.Stations.Count);
                         foreach (CityMountainRidgeStation station in ridge.Stations)
                         { Point(writer, station.Toe); Point(writer, station.OuterFoot); }
+                        if (ridge.HeadlandVerge != null)
+                            foreach (Vector3 point in ridge.HeadlandVerge) Point(writer, point);
+                        for (int i = ridge.LandStationCount; i < ridge.Stations.Count; i++)
+                            Scalar(writer, ridge.Stations[i].PeakY);
                     }
                     // The graded apron changes height and its cityward extent without
                     // moving the rock's old survey line. Hash the actual new profile.

@@ -62,12 +62,31 @@ namespace BarPromenade
             mesh.SetUVs(DataChannel, data);
         }
 
-        internal static void ApplyRidge(Renderer renderer)
+        internal static void ApplyRidge(Renderer renderer, Rect? capeBeach)
         {
             GroundSurfaceAppearance.ReadProperties(renderer, Properties, -1);
             Properties.SetFloat(Shader.PropertyToID("_MountainTalusSoil"), 1f);
             Properties.SetTexture(Shader.PropertyToID("_MountainTalusSoilMap"), CityExteriorAppearance.GroundTexture);
             Properties.SetColor(Shader.PropertyToID("_MountainTalusSoilColor"), CityHillsidePerimeterSurface.ResidentialSoil);
+            if (capeBeach.HasValue)
+            {
+                const CitySeacoastSurfaceKind sand = CitySeacoastSurfaceKind.Sand;
+                const CityFringeYardSurfaceKind soil = CityFringeYardSurfaceKind.ForefieldGround;
+                var sandRecipe = CitySeacoastSurfaceAppearance.GetRecipe(sand);
+                if (!CitySurfaceLibrary.TryGroundJointMaps(CitySeacoastSurfaceAppearance.GetTexture(sand), out var sandMap, out _) ||
+                    !CitySurfaceLibrary.TryGroundJointMaps(CityFringeYardSurfaceAppearance.GetTexture(soil), out var soilMap, out _))
+                    throw new System.InvalidOperationException("Missing City sand or soil for the cape foot.");
+                Rect beach = capeBeach.Value;
+                Properties.SetVector("_CapeSedimentBounds", new Vector4(beach.xMin - CityBeachSandPlan.CapeBlendInset,
+                    beach.yMin - 4f, beach.yMax, CityBeachSandPlan.CapeBlendWidth));
+                Properties.SetTexture("_CapeSandMap", sandMap);
+                Properties.SetTexture("_CapeSoilMap", soilMap);
+                Properties.SetColor("_CapeSandTint", SurfaceAppearanceCore.CreateDisplayTint(
+                    CityExteriorAppearance.BeachSand, sandRecipe.AlbedoCompensation));
+                Properties.SetColor("_CapeSoilTint", CityFringeYardSurfaceAppearance.CreateDisplayTint(CityExteriorAppearance.YardGround, soil));
+                Properties.SetVector("_CapeSedimentTiling", new Vector4(1f / CityFringeYardSurfaceAppearance.GetRecipe(soil).MetersPerTile,
+                    1f / sandRecipe.MetersPerTile, 0f, 0f));
+            }
             GroundSurfaceAppearance.WriteProperties(renderer, Properties, -1);
         }
     }

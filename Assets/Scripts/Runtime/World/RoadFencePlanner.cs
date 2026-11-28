@@ -314,6 +314,22 @@ namespace BarPromenade
                 paths.Add(layout.River.Promenades[index].Bounds);
             }
 
+            // Only the outer quadrant of this bend used to border empty space.
+            // The cape's verge now supports both edges all the way to the curb.
+            if (layout.SpatialPlan.IsCompactCoastal &&
+                CityMountainBoundaryDefinition.TryResolve(layout.BlueprintId, out _))
+            {
+                foreach (var surface in layout.Surfaces)
+                {
+                    if (surface.Cell.x != 0 || surface.Kind != CitySurfaceKind.Beach ||
+                        surface.Feature != CityAreaFeatureKind.NorthWaterfront) continue;
+                    Vector3 node = layout.GetNodeWorldPosition(surface.Cell);
+                    float width = CityStreetSurfacePlanner.GetPublicSidewalkOuterDistance(layout) + .2f;
+                    paths.Add(Rect.MinMaxRect(node.x - width, node.z, node.x, node.z + width));
+                    break;
+                }
+            }
+
             CityEastExitPlan eastExit = CityEastExitPlanner.Create(layout);
             if (eastExit.IsEnabled) paths.Add(eastExit.RoadBounds);
             return paths;

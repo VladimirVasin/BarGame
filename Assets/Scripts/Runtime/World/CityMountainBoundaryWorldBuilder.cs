@@ -86,6 +86,8 @@ namespace BarPromenade
             ridges.SetParent(root.transform, false);
             for (int index = 0; index < plan.Ridges.Count; index++)
             {
+                if (!ridgeOnly && plan.Ridges[index].HeadlandVerge != null)
+                    CityMountainBoundaryMeshFactory.CreateHeadlandVerge(root.transform, plan.Ridges[index].HeadlandVerge, layout);
                 CityMountainBoundaryMeshFactory.CreateRidge(
                     ridges,
                     plan.Ridges[index],

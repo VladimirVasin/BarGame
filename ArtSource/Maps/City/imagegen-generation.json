@@ -1,18 +1,18 @@
 {
   "tool": "built-in image_gen",
-  "intent": "City Hall roof and projecting clock wing above the southern upper court",
-  "prompt": "imagegen-city-hall-prompt.txt",
+  "intent": "West mountain headland and the open coastal road bend",
+  "prompt": "imagegen-west-cape-prompt.txt",
   "references": [
     "CityMapImage.reference.png",
     "map-reference.json"
   ],
   "geography": "CityMapImage.accepted-geography.json",
   "image": "CityMapImage.generated.png",
-  "image_sha256": "8db1ec12c6292a3650a9a79983ca3525766b92d9441aa713a15a780d0ce7dd74",
-  "runtime_image_sha256": "68505f08443f76bb2e14c83d0a964bebd871f9e15850d25677540ae4b3389a18",
-  "previous_image_sha256": "b76a46ed18913bc22687fcbfde3406972f87733a0c9c0e7ddf20b22211d0210b",
+  "image_sha256": "2dd05f5882e71b1e575f17ab3f9a6775f80f1b74f0795cf2fb3280bfbf44d8da",
+  "runtime_image_sha256": "cb3857f874f6a76d10a44af268cbf89d77b1f5905bbb1fdcb6686628fa8cca5c",
+  "previous_image_sha256": "68505f08443f76bb2e14c83d0a964bebd871f9e15850d25677540ae4b3389a18",
   "registration": {
-    "description": "North-up crop registered to the surveyed office slab and clock wing, preserving adjacent streets, stairs and residential roofs.",
+    "description": "North-up charcoal cape and dirt verge clipped to the surveyed contours outside the paved bend.",
     "source_size": [
       1254,
       1254
@@ -22,22 +22,31 @@
       768
     ],
     "source_atlas_crop_xywh": [
-      806,
-      329,
-      110,
-      110
+      168,
+      0,
+      160,
+      160
     ],
     "target_atlas_size": [
       1172,
       1342
     ],
     "clip_polygons": [
-      "city-hall:clock-wing",
-      "city-hall"
+      "west-cape-verge",
+      "mountain-west-north:9",
+      "mountain-west-north:10",
+      "mountain-west-north:11",
+      "mountain-west-north:12",
+      "mountain-west-north:13",
+      "mountain-west-north:14",
+      "mountain-west-north:15",
+      "mountain-west-north:16",
+      "mountain-west-north:17",
+      "mountain-west-north:18"
     ],
     "filter": "Lanczos3"
   },
-  "fingerprint": "a65d0050d61813faf092999a3ecf9443f8bf69e216ebe96d60882b17d949e48e",
+  "fingerprint": "15649162cf09694db4ec0b98d3ce463a76b723f23fcec40d3e38c4234b8ffef8",
   "schemaVersion": 2,
   "width": 1172,
   "height": 1342,

@@ -1155,6 +1155,8 @@ namespace BarPromenade
 
         private void DrawSurfaces(MapProjection projection)
         {
+            if (controller.Layout.SpatialPlan.IsCompactCoastal && controller.SeacoastPlan != null)
+                DrawSolidRect(ProjectWorldRect(projection, CitySeacoastSeaLayout.WestCapeWater(controller.SeacoastPlan.Frame)), WaterLand);
             IReadOnlyList<CitySurfaceDescriptor> surfaces =
                 controller.Layout.Surfaces;
             for (int index = 0; index < surfaces.Count; index++)

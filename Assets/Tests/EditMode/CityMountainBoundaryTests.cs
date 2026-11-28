@@ -44,13 +44,18 @@ namespace BarPromenade.Tests.EditMode
                     Is.EqualTo(CityMountainBoundarySide.West)
                         .Or.EqualTo(CityMountainBoundarySide.South));
                 Assert.That(ridge.Stations.Count, Is.GreaterThanOrEqualTo(2));
-                foreach (CityMountainRidgeStation station in ridge.Stations)
+                foreach (CityMountainRidgeStation station in ridge.Stations.Take(ridge.LandStationCount))
                 {
                     Assert.That(
                         station.PeakY,
                         Is.GreaterThan(station.BaseY + 9.9f));
                 }
             }
+            var west = first.Ridges.Single(ridge => ridge.SourceAreaId == CityMountainBoundaryDefinition.WestNorthAreaId);
+            CitySeacoastFrame coast = CitySeacoastPlanner.Create(layout).Frame;
+            Assert.That(west.Stations[west.LandStationCount - 1].WorldXZ.y, Is.LessThan(coast.BeachRowBounds.yMin));
+            Assert.That(west.EndXZ.y, Is.InRange(coast.WaterlineZ + 16f, coast.SeaRowBounds.yMax));
+            Assert.That(west.Stations.Last().PeakY, Is.LessThan(coast.SeaTopY - 1f));
         }
 
         [Test]
@@ -1242,8 +1247,8 @@ namespace BarPromenade.Tests.EditMode
                             collider.sharedMesh.vertices.Select(vertex =>
                                 collider.transform.TransformPoint(vertex)))
                         .ToArray();
-                    foreach (CityMountainRidgeStation station in
-                             ridge.Stations)
+                    // Only the inland stations have fringe yard ground beneath their toes.
+                    foreach (CityMountainRidgeStation station in ridge.Stations.Take(ridge.LandStationCount))
                     {
                         Vector3 visibleToe = station.Toe;
                         visibleToe.y = talus.ApplyHeight(station.WorldXZ, station.BaseY);
