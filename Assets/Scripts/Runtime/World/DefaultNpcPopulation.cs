@@ -48,6 +48,8 @@ namespace BarPromenade
         internal const string RidgeCellarKeeper = "city.ridge.cellar-keeper";
         public const string CourtDoorResident = "zzzzzzzz.city.passage-court.resident";
         public const string CourtDoorNeighbour = "zzzzzzzz.city.passage-court.neighbour";
+        public const string CityHallGuardLeft = "city.hall.guard.left";
+        public const string CityHallGuardRight = "city.hall.guard.right";
         public const string CityCobbler = "city.ridge.cobbler";
         public const string CityLaundryWorker = "zzzz.city.laundry.worker";
         public const string CityDogParkStandingOwner = "zzzzz.city.dog-park.standing";
@@ -546,6 +548,13 @@ namespace BarPromenade
                 new SlotConstraint("boots", "boots.work", "boots.everyday"),
                 new SlotConstraint("gloves", new string[] { null }),
                 new SlotConstraint("apron", new string[] { null })));
+            foreach (string id in new[] { CityHallGuardLeft, CityHallGuardRight })
+                roster.Add(new CharacterDefinition(id, model, false,
+                    new SlotConstraint("outerwear", "outerwear.work"),
+                    new SlotConstraint("boots", "boots.work"),
+                    new SlotConstraint("headwear", "headwear.work", "headwear.everyday"),
+                    new SlotConstraint("scarf", new string[] { null }),
+                    new SlotConstraint("apron", new string[] { null })));
             return roster.ToArray();
 
             void RegisterCafeMan(MountainRoadCafeCastRole role, string coat, string hat, string apron) =>

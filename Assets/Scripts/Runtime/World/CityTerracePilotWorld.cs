@@ -85,6 +85,10 @@ namespace BarPromenade
             if (pilot != null) BuildResidentialContext(root.transform, templates["TerraceSupport"]);
             if (district != null)
             {
+                // A shared post on each turning landing washes the nosings of both civic stairways.
+                foreach (var flight in district.Pilot.Flights)
+                    if (Vector3.Dot(flight.Direction, Vector3.forward) > .99f)
+                        LightFlight(root.transform, flight, new Color(.90f, .88f, .74f), 32f);
                 // The plain imported paving slab follows the measured street
                 // attachment. Stair and rail modules retain their authored metres.
                 Vector3 start = district.Local(district.EntryStartWorld);

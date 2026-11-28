@@ -1577,13 +1577,16 @@ namespace BarPromenade
                 "supermarket_entered");
         }
 
-        public static void EnterPawnshop()
+        public static void EnterPawnshop() => EnterCityInterior("pawnshop_entered");
+        internal static void EnterCityHall() => EnterCityInterior("city_hall_entered");
+
+        private static void EnterCityInterior(string eventName)
         {
             ActiveBarId = string.Empty;
             ActiveBarActivity = BarActivityKind.None;
             ActiveBarDistrict = BarDistrictIdentityCatalog.FallbackDistrict;
             ReturnKind = CityReturnKind.None;
-            GameLog.Info("session", "pawnshop_entered");
+            GameLog.Info("session", eventName);
         }
 
         public static void EnterChurch()
@@ -1675,10 +1678,13 @@ namespace BarPromenade
                 GameLog.Field("is_returning", true));
         }
 
-        public static void PreparePawnshopReturn()
+        public static void PreparePawnshopReturn() => PrepareDoorReturn(CityReturnKind.Pawnshop);
+        internal static void PrepareCityHallReturn() => PrepareDoorReturn(CityReturnKind.CityHall);
+
+        private static void PrepareDoorReturn(CityReturnKind kind)
         {
-            if (ReturnKind == CityReturnKind.Pawnshop) return;
-            ReturnKind = CityReturnKind.Pawnshop;
+            if (ReturnKind == kind) return;
+            ReturnKind = kind;
             GameLog.Info("session", "city_return_prepared",
                 GameLog.Field("return_kind", ReturnKind.ToString()), GameLog.Field("is_returning", true));
         }

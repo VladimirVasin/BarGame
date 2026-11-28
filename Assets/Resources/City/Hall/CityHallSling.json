@@ -1,0 +1,25 @@
+{
+  "name": "CityHallSling",
+  "bounds_min": [
+    -0.19705,
+    -0.28839,
+    -0.2828
+  ],
+  "bounds_max": [
+    0.01671,
+    0.44183,
+    0.02037
+  ],
+  "anchors": [
+    {
+      "name": "CityHallSlingFabric",
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    }
+  ],
+  "triangles": 72,
+  "geometry_signature": "637e4b40deffab86557c58147736559bc09b1b7eca66a0f2d86b386a534e4e2b"
+}

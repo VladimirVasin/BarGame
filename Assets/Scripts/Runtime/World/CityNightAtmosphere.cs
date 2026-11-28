@@ -285,6 +285,27 @@ namespace BarPromenade
                         industrialRangeLimits[index] = 12f;
                         industrialSpotAngles[index] = 150f;
                         industrialInnerSpotAngles[index] = 100f; break;
+                    case "CityHallEntrance":
+                        industrialPurposes[index] = CityIndustrialPurpose.CompressorHouse;
+                        industrialUseShadows[index] = true;
+                        industrialIntensityScales[index] = 1.05f;
+                        industrialRangeLimits[index] = 4.4f;
+                        industrialSpotAngles[index] = 114f;
+                        industrialInnerSpotAngles[index] = 76f; break;
+                    case "CityHallGate":
+                        industrialPurposes[index] = CityIndustrialPurpose.CompressorHouse;
+                        industrialUseShadows[index] = true;
+                        industrialIntensityScales[index] = .78f;
+                        industrialRangeLimits[index] = 6.4f;
+                        industrialSpotAngles[index] = 102f;
+                        industrialInnerSpotAngles[index] = 65f; break;
+                    case "CityHallDial":
+                        industrialPurposes[index] = CityIndustrialPurpose.CompressorHouse;
+                        industrialUseShadows[index] = true;
+                        industrialIntensityScales[index] = 3.2f;
+                        industrialRangeLimits[index] = 8.5f;
+                        industrialSpotAngles[index] = 98f;
+                        industrialInnerSpotAngles[index] = 62f; break;
                     case "PawnshopSignLeft":
                     case "PawnshopSignRight":
                         industrialPurposes[index] = CityIndustrialPurpose.CompressorHouse;

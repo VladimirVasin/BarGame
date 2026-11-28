@@ -1,0 +1,73 @@
+{
+  "name": "CityHallVestibule",
+  "bounds_min": [
+    -3.8,
+    -0.25,
+    -0.165
+  ],
+  "bounds_max": [
+    3.8,
+    3.76,
+    6.95
+  ],
+  "anchors": [
+    {
+      "name": "CityHallVestibuleConcrete",
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "CityHallVestibuleConcreteWall",
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "CityHallVestibuleLampGlass",
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "CityHallVestibuleSteel",
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "CityHallVestibuleSteelDark",
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "CityHallVestibuleSteelLight",
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "CityHallVestibuleTimber",
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    }
+  ],
+  "triangles": 1372,
+  "geometry_signature": "d1ec991f7c9d25dc55d80cd2532f39bf660f5a05b0cc38c9eeac372876adb2a6"
+}

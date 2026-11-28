@@ -22,6 +22,53 @@ namespace BarPromenade.Tests.PlayMode
         private const float DeadlineSeconds = 120f;
 
         [UnityTest]
+        [Explicit("Draws the map in the native Game view. Run without -batchmode.")]
+        public IEnumerator CityHallMarker_RendersOnBothCityMaps()
+        {
+            GameSessionState.BeginNewGame();
+            var host = new GameObject("City Hall map capture");
+            var map = host.AddComponent<CityMapController>();
+            try
+            {
+                var layout = CityLayoutCache.GetOrGenerate(CityBlueprintCatalog.Default,
+                    CityGenerationSettings.Default, GameSessionState.DefaultCitySeed);
+                var hall = CityTerraceDistrictPlan.ForLayout(layout).CityHall;
+                Assert.That(hall, Is.Not.Null);
+                host.transform.position = hall.Arrival;
+                host.AddComponent<Camera>();
+                var player = new PlayerRuntime(host, null, host.AddComponent<PlayerInteractor>(), null);
+#if UNITY_EDITOR
+                System.Type.GetType("BarPromenade.Editor.CityMapArtReferenceExport, BarPromenade.Editor", true)
+                    .GetMethod("FocusGameViewForCapture", System.Type.EmptyTypes).Invoke(null, null);
+#endif
+                map.InitializeNetwork(layout, player, null, null, CityDistrictBusPlanner.Create(layout),
+                    CityMountainBoundaryPlanner.Create(layout), CitySeacoastPlanner.Create(layout));
+                yield return CheckMap(true, "city-hall-marker-illustrated");
+
+                map.Initialize(layout, player, null, null);
+                yield return CheckMap(false, "city-hall-marker-schematic");
+
+                IEnumerator CheckMap(bool illustrated, string captureName)
+                {
+                    Assert.That(map.View.IsUsingIllustratedMap, Is.EqualTo(illustrated));
+                    Assert.That(map.PointsOfInterest, Has.Some.Matches<CityMapPointOfInterest>(
+                        place => place.Kind == CityMapPointOfInterestKind.CityHall && place.WorldPosition == hall.Arrival));
+                    Assert.That(map.Open(), Is.True);
+                    for (int frame = 0; frame < 5; frame++) yield return null;
+                    yield return CaptureMapUi(captureName);
+                    Assert.That(map.View.PlayerMarkerRect.width, Is.GreaterThan(0f),
+                        "DrawMap must reach the player marker after drawing City Hall.");
+                    map.Close();
+                }
+            }
+            finally
+            {
+                if (map.IsOpen) map.Close();
+                Object.Destroy(host);
+            }
+        }
+
+        [UnityTest]
         [Explicit("Captures the pigeon loft and the gap in its courtyard fence on the City schematic.")]
         public IEnumerator CitySchematic_ShowsPigeonLoftAndCourtyardGate()
         {

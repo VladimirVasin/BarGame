@@ -108,6 +108,15 @@ namespace BarPromenade
             {
                 EnsureSupermarketInteriorInstalled();
             }
+            else if (scene.name == SceneIds.CityHallInterior)
+            {
+                if (Object.FindAnyObjectByType<CityHallInteriorRoot>() == null)
+                {
+                    creating = true;
+                    try { new GameObject("[Bar Promenade] City Hall").AddComponent<CityHallInteriorRoot>(); }
+                    finally { creating = false; }
+                }
+            }
             else if (scene.name == SceneIds.PawnshopInterior)
             {
                 EnsurePawnshopInteriorInstalled();
@@ -161,7 +170,7 @@ namespace BarPromenade
                    sceneName == SceneIds.City ||
                    sceneName == SceneIds.BarInterior ||
                    sceneName == SceneIds.SupermarketInterior ||
-                   sceneName == SceneIds.PawnshopInterior ||
+                   sceneName == SceneIds.CityHallInterior || sceneName == SceneIds.PawnshopInterior ||
                    sceneName == SceneIds.ChurchInterior ||
                    sceneName == SceneIds.HomeInterior ||
                    sceneName == SceneIds.StairwellInterior ||

@@ -7,6 +7,7 @@ namespace BarPromenade
         PlayerHome = 2,
         Supermarket = 3,
         Church = 4,
-        Pawnshop = 5
+        Pawnshop = 5,
+        CityHall = 6
     }
 }

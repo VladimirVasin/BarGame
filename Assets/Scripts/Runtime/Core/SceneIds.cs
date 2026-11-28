@@ -4,6 +4,7 @@ namespace BarPromenade
     {
         public const string MainMenu = "MainMenu";
         public const string City = "City";
+        public const string CityHallInterior = "CityHallInterior";
         public const string CityRidge = "CityRidge";
         public const string DoorTransition = "DoorTransition";
         public const string BarInterior = "BarInterior";

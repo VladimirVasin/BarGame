@@ -48,7 +48,7 @@ namespace BarPromenade
         RidgeGarage = 29,
         RidgeGarageRoof = 30,
         WorkshopWalk = 31, CulvertWalk = 32, GableWalk = 33, RidgeMotel = 34, RavineHouse = 35,
-        RidgeCellars = 36
+        RidgeCellars = 36, CityHall = 37
     }
 
     public readonly struct CityMapPointOfInterest
@@ -1013,6 +1013,7 @@ namespace BarPromenade
                 case CityMapPointOfInterestKind.Laundry:
                     key = "map.poi.laundry";
                     return true;
+                case CityMapPointOfInterestKind.CityHall: key = "map.poi.city_hall"; return true;
                 case CityMapPointOfInterestKind.DogPark:
                     key = "map.poi.dog_park";
                     return true;
@@ -1571,6 +1572,9 @@ namespace BarPromenade
             CityTerraceDistrictPlan terraces = CityTerraceDistrictPlan.ForLayout(Layout);
             if (terraces.IsEnabled)
             {
+                pointsOfInterest.Add(new CityMapPointOfInterest(
+                    "city-hall", CityMapPointOfInterestKind.CityHall, CityDistrictKind.Residential,
+                    terraces.CityHall.Arrival, terraces.CityHall.Footprint, true));
                 pointsOfInterest.Add(new CityMapPointOfInterest(
                     "terrace-courts", CityMapPointOfInterestKind.TerraceCourts, CityDistrictKind.Residential,
                     terraces.UpperArrivalWorld + Vector3.up * rootOffset));

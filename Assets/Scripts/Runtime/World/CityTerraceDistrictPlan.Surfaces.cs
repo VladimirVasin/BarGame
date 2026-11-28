@@ -88,6 +88,7 @@ namespace BarPromenade
                 SubtractSolids(CourtyardLinkWalls);
                 SubtractSolids(LowerCourtRetainingWalls);
                 SubtractSolids(ShortcutWalls);
+                SubtractSolids(CityHall.GroundSolids);
                 surface.Clearance.AddPolygons(pieces);
 
                 void SubtractSolids(IReadOnlyList<RuntimeOrientedBox> walls)

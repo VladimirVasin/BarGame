@@ -1950,6 +1950,9 @@ namespace BarPromenade
                 DrawSolidRect(screen, PublicPlaceLand);
                 RetroUiTheme.StrokeRect(screen, 1f, ink);
             }
+            Rect hall = ProjectWorldRect(projection, terraces.CityHall.Footprint);
+            RetroUiTheme.StrokeRect(ProjectWorldRect(projection, terraces.CityHall.ClockWing), 1.6f, ink);
+            RetroUiTheme.StrokeRect(hall, 1.6f, ink);
             Rect crossing = terraces.BridgeWorldBounds;
             for (int dash = 0; dash < 3; dash++)
             {
@@ -2750,6 +2753,7 @@ namespace BarPromenade
                     pointOfInterest.Kind != CityMapPointOfInterestKind.PigeonLoft &&
                     pointOfInterest.Kind != CityMapPointOfInterestKind.RavineHouse &&
                     pointOfInterest.Kind != CityMapPointOfInterestKind.RidgeCellars &&
+                    pointOfInterest.Kind != CityMapPointOfInterestKind.CityHall &&
                     pointOfInterest.Kind != CityMapPointOfInterestKind.RidgeMotel &&
                     pointOfInterest.Kind != CityMapPointOfInterestKind.GlassReturn &&
                     pointOfInterest.Kind != CityMapPointOfInterestKind.Cobbler &&
@@ -3927,6 +3931,21 @@ namespace BarPromenade
                         new Vector2(center.x + halfSize * 0.6f, center.y - halfSize * 0.35f),
                         width,
                         color);
+                    break;
+                case CityMapPointOfInterestKind.CityHall:
+                    // The clock wing projects from the northwest corner of the office block.
+                    Vector2 leftBase = center + new Vector2(-halfSize, halfSize * .75f);
+                    Vector2 wingTop = center + new Vector2(-halfSize, -halfSize);
+                    Vector2 wingEdge = center + new Vector2(0f, -halfSize);
+                    Vector2 blockJoin = center + new Vector2(0f, -halfSize * .4f);
+                    Vector2 blockTop = center + new Vector2(halfSize, -halfSize * .4f);
+                    Vector2 rightBase = center + new Vector2(halfSize, halfSize * .75f);
+                    DrawLine(leftBase, wingTop, width, color);
+                    DrawLine(wingTop, wingEdge, width, color);
+                    DrawLine(wingEdge, blockJoin, width, color);
+                    DrawLine(blockJoin, blockTop, width, color);
+                    DrawLine(blockTop, rightBase, width, color);
+                    DrawLine(rightBase, leftBase, width, color);
                     break;
                 case CityMapPointOfInterestKind.RidgeKiosk:
                 case CityMapPointOfInterestKind.Pawnshop:

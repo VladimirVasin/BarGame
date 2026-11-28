@@ -10,7 +10,7 @@
 - 16:9/native/SMAA/savedFX/no4:3;City/balcony Soft,bar/church Neutral.
   4096px local shadow atlas cap; City/Home/bar UV0+1;house air/bar WC mirror.
   City/Ridge soil grows trees. Home shares wind, shoes disturb leaves. RoadRGB/pistol/fountain pilots.
-- Fifteen scenes are enabled in `ProjectSettings/EditorBuildSettings.asset`:
+- Scenes in `ProjectSettings/EditorBuildSettings.asset`:
 
 | Index | Scene | Role |
 | --- | --- | --- |
@@ -28,9 +28,10 @@
 | 11 | `MothersHouseInterior` | Gameplay |
 | 12 | `CombatTest` | Warehouse / weapon test |
 | 13 | `PawnshopInterior` | Pawnshop prototype |
-| 14 | `CityRidge` | Additive City district |
+| 14 | `CityRidge` | Additive district |
+| 15 | `CityHallInterior` | Vestibule |
 
-All eleven gameplay roots use `PlayerFactory`/`Resources/Player/Player3DV2.prefab`:
+12 gameplay roots use `PlayerFactory`/`Resources/Player/Player3DV2.prefab`:
 one rig, sculpted face and civilian workwear; seven drink-dose appearances
 share shape/hair/wear and mirror/FP/portrait state. Hair retained; jacket rig-only, CombatTest scarf/sling too.
 Near-empty scenes compose validated plans. Blender/canon: [../AI.md](../AI.md).

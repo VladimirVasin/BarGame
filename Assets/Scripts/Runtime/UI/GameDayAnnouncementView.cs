@@ -176,7 +176,7 @@ namespace BarPromenade
             return sceneName == SceneIds.City ||
                    sceneName == SceneIds.BarInterior ||
                    sceneName == SceneIds.SupermarketInterior ||
-                   sceneName == SceneIds.PawnshopInterior ||
+                   sceneName == SceneIds.CityHallInterior || sceneName == SceneIds.PawnshopInterior ||
                    sceneName == SceneIds.StairwellInterior ||
                    sceneName == SceneIds.HomeInterior ||
                    sceneName == SceneIds.MountainRoad ||

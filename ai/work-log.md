@@ -5,21 +5,25 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-28
 
+Enhanced stereo/48 kHz for output changes. `UNITY AUDIO HANDOFF OK`.
+
+City Hall lamps reach steps, guards, latch, dial and shutter. `CityHall_BothStairsClockAndVestibuleReturnToUpperCourt`, `CityHallMarker_RendersOnBothCityMaps` and `CITY HALL MODEL CONTRACT OK`.
+
 Street entry requires the envelope. Pickup and inventory share the $548 bill. `HOME MAILBOX MODEL CONTRACT OK` checks the exports. `EnterAndExitHome_UsesStairwellAndReturnsToSameCity` exercised cancel, pickup, inventory and entry. Existing apartment music assertion failed.
 
-Ridge sidewalk tiles reach the shoulders of the bends and cellar parapet. `LiveCity_CellarCourtWalksBothEntrancesAndKeepsViewBench` checks paving, footfalls, gates and bench. `LiveCity_CellarKeeperSortsByDayAndLampsReachWorkAndSteps` checks sorting contact, return and task lighting.
+Ridge tiles meet bends and cellar parapet. `LiveCity_CellarCourtWalksBothEntrancesAndKeepsViewBench` checks ground and access. `LiveCity_CellarKeeperSortsByDayAndLampsReachWorkAndSteps` checks sorting and light.
 
-Ridge court children share a ball and alternate shots. The whole wall board is turned over. Its braced ring projects into the yard, and the net hangs below it. `RidgeBasketball_AlternatesAndOnlyScorerJumps` measures the horizontal rim in the built City and checks the make, miss, shooter’s jump and return to the sidewalk.
+Ridge children share the ball. Reversed board, braced rim and hanging net face the yard. `RidgeBasketball_AlternatesAndOnlyScorerJumps` measures the horizontal rim in the built City and checks the make, miss, shooter’s jump and return to the sidewalk.
 
 City soil and Ridge earth carry seeded trees with independent crown spans and trunk heights. The crown forks, shedding heights and solid trunks follow the same form. Stride speed sets the swept area and lift. Wet leaves slide and the heel releases into toe-off even with muted audio. `CityLeaves_GustLandingAndWalkingContacts`, `HomeBalconyLeaves_FallOutsideTheRoom` and `LiveCity_EveryBusStopCanBeBoardedFromThePublicPavement` cover both districts.
 
-Ridge and lower City rebind one sound pool. Real roofs, wind, road wetness and gait drive local sound. Cold Ridge starts publish shared road polygons atomically. The lower district accepts the seated shelter resident's existing glare pose. `RidgeSound_FollowsShelterWalkingFeetAndDistrictStreaming` verified rain on canvas, a nearby ambient walker’s footfall and pool rebinding after unloading. The street and umbrella stereo takes retain the same gain.
+Ridge and lower City rebind one sound pool. Real roofs, wind, road wetness and gait drive local sound. Cold Ridge starts publish shared road polygons atomically. The lower district accepts the seated shelter resident's existing glare pose. `RidgeSound_FollowsShelterWalkingFeetAndDistrictStreaming` verified rain on canvas, a nearby ambient walker’s footfall and pool rebinding after unloading. Street/umbrella levels hold.
 
-Port, cannery, laundry and keeper cues share structural filtering at their existing anchors. The step reflection stays fixed while the listener moves. `RidgeSound_MachineryFiltersThroughADeckAndClearsAtItsEdge` verified level and tone on both sides of a deck edge.
+Port, cannery, laundry and keeper cues share structural filtering at their existing anchors. Step reflections stay fixed. `RidgeSound_MachineryFiltersThroughADeckAndClearsAtItsEdge` verified level and tone on both sides of a deck edge.
 
 NPCs shield their eyes from unobstructed flashlight and headlight beams. Reviewed the open palm and turned face under the chest lamp. `DirectBeams_ShieldEyesWithOpenPalmAndReleaseBehindCover` verifies palm alignment, occupied hands, cover and pool release.
 
-Ravine households have linked belongings and individual pawn quotes. The child's bed sits along the wall, the camp bed folds against the rear wall, and the mirror grips the sill. Reviewed the pillow, clamp and apartment views. `RavineFamiliesFromRoomsToPawnshop` checks the reflected ray to the far railing, stairs, dismiss/take and credit at hand contact across sale pages. Blender round-trips the finds and their grips.
+Ravine belongings have linked histories and individual pawn quotes. Wall beds and a sill-mounted mirror fit the rooms. Reviewed the pillow, clamp and apartment views. `RavineFamiliesFromRoomsToPawnshop` checks the reflected ray to the far railing, stairs, dismiss/take and credit at hand contact across sale pages. Blender round-trips the finds and their grips.
 
 Debug location starts carry the stairwell chest lamp unequipped. The Home case of `DebugWorldStart_SelectedLocationUsesItsNormalArrivalWithoutTheHomeOpening` verifies the starter item and toggling its combat beam through inventory.
 

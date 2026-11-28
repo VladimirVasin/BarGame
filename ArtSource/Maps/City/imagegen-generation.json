@@ -1,18 +1,18 @@
 {
   "tool": "built-in image_gen",
-  "intent": "Five hillside cellars, their shared work court and the path along the outer bend of the eastern Ridge hairpin.",
-  "prompt": "imagegen-ridge-cellars-prompt.txt",
+  "intent": "City Hall roof and projecting clock wing above the southern upper court",
+  "prompt": "imagegen-city-hall-prompt.txt",
   "references": [
     "CityMapImage.reference.png",
     "map-reference.json"
   ],
   "geography": "CityMapImage.accepted-geography.json",
   "image": "CityMapImage.generated.png",
-  "image_sha256": "3deaac17d89eaacd1bd7f7df2d3ddd6763bf2fcbd41ea4775651fe0788344a30",
-  "runtime_image_sha256": "b76a46ed18913bc22687fcbfde3406972f87733a0c9c0e7ddf20b22211d0210b",
-  "previous_image_sha256": "c341736fbeb9b7f895c067e4679496b70aa87df15e83f8bf3af2069f41d85193",
+  "image_sha256": "8db1ec12c6292a3650a9a79983ca3525766b92d9441aa713a15a780d0ce7dd74",
+  "runtime_image_sha256": "68505f08443f76bb2e14c83d0a964bebd871f9e15850d25677540ae4b3389a18",
+  "previous_image_sha256": "b76a46ed18913bc22687fcbfde3406972f87733a0c9c0e7ddf20b22211d0210b",
   "registration": {
-    "description": "Two matching local guides from the prior atlas and final north-up survey. The generated tile is registered inside the projected cellar and walking polygons with a narrow antialiased ink edge. Outside these polygons the existing atlas is retained.",
+    "description": "North-up crop registered to the surveyed office slab and clock wing, preserving adjacent streets, stairs and residential roofs.",
     "source_size": [
       1254,
       1254
@@ -22,20 +22,22 @@
       768
     ],
     "source_atlas_crop_xywh": [
-      901,
-      1140,
-      163,
-      163
+      806,
+      329,
+      110,
+      110
     ],
     "target_atlas_size": [
       1172,
       1342
     ],
-    "clip_polygon_prefix": "east-ridge-cellars:",
-    "mask_stroke_width_texels": 2.4,
+    "clip_polygons": [
+      "city-hall:clock-wing",
+      "city-hall"
+    ],
     "filter": "Lanczos3"
   },
-  "fingerprint": "10f2e1f03db587dea0c347892f914b3b1144895ee6fa105350af4c7c0526e15a",
+  "fingerprint": "a65d0050d61813faf092999a3ecf9443f8bf69e216ebe96d60882b17d949e48e",
   "schemaVersion": 2,
   "width": 1172,
   "height": 1342,

@@ -381,6 +381,8 @@ namespace BarPromenade.Editor
             CityTerraceDistrictPlan terraces = CityTerraceDistrictPlan.ForLayout(layout);
             if (terraces.IsEnabled)
             {
+                Box("city-hall:clock-wing", "building", terraces.CityHall.ClockWing);
+                Box("city-hall", "building", terraces.CityHall.Footprint);
                 Box("terrace-entry", "promenade", terraces.EntryBounds);
                 Box("terrace-lower-pass", "promenade", terraces.LowerPassBounds);
                 if (terraces.HasCourtyardLink)

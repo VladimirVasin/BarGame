@@ -140,9 +140,11 @@ namespace BarPromenade
                     Mathf.Max(innerX, threshold.x), threshold.z + CityBuildingAssetProvider.EntranceClearWidth * .5f);
                 throats.Add(throat); cuts.Add(throat);
             }
+            CityHall = new CityHallPlan(this);
             InitializeSurfaces();
         }
 
+        public CityHallPlan CityHall { get; }
         public bool IsEnabled { get; }
         public CityTerracePilotPlan Pilot { get; }
         public IReadOnlyList<Vector2Int> ReservedCells { get; }

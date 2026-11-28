@@ -908,6 +908,16 @@ namespace BarPromenade
                     spawnSource = "missing_church_return";
                     GameLog.Warning("city", "return_church_missing");
                     return false;
+                case CityReturnKind.CityHall:
+                    var hall = CityTerraceDistrictPlan.ForLayout(Layout).CityHall;
+                    if (hall != null)
+                    {
+                        arrival = PlayerDoorArrivalPose.FromDestinationDoor(hall.Return, hall.DoorAction);
+                        spawnSource = "city_hall_return";
+                        return true;
+                    }
+                    spawnSource = "missing_city_hall_return";
+                    return false;
                 case CityReturnKind.Pawnshop:
                     if (CityPawnshopPlan.TryCreate(Layout, out var pawnshop))
                     {

@@ -419,7 +419,8 @@ namespace BarPromenade
                 ridge.SetParent(world, false);
             }
 
-            var kioskShelters = new List<Collider>(8);
+            var kioskShelters = new List<Collider>(10);
+            CityHallWorld.Build(world, terraces.CityHall, kioskShelters);
             if (partition == null)
             {
                 yield return BuildRidgeGroundAndHomes(ridge, layout, walkableArea,

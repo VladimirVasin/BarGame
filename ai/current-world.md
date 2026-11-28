@@ -423,7 +423,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   `CityTerraceDistrictPlan` X83..125/Z31..73,5.743→13.423m,entry7.992%.
   Two raised houses/two OpenGround,144 IDs. House11,8 sits3.84m below street,
   roof12.883 below upper eye15.073. Sheltered3m alley under4.8×2.4m bridge,
-  guarded3×2.4m east exit atX126.4. Hero/NPC/map use distinct floors.
+  east exit3×2.4m atX126.4. City Hall: southern upper court, two armed guards at grilles, west clock on session minutes, door to vestibule and back. Hero/NPC/map use distinct floors.
   Twin 7-tier climbs: tiled outer bends, coast/Court/homes.
   Shielded steps/court lamps, bevelled cuts/curbs, clear paths/loft. Home bench→truss/ravine/roofs. Ridge bins in recesses/along walls.
   E:3s/fixed view hides hero/dock per day/30% pawnshop. Esc leaves it. Last sip: Finish.

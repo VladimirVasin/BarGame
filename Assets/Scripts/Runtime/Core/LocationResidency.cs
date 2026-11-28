@@ -22,7 +22,7 @@ namespace BarPromenade
         private static readonly string[] City =
         {
             SceneIds.BarInterior, SceneIds.SupermarketInterior, SceneIds.StairwellInterior,
-            SceneIds.ChurchInterior, SceneIds.PawnshopInterior, SceneIds.MountainRoad
+            SceneIds.ChurchInterior, SceneIds.PawnshopInterior, SceneIds.CityHallInterior, SceneIds.MountainRoad
         };
 
         private static readonly string[] ToCity = { SceneIds.City };
@@ -43,6 +43,7 @@ namespace BarPromenade
                 case SceneIds.BarInterior:
                 case SceneIds.SupermarketInterior:
                 case SceneIds.ChurchInterior:
+                case SceneIds.CityHallInterior:
                 case SceneIds.PawnshopInterior: return ToCity;
                 case SceneIds.StairwellInterior:
                     if (!GameSessionState.HomeSleepAppearanceActive) return FromStairwell;

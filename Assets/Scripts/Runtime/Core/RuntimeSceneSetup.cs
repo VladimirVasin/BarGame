@@ -257,7 +257,9 @@ namespace BarPromenade
             return camera;
         }
 
-        public static Camera EnsurePawnshopInterior()
+        public static Camera EnsurePawnshopInterior() => EnsureSmallPublicInterior();
+
+        internal static Camera EnsureSmallPublicInterior()
         {
             Camera camera = EnsureCamera(new Color(.065f, .075f, .065f));
             SetPostProcessing(camera, true);

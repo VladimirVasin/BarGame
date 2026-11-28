@@ -50,7 +50,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Residential laundry | Residual L-shell; silent worker folds/carries the same cloth/basket; enamel sign/shared light/hum. | `CityLaundry{Plan,AssetProvider,Controller,WorldBuilder}`, `build-city-laundry-3d-model.py` | Current |
 | Residential dog park | Residual fenced yard; three articulated dogs, two permanent owners; open entry and local voices. | `CityDogPark{Plan,AssetProvider,Controller,WorldBuilder}`, `CityDogPose`, `CityDogActivity` | Current |
 | City Blender low-rise landmarks | Metric Home03–04, bar, grocery with lit enamel sign. | `CityBarFacadeWorldBuilder`, `CitySupermarketFacadeWorldBuilder` | Current |
-| Unity URP foundation | 15 scenes; PC Neutral/Bloom/Vignette. | `6000.6.8f1`, `17.6.0` | Current |
+| Unity URP foundation | 16 scenes; PC Neutral/Bloom/Vignette. | `6000.6.8f1`, `17.6.0` | Current |
 | Scene presentation | 16:9/native/SMAA, saved ambient, City/warehouse SSR. Stair, bar and night street share tonal bands. | `Scene*Feature`, `GraphicsEffectsSettings`, `WorldTonalGrade` | Current |
 | Village local lighting | Real emitters; bounded air/snow/bounce, metal and spring reflections. | `AlpineVillageLightingPresentation`, `SceneReflectionCapture` | Current |
 | Road lighting | Bounded air/snow/headlights/halos/metal/bounce; station reflections. | `MountainRoad{LightingPresentation,ReflectionController,MetalAppearance}` | Current |
@@ -80,7 +80,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | City blueprint/roads | Two districts+park;144 IDs/−29.2% land; fronts/courts share ground/navigation. | `City{Layout,SpatialPlan,RoadGeometryPlan,CourtyardBlockPlanner}`, `BuildingLot` | Current |
 | Coastal utilities | City/Ridge/Home share exterior mains, courtyard branches and east-beach sewers. | `CityCoastalInfrastructure*`, `CityElectrical*`, `CityWaterNetwork*` | Current |
 | City elevation/stairs | Shared heights align stairs, ground and collision. Closed hillside cuts. | `CityElevation*`, `CityTerrainSurfacePlan`, `CityHillsideStairCut` | Current |
-| Terraced City | Service walks, gable court, loft/keeper, lit phones, bins, shared door. | `CityHillside*`,`CityTerrace*`,`CityPawnshopDescent*`,`CityPigeon*`,`CityCourtDoorCourtesy` | Current |
+| Terraced City | City Hall, upper bridge, service walks, loft, phones and bins. | `CityHillside*`,`CityTerrace*`,`CityHall*`,`CityPawnshopDescent*`,`CityPigeon*`,`CityCourtDoorCourtesy` | Current |
 | City mountain boundary | Districts own their cliffs and talus. Lower City owns the river cave and south portal. | `CityMountain{Boundary*,Talus*}`, `CityRockface*`, `CityFringeYard*`, `CitySouthTunnelArt` | Current |
 | Eastern mainland view | Closed boom, dry canopy, door wash and wide road optic; shared traffic grade, fading skyline/glow. | `CityEastExit*`, `CityEastRoadProfile`, `CityEastDistance*` | Current |
 | City litter | 36 Blender variants off roads; dense east/no near repeats; solids block; finite shared palette per root. | `CityLitterCatalog`, `CityLitter{Plan,Planner,WorldBuilder,Instancer}`, `CityEastLitter*` | Current |
@@ -160,7 +160,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | City wind | City/Home share gusts. Soil trees shed into drifts that part underfoot. | `CityWindField`, `CityWindDressing*`, `CityLeafField`, `CitySoilTrees`, `CityRidgeVegetationPlan` | Current |
 | City vegetation | City/Home grass off paths, Ridge trees and shrubs. | `CityGrass{Plan,Surface,Field}`, `CityRidgeVegetationPlan` | Current |
 | Scene and place music | Lodge gate/radio suppression;warehouse pitch.8/loop. Gap: cemetery/church slots empty. | `MusicMix`, `SceneMusicPlayer`, `CombatWarehouseMusicPlayer` | Partial |
-| Common audio mix | Sharedmix;warehouse 3D clicks/whispers:.8/LP2800/World;dryUI;intoxication. | `GameAudioMixer`,`CombatWarehouseAmbiencePlayer` | Current |
+| Common audio mix | Enhanced stereo/48 kHz, 3D clicks/whispers .8/LP2800/World, dry UI, intoxication. | `GameAudioMixer`,`CombatWarehouseAmbiencePlayer` | Current |
 | Local work audio | Walls filter active machinery and contacts. Arrival horn has a longer tail. | `CityWorkAudio`, `CityPortSound`, `CityCanneryController.{Sound,ProcessSound}`, `CityLaundryController` | Current |
 | Intoxication sound perception | Separate eased audio persists across scenes; speech/music→0.25× over VHS, caption scatter. Sober restores. | `IntoxicationPerceptionRules`, `NpcSpeechVoice`, `SceneMusicPlayer`, `IntoxicationAudioDriver` | Current |
 | Retro SFX and ambience | Cues/ambience share routing/cleanup; config invalidates native banks for bounded lazy recovery. | `RetroSfx`, `RetroAudioService` | Current |
@@ -259,7 +259,7 @@ clock -> day announcement/needs/day-night; weather -> rain/lightning/thunder
 map/travel -> AreaLoading -> destination Single (20%) -> staged composition (80%)
   -> ready -> restore audio/time/input
 
-11 gameplay roots -> PlayerFactory -> Resources/Player/Player3DV2.prefab
+12 gameplay roots -> PlayerFactory -> Resources/Player/Player3DV2.prefab
   -> locomotion/balance/ragdoll/rise/contextual actions/inventory portrait
 interaction -> SceneTransitionService -> DoorTransition -> destination
   -> Bar: seated service; Supermarket: repeatable stock/shared receipt

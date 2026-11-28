@@ -185,6 +185,7 @@ namespace BarPromenade
                     foreach (Rect cut in terraces.GroundCuts) RectValue(writer, cut);
                     Point(writer, terraces.EntryStartWorld); Point(writer, terraces.EntryEndWorld);
                     RectValue(writer, terraces.EntryBounds);
+                    RectValue(writer, terraces.CityHall.Footprint); RectValue(writer, terraces.CityHall.ClockWing); Point(writer, terraces.CityHall.Arrival);
                     Point(writer, terraces.LowerArrivalWorld); Point(writer, terraces.UpperArrivalWorld);
                     Point(writer, terraces.LowerPassStartWorld); Point(writer, terraces.LowerPassRampEndWorld);
                     Point(writer, terraces.LowerPassEndWorld);

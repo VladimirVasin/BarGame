@@ -1,0 +1,121 @@
+{
+  "name": "CityHallExterior",
+  "bounds_min": [
+    -17.03,
+    -9.9,
+    -12.56
+  ],
+  "bounds_max": [
+    2.065,
+    20.345,
+    6.38
+  ],
+  "anchors": [
+    {
+      "name": "CityHallExteriorConcrete",
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "CityHallExteriorConcreteWall",
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "CityHallExteriorLampGlass",
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "CityHallExteriorPlaster",
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "CityHallExteriorRoof",
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "CityHallExteriorRubber",
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "CityHallExteriorSteel",
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "CityHallExteriorSteelDark",
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "CityHallExteriorSteelLight",
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "HourHand",
+      "position": [
+        -16.41,
+        10.35,
+        3.45
+      ]
+    },
+    {
+      "name": "HourHandBlade",
+      "position": [
+        -16.41,
+        10.35,
+        3.45
+      ]
+    },
+    {
+      "name": "MinuteHand",
+      "position": [
+        -16.48,
+        10.35,
+        3.45
+      ]
+    },
+    {
+      "name": "MinuteHandBlade",
+      "position": [
+        -16.48,
+        10.35,
+        3.45
+      ]
+    }
+  ],
+  "triangles": 11284,
+  "geometry_signature": "46465a57765b1b55118160ef67984fc63a5ed6dd3fdee8aa2339c55d3e1df362"
+}

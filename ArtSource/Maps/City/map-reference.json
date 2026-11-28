@@ -1,7 +1,7 @@
 {
     "schemaVersion": 1,
     "blueprintId": "default-coastal",
-    "fingerprint": "10f2e1f03db587dea0c347892f914b3b1144895ee6fa105350af4c7c0526e15a",
+    "fingerprint": "a65d0050d61813faf092999a3ecf9443f8bf69e216ebe96d60882b17d949e48e",
     "citySeed": 20260727,
     "worldBounds": {
         "serializedVersion": "2",
@@ -76819,6 +76819,28 @@
             ]
         },
         {
+            "id": "place:city-hall",
+            "role": "public-ground",
+            "points": [
+                {
+                    "x": 106.56000518798828,
+                    "y": 30.939998626708984
+                },
+                {
+                    "x": 125.0300064086914,
+                    "y": 30.939998626708984
+                },
+                {
+                    "x": 125.0300064086914,
+                    "y": 43.5
+                },
+                {
+                    "x": 106.56000518798828,
+                    "y": 43.5
+                }
+            ]
+        },
+        {
             "id": "place:upper-court-bridge",
             "role": "public-ground",
             "points": [
@@ -78487,6 +78509,50 @@
                 {
                     "x": 54.650001525878906,
                     "y": -111.19999694824219
+                }
+            ]
+        },
+        {
+            "id": "city-hall:clock-wing",
+            "role": "building",
+            "points": [
+                {
+                    "x": 106.56000518798828,
+                    "y": 43.2599983215332
+                },
+                {
+                    "x": 115.2800064086914,
+                    "y": 43.2599983215332
+                },
+                {
+                    "x": 115.2800064086914,
+                    "y": 49.89999771118164
+                },
+                {
+                    "x": 106.56000518798828,
+                    "y": 49.89999771118164
+                }
+            ]
+        },
+        {
+            "id": "city-hall",
+            "role": "building",
+            "points": [
+                {
+                    "x": 106.56000518798828,
+                    "y": 30.939998626708984
+                },
+                {
+                    "x": 125.0300064086914,
+                    "y": 30.939998626708984
+                },
+                {
+                    "x": 125.0300064086914,
+                    "y": 43.5
+                },
+                {
+                    "x": 106.56000518798828,
+                    "y": 43.5
                 }
             ]
         },
@@ -133974,10 +134040,29 @@
             }
         },
         {
+            "id": "city-hall",
+            "kind": "CityHall",
+            "label": "Городское управление",
+            "referenceNumber": 15,
+            "position": {
+                "x": 123.10000610351563,
+                "y": 13.4630765914917,
+                "z": 48.279998779296875
+            },
+            "hasFootprint": true,
+            "footprint": {
+                "serializedVersion": "2",
+                "x": 106.56000518798828,
+                "y": 30.939998626708984,
+                "width": 18.469999313354492,
+                "height": 12.5600004196167
+            }
+        },
+        {
             "id": "terrace-courts",
             "kind": "TerraceCourts",
             "label": "Лестничные дворы",
-            "referenceNumber": 15,
+            "referenceNumber": 16,
             "position": {
                 "x": 119.9800033569336,
                 "y": 13.4630765914917,
@@ -133996,7 +134081,7 @@
             "id": "terrace-underpass",
             "kind": "TerraceUnderpass",
             "label": "Нижний проход",
-            "referenceNumber": 16,
+            "referenceNumber": 17,
             "position": {
                 "x": 119.9800033569336,
                 "y": 6.556815147399902,
@@ -134015,7 +134100,7 @@
             "id": "terrace-lower-court",
             "kind": "TerraceLowerCourt",
             "label": "Нижний двор",
-            "referenceNumber": 17,
+            "referenceNumber": 18,
             "position": {
                 "x": 138.60000610351563,
                 "y": 2.923076868057251,
@@ -134034,7 +134119,7 @@
             "id": "terrace-shortcut",
             "kind": "TerraceShortcut",
             "label": "Проход за домом",
-            "referenceNumber": 18,
+            "referenceNumber": 19,
             "position": {
                 "x": 155.89999389648438,
                 "y": 8.944615364074707,
@@ -134053,7 +134138,7 @@
             "id": "terrace-landing",
             "kind": "TerraceLanding",
             "label": "Верхняя площадка",
-            "referenceNumber": 19,
+            "referenceNumber": 20,
             "position": {
                 "x": 158.3000030517578,
                 "y": 10.603076934814453,
@@ -134072,7 +134157,7 @@
             "id": "residential-summit",
             "kind": "ResidentialSummit",
             "label": "Верхняя улица: восток",
-            "referenceNumber": 20,
+            "referenceNumber": 21,
             "position": {
                 "x": 71.0,
                 "y": 40.10000228881836,
@@ -134091,7 +134176,7 @@
             "id": "industrial-summit",
             "kind": "IndustrialSummit",
             "label": "Верхняя улица: запад",
-            "referenceNumber": 21,
+            "referenceNumber": 22,
             "position": {
                 "x": -55.0,
                 "y": 40.10000228881836,
@@ -134110,7 +134195,7 @@
             "id": "upper-shared-court",
             "kind": "UpperSharedCourt",
             "label": "Проходной двор",
-            "referenceNumber": 22,
+            "referenceNumber": 23,
             "position": {
                 "x": 8.0,
                 "y": 31.679180145263672,
@@ -134129,7 +134214,7 @@
             "id": "upper-court-bridge",
             "kind": "UpperCourtBridge",
             "label": "Дворовый мост",
-            "referenceNumber": 23,
+            "referenceNumber": 24,
             "position": {
                 "x": -9.350000381469727,
                 "y": 31.64797592163086,
@@ -134148,7 +134233,7 @@
             "id": "upper-summit-bridge",
             "kind": "UpperSummitBridge",
             "label": "Мост Верхней улицы",
-            "referenceNumber": 24,
+            "referenceNumber": 25,
             "position": {
                 "x": -11.5,
                 "y": 40.10000228881836,
@@ -134167,7 +134252,7 @@
             "id": "ridge-kiosk",
             "kind": "RidgeKiosk",
             "label": "Ларёк и площадка на Гребне",
-            "referenceNumber": 25,
+            "referenceNumber": 26,
             "position": {
                 "x": -52.5,
                 "y": 40.10000228881836,
@@ -134186,7 +134271,7 @@
             "id": "residential-kiosk",
             "kind": "RidgeKiosk",
             "label": "Ларёк в Жилом",
-            "referenceNumber": 26,
+            "referenceNumber": 27,
             "position": {
                 "x": 56.18000030517578,
                 "y": 4.91897439956665,
@@ -134205,7 +134290,7 @@
             "id": "industrial-kiosk",
             "kind": "RidgeKiosk",
             "label": "Ларёк в Рабочем",
-            "referenceNumber": 27,
+            "referenceNumber": 28,
             "position": {
                 "x": -125.81999969482422,
                 "y": 9.208205223083496,
@@ -134224,7 +134309,7 @@
             "id": "pawnshop",
             "kind": "Pawnshop",
             "label": "Ломбард",
-            "referenceNumber": 28,
+            "referenceNumber": 29,
             "position": {
                 "x": -49.34895706176758,
                 "y": 31.345441818237305,
@@ -134243,7 +134328,7 @@
             "id": "ridge-pigeon-loft",
             "kind": "PigeonLoft",
             "label": "Голубятня",
-            "referenceNumber": 29,
+            "referenceNumber": 30,
             "position": {
                 "x": -151.16836547851563,
                 "y": 35.91943359375,
@@ -134262,7 +134347,7 @@
             "id": "pawnshop-descent",
             "kind": "PawnshopDescent",
             "label": "Спуск к ломбарду",
-            "referenceNumber": 30,
+            "referenceNumber": 31,
             "position": {
                 "x": -53.60881423950195,
                 "y": 40.10000228881836,
@@ -134281,7 +134366,7 @@
             "id": "ridge-glass-return",
             "kind": "GlassReturn",
             "label": "Приём тары",
-            "referenceNumber": 31,
+            "referenceNumber": 32,
             "position": {
                 "x": 164.89999389648438,
                 "y": 35.98749923706055,
@@ -134300,7 +134385,7 @@
             "id": "ravine-house",
             "kind": "RavineHouse",
             "label": "Обрушенный дом",
-            "referenceNumber": 32,
+            "referenceNumber": 33,
             "position": {
                 "x": 6.710000038146973,
                 "y": 39.970001220703125,
@@ -134319,7 +134404,7 @@
             "id": "ridge-motel",
             "kind": "RidgeMotel",
             "label": "Мотель",
-            "referenceNumber": 33,
+            "referenceNumber": 34,
             "position": {
                 "x": 54.0,
                 "y": 40.10000228881836,
@@ -134338,7 +134423,7 @@
             "id": "ridge-garages",
             "kind": "RidgeGarage",
             "label": "Гаражи на Гребне",
-            "referenceNumber": 34,
+            "referenceNumber": 35,
             "position": {
                 "x": -107.72000122070313,
                 "y": 25.39788055419922,
@@ -134357,7 +134442,7 @@
             "id": "ridge-garages-roof",
             "kind": "RidgeGarageRoof",
             "label": "Проход по крыше гаражей",
-            "referenceNumber": 35,
+            "referenceNumber": 36,
             "position": {
                 "x": -117.5,
                 "y": 28.39788055419922,
@@ -134376,7 +134461,7 @@
             "id": "ridge-cobbler",
             "kind": "Cobbler",
             "label": "Сапожная мастерская",
-            "referenceNumber": 36,
+            "referenceNumber": 37,
             "position": {
                 "x": 65.68205261230469,
                 "y": 31.492918014526367,
@@ -134395,7 +134480,7 @@
             "id": "workshop-loading-walk",
             "kind": "WorkshopWalk",
             "label": "Площадка металлоцеха",
-            "referenceNumber": 37,
+            "referenceNumber": 38,
             "position": {
                 "x": -91.90999603271484,
                 "y": 7.518974781036377,
@@ -134414,7 +134499,7 @@
             "id": "culvert-service-walk",
             "kind": "CulvertWalk",
             "label": "Полка у водовыпуска",
-            "referenceNumber": 38,
+            "referenceNumber": 39,
             "position": {
                 "x": -164.65000915527344,
                 "y": 9.0,
@@ -134433,7 +134518,7 @@
             "id": "east-gable-court",
             "kind": "GableWalk",
             "label": "Лестница у торца",
-            "referenceNumber": 39,
+            "referenceNumber": 40,
             "position": {
                 "x": 106.64999389648438,
                 "y": 27.66998291015625,
@@ -134452,7 +134537,7 @@
             "id": "east-ridge-cellars",
             "kind": "RidgeCellars",
             "label": "Двор с погребами",
-            "referenceNumber": 40,
+            "referenceNumber": 41,
             "position": {
                 "x": 170.0,
                 "y": 35.59749984741211,

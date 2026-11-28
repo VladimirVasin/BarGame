@@ -7,19 +7,9 @@
   bite anchors join hand IK and the three Blender sections. First contact spends
   one item and applies food relief. Wipe and spatial burp finish the same timeline.
 
-- **2026-11-26, children.** Stable looks, skinned trousers, face rows, shared
-  material maps and metre gait. Five fair spots keep the day floor. Two street
-  slots spawn from sunrise to sunset and retire off camera. Park swings and fitted court modules share
-  City light/fog/post. One reservation covers the swing, bars/beam loop or
-  slide, including both approaches at the two-deck site. Sockets join the
-  stair, rung frame, decks and chute. Completed runs alternate the stair
-  and bridge with the rung climb. A child waits seated for a clear runout
-  and rejoins the route along the side. The seesaw waits for two street
-  encounters, shares the pivot clock and finishes before either rider leaves.
-  The landscape plan joins flush concrete yards and the gravel park pad to
-  existing paths. Each site fits multiple modules. The City seed selects a
-  beam or stepping trail and compact balance variants. Coating outlines own
-  footsteps and a low-grass edge in City and Home.
+- **Accepted architecture exception — 2026-11-28, City Hall.** User approved government offices at the twin stairs with an interior scene. Story §6 limits the change to the office and its armed guards. City owns the clock, terrace and return. The vestibule uses ordinary door travel and resident arrival.
+
+- **2026-11-26, children.** Stable faces, skinned trousers, shared maps and metre gait. Five fair spots retain the daytime light floor. Two street slots run from sunrise to sunset and retire off camera. Park and court modules share City light, fog and post. One reservation covers the swing, bars/beam loop and either slide approach. Sockets join stair, rung frame, deck and chute. Children alternate stair and bridge with the rung climb, wait seated for the runout and rejoin along the side. Both seesaw partners share a pivot clock and finish together. Flush pads join paths; seed selects beam or stepping trail and compact balance variants. City and Home use coating outlines for steps and grass.
 
 - **Accepted 2026-11-22, user — wristwatch.** H loans the existing camera and
   holds stationary context. Right pinch tracks the left cuff. Forearm bezel, session-minute LCD, bevels, matte finish and area fog/light/post.

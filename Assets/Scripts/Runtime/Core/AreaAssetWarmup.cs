@@ -149,6 +149,9 @@ namespace BarPromenade
                 case SceneIds.ChurchInterior:
                     AddAsset(ChurchInteriorLayoutPlanner.ModelResourcePath, typeof(GameObject));
                     break;
+                case SceneIds.CityHallInterior:
+                    AddAsset(CityHallWorld.InteriorResource, typeof(GameObject));
+                    break;
                 case SceneIds.PawnshopInterior:
                     AddAsset(PawnshopInteriorWorldBuilder.ResourcePath, typeof(GameObject));
                     break;
