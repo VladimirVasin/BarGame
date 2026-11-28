@@ -74,6 +74,7 @@ namespace BarPromenade
             CityExteriorAppearance.ApplyRoadSurface(renderer, 3);
             CityHillsidePerimeterSurface.ApplyVerges(renderer, 4, 5);
             CityHillsidePerimeterSurface.ApplyPaving(renderer, 6);
+            CityHillsidePerimeterSurface.ApplySidewalkExtension(renderer, mesh, 7);
             CityGroundSurfaceSystem.RegisterJointScenery(renderer);
             if (!retained.HasValue) ground.AddComponent<MeshCollider>().sharedMesh = mesh;
             ground.AddComponent<RuntimeGeneratedMeshOwner>().Initialize(mesh);

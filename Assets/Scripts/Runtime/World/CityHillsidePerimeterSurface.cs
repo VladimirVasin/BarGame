@@ -9,7 +9,7 @@ namespace BarPromenade
 {
     internal static class CityHillsidePerimeterSurface
     {
-        private enum Finish { Asphalt, Turf, Gravel, Paving }
+        private enum Finish { Asphalt, Turf, Gravel, Paving, Sidewalk }
         private readonly struct Plot
         {
             internal readonly Finish Finish;
@@ -167,18 +167,22 @@ namespace BarPromenade
             var edgeDistances = new List<Vector4>(new Vector4[points.Length]);
             var otherEdges = new List<Color32>(new Color32[points.Length]);
             var splitIndices = new Dictionary<(Vector3, int), int>();
-            var finishes = new[] { new List<int>(), new List<int>(), new List<int>(), new List<int>() };
+            var finishes = new[] { new List<int>(), new List<int>(), new List<int>(), new List<int>(), new List<int>() };
             var candidates = new List<int>();
             var remaining = new List<Triangle>();
             var next = new List<Triangle>();
             var plan = CityBuildingPerimeterPlan.ForLayout(layout);
             var plots = Plots.GetValue(layout, CreatePlots);
             var paving = Paving.GetValue(layout, CreatePaving);
+            var bendSidewalks = CityHillsideStreetPlan.ForLayout(layout).SidewalkExtensions;
             var cellars = RidgeCellarPlan.ForLayout(layout);
             var cellarPlots = CellarPlots.GetValue(layout, city => {
                 var local = new List<Plot>();
                 if (RidgeCellarPlan.ForLayout(city) is { } court)
+                {
+                    foreach (var part in court.BendSidewalk) local.Add(new Plot(Finish.Sidewalk, part));
                     foreach (var part in court.Gravel) local.Add(new Plot(Finish.Gravel, part));
+                }
                 return local;
             });
             float pavingTile = CityParkSurfaceAppearance.GetRecipe(CityParkSurfaceKind.Plaza).MetersPerTile;
@@ -206,6 +210,9 @@ namespace BarPromenade
                         foreach (int candidate in candidates)
                             foreach (var band in plan.Bands(candidate)) Cover(band, Finish.Asphalt);
                         foreach (var plot in plots) Cover(plot.Shape, plot.Finish);
+                        foreach (var bend in bendSidewalks)
+                            if (bend.Bounds.Overlaps(bounds))
+                                foreach (var piece in bend.Pieces) Cover(piece, Finish.Sidewalk);
                         if (cellars != null && cellars.Bounds.Overlaps(bounds))
                             foreach (var plot in cellarPlots) Cover(plot.Shape, plot.Finish);
                     }
@@ -239,7 +246,8 @@ namespace BarPromenade
 
             if (vertices.Count > ushort.MaxValue && mesh.indexFormat != IndexFormat.UInt32)
                 mesh.indexFormat = IndexFormat.UInt32;
-            mesh.subMeshCount = layers.Length + finishes.Length;
+            int finishCount = finishes[(int)Finish.Sidewalk].Count == 0 ? (int)Finish.Sidewalk : finishes.Length;
+            mesh.subMeshCount = layers.Length + finishCount;
             mesh.SetVertices(vertices);
             mesh.SetNormals(normals);
             mesh.SetUVs(0, uv);
@@ -249,7 +257,7 @@ namespace BarPromenade
                 mesh.SetColors(otherEdges);
             }
             for (int slot = 0; slot < layers.Length; slot++) mesh.SetTriangles(layers[slot], slot, false);
-            for (int i = 0; i < finishes.Length; i++) mesh.SetTriangles(finishes[i], layers.Length + i, false);
+            for (int i = 0; i < finishCount; i++) mesh.SetTriangles(finishes[i], layers.Length + i, false);
             mesh.RecalculateBounds();
             return mesh;
 
@@ -275,6 +283,7 @@ namespace BarPromenade
                 {
                     Finish.Asphalt => city / CityExteriorAppearance.RoadTextureTileSize,
                     Finish.Paving => city / pavingTile,
+                    Finish.Sidewalk => city / CityExteriorAppearance.SidewalkTextureTileSize,
                     _ => v.Uv0
                 });
                 var first = Vector4.one * 16f;
@@ -299,12 +308,23 @@ namespace BarPromenade
         internal static void Stamp(GameObject ground, Mesh mesh, params FootstepGroundKind[] layers)
         {
             var kinds = new List<FootstepGroundKind>();
-            for (int slot = 0; slot < layers.Length; slot++)
+            for (int slot = 0; slot < mesh.subMeshCount; slot++)
             {
                 int triangles = (int)mesh.GetIndexCount(slot) / 3;
-                for (int i = 0; i < triangles; i++) kinds.Add(layers[slot]);
+                var kind = slot < layers.Length ? layers[slot] : FootstepGroundKind.Stone;
+                for (int i = 0; i < triangles; i++) kinds.Add(kind);
             }
             FootstepGround.Stamp(ground, FootstepGroundKind.Soil, kinds);
+        }
+
+        internal static void ApplySidewalkExtension(Renderer renderer, Mesh mesh, int firstExtraSlot)
+        {
+            if (mesh.subMeshCount <= firstExtraSlot) return;
+            var materials = new List<Material>(mesh.subMeshCount);
+            renderer.GetSharedMaterials(materials);
+            materials.Add(RuntimePrimitiveFactory.DefaultMaterial);
+            renderer.SetSharedMaterials(materials);
+            CityExteriorAppearance.ApplySidewalkSurface(renderer, firstExtraSlot);
         }
     }
 }

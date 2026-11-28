@@ -154,6 +154,19 @@ namespace BarPromenade
             }
             return true;
         }
+        internal static bool ContainsOrWithin(IReadOnlyList<Vector2> polygon, Vector2 point, float radius)
+        {
+            if (Contains(polygon, point)) return true;
+            float squaredRadius = radius * radius;
+            for (int i = 0; i < polygon.Count; i++)
+            {
+                Vector2 offset = point - polygon[i], edge = polygon[(i + 1) % polygon.Count] - polygon[i];
+                if (edge.sqrMagnitude <= .000001f) continue;
+                float along = Mathf.Clamp01(Vector2.Dot(offset, edge) / edge.sqrMagnitude);
+                if ((offset - edge * along).sqrMagnitude < squaredRadius) return true;
+            }
+            return false;
+        }
         public static List<Vector2> Clip(IReadOnlyList<Vector2> source, Vector2 a, Vector2 b, bool inside = true)
         {
             var result = new List<Vector2>();

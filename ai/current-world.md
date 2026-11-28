@@ -424,7 +424,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   Two raised houses/two OpenGround,144 IDs. House11,8 sits3.84m below street,
   roof12.883 below upper eye15.073. Sheltered3m alley under4.8×2.4m bridge,
   guarded3×2.4m east exit atX126.4. Hero/NPC/map use distinct floors.
-  Twin 7-tier climbs: coast/Court/homes, hero/bus/map.
+  Twin 7-tier climbs: tiled outer bends, coast/Court/homes.
   Shielded steps/court lamps, bevelled cuts/curbs, clear paths/loft. Home bench→truss/ravine/roofs. Ridge bins in recesses/along walls.
   E:3s/fixed view hides hero/dock per day/30% pawnshop. Esc leaves it. Last sip: Finish.
   Loft/kiosk booths: finger dial, Esc/Q exits.
@@ -440,7 +440,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   East return08–23:E $2/glass,$1/can, switch→window/grille, sign/flood fixed. Raised grass-free yard/map outside, spill.12/day≥⅔/Soft/opaque. Graded window/exit asphalt+paved footway.
   Ridge plinths meet banks/court, rails behind paths. Home soil/wet asphalt/turf/gravel/stone. W drains/E kerbs/scrapers, soffit lamp/timber over deck, E(21,-7) clear.
   Motel: mapped court/3 bays/locked rooms/2 lit galleries/1 flicker/day linen+boot/2 night beer tables.
-  W garage roof/bay arrivals, opal bay/bench/engine/entry on City time. E cellars: grates, warm hood→crates/scale, neutral steps, door sidelights, outer bend lamp. Home↔table 9–18 only.
+  W garage roof/bay arrivals, opal bay/bench/engine/entry on City time. E cellars: sidewalk to parapet, grates, warm crates, neutral steps, lit doors/bend. Home↔table 9–18.
   W `(-23,-7)`: «Хвост и Чешуя», 2 floods. Poles→stairs/bridge walks, covered lamps below, rock/gravel under bearings.
   Kiosk lens/two soft spots→seller/shelves/street; Ridge three canopy spots.
   Cobbler68.8,-307/250°,home21,-6,11–20:30. Steps/.48 deck,

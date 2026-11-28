@@ -5,7 +5,7 @@ Earlier: [September](archive/work-log-2026-09.md), [August](archive/work-log-202
 
 ## 2026-11-28
 
-The east Ridge cellar lane meets the north pavement on a graded shoulder shared by collision and map arrivals. `LiveCity_CellarCourtWalksBothEntrancesAndKeepsViewBench` covers both gates and the bench. A resident walks from home to sort potatoes by day. `LiveCity_CellarKeeperSortsByDayAndLampsReachWorkAndSteps` checks hand-to-crate contact and the evening return. The work hood and step lamp light their task areas. Raised side light follows the closed doors, and a lamp picks out the outside of the cart bend.
+Both Ridge streets carry their sidewalk tiles onto the outside shoulders of the entry curves and hairpins. At the cellars they reach the parapet. `LiveCity_CellarCourtWalksBothEntrancesAndKeepsViewBench` checks the pavement finish and footfalls, both gates and the bench. The sorter walks from home by day. `LiveCity_CellarKeeperSortsByDayAndLampsReachWorkAndSteps` checks hand-to-crate contact and his return home. Lamps pick out the table, steps, doors and bend.
 
 Ridge court children share a ball and alternate shots. The whole wall board is turned over. Its braced ring projects into the yard, and the net hangs below it. `RidgeBasketball_AlternatesAndOnlyScorerJumps` measures the horizontal rim in the built City and checks the make, miss, shooter’s jump and return to the sidewalk.
 

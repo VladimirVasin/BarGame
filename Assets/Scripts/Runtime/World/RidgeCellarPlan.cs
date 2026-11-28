@@ -17,12 +17,14 @@ namespace BarPromenade
         private readonly Vector2[] northJoin;
         private readonly float northJoinTop;
         private readonly CityHillsideStreetRoute street;
+        private readonly List<Vector2[]> bendSidewalk = new();
         private readonly List<Vector2[]> gravel = new();
         private readonly List<Vector2[]> paving = new();
         private readonly List<Vector2[]> solids = new();
         private readonly List<Vector2[]> walking = new();
         private readonly List<Vector2[]> footprints = new();
         private readonly List<Vector2[]> plantingKeepouts = new();
+        internal IReadOnlyList<Vector2[]> BendSidewalk => bendSidewalk;
         internal IReadOnlyList<Vector2[]> Gravel => gravel;
         internal IReadOnlyList<Vector2[]> Paving => paving;
         internal IReadOnlyList<Vector2[]> Solids => solids;
@@ -73,8 +75,7 @@ namespace BarPromenade
             if (benchPad.xMin - 1.65f >= toeX + .5f) stairX = benchPad.xMin - 1.65f;
             StairFoot = new Vector2(stairX, Mathf.Clamp(benchPad.yMin - Steps * Tread - .5f, Origin.z + 6.6f, Origin.z + 8.6f));
 
-            // Join the north pavement, wrap the entire outside shoulder, then ease into
-            // the sorting yard. The two wheel tracks stay on the same walkable triangles.
+            // Join the north pavement, follow the outside shoulder, then ease into the sorting yard.
             float radius = (north - south) * .5f;
             var centre = new Vector2(toeX, south + radius);
             var cart = new List<Vector2> { new(toeX - 2.7f, north + 4.45f), new(toeX, north + 6.65f) };
@@ -122,6 +123,17 @@ namespace BarPromenade
             var drainPath = new CityRoadPath(drain);
             solids.AddRange(drainPath.Ribbon(.26f));
             DrainSurface = drainPath.Ribbon(.62f, -.1775f);
+
+            // Carry the sidewalk finish across the graded shoulder to the parapet.
+            // The existing street surface and cast gutter cover the shared edges.
+            Vector2 inside = road.Path.Project(drain[0]).Position;
+            for (int i = 1; i < drain.Count; i++)
+            {
+                Vector2 nextInside = road.Path.Project(drain[i]).Position;
+                bendSidewalk.Add(CityRoadPolygon.CounterClockwise(new[] { drain[i - 1], inside, nextInside, drain[i] }));
+                inside = nextInside;
+            }
+            plantingKeepouts.AddRange(bendSidewalk);
 
             var apron = Shape(new(-9.65f, -.1f), new(9.45f, -.1f), new(9.45f, 2.1f),
                 new(-9.65f, 3f));
@@ -179,15 +191,7 @@ namespace BarPromenade
             if (p.x < Bounds.xMin - radius || p.x > Bounds.xMax + radius ||
                 p.y < Bounds.yMin - radius || p.y > Bounds.yMax + radius) return false;
             foreach (var piece in plantingKeepouts)
-            {
-                if (CityRoadPolygon.Contains(piece, p)) return true;
-                for (int i = 0; i < piece.Length; i++)
-                {
-                    Vector2 a = piece[i], edge = piece[(i + 1) % piece.Length] - a;
-                    float t = Mathf.Clamp01(Vector2.Dot(p - a, edge) / edge.sqrMagnitude);
-                    if ((p - a - edge * t).sqrMagnitude < radius * radius) return true;
-                }
-            }
+                if (CityRoadPolygon.ContainsOrWithin(piece, p, radius)) return true;
             return false;
         }
 

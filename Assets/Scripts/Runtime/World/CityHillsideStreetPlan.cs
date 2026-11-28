@@ -11,11 +11,13 @@ namespace BarPromenade
     {
         private static readonly ConditionalWeakTable<CityLayout, CityHillsideStreetPlan> Plans =
             new ConditionalWeakTable<CityLayout, CityHillsideStreetPlan>();
+        private readonly Lazy<IReadOnlyList<CityHillsideBendSidewalk>> sidewalkExtensions;
 
         private CityHillsideStreetPlan(CityLayout layout)
         {
             var routes = new List<CityHillsideStreetRoute>(2);
             Routes = routes.AsReadOnly();
+            sidewalkExtensions = new Lazy<IReadOnlyList<CityHillsideBendSidewalk>>(() => CollectSidewalkExtensions(layout));
             if (!CityCoastalAscentPlan.IsEnabled(layout)) return;
             var banks = new List<(CityTerraceTransportBank bank, Vector2Int mouth)>();
             foreach (CityTerraceTransportBank bank in new[] { CityTerraceTransportBank.West, CityTerraceTransportBank.East })
@@ -32,6 +34,49 @@ namespace BarPromenade
         public IReadOnlyList<CityHillsideStreetRoute> Routes { get; }
         public static CityHillsideStreetPlan ForLayout(CityLayout layout) =>
             Plans.GetValue(layout, value => new CityHillsideStreetPlan(value));
+
+        internal IReadOnlyList<CityHillsideBendSidewalk> SidewalkExtensions => sidewalkExtensions.Value;
+
+        private IReadOnlyList<CityHillsideBendSidewalk> CollectSidewalkExtensions(CityLayout layout)
+        {
+            var result = new List<CityHillsideBendSidewalk>();
+            var cellars = RidgeCellarPlan.ForLayout(layout);
+            foreach (var route in Routes)
+                foreach (var bend in route.BendSidewalks)
+                    if (cellars == null || route.Bank != CityTerraceTransportBank.East || !bend.AtSummit)
+                        result.Add(bend);
+            return result.AsReadOnly();
+        }
+    }
+
+    internal sealed class CityHillsideBendSidewalk
+    {
+        internal CityHillsideBendSidewalk(Vector2[] inner, Vector2[] outer, bool atSummit)
+        {
+            AtSummit = atSummit;
+            var pieces = new GroundSurfacePartitioner.Footprint[inner.Length - 1];
+            var outerBounds = CityRoadPolygon.Bounds(outer);
+            var innerBounds = CityRoadPolygon.Bounds(inner);
+            Bounds = Rect.MinMaxRect(Mathf.Min(outerBounds.xMin, innerBounds.xMin), Mathf.Min(outerBounds.yMin, innerBounds.yMin),
+                Mathf.Max(outerBounds.xMax, innerBounds.xMax), Mathf.Max(outerBounds.yMax, innerBounds.yMax));
+            for (int i = 1; i < inner.Length; i++)
+                pieces[i - 1] = new GroundSurfacePartitioner.Footprint(new[] { inner[i - 1], outer[i - 1], outer[i], inner[i] });
+            Pieces = pieces;
+        }
+
+        internal bool AtSummit { get; }
+        internal Rect Bounds { get; }
+        internal IReadOnlyList<GroundSurfacePartitioner.Footprint> Pieces { get; }
+
+        internal bool BlocksPlant(Vector2 point, float radius)
+        {
+            var roots = new Rect(point - Vector2.one * radius, Vector2.one * (2f * radius));
+            if (!Bounds.Overlaps(roots)) return false;
+            foreach (var piece in Pieces)
+                if (piece.Bounds.Overlaps(roots) && CityRoadPolygon.ContainsOrWithin(piece.Points, point, radius))
+                    return true;
+            return false;
+        }
     }
 
     public sealed class CityHillsideStreetRoute
@@ -140,6 +185,28 @@ namespace BarPromenade
                 innerLeft[i] = points[i] - normal * (RoadHalfWidth + leftWidening);
                 innerRight[i] = points[i] + normal * (RoadHalfWidth + rightWidening);
             }
+            var bendSidewalks = new List<CityHillsideBendSidewalk>(bends.Count);
+            foreach (var bend in bends)
+            {
+                var edge = bend.outsideRight ? right : left;
+                float side = bend.outsideRight ? 1f : -1f;
+                int count = bend.last - bend.first + 1;
+                var inner = new Vector2[count];
+                var outer = new Vector2[count];
+                for (int i = 0; i < count; i++)
+                {
+                    int station = bend.first + i;
+                    float portion = i / (float)(count - 1);
+                    // Keep a small overlap under the curb and ease the shoulder
+                    // back to the existing footway at the two tangencies.
+                    Vector2 outward = (miter[station] - points[station]) * side;
+                    float width = 4f * Mathf.SmoothStep(0f, 1f, 3f * Mathf.Min(portion, 1f - portion));
+                    inner[i] = edge[station] - .08f * outward;
+                    outer[i] = edge[station] + width * outward;
+                }
+                bendSidewalks.Add(new CityHillsideBendSidewalk(inner, outer, bend.last == laneStarts[LaneCount - 1]));
+            }
+            BendSidewalks = bendSidewalks.AsReadOnly();
             CourtApex = laneEnds[4] + 8;
             var patches = new List<CityStreetSupportPatch>((points.Count - 1) * 3);
             var corridor = new List<Vector2[]>(points.Count - 1);
@@ -221,6 +288,7 @@ namespace BarPromenade
         public Rect WorldBounds { get; }
         public IReadOnlyList<Vector2[]> WalkablePolygons { get; }
         public IReadOnlyList<CityStreetSupportPatch> SurfacePatches { get; }
+        internal IReadOnlyList<CityHillsideBendSidewalk> BendSidewalks { get; }
         public IReadOnlyList<Vector3> SidewalkPath { get; }
         public IReadOnlyList<Vector3> OppositeSidewalkPath { get; }
         public Vector3 SummitArrivalWorld => SidewalkPath[SidewalkPath.Count - 1];

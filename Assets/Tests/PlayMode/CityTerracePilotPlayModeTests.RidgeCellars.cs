@@ -34,12 +34,36 @@ namespace BarPromenade.Tests.PlayMode
             var root = GameObject.Find("East Ridge Cellar Court");
             Assert.That(root, Is.Not.Null, "The live eastern hillside must own the five cellars.");
             Physics.SyncTransforms();
+            var street = CityHillsideStreetPlan.ForLayout(city.Layout).Routes.Single(
+                road => road.Bank == CityTerraceTransportBank.East);
+            Assert.That(CitySurfaceLibrary.TryGroundJointMaps(CityExteriorAppearance.SidewalkTexture,
+                out Texture2D sidewalkTexture, out _), Is.True);
+            var surface = new MaterialPropertyBlock();
+            var reportedBend = new Vector3(172.9f, 36.2f, -316f);
             var reference = new Vector3(177.9f, 36f, -358f);
             Vector3 doors = site.Origin + Vector3.up * .95f;
             var farView = route.OrderBy(point => Mathf.Abs(point.z + 333f)).First() + Vector3.up * 1.6f;
             var towardCourt = route.OrderBy(point => Mathf.Abs(point.z + 347f)).First();
             yield return Frame("reported-day", reference + Vector3.up * 1.65f, doors);
+            yield return Frame("sidewalk-bend", reportedBend + Vector3.up * 1.6f, farView - Vector3.up * 2.4f);
             yield return Frame("curve-day", farView, towardCourt + Vector3.up * .55f);
+            CheckSidewalk(new Vector2(reportedBend.x, reportedBend.z), reportedBend.y);
+            var fractions = new[] { .15f, .5f, .85f };
+            for (int i = 1; i < site.Drain.Count; i++)
+            {
+                foreach (float fraction in fractions)
+                {
+                    Vector2 edge = Vector2.Lerp(site.Drain[i - 1], site.Drain[i], fraction);
+                    Vector2 streetCenter = street.Path.Project(edge).Position;
+                    Vector2 towardStreet = (streetCenter - edge).normalized;
+                    for (float distance = .57f; distance < Vector2.Distance(edge, streetCenter); distance += .30f)
+                    {
+                        Vector2 point = edge + towardStreet * distance;
+                        if (street.TrySampleTop(point, out _, out _)) break;
+                        CheckSidewalk(point, site.Origin.y);
+                    }
+                }
+            }
             yield return Frame("court-day", site.Origin + new Vector3(-9.3f, 1.62f, 6.8f),
                 site.Origin + new Vector3(2f, 1.05f, 0f));
             AdvanceRidgeClock(21 * 60);
@@ -47,6 +71,7 @@ namespace BarPromenade.Tests.PlayMode
             yield return Frame("curve-evening", farView, towardCourt + Vector3.up * .55f);
             follow.ClearFixedPose();
             AdvanceRidgeClock(14 * 60);
+            yield return CheckOtherBends();
             var bench = city.BenchSits.Where(seat => seat.Plan.Kind == CityBenchSeatKind.Plank)
                 .OrderBy(seat => (seat.InteractionPosition - reference).sqrMagnitude).First();
             Debug.Log($"East cellar bench {bench.Plan.Id} at {bench.InteractionPosition:F3}, entry {bench.Plan.EntryRootPosition:F3}, " +
@@ -100,6 +125,54 @@ namespace BarPromenade.Tests.PlayMode
             {
                 follow.ClearFixedPose();
                 OnDemandRendering.renderFrameInterval = previousInterval;
+            }
+
+            IEnumerator CheckOtherBends()
+            {
+                var streets = CityHillsideStreetPlan.ForLayout(city.Layout);
+                var extensions = streets.SidewalkExtensions;
+                Assert.That(streets.Routes.All(road => road.BendSidewalks.Count == CityHillsideStreetRoute.LaneCount), Is.True);
+                Assert.That(extensions.Count + 1, Is.EqualTo(2 * CityHillsideStreetRoute.LaneCount),
+                    "Both approaches and all switchbacks must be paved. The cellar bend is checked separately.");
+                Assert.That(CityMapArtResources.TryGet(city.Map, out _, out _), Is.True);
+                var ground = CityHillsideGroundPlan.ForLayout(city.Layout);
+                var publicStreet = CityStreetSupportPlan.ForLayout(city.Layout);
+                int number = 0;
+                foreach (var bend in extensions)
+                {
+                    int middle = bend.Pieces.Count / 2;
+                    for (int j = middle - 2; j < middle + 2; j++)
+                    {
+                        var polygon = bend.Pieces[j].Points;
+                        var centre = polygon.Aggregate(Vector2.zero, (sum, point) => sum + point) / polygon.Length;
+                        if (publicStreet.TrySampleTop(centre, out _, out _)) continue;
+                        Assert.That(ground.TrySampleTop(centre, out float top), Is.True, $"Shoulder support at {centre}");
+                        CheckSidewalk(centre, top);
+                        if (j != middle || (number != 0 && number != 3 && number != 8)) continue;
+                        var lead = bend.Pieces[middle + 1].Bounds.center;
+                        yield return Frame($"ridge-sidewalk-{number}", new Vector3(centre.x, top + 1.65f, centre.y),
+                            new Vector3(lead.x, top + .4f, lead.y));
+                    }
+                    number++;
+                }
+            }
+
+            void CheckSidewalk(Vector2 point, float groundY)
+            {
+                var start = new Vector3(point.x, groundY + 4f, point.y);
+                Assert.That(Physics.Raycast(start, Vector3.down, out var hit, 8f,
+                    Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore), Is.True, $"Paved shoulder at {point}");
+                Assert.That(hit.collider.name, Is.EqualTo("Terraced ground and courts").Or.EqualTo("Shared residential hillside"),
+                    $"Paved grade at {point}");
+                var mesh = ((MeshCollider)hit.collider).sharedMesh;
+                int sidewalkSlot = mesh.subMeshCount - 1;
+                int startTriangle = (int)mesh.GetIndexStart(sidewalkSlot) / 3;
+                int endTriangle = startTriangle + (int)mesh.GetIndexCount(sidewalkSlot) / 3;
+                Assert.That(hit.triangleIndex, Is.InRange(startTriangle, endTriangle - 1), $"Sidewalk at {point}");
+                hit.collider.GetComponent<Renderer>().GetPropertyBlock(surface, sidewalkSlot);
+                Assert.That(surface.GetTexture("_BaseMap"), Is.SameAs(sidewalkTexture), $"Sidewalk tiles at {point}");
+                Assert.That(hit.collider.GetComponent<FootstepGround>().ResolveKind(hit.triangleIndex),
+                    Is.EqualTo(FootstepGroundKind.Stone), $"Sidewalk footsteps at {point}");
             }
 
             IEnumerator Frame(string name, Vector3 eye, Vector3 target)

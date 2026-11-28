@@ -218,9 +218,12 @@ namespace BarPromenade
             }
             if (RidgeRavinePlan.ForLayout(city) is { } ruin) ReserveRect(ruin.Bounds);
             if (RidgeMotelPlan.ForLayout(city) is { } motel) ReserveRect(motel.Court);
+            foreach (var bend in CityHillsideStreetPlan.ForLayout(city).SidewalkExtensions)
+                foreach (var piece in bend.Pieces) Reserve(piece.Points, exact: true);
             if (RidgeCellarPlan.ForLayout(city) is { } cellars)
             {
                 foreach (var part in cellars.MapFootprints) Reserve(part, exact: true);
+                foreach (var part in cellars.BendSidewalk) Reserve(part, exact: true);
                 foreach (var part in cellars.DrainSurface) Reserve(part);
             }
             if (RidgeGaragePlan.ForLayout(city) is { } garage) ReserveRect(garage.Bounds);
