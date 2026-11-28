@@ -8,7 +8,8 @@ namespace BarPromenade
     public enum CityFairChildAction
     {
         Idle, Walk, Turn, Stop, GoodsEnter, GoodsLoop, GoodsExit,
-        ToyEnter, ToyLoop, ToyExit, SitEnter, SitLoop, SitExit, AdjustSleeve, AdjustCap, StreetWalk, SwingEnter, SwingPump, SwingExit, BarsCross, BeamCross, SlideCross, SlideViaBridge, SeesawMount, BalanceStep
+        ToyEnter, ToyLoop, ToyExit, SitEnter, SitLoop, SitExit, AdjustSleeve, AdjustCap, StreetWalk, SwingEnter, SwingPump, SwingExit, BarsCross, BeamCross, SlideCross, SlideViaBridge, SeesawMount, BalanceStep,
+        BallPickup, BallCarry, BallThrow, BasketJump
     }
 
     public readonly struct CityFairChildFrame

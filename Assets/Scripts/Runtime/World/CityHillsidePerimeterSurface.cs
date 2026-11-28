@@ -28,6 +28,8 @@ namespace BarPromenade
         private static List<Plot> CreatePlots(CityLayout layout)
         {
             var plots = new List<Plot>();
+            if (RidgeBasketballPlan.ForLayout(layout) is { } court)
+                plots.Add(new Plot(Finish.Asphalt, CityRoadPolygon.Rectangle(court.Asphalt)));
             foreach (var piece in CityGlassReturnSitePlan.PavingForLayout(layout).Asphalt)
                 plots.Add(new Plot(Finish.Asphalt, piece));
             var quarter = CityHillsideQuarterPlan.ForLayout(layout);

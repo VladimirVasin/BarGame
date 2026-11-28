@@ -137,7 +137,7 @@ Scope cuts are `Deferred`; a completed system stays `Current`.
 | Pedestrian personal space | Above alcohol `60`: guarding palm; above `80`: close shove. | `CityPedestrianPersonalSpace{Rules,Controller}`, `PlayerMotor` | Current |
 | City street gestures | Walking waves every 30–60 s; cap/collar on a gust. | `CityStreetGreetings`, `CityStreetGusts`, `CityStreetArmPose` | Current |
 | Pedestrian street insults | Proximity/facing gates. Twenty lines per shuffle, retained on reload. | `CityPedestrianInsult{Rules,Lines,Walk,SessionState,Controller}`, `CityPedestrianPersonalSpaceController` | Current |
-| City/Home pedestrians | 192 commutes. City ≤36 + ≤12 ambient (≤2 daylight children) + ≤2 janitors. Home 5/2. Playground visits. | `CityResidentJourneyDirector`, `CityAmbientPedestrians`, `CityPlaygroundVisit`, `CityJanitorDirector` | Current |
+| City/Home pedestrians | 192 commutes. City ≤36 + ≤12 ambient (≤2 daylight children) + ≤2 janitors. Home 5/2. Yard visits. | `City{ResidentJourneyDirector,AmbientPedestrians,PlaygroundVisit,JanitorDirector}`, `RidgeBasketballCourt` | Current |
 | NPC Human V2 anatomy, appearance and visibility | Shared rigs; joint fields/volume and shaped hands/clothes retain UVs. | `NpcHumanV2AssetSetup`, `NpcDesignAppearanceCatalog`, `CharacterJointDeformation` | Current |
 | City district buses | Two/ring, transfers, curve profiles. Gap:Home service/live buses. | `CityBus{Director,Actor,Timetable}`, `City{District,Hillside}BusPlanner` | Partial |
 | Midibus | Sedan lights, sliding leaves, fixed NPCs. | `CityBus{Presentation,DriverRig}` | Current |

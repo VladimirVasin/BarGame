@@ -54,6 +54,7 @@ namespace BarPromenade
         {
             Root = root;
             RidgeRoot = ridgeRoot;
+            Basketball = (ridgeRoot != null ? ridgeRoot : root).GetComponentInChildren<RidgeBasketballCourt>(true);
             RailRests = railRests ?? Array.Empty<CityRailRestSpot>();
             BalanceStations = balanceStations ?? Array.Empty<CityPlaygroundBalanceStation>();
             Cafe = cafe;
@@ -154,6 +155,7 @@ namespace BarPromenade
             GameObject mountainRoot, IReadOnlyList<CityRailRestSpot> railRests)
         {
             Root = RidgeRoot = root;
+            Basketball = root.GetComponentInChildren<RidgeBasketballCourt>(true);
             RailRests = railRests;
             PlayerHome = home;
             WalkableArea = walkableArea;
@@ -177,6 +179,7 @@ namespace BarPromenade
         internal CityCourtyardPlayground SlidePlayground { get; }
         internal CityCourtyardPlayground BridgePlayground { get; }
         internal CityPlaygroundSeesaw Seesaw { get; }
+        internal RidgeBasketballCourt Basketball { get; }
         internal IReadOnlyList<CityPlaygroundBalanceStation> BalanceStations { get; } = Array.Empty<CityPlaygroundBalanceStation>();
         public GameObject Root { get; }
         public GameObject RidgeRoot { get; }

@@ -504,7 +504,7 @@ namespace BarPromenade
             SamplePose(body, action, normalized, Seat.RiderRoot, Seat.transform.rotation, false);
         }
 
-        private static void SamplePose(CityPedestrianPresentation body, CityFairChildAction action,
+        internal static void SamplePose(CityPedestrianPresentation body, CityFairChildAction action,
             float normalized, Vector3 basis, Quaternion facing, bool travelling)
         {
             AnimationClip clip = CityFairChildActions.GetClip(action);

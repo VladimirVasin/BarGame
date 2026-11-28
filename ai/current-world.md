@@ -766,7 +766,7 @@ modular 3D hero. Home/bar/shop/church/pawnshop have interiors and street returns
   `2/8/10/12/4`, cache 18, combined 48, warm≤3. Half-hour ramps,
   arrivals per 12m≤4 combined/2 ambient, hidden handoffs, 60/40 target.
   Ambient walks use stairs, skip crossings/platforms and pass at kerbs.
-  Six child looks share two slots. Children swing, cross yard bars and beam, or climb and slide. Each detour rejoins the route. Equipment footprints keep grass clear.
+  Two slots, six child looks. Swings, bars, beam and slides rejoin the walk. Grass clears equipment. At the Ridge wall hoop children alternate. A 20% make cues the shooter’s jump.
   Adults lean at quays, courts or Ridge rails. House spurs use full pavement.
   Two uniformed janitors sweep paving/yard earth and retrieve a slipping leaf. Arrivals 14–34 m away, every 18–32 s. Hidden exits after 55–95 s at ≥14 m, or beyond 52 m.
   Public circuits turn at the sidewalk. Home is private with continuous pavement. Two neighbours share the lower passage court door. The exiting resident holds it with an elbow for the returning one.

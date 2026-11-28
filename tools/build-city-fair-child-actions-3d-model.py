@@ -36,7 +36,8 @@ CLIPS = (("Idle",4.,True),("Walk",1.25,True),("Turn",1.,False),("Stop",.5,False)
          ("SwingEnter",1.5,False),("SwingPump",1.,False),("SwingExit",1.25,False),
          ("BarsCross",6.5,False),("BeamCross",5.5,False),("SlideCross",8.,False),
          ("SlideViaBridge",8. + BRIDGE_CROSS_TIME,False),("SeesawMount",1.5,False),
-         ("BalanceStep",1.5,False))
+         ("BalanceStep",1.5,False), ("BallPickup",1.5,False), ("BallCarry",1.,True),
+         ("BallThrow",1.25,False), ("BasketJump",1.,False))
 STREET_CYCLE_METRES = .66
 
 
@@ -533,6 +534,57 @@ def balance_step(rig, phase):
         rotate(rig, "forearm."+side, (1,0,0), -12*smooth(phase))
 
 
+def ball_pose(rig, height, forward, lean, grip_y, grip_z, lift=0.):
+    move_pelvis(rig, (0, height + lift, forward))
+    rotate(rig, "spine", (1,0,0), -lean)
+    for side, sign in (("L",-1), ("R",1)):
+        place_boot(rig, side, (sign*.079, .065+lift, 0))
+        arm(rig, side, (sign*.104, grip_y+lift, grip_z))
+
+
+def basketball(rig, name, phase, neutral):
+    if name == "BallCarry":
+        street_walk(rig, phase % 1.)
+        hip = unity(rig.pose.bones["pelvis"].head)
+        for side, sign in (("L",-1), ("R",1)):
+            arm(rig, side, (sign*.104, hip.y+.245, .235))
+        return
+    if name == "BasketJump":
+        # The soles stay planted during anticipation and compression on landing.
+        lift = .24 * max(0., 1-((phase-.52)/.25)**2)
+        height = position_at(phase, [(0,(.622,0)),(.23,(.49,0)),(.30,(.619,0)),
+                                    (.53,(.56,0)),(.77,(.619,0)),(.85,(.51,0)),(1,(.622,0))])[0]
+        move_pelvis(rig, (0,height+lift,0))
+        reach = ramp(phase,.19,.44) * (1-ramp(phase,.67,.99))
+        for side,sign in (("L",-1),("R",1)):
+            place_boot(rig,side,(sign*.079,.065+lift,0))
+            aim(rig,"upper_arm."+side,src((sign*(.13+.25*reach),-.21+.52*reach,.06)))
+            aim(rig,"forearm."+side,src((sign*.035,-.14+.43*reach,.055)))
+        return
+    ball_pose(rig, .615, 0, 4, .86, .235)
+    carry = pose_copy(rig)
+    reset(rig)
+    if name == "BallPickup":
+        ball_pose(rig, .202, -.035, 74, .118, .29)
+        reach = pose_copy(rig)
+        if phase <= .5:
+            blend(rig, neutral, reach, ramp(phase,0,.5))
+        else:
+            blend(rig, reach, carry, ramp(phase,.5,1))
+        return
+    ball_pose(rig, .51, -.035, 9, .76, .255)
+    wind = pose_copy(rig)
+    reset(rig)
+    ball_pose(rig, .622, 0, 0, 1.17, .24)
+    release = pose_copy(rig)
+    if phase < .35:
+        blend(rig, carry, wind, ramp(phase,0,.35))
+    elif phase < .6:
+        blend(rig, wind, release, ramp(phase,.35,.6))
+    else:
+        blend(rig, release, neutral, ramp(phase,.71,1))
+
+
 def construct(rig,name,phase):
     reset(rig);neutral=pose_copy(rig);contact=0.;targets=None
     if name.startswith(("Goods","Toy","Sit")):
@@ -560,6 +612,8 @@ def construct(rig,name,phase):
         contact, targets = seesaw_mount(rig, phase)
     elif name == "BalanceStep":
         balance_step(rig,phase)
+    elif name in ("BallPickup","BallCarry","BallThrow","BasketJump"):
+        basketball(rig,name,phase,neutral)
     elif name=="Idle":
         rotate(rig,"chest",(1,0,0),.45*math.sin(phase*2*math.pi))
         rotate(rig,"head",(0,1,0),1.5*math.sin(phase*2*math.pi))

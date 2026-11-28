@@ -554,6 +554,8 @@ namespace BarPromenade
                 if (shelter != null) rainShelters.Add(shelter);
             }
 
+            if (RidgeBasketballPlan.ForLayout(layout) is { } basketball)
+                RidgeBasketballCourt.Build(parent, layout, basketball);
             var glassReturn = CityGlassReturnSitePlan.ForLayout(layout);
             if (glassReturn.IsEnabled)
             {
